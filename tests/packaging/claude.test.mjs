@@ -35,9 +35,13 @@ test("Claude distribution reproduces exact source bytes and registers every prod
     ],
   ]);
   t.assert.deepEqual(
-    files,
+    Object.fromEntries(
+      Object.entries(files).filter(
+        ([path]) => !path.startsWith(".claude/skills/"),
+      ),
+    ),
     expected,
-    "DIST-2: exact inventory excludes development files",
+    "DIST-2: runtime inventory; Skill inventory is checked separately",
   );
   t.assert.deepEqual(files, tree(box.path("second/claude")));
   const settings = JSON.parse(

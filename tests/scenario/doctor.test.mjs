@@ -16,7 +16,11 @@ for (const harness of /** @type {const} */ (["claude", "codex"])) {
     t.assert.equal(report.ok, true);
     t.assert.deepEqual(tree(install.root), before);
     t.assert.equal(
-      Object.keys(before).every((name) => name.startsWith(`.${harness}/`)),
+      Object.keys(before).every(
+        (name) =>
+          name.startsWith(`.${harness}/`) ||
+          (harness === "codex" && name.startsWith(".agents/skills/")),
+      ),
       true,
     );
   });

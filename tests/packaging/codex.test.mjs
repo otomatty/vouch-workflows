@@ -32,9 +32,13 @@ test("Codex distribution reproduces exact source bytes and registers every produ
     ]),
   ]);
   t.assert.deepEqual(
-    tree(box.path("dist/codex")),
+    Object.fromEntries(
+      Object.entries(tree(box.path("dist/codex"))).filter(
+        ([path]) => !path.startsWith(".agents/skills/"),
+      ),
+    ),
     expected,
-    "DIST-2: source bytes and exact inventory",
+    "DIST-2: runtime inventory; Skill inventory is checked separately",
   );
   t.assert.equal(packageRun(["--out", box.path("dist"), "--check"]).status, 0);
   const settings = JSON.parse(await box.read("dist/codex/.codex/hooks.json"));
