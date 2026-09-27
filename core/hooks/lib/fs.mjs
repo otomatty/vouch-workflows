@@ -10,7 +10,7 @@ function hasCode(error, code) {
  * Serialized, atomic replacement within a trusted root. Existing links are refused.
  * The optional native operations port permits deterministic disk-failure tests.
  * @param {string} root
- * @param {typeof fs} [operations]
+ * @param {import('./runtime-contracts.mjs').FileOperations} [operations]
  * @returns {Promise<import('./runtime-contracts.mjs').FileStore>}
  */
 export async function createFileStore(root, operations = fs) {

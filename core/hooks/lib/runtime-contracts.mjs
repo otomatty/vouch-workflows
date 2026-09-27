@@ -63,3 +63,27 @@ export {};
  * @typedef {{kind:'open'}|{kind:'approve',gate:string}|{kind:'invalid'}|null} IntentReviewCommand
  * @typedef {(prompt:string)=>IntentReviewCommand} ParseIntentReviewCommand
  */
+
+/**
+ * FileStore awaits both synchronous native operations and asynchronous test ports.
+ * The native CLI driver blocks only its own process; it does not cache metadata.
+ * Every update retains validation, owned locking, fsync, close, and atomic rename.
+ * @typedef {T|Promise<T>} FileOperationResult
+ * @template T
+ */
+/**
+ * @typedef {object} FileWriteHandle
+ * @property {(text:string,encoding:'utf8') => FileOperationResult<void>} writeFile
+ * @property {() => FileOperationResult<void>} sync
+ * @property {() => FileOperationResult<void>} close
+ * @typedef {object} FileOperations
+ * @property {(path:string) => FileOperationResult<string>} realpath
+ * @property {(path:string) => FileOperationResult<import('node:fs').Stats>} stat
+ * @property {(path:string) => FileOperationResult<import('node:fs').Stats>} lstat
+ * @property {(path:string) => FileOperationResult<Buffer>} readFile
+ * @property {(path:string,options?:{recursive:true}) => unknown} mkdir
+ * @property {(path:string,flags:'wx',mode:number) => FileOperationResult<FileWriteHandle>} open
+ * @property {(from:string,to:string) => unknown} rename
+ * @property {(path:string,options:{force:true}) => unknown} rm
+ * @property {(path:string) => unknown} rmdir
+ */
