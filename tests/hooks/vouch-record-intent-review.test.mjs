@@ -1,4 +1,4 @@
-import { symlink } from "node:fs/promises";
+import { mkdir, symlink, unlink } from "node:fs/promises";
 import { assertGolden } from "../helpers/golden.mjs";
 import { hookTest as test } from "../helpers/hook-test.mjs";
 import {
@@ -213,5 +213,79 @@ test("artifact links and unsafe configured scope cannot emit review events", asy
   t.assert.doesNotMatch(linked.stderr, /VOUCH-REVIEW-RECORDED/);
   t.assert.equal(bad.exitCode, 0);
   t.assert.match(bad.stderr, /AUDIT-SCOPE/);
+  await t.assert.rejects(box.read(audit), { code: "ENOENT" });
+});
+
+test("missing artifact and occupied audit lock never report recorded approval", async (t) => {
+  const box = await reviewBox(t);
+  await unlink(box.path(artifact));
+  const missing = box.submit("vouch review");
+  await box.write(artifact, draft);
+  box.submit("vouch review");
+  const before = await box.read(audit);
+  const [gate] = await box.rows();
+  if (!gate) throw Error("gate");
+  await mkdir(box.path(`${audit}.vouch-lock`));
+  const locked = box.submit(`vouch approve ${gate.id}`, "approval");
+  t.plan(5);
+  t.assert.equal(missing.exitCode, 2);
+  t.assert.match(missing.stderr, /VOUCH-REVIEW-DRAFT/);
+  t.assert.equal(locked.exitCode, 0);
+  t.assert.doesNotMatch(locked.stderr, /VOUCH-APPROVAL-RECORDED/);
+  t.assert.equal(await box.read(audit), before);
+});
+
+test("approval replay cannot move an input to a different gate or reuse synthetic history", async (t) => {
+  const box = await reviewBox(t);
+  box.submit("vouch review");
+  box.submit("vouch review", "second-open");
+  const [first, second] = await box.rows();
+  if (!first || !second) throw Error("gates");
+  box.submit(`vouch approve ${first.id}`, "answer");
+  const before = await box.read(audit);
+  const conflict = box.submit(`vouch approve ${second.id}`, "answer");
+  t.plan(5);
+  t.assert.equal(conflict.exitCode, 0);
+  t.assert.match(conflict.stderr, /AUDIT-CONFLICT/);
+  t.assert.equal(await box.read(audit), before);
+  const rows = await box.rows();
+  await box.write(
+    audit,
+    rows
+      .map(
+        (row) =>
+          `${JSON.stringify(
+            row.type === "intent.approved" ? { ...row, synthetic: true } : row,
+          )}\n`,
+      )
+      .join(""),
+  );
+  const rejected = box.submit(`vouch approve ${first.id}`, "answer");
+  t.assert.equal(rejected.exitCode, 2);
+  t.assert.match(rejected.stderr, /synthetic/);
+});
+
+test("invalid process inputs cannot read or append review evidence", async (t) => {
+  const box = await reviewBox(t);
+  const fixture = box.fixture("vouch review");
+  const cases = [
+    "",
+    "not json",
+    JSON.stringify({ ...fixture.payload, session_id: undefined }),
+    JSON.stringify({ ...fixture.payload, prompt: 123 }),
+    JSON.stringify({ ...fixture.payload, cwd: box.path("../outside") }),
+    " ".repeat(1024 * 1024),
+  ];
+  t.plan(cases.length * 3 + 1);
+  for (const raw of cases) {
+    const result = runHook("vouch-record-intent-review", fixture, {
+      root: box.root,
+      intent,
+      raw,
+    });
+    t.assert.equal(result.exitCode, 0);
+    t.assert.equal(result.stdout, "");
+    t.assert.doesNotMatch(result.stderr, /VOUCH-(REVIEW|APPROVAL)-RECORDED/);
+  }
   await t.assert.rejects(box.read(audit), { code: "ENOENT" });
 });
