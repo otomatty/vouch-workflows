@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "artifacts": {
+    "intent": "intent.md",
+    "design": "design.md",
+    "build": "build-log.md",
+    "verify": "review.md"
+  },
+  "decisions": "decisions.md",
+  "audit": "audit/events.jsonl",
+  "rules_sections": [
+    "configuration",
+    "dod",
+    "restrictions",
+    "dependencies",
+    "checkpoints",
+    "corrections"
+  ],
+  "policy_rules": [
+    "R-PROJECT-1",
+    "R-PROJECT-2",
+    "R-PROJECT-3",
+    "R-PROJECT-4",
+    "R-PROJECT-5",
+    "R-PROJECT-6",
+    "R-PROJECT-7"
+  ]
+}

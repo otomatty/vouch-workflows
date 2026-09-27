@@ -66,7 +66,7 @@
         {
           "status": "implemented",
           "path": "tests/packaging/check.test.mjs",
-          "claim": "両配布の再生成・バイト一致と、Claude の欠落・編集の読み取り専用検出を確認する。"
+          "claim": "出力未作成の検出、両配布の生成とバイト一致検査、検査がファイルを変更しないことを確認する。"
         },
         {
           "status": "implemented",
@@ -82,6 +82,21 @@
           "status": "implemented",
           "path": "tests/content/skills.test.mjs",
           "claim": "Skill の正典を content テストからだけ読み、宣言された HARNESS_DIR 置換後の全バイトを両配布と比較する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/project-documents.test.mjs",
+          "claim": "AGENTS と rules の原本を content 内だけで読み、配布との全文一致と新しい日英 rules golden を検査する。既存 golden は保持する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/edited.test.mjs",
+          "claim": "編集済みファイルを検査が変更せず検出し、明示的な再生成で原本のバイトへ復元することを確認する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/missing.test.mjs",
+          "claim": "欠損したファイルを検査が補完せず検出し、明示的な再生成で元の全ファイルを復元することを確認する。"
         }
       ]
     },
@@ -99,6 +114,11 @@
           "status": "implemented",
           "path": "tests/content/runtime-inventory.test.mjs",
           "claim": "runtime レジストリでイベントフックと手動 doctor を分類し、すべての入口と core の .mjs / .json を列挙する。doctor は DIST-5 の診断コマンドでイベント登録対象外。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/project-documents.test.mjs",
+          "claim": "AGENTS のステージと規則タグ、rules の言語・確認点・節 ID を正典レジストリと照合する。"
         }
       ]
     },
@@ -403,7 +423,7 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "Doctor Skill 追加後の Windows Node 22 / 24 の記録 p95 は223.6 / 214.6msで、200ms予算は未達。前回の Linux Node 22 は135.8msだが、今回は性能を再計測していない。検査系と他フックも未検証。"
+          "claim": "Status・共通文書追加後の Windows Node 22 / 24 の記録 p95 は846.4 / 229.0msで、200ms予算は未達。Node 22 の性能ケースは9.19秒で5秒予算も超過した。今回 Linux の性能は再計測していない。検査系と他フックも未検証。"
         },
         {
           "status": "implemented",
@@ -531,11 +551,16 @@
         {
           "status": "implemented",
           "path": "tests/content/contracts.test.mjs",
-          "claim": "製品 Markdown の強制語を登録済み R タグと照合する。doctor Skill の実文書も対象に含める。"
+          "claim": "Skill・共通 AGENTS・rules テンプレートの強制語を登録済み R タグと照合する。"
         },
         {
           "status": "pending",
           "claim": "REG-4 の全要件に対する検査は未完了。content テスト"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/registry/project-documents.test.mjs",
+          "claim": "既存57実装ルールに加えて、決定記録由来の R-PROJECT-1〜7 を別の正典として照合する。タグ記載と規則の実行時強制を区別する。"
         }
       ]
     },
@@ -575,6 +600,11 @@
           "status": "implemented",
           "path": "tests/content/skills.test.mjs",
           "claim": "実在する vouch Skill の flat scalar frontmatter を解析し、重複キー・未対応構文の拒否と既存 Ajv スキーマとの一致を検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/project-documents.test.mjs",
+          "claim": "rules の実テンプレートの frontmatter を既存 workflow の選択肢を参照するスキーマで検査する。"
         }
       ]
     },
@@ -587,7 +617,7 @@
         {
           "status": "implemented",
           "path": "tests/content/budgets.test.mjs",
-          "claim": "存在する文書の行数と常時読み込み予算を検査する。"
+          "claim": "AGENTS.md・オーケストレータ・日英の各 rules テンプレートがそろった状態で行数・常時読み込み予算を検査する。"
         }
       ]
     },
@@ -616,7 +646,12 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "DOC-4 の全要件に対する検査は未完了。content テスト"
+          "claim": "Intent / Design / Build / Review と判断依頼等の日英テンプレートは未実装。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/project-documents.test.mjs",
+          "claim": "ja/en rules の節 ID・順序が project-documents.json と一致することを検査する。Intent / Design / Build / Review テンプレートは未実装。"
         }
       ]
     },
@@ -641,12 +676,17 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "他の Skill・テンプレート・AGENTS.md のリンク検査は文書の実装後に追加する。"
+          "claim": "今後追加するステージ Skill・成果物テンプレートのリンク検査は未実装。"
         },
         {
           "status": "implemented",
           "path": "tests/packaging/skills.test.mjs",
           "claim": "Skill 配布の正確なファイル集合、両ハーネスでの同内容、相対リンクと配布ルート基準パスの実在を検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/project-documents.test.mjs",
+          "claim": "共通文書の正確な配布集合、リンクの解決、Claude の @AGENTS.md、利用者 rules の自動作成がないことを検査する。"
         }
       ]
     },
@@ -670,12 +710,17 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "実ハーネスでの Skill 発見・選択・返答評価と、後続ワークフローの指示のレビューは未実施。"
+          "claim": "実ハーネスによる doctor/status の発見・選択・返答の評価、後続のステージ Skill のレビューは未実施。"
         },
         {
           "status": "implemented",
           "path": "docs/development/doctor-skill.md",
           "claim": "doctor の対象・完了条件・根拠と、Node 未導入、import 失敗、検査不合格、矛盾する出力を区別する指示を自己レビューした。モデルの選択・返答評価は未実施。"
+        },
+        {
+          "status": "implemented",
+          "path": "docs/development/status.md",
+          "claim": "status の対象選択・観測範囲・矛盾・未回答と既定適用の区別・読み取り専用の完了条件を契約と自己レビューで確認した。モデル評価は未実施。"
         }
       ]
     },
@@ -692,7 +737,7 @@
         {
           "status": "implemented",
           "path": "tests/packaging/check.test.mjs",
-          "claim": "両配布の再生成・バイト一致と、Claude の欠落・編集の読み取り専用検出を確認する。"
+          "claim": "出力未作成の検出、両配布の生成とバイト一致検査、検査がファイルを変更しないことを確認する。"
         },
         {
           "status": "implemented",
@@ -713,6 +758,21 @@
           "status": "implemented",
           "path": "tests/packaging/tokens.test.mjs",
           "claim": "手製の最小パッケージで Markdown だけのトークン置換、JSON のバイト保存、未知トークン時の書き込み前失敗を検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/project-documents.test.mjs",
+          "claim": "AGENTS と rules の原本を content 内だけで読み、配布との全文一致と新しい日英 rules golden を検査する。既存 golden は保持する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/edited.test.mjs",
+          "claim": "編集済みファイルを検査が変更せず検出し、明示的な再生成で原本のバイトへ復元することを確認する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/missing.test.mjs",
+          "claim": "欠損したファイルを検査が補完せず検出し、明示的な再生成で元の全ファイルを復元することを確認する。"
         }
       ]
     },
@@ -740,6 +800,11 @@
           "status": "implemented",
           "path": "tests/packaging/skills.test.mjs",
           "claim": "Skill 配布の正確なファイル集合、両ハーネスでの同内容、相対リンクと配布ルート基準パスの実在を検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/project-documents.test.mjs",
+          "claim": "共通文書の正確な配布集合、リンクの解決、Claude の @AGENTS.md、利用者 rules の自動作成がないことを検査する。"
         }
       ]
     },
@@ -967,6 +1032,11 @@
           "status": "implemented",
           "path": "tests/hooks/codex-session-start.test.mjs",
           "claim": "版付き Codex 入力からの synthetic startup と新しい golden を全文比較。再送時刻・ハーネスごとの ID・no-op・偽装された fixture 表示を検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/project-documents.test.mjs",
+          "claim": "AGENTS と rules の原本を content 内だけで読み、配布との全文一致と新しい日英 rules golden を検査する。既存 golden は保持する。"
         }
       ]
     },
@@ -1004,6 +1074,11 @@
           "status": "implemented",
           "path": "tests/hooks/codex-session-start.test.mjs",
           "claim": "版付き Codex 入力からの synthetic startup と新しい golden を全文比較。再送時刻・ハーネスごとの ID・no-op・偽装された fixture 表示を検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/status-eval.test.mjs",
+          "claim": "手製の status 評価素材を synthetic・not-run として検査する。ハーネス実機イベントやモデル評価の実績には数えない。"
         }
       ]
     },
@@ -1088,7 +1163,7 @@
         },
         {
           "status": "pending",
-          "claim": "Doctor Skill 追加後の Windows Node 22 / 24 の性能ケースは4.12 / 4.13秒で制限内。前回 Node 22 の6.75秒超過は履歴として doctor.md に残す。リモート CI での全予算充足は未検証。"
+          "claim": "Status・共通文書追加後の Windows Node 22 / 24 の性能ケースは9.19 / 4.42秒。Node 22 は5秒予算も未達。初回 Node 22 の配布検査の5秒超過は、正常・編集・欠損を独立ケースに分けて解消した。閾値は変更していない。リモート CI での全予算充足は未検証。"
         },
         {
           "status": "implemented",
@@ -1165,6 +1240,125 @@
           "status": "implemented",
           "path": "tests/scenario/codex-distribution.test.mjs",
           "claim": "生成した Codex の登録コマンドを実シェルで実行し、記号・空白・日本語を含む root のサブディレクトリから synthetic startup と再送を検査する。Codex CLI 起動自体は別途実機検証。"
+        }
+      ]
+    },
+    "R-PROJECT-1": {
+      "rule_id": "PROJECT-1",
+      "source": "docs/spec/vouch-decision-record.html#s4",
+      "requirement": "人の承認を代行せず、承認済み計画から実装する。全リスク階層で PR は人が Brief を読んでマージし、自動マージしない。",
+      "mechanisms": ["reviewer", "human", "test"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": "tests/content/project-documents.test.mjs",
+          "claim": "共通文書への規則タグの記載を照合する。規則の実行時強制を証明する検査ではない。"
+        },
+        {
+          "status": "pending",
+          "claim": "承認の真正性と計画の採択、PR マージを強制するフックは未実装。"
+        }
+      ]
+    },
+    "R-PROJECT-2": {
+      "rule_id": "PROJECT-2",
+      "source": "docs/spec/vouch-decision-record.html#s4",
+      "requirement": "主張・成果物・判断依頼に証拠と参照元を付け、捏造や根拠のない判断依頼をしない。",
+      "mechanisms": ["reviewer", "human", "test"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": "tests/content/project-documents.test.mjs",
+          "claim": "共通文書への規則タグの記載を照合する。規則の実行時強制を証明する検査ではない。"
+        },
+        {
+          "status": "pending",
+          "claim": "引用・証拠・判断依頼の形式検査フックと意味の妥当性のモデル評価は未実装。"
+        }
+      ]
+    },
+    "R-PROJECT-3": {
+      "rule_id": "PROJECT-3",
+      "source": "docs/spec/vouch-decision-record.html#s11",
+      "requirement": "状態は成果物から導出する。監査は append-only でフックだけが書き、モデル・人による手編集をしない。status は読み取り専用。",
+      "mechanisms": ["reviewer", "human", "test"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": "tests/content/project-documents.test.mjs",
+          "claim": "共通文書への規則タグの記載を照合する。規則の実行時強制を証明する検査ではない。"
+        },
+        {
+          "status": "pending",
+          "claim": "既存の audit lib の追記検査はあるが、ハーネスの全ツールによる手編集を遮断するフックと status のモデル評価は未実装。"
+        }
+      ]
+    },
+    "R-PROJECT-4": {
+      "rule_id": "PROJECT-4",
+      "source": "docs/spec/vouch-decision-record.html#s4",
+      "requirement": "本番データへの接触、main への直接 push、根拠のない禁止事項の追加を避ける。",
+      "mechanisms": ["reviewer", "human", "test"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": "tests/content/project-documents.test.mjs",
+          "claim": "共通文書への規則タグの記載を照合する。規則の実行時強制を証明する検査ではない。"
+        },
+        {
+          "status": "pending",
+          "claim": "main push や本番データ操作を遮断する製品フックは未実装。適用範囲と例外の判断は人が行う。"
+        }
+      ]
+    },
+    "R-PROJECT-5": {
+      "rule_id": "PROJECT-5",
+      "source": "docs/spec/vouch-decision-record.html#s4",
+      "requirement": "合格を装うテスト改変・削除をせず、契約→テスト→実装の順を守り、別コンテキストで検証する。",
+      "mechanisms": ["reviewer", "human", "test"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": "tests/content/project-documents.test.mjs",
+          "claim": "共通文書への規則タグの記載を照合する。規則の実行時強制を証明する検査ではない。"
+        },
+        {
+          "status": "pending",
+          "claim": "テスト保護とコミット順の遮断フック、別コンテキスト検証を実行するエージェントは未実装。"
+        }
+      ]
+    },
+    "R-PROJECT-6": {
+      "rule_id": "PROJECT-6",
+      "source": "docs/spec/vouch-decision-record.html#s18",
+      "requirement": "未回答時は実行可能な既定案で進み Brief §7 に記録する。既定案が作れない時だけ判断を求め、回答・承認とは区別する。",
+      "mechanisms": ["reviewer", "human", "test"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": "tests/content/project-documents.test.mjs",
+          "claim": "共通文書への規則タグの記載を照合する。規則の実行時強制を証明する検査ではない。"
+        },
+        {
+          "status": "pending",
+          "claim": "判断依頼 Skill と既定適用イベントの実記録、status の解釈のモデル評価は未実装。"
+        }
+      ]
+    },
+    "R-PROJECT-7": {
+      "rule_id": "PROJECT-7",
+      "source": "docs/spec/vouch-decision-record.html#s18",
+      "requirement": "実行時は Node と Git を必要とし、Node 不在時の縮退モードを作らない。",
+      "mechanisms": ["reviewer", "human", "test"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": "tests/content/project-documents.test.mjs",
+          "claim": "共通文書への規則タグの記載を照合する。規則の実行時強制を証明する検査ではない。"
+        },
+        {
+          "status": "pending",
+          "claim": "doctor の子プロセス検査は実装済み。Skill が Node 不在時に停止・案内するモデル評価は未実施。"
         }
       ]
     }

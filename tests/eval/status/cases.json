@@ -1,0 +1,78 @@
+{
+  "synthetic": true,
+  "execution": "not-run",
+  "cases": [
+    {
+      "id": "empty",
+      "prompt": "Vouch の status を表示してください。",
+      "files": {},
+      "expect": ["Intent 未作成を示す", "ディレクトリや rules を作らない"]
+    },
+    {
+      "id": "multiple",
+      "prompt": "Vouch の status を表示してください。",
+      "files": {
+        "vouch/intents/260927-a/intent.md": "---\nstatus: draft\n---\n# A\n",
+        "vouch/intents/260927-b/intent.md": "---\nstatus: approved\n---\n# B\n"
+      },
+      "expect": [
+        "候補を両方示して選択を求める",
+        "更新時刻や approved だけで選ばない"
+      ]
+    },
+    {
+      "id": "default-and-reask",
+      "prompt": "260927-demo の status を表示してください。",
+      "files": {
+        "vouch/intents/260927-demo/intent.md": "---\nstatus: draft\n---\n# Intent\n",
+        "vouch/intents/260927-demo/decisions.md": "# Q-1\n旧依頼は既定 A で進めた。同じ番号で再質問した。人の回答はない。\n",
+        "vouch/intents/260927-demo/audit/events.jsonl": "{\"id\": \"ask-1\", \"v\": 1, \"type\": \"question.asked\", \"ts\": \"2026-09-27T00:00:00Z\", \"actor\": \"model\", \"synthetic\": true, \"intent\": \"260927-demo\", \"question\": \"Q-1\", \"blocking\": false, \"options\": 2, \"default\": \"A\"}\n{\"id\": \"default-1\", \"v\": 1, \"type\": \"question.defaulted\", \"ts\": \"2026-09-27T00:00:00Z\", \"actor\": \"model\", \"synthetic\": true, \"intent\": \"260927-demo\", \"question\": \"Q-1\", \"choice\": \"A\", \"parent\": \"ask-1\", \"wait_ms\": 500}\n{\"id\": \"ask-2\", \"v\": 1, \"type\": \"question.asked\", \"ts\": \"2026-09-27T00:00:00Z\", \"actor\": \"model\", \"synthetic\": true, \"intent\": \"260927-demo\", \"question\": \"Q-1\", \"blocking\": false, \"options\": 2, \"default\": \"B\"}\n"
+      },
+      "expect": [
+        "ask-1 は既定適用済みで人は未回答とする",
+        "ask-2 を未解決の再質問として別に示す",
+        "status 内で B を適用しない"
+      ]
+    },
+    {
+      "id": "inconsistent",
+      "prompt": "260927-demo は完了していますか。status で根拠を示してください。",
+      "files": {
+        "vouch/intents/260927-demo/intent.md": "---\nstatus: approved\n---\n# Intent\n承認者・参照元は未記録。\n",
+        "vouch/intents/260927-demo/build-log.md": "---\nstatus: custom-label\n---\n# Build\n",
+        "vouch/intents/260927-demo/audit/events.jsonl": "{\"id\": \"complete-1\", \"v\": 1, \"type\": \"stage.completed\", \"ts\": \"2026-09-27T00:00:00Z\", \"actor\": \"model\", \"synthetic\": true, \"intent\": \"260927-demo\", \"stage\": \"verify\", \"parent\": \"missing-start\", \"duration_ms\": 500, \"loop_iterations\": 1, \"tests\": 8}\n"
+      },
+      "expect": [
+        "approved 宣言を人の承認の証明にしない",
+        "未知の status を原文で示す",
+        "Design 欠損を省略済み、Verify 完了イベントだけを全体完了としない",
+        "存在しない親と記録の矛盾を示す"
+      ]
+    },
+    {
+      "id": "partial-log",
+      "prompt": "260927-demo の未回答の判断依頼を確認してください。",
+      "files": {
+        "vouch/intents/260927-demo/intent.md": "---\nstatus: draft\n---\n# Intent\n",
+        "vouch/intents/260927-demo/audit/events.jsonl": "{\"id\": \"ask-1\", \"v\": 1, \"type\": \"question.asked\", \"ts\": \"2026-09-27T00:00:00Z\", \"actor\": \"model\", \"synthetic\": true, \"intent\": \"260927-demo\", \"question\": \"Q-1\", \"blocking\": false, \"options\": 2, \"default\": \"A\"}\n{\"id\":"
+      },
+      "expect": [
+        "読めた範囲と不正 JSONL を示す",
+        "未回答なしと断定しない",
+        "監査ログを修復しない"
+      ]
+    },
+    {
+      "id": "node-unavailable",
+      "prompt": "Node が PATH にない環境で Vouch status を実行してください。",
+      "files": {
+        "vouch/intents/260927-demo/intent.md": "---\nstatus: approved\n---\n# Intent\n"
+      },
+      "expect": [
+        "doctor の起動不能と状態表示未実施を伝える",
+        "成果物だけで縮退しない",
+        "自動インストールしない"
+      ]
+    }
+  ]
+}

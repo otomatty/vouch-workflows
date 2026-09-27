@@ -6,7 +6,11 @@
     "tests/**/*.md",
     "docs/development/**/*.md"
   ],
-  "ignores": ["tests/fixtures/**", "tests/golden/**"],
+  "ignores": [
+    "tests/fixtures/**",
+    "tests/golden/**",
+    "harness/claude/CLAUDE.md"
+  ],
   "config": {
     "default": true,
     "MD013": false,

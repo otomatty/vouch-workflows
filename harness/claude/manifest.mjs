@@ -2,6 +2,9 @@
 export default {
   tokens: { "{{HARNESS_DIR}}": ".claude" },
   files: [
+    { from: "core/AGENTS.md", to: "AGENTS.md" },
+    { from: "core/templates", to: ".claude/templates" },
+    { from: "harness/claude/CLAUDE.md", to: "CLAUDE.md" },
     { from: "core/skills", to: ".claude/skills" },
     {
       from: "harness/claude/installation.json",

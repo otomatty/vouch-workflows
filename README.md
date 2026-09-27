@@ -2,7 +2,7 @@
 
 Claude Code と Codex 向けの開発ワークフロー。仕様書は [docs/README.md](docs/README.md) から参照できます。
 
-レジストリ、入出力スキーマ、JSDoc の契約、共通ランタイムと、Claude / Codex のセッション開始を記録する最初の製品フックを実装しています。両ハーネスの登録設定と配布生成、配布先を読み取り検査する doctor も実装しました。doctor を呼び出す共通 Skill と Node 未導入時の案内を追加しました。他のフック、Skill 操作、エージェントは未実装です。[レジストリ契約](docs/development/contracts.md)、[共通ランタイム](docs/development/runtime.md)、[セッション開始の検証記録](docs/development/session-start.md)、[Claude 配布の契約](docs/development/claude-distribution.md)、[Codex 配布の契約](docs/development/codex-distribution.md)、[doctor の契約](docs/development/doctor.md)に範囲を記載しています。既知の Windows の記録系 p95 時間予算は未達です。測定環境ごとの結果を検証記録に分けて残しています。
+レジストリ、入出力スキーマ、JSDoc の契約、共通ランタイムと、Claude / Codex のセッション開始を記録する最初の製品フックを実装しています。両ハーネスの登録設定と配布生成、配布先を読み取り検査する doctor も実装しました。doctor と読み取り専用 status の共通 Skill、配布先の AGENTS.md、日英の rules テンプレートも実装しました。他のフック、Skill 操作、エージェントは未実装です。[レジストリ契約](docs/development/contracts.md)、[共通ランタイム](docs/development/runtime.md)、[セッション開始の検証記録](docs/development/session-start.md)、[Claude 配布の契約](docs/development/claude-distribution.md)、[Codex 配布の契約](docs/development/codex-distribution.md)、[doctor の契約](docs/development/doctor.md)に範囲を記載しています。既知の Windows の記録系 p95 時間予算は未達です。測定環境ごとの結果を検証記録に分けて残しています。
 
 ## 開発環境
 
@@ -48,4 +48,6 @@ Windows で既存の npm 起動スクリプトが `MODULE_NOT_FOUND` になる�
 
 プロセス起動の補助測定は `node scripts/benchmark-hook.mjs` です。6条件を交互に20回測り、p50 / p95 と生データを JSON で出力します。予算の合否は従来どおり `test:hooks` が判定します。
 
-配布先の Skill は Claude で `/vouch doctor`、Codex で `$vouch doctor` と指定します。引数なしでは対応範囲を案内します。他の操作は未実装です。[Skill の契約と検証範囲](docs/development/doctor-skill.md)を参照してください。
+配布先の Skill は Claude で `/vouch doctor`・`/vouch status`、Codex で `$vouch doctor`・`$vouch status` と指定します。引数なしでは対応範囲を案内します。他の操作は未実装です。[Skill の契約と検証範囲](docs/development/doctor-skill.md)を参照してください。
+
+status は成果物と監査を根拠に現在地・確認点・未回答の判断依頼を表示する Skill です。状態を遷移させるランタイムは追加していません。モデルによる振る舞いの評価は未実施です。[status と共通文書](docs/development/status.md)に検証範囲を記載しています。日英の rules テンプレートは配布先の templates/ に置き、既存の `vouch/rules.md` は変更しません。

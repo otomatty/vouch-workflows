@@ -1,15 +1,19 @@
 ---
 name: vouch
-description: "Diagnose an installed Vouch workflow with doctor and explain missing Node or configuration failures. Use for Vouch setup checks and /vouch doctor requests."
+description: "Show Vouch intent status, checkpoints and unanswered decisions from artifacts, or diagnose an installation with doctor. Use for Vouch status and setup requests."
 user-invocable: true
 reads: always
 ---
 
 # Vouch
 
-Vouch の配布先を診断する。現在対応している操作は doctor だけである。
-引数なしではこの対応範囲を案内する。ask / status / report / migrate とステージ進行は未実装と伝え、完了したように扱わない。
-Claude では `/vouch doctor`、Codex では `$vouch doctor` を指定できる。
+Vouch の配布先を診断する。現在対応している操作は doctor と読み取り専用 status である。
+引数なしではこの対応範囲を案内する。ask / report / migrate とステージ進行は未実装と伝え、完了したように扱わない。
+Claude では `/vouch doctor` または `/vouch status`、Codex では `$vouch doctor` または `$vouch status` を指定できる。
+
+## Status
+
+利用者が現在地・確認点・未回答の判断依頼を求めた時に、[status の説明](references/status.md)を読む。doctor で前提を確認した上で、成果物と監査の記録を根拠付きで示す。状態の更新や作業の再開は行わない。
 
 ## Doctor
 

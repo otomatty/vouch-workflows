@@ -2,6 +2,8 @@
 export default {
   tokens: { "{{HARNESS_DIR}}": ".codex" },
   files: [
+    { from: "core/AGENTS.md", to: "AGENTS.md" },
+    { from: "core/templates", to: ".codex/templates" },
     { from: "core/skills", to: ".agents/skills" },
     {
       from: "harness/codex/installation.json",

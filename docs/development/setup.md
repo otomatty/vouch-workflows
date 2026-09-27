@@ -57,11 +57,11 @@ GitHub Actions は Ubuntu / Windows × Node.js 22.19.0 / 24.x で `npm ci`、doc
 1. レジストリ、入出力スキーマ、JSDoc の契約は実装済みです。[契約の説明](contracts.md)と `core/registry/enforcement-map.json` に検査範囲を記載しています。
 2. `sandbox()`、`runHook()`、fake clock と共通 lib は実装済みです。[共通ランタイム](runtime.md)を参照してください。セッション開始の JSONL を golden と全文比較します。
 3. Claude Code 2.1.280 の `UserPromptSubmit` と `SessionStart` を採取済みです。Codex 0.153.4 の同じ2イベントも採取済みです。他イベントの版付き fixture は未採取です。既存の Codex 9件は原本と一致しますが、版番号が未記録のため契約実行には未適格です。手製の変種は `synthetic: true` で分離しています。
-4. [セッション開始フック](session-start.md)を実装しました。現在の PC では p95 200ms を超え、`check` は失敗します。残りの製品フック、doctor 以外の Skill 操作、エージェント、日英テンプレートは未実装です。
-5. 両ハーネスの manifest・登録設定と `scripts/package.mjs` を実装しました。`package`、`package:check` を追加し、`check` のテスト成功後に実行します。[Claude 配布](claude-distribution.md)を参照してください。[Codex 配布](codex-distribution.md)も実装・実機確認済みです。配布先 [doctor](doctor.md) も実装しました。[Doctor Skill](doctor-skill.md) と Node 未導入時の案内も配布します。他の Skill・エージェント・テンプレートの配布は未実装です。
+4. [セッション開始フック](session-start.md)を実装しました。現在の PC では p95 200ms を超え、`check` は失敗します。残りの製品フック、doctor / status 以外の Skill 操作、エージェント、rules 以外の日英テンプレートは未実装です。
+5. 両ハーネスの manifest・登録設定と `scripts/package.mjs` を実装しました。`package`、`package:check` を追加し、`check` のテスト成功後に実行します。[Claude 配布](claude-distribution.md)を参照してください。[Codex 配布](codex-distribution.md)も実装・実機確認済みです。配布先 [doctor](doctor.md) も実装しました。[Doctor Skill](doctor-skill.md) と Node 未導入時の案内も配布します。[status と共通文書](status.md)、AGENTS.md、日英 rules テンプレートも配布します。他の Skill・エージェント・成果物テンプレートは未実装です。
 6. シナリオ、全ルールの強制テスト、夜間ミューテーション CI と失敗時の Issue 作成、手動評価スイート。
 
-Stryker の設定と `mutate` コマンドは用意しています。ミューテーションスコアはまだ測定していません。配布物とモデル評価のコマンドも本体実装に合わせて追加します。
+Stryker の設定と `mutate` コマンドは用意しています。ミューテーションスコアはまだ測定していません。モデル評価のコマンドは本体実装に合わせて追加します。
 
 Git リポジトリは `main` ブランチで初期化しています。
 
