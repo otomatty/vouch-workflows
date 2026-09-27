@@ -2,6 +2,31 @@ import { resolve } from "node:path";
 import { test } from "node:test";
 import { readContext } from "../../../core/hooks/lib/env.mjs";
 
+test("Claude uses its exported project root only when an explicit root is absent", (t) => {
+  const root = resolve(".");
+  const base = { VOUCH_HARNESS: "claude", CLAUDE_PROJECT_DIR: root };
+  t.plan(7);
+  t.assert.equal(readContext(base).projectRoot, root);
+  t.assert.equal(
+    readContext({ ...base, VOUCH_PROJECT_ROOT: resolve("..") }).projectRoot,
+    resolve(".."),
+  );
+  for (const invalid of ["", "relative"]) {
+    t.assert.throws(
+      () => readContext({ ...base, VOUCH_PROJECT_ROOT: invalid }),
+      /ENV-CONFIG/,
+    );
+    t.assert.throws(
+      () => readContext({ ...base, CLAUDE_PROJECT_DIR: invalid }),
+      /ENV-CONFIG/,
+    );
+  }
+  t.assert.throws(
+    () => readContext({ ...base, VOUCH_HARNESS: "codex" }),
+    /ENV-CONFIG/,
+  );
+});
+
 test("context reads optional intent scope only from installed environment", (t) => {
   const base = { VOUCH_PROJECT_ROOT: resolve("."), VOUCH_HARNESS: "claude" };
   t.plan(2);

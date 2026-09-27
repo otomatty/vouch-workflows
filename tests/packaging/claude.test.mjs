@@ -1,0 +1,65 @@
+import { readdirSync, readFileSync } from "node:fs";
+import { test } from "node:test";
+import { packageRun, tree } from "../helpers/packaging.mjs";
+import { sandbox } from "../helpers/runtime.mjs";
+
+test("Claude distribution reproduces exact source bytes and registers every product hook", async (t) => {
+  const box = await sandbox(t);
+  const first = packageRun(["--out", box.path("first")]);
+  t.assert.equal(first.status, 0, first.stderr);
+  const second = packageRun(["--out", box.path("second")]);
+  t.assert.equal(second.status, 0, second.stderr);
+  const files = tree(box.path("first/claude"));
+  const expected = Object.fromEntries([
+    ...Object.entries(tree("core/hooks")).map(([path, bytes]) => [
+      `.claude/hooks/${path}`,
+      bytes,
+    ]),
+    ...Object.entries(tree("core/registry")).map(([path, bytes]) => [
+      `.claude/registry/${path}`,
+      bytes,
+    ]),
+    [
+      ".claude/settings.json",
+      readFileSync("harness/claude/settings.json").toString("base64"),
+    ],
+  ]);
+  t.assert.deepEqual(
+    files,
+    expected,
+    "DIST-2: exact inventory excludes development files",
+  );
+  t.assert.deepEqual(files, tree(box.path("second/claude")));
+  const settings = JSON.parse(
+    await box.read("first/claude/.claude/settings.json"),
+  );
+  t.assert.deepEqual(Object.keys(settings).sort(), ["env", "hooks"]);
+  t.assert.deepEqual(settings.env, { VOUCH_HARNESS: "claude" });
+  t.assert.deepEqual(Object.keys(settings.hooks), ["SessionStart"]);
+  const [registration] = settings.hooks.SessionStart;
+  t.assert.equal(settings.hooks.SessionStart.length, 1);
+  t.assert.equal(registration.matcher, "startup");
+  t.assert.deepEqual(registration.hooks, [
+    {
+      type: "command",
+      command: "node",
+      args: [
+        `\${CLAUDE_PROJECT_DIR}/.claude/hooks/vouch-record-session-start.mjs`,
+      ],
+    },
+  ]);
+  const registered = registration.hooks
+    .map((/** @type {{args:string[]}} */ hook) =>
+      hook.args[0]?.split("/").at(-1),
+    )
+    .sort();
+  const entries = readdirSync("core/hooks")
+    .filter((name) => name.endsWith(".mjs"))
+    .sort();
+  t.assert.deepEqual(
+    registered,
+    entries,
+    "DIST-3: registrations and product entries agree both ways",
+  );
+  t.plan(11);
+});
