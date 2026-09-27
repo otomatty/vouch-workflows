@@ -21,6 +21,7 @@ test("status evaluation inputs remain synthetic and unexecuted rather than harne
     new Set(suite.cases.map((/** @type {{id:string}} */ c) => c.id)).size,
     suite.cases.length,
   );
+  const validate = validator("audit-event");
   for (const c of suite.cases) {
     t.assert.equal(typeof c.prompt === "string" && c.prompt.length > 0, true);
     t.assert.equal(
@@ -31,7 +32,6 @@ test("status evaluation inputs remain synthetic and unexecuted rather than harne
     const records = Object.entries(c.files)
       .filter(([path]) => path.endsWith("events.jsonl"))
       .flatMap(([, text]) => String(text).trim().split("\n").filter(Boolean));
-    const validate = validator("audit-event");
     const valid = records.every((line) => {
       try {
         const row = JSON.parse(line);
