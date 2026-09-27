@@ -4,6 +4,7 @@
   "hooks": ["vouch-record-session-start.mjs"],
   "commands": ["vouch-doctor.mjs"],
   "files": [
+    "hooks/lib/approval.mjs",
     "hooks/lib/audit.mjs",
     "hooks/lib/clock.mjs",
     "hooks/lib/contracts.mjs",

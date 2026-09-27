@@ -45,3 +45,51 @@ elapsedMilliseconds(start,end) は clock.mjs に置きます。UTC の秒と小�
 契約コミット後に、手製と明示した証跡の正常系・不一致・破壊ケース、実機入力の識別子保持、Ajv との一致、時刻とハッシュの境界条件を先行テストとして追加します。実装後に unit のカバレッジ、全体 check、配布の一致、追加 lib のミューテーションを検証します。予算と元仕様は変えません。
 
 承認フック、確認点の記録、ゲート発行、発言の同意解釈、入力の信頼性保証、監査の書き込み保護、承認後のファイル変更阻止、承認済み状態への移行は未実装です。enforcement-map の強制済み検査に含めません。今回の照合成功だけで Intent ゲートの完成や承認許可を報告しません。
+
+## 実装・検証結果
+
+2026-09-27 に実装しました。契約は `bd41cbc`、先行テストは `0ebd119`、生存変異から追加した境界テストは `25938df` です。契約の型検査後、照合ライブラリと elapsedMilliseconds の未実装による失敗を確認してから実装しました。ハッシュの末尾に改行を付ける不正例も追加し、正規表現の終端を厳密にしました。
+
+実装は approval.mjs の snapshotIntent / identifySubmission / compareIntentApprovalEvidence と、clock.mjs の elapsedMilliseconds です。FileStore や監査への書き込み、承認の入口は追加していません。新しい実行時依存はありません。実機 fixture、既存 golden、docs/spec、移行元資料を変更していません。
+
+| 検査 | Windows Node.js 22.19.0 | Windows Node.js 24.13.0 |
+| --- | --- | --- |
+| Lint・型検査 | 成功 | 成功 |
+| content / registry / packaging / scenario / unit | 28 / 38 / 10 / 8 / 58件成功 | 28 / 38 / 10 / 8 / 58件成功 |
+| hooks と手動コマンド | 19件成功、性能1件失敗 | 19件成功、性能1件失敗 |
+| 記録 p95 / 性能ケース時間 | 284.0ms / 5.43秒 | 323.5ms / 6.01秒 |
+| lib 行 / 分岐 / 関数カバレッジ | 99.88 / 98.06 / 100% | 99.88 / 98.06 / 100% |
+| approval.mjs / clock.mjs の行・分岐・関数 | すべて100% | すべて100% |
+
+両環境とも162件中161件が成功し、check は終了1です。以前から未達の記録 p95 200msに加え、今回は両環境で性能ケースの5秒も超過しました。予算は変更していません。上表は変異検証に基づく追加アサーションと検査記録の追記前の全体実行です。
+
+check が性能検査で止まるため、配布生成と package:check を別に実行しました。両ハーネス合計120ファイルのバイト一致を確認し、配布先 doctor は Claude 48項目、Codex 49項目で成功しました。
+
+Linux / Node.js 22.20.0 は既存 Docker イメージを使い、ネットワークなし・ソース読み取り専用で検証しました。最初の unit 実行は contracts.test.mjs が5.002秒で中断しました。同じスキーマを繰り返しコンパイルしていたため、検証器をファイル内で共有するよう修正しました。入力・アサーション・5秒制限は保持しています。修正は `bbf702d` です。
+
+修正後の Linux は unit 58件と追加レジストリ・配布インベントリ2件が成功し、120ファイルの生成・package:check も成功しました。Linux の全体 check、Lint・型検査、性能測定は今回実行していません。全開発依存のコピーが長引いた初回コンテナは検査前に停止し、Ajv とその既存依存だけをコピーして検証しました。
+
+最終の Windows Node 22 / 24 は unit 各58件を再実行して成功し、上表と同じカバレッジを満たしました。Node 22 は関連 registry / inventory 17件、Node 24 はそれらと照合・時刻の計27件も成功しました。最終 Lint・型検査も成功しています。
+
+## 変更した lib のミューテーション
+
+Windows Node.js 24.13.0 の Stryker 10 で approval.mjs / clock.mjs の2ファイルを測定しました。199変異中192件を検出し、7件が生存、timeout / error / no coverage は0件です。スコアは96.48%で80%基準を上回りました。内訳は approval が142検出・3生存で97.93%、clock が50検出・4生存で92.59%です。
+
+初回は189検出・10生存でした。ゲート側の Intent 不一致、承認側のハーネス不一致、epoch以前から不正な終了時刻への差分を追加して3件を検出しました。既存の入力や fixture は変更していません。残る7件は次のとおりです。
+
+| 変異 | 件数 | 生存の理由と扱い |
+| --- | --- | --- |
+| Buffer.from の utf8 を空文字にする | 1 | Node の既定エンコーディングも UTF-8 のため同値 |
+| submission.field の比較を削除 | 1 | 先行する schema と harness の一致検査が field を同じ値に限定する |
+| wait === null の分岐を削除 | 1 | schema-valid な wait_ms は数値なので、続く不一致比較で null を検出する |
+| UTC 正規表現の先頭・終端の制限を緩める | 4 | 今回の入力では後続の Date 検証と ISO 再照合も拒否する。すべての文字列に対する同値性は証明していない |
+
+変異の除外や閾値緩和は行っていません。clock の既存 now / newId 部分には生存変異がありません。lib 全体の変更前スコアは未測定なので、全体で生存変異が増えていないとは主張できません。夜間 CI と Issue 作成も pending のままです。
+
+測定には reports/approval-stryker.config.mjs を使い、mutate を上記2ファイル、commandRunner を `node --test --test-concurrency=1 --import=./tests/helpers/no-network.mjs tests/unit/lib/approval.test.mjs tests/unit/lib/clock.test.mjs`、concurrency を4、coverageAnalysis を off、閾値を80にしました。生ログと JSON / HTML レポートはローカルの reports/approval-mutation.* にあります。ネットワークへのレポート送信は行っていません。
+
+## 次の実装
+
+次は信頼できる観測入力と対象文書をゲート発行・承認記録へ結び付ける契約です。必要な PreToolUse / PostToolUse 等の版付き実機 fixture を採取し、作成・確認点・承認イベントの emitter と監査書き込み保護を実装します。自然言語の同意と機械的な照合の責務を分けた統合試験が必要です。現段階では actor:human や matches:true を承認許可に使えません。
+
+Windows の性能未達、実ハーネスでの Skill 評価、残り26イベントの記録、Design / Build / Verify、エージェント、移行、全体のミューテーション CI も残っています。

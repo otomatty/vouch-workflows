@@ -409,6 +409,11 @@
         {
           "status": "pending",
           "claim": "HOOK-11 の全要件に対する検査は未完了。tsc ＋ Biome noExplicitAny（JSDoc）＋ 構造テスト（@ts-ignore の grep）"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/unit/lib/contracts.test.mjs",
+          "claim": "承認証跡の組とハーネスに対応した入力識別子を JSDoc とスキーマで検査する。欠落・ハーネス不一致は型の否定例でも拒否する。"
         }
       ]
     },
@@ -499,6 +504,11 @@
           "status": "implemented",
           "path": "tests/unit/lib/validation.test.mjs",
           "claim": "実行時の依存ゼロ検証器と Ajv の受理・拒否を比較し、未対応スキーマ構文を拒否する。type による候補除外も、フィールド順・未知や欠落した type・legacy を含めて照合する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/registry/approval-evidence.test.mjs",
+          "claim": "Intent 承認の revision / submission を両ハーネスの合成レコードで Ajv と実行時検証器に照合する。旧レコードの読み取り互換性を保持し、真正性・同意・発火は検証しない。"
         }
       ]
     },
@@ -536,6 +546,10 @@
           "status": "implemented",
           "path": "tests/hooks/codex-session-start.test.mjs",
           "claim": "版付き Codex 入力からの synthetic startup と新しい golden を全文比較。再送時刻・ハーネスごとの ID・no-op・偽装された fixture 表示を検査する。"
+        },
+        {
+          "status": "pending",
+          "claim": "Intent 承認証跡の純粋な照合 API は追加したが、gate.opened / intent.approved / checkpoint.confirmed の製品 emit、入力の信頼性保証、監査書き込み保護、承認許可・更新阻止は未実装。"
         }
       ]
     },
@@ -1139,6 +1153,11 @@
           "status": "implemented",
           "path": "tests/content/intent-eval.test.mjs",
           "claim": "Intent の手製評価入力6件を synthetic:true / execution:not-run として構造検査する。モデル評価や実機フック発火の実績ではない。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/unit/lib/approval.test.mjs",
+          "claim": "既存の版付き Claude / Codex UserPromptSubmit から入力 ID の保持を検証する。承認の正常・破壊ケースは synthetic な手製データであり、実機の承認や新しいフック契約の検証ではない。"
         }
       ]
     },
@@ -1178,6 +1197,11 @@
         {
           "status": "pending",
           "claim": "TEST-9 の全要件に対する検査は未完了。Stryker（夜間）＋ reviewer"
+        },
+        {
+          "status": "implemented",
+          "path": "docs/development/approval-evidence.md",
+          "claim": "追加した approval と変更した clock に限定して Stryker を測定。199変異中192検出、7生存、96.48%。生存理由を記録。lib 全体の変更前比較と夜間 CI / Issue 作成は未実施。"
         }
       ]
     },
@@ -1327,6 +1351,11 @@
         {
           "status": "pending",
           "claim": "承認の真正性と計画の採択、PR マージを強制するフックは未実装。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/unit/lib/approval.test.mjs",
+          "claim": "対象文書の版・別途渡した入力の識別子・設定スコープ・親ゲート・待ち時間の純粋な整合性を検査する。matches:true は真正性や同意の証明ではなく、承認の記録・許可・状態更新は未実装。"
         }
       ]
     },

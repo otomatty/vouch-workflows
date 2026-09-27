@@ -182,7 +182,7 @@
             },
             "sha256": {
               "type": "string",
-              "pattern": "^[a-f0-9]{64}$"
+              "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
             }
           },
           "required": ["path", "sha256"],
@@ -203,7 +203,7 @@
             },
             "prompt_sha256": {
               "type": "string",
-              "pattern": "^[a-f0-9]{64}$"
+              "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
             }
           },
           "required": ["hook_event_name", "field", "id", "prompt_sha256"],
@@ -1089,7 +1089,7 @@
             },
             "sha256": {
               "type": "string",
-              "pattern": "^[a-f0-9]{64}$"
+              "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
             }
           },
           "required": ["path", "sha256"],
