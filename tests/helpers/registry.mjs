@@ -6,13 +6,20 @@ export function readJson(path) {
   return JSON.parse(readFileSync(path, "utf8"));
 }
 
+/** Immutable schema snapshot for this test process, never a cache of input verdicts.
+ * @type {Ajv2020|undefined} */
+let ajv;
+
 /** @param {string} name */
 export function validator(name) {
-  const ajv = new Ajv2020({ strict: true, allErrors: true });
-  for (const file of readdirSync("core/registry").filter((f) =>
-    f.endsWith(".schema.json"),
-  )) {
-    ajv.addSchema(readJson(`core/registry/${file}`));
+  if (!ajv) {
+    const prepared = new Ajv2020({ strict: true, allErrors: true });
+    for (const file of readdirSync("core/registry").filter((f) =>
+      f.endsWith(".schema.json"),
+    )) {
+      prepared.addSchema(readJson(`core/registry/${file}`));
+    }
+    ajv = prepared;
   }
   const validate = ajv.getSchema(`https://vouch.dev/schemas/${name}.json`);
   if (!validate) throw new Error(`REG-1: missing schema ${name}`);

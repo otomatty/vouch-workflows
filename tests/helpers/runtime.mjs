@@ -7,8 +7,9 @@ import { pathToFileURL } from "node:url";
 import { isDeepStrictEqual } from "node:util";
 import { isContractFixture, readJson, validator } from "./registry.mjs";
 
-// Compile immutable test schemas once per test process, outside measured hook executions.
-const validateFixture = validator("harness-fixture");
+// Filesystem-only tests do not compile schemas. Preparation precedes hook timing.
+/** @type {ReturnType<typeof validator>|undefined} */
+let validateFixture;
 
 /** @param {string} [instant] @returns {import('../../core/hooks/lib/runtime-contracts.mjs').Clock} */
 export function fakeClock(instant = "2026-09-27T00:00:00.000Z") {
@@ -125,6 +126,7 @@ export function runHook(mode, fixture, options) {
     reference.payload.hook_event_name !== fixture.payload.hook_event_name
   )
     throw new Error("TEST-7: no versioned capture for this harness event");
+  validateFixture ??= validator("harness-fixture");
   if (
     !validateFixture(fixture) ||
     fixture.version !== reference.version ||

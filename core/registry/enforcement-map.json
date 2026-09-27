@@ -112,6 +112,11 @@
           "status": "implemented",
           "path": "tests/packaging/missing-regenerate.test.mjs",
           "claim": "変更または欠損させた配布物を明示的に再生成し、元の全バイトへ復元することを確認する。Node 22 のファイル5秒予算内に収めるため、読取専用検査と独立したケースに分ける。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/preflight.test.mjs",
+          "claim": "配布検査の実際のlstatを計数し、同じパスを各工程で一度だけ検査することと、--check後の全バイト維持を確認する。"
         }
       ]
     },
@@ -171,6 +176,11 @@
           "status": "implemented",
           "path": "tests/packaging/tokens.test.mjs",
           "claim": "手製の最小パッケージで Markdown だけのトークン置換、JSON のバイト保存、未知トークン時の書き込み前失敗を検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/preflight-race.test.mjs",
+          "claim": "一時出力の列挙後に祖先をjunctionへ差し替え、最終事前検査が拒否してリンク先に書かないことを確認する。外部プロセスによる最後の検査後の競合を完全に防ぐ保証ではない。"
         }
       ]
     },
@@ -243,6 +253,10 @@
           "status": "implemented",
           "path": "tests/hooks/vouch-record-intent-review.test.mjs",
           "claim": "明示したレビュー・承認入力は記録後も終了2で消費する。不正な明示入力も理由付き終了2、対象外は終了0になることを検査する。状態変更の許可ではない。"
+        },
+        {
+          "status": "pending",
+          "claim": "Codex 0.153.4の隔離した対話CLIでレビュー入口を再検証したが、監査イベントを確認できずローカル試験プロバイダーへの要求が発生した。登録の起動・実行環境の原因は未確定で、承認記録の段階へは進めていない。詳細は performance.md。"
         }
       ]
     },
@@ -468,7 +482,7 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "レビュー記録追加後の Windows Node 24 はレビュー開始353.5ms・承認322.8ms・セッション開始311.0msでp95 200ms未満を満たさない。計測結果と他環境の検証範囲は intent-review.md に記録する。"
+          "claim": "Windowsの最新全体検査では、Node 24のレビュー開始304.6ms・承認253.3ms・セッション開始247.6ms、Node 22は356.5ms・351.4ms・279.2msでp95 200ms未満を満たさない。過去と今回の検証範囲は performance.md に記録する。"
         },
         {
           "status": "implemented",
@@ -549,6 +563,11 @@
           "status": "implemented",
           "path": "tests/registry/approval-evidence.test.mjs",
           "claim": "Intent 承認の revision / submission を両ハーネスの合成レコードで Ajv と実行時検証器に照合する。旧レコードの読み取り互換性を保持し、真正性・同意・発火は検証しない。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/registry/validator-reuse.test.mjs",
+          "claim": "読取専用スキーマのコンパイル結果をプロセス内で再利用しても、各入力を毎回検証し、errorsが直前の結果を反映し、未知名を拒否することを確認する。"
         }
       ]
     },
@@ -565,12 +584,12 @@
         },
         {
           "status": "pending",
-          "claim": "session.started 以外の26イベントは製品 emit 未実装。fixture の成功は製品の発火実績ではない。"
+          "claim": "session.started、gate.opened、intent.approvedの3種は製品emitを実装済み。残り24イベントの製品emitは未実装。synthetic fixtureの成功は実機発火実績ではない。"
         },
         {
           "status": "implemented",
           "path": "tests/hooks/vouch-record-session-start.test.mjs",
-          "claim": "session.started の製品 emit を完全スキーマと golden で検証する。残り26種は未実装。"
+          "claim": "session.startedの製品emitを完全スキーマとgoldenで検証する。gate.opened / intent.approvedは別の契約テストで検証する。"
         },
         {
           "status": "implemented",
@@ -599,7 +618,11 @@
         {
           "status": "implemented",
           "path": "docs/development/intent-review.md",
-          "claim": "Claude 2.1.280 の隔離したネイティブ CLI で生成済み登録からゲート・承認記録を観測した。スクリプト入力の確認であり、人の実承認やモデル評価ではない。Codexの新記録入口のネイティブCLI確認は未実施。"
+          "claim": "Claude 2.1.280の隔離したネイティブCLIで生成済み登録からゲート・承認記録を観測した。スクリプト入力の確認であり、人の実承認やモデル評価ではない。Codexの後日の失敗記録は performance.md。"
+        },
+        {
+          "status": "pending",
+          "claim": "Codex 0.153.4の隔離した対話CLIでレビュー入口を再検証したが、監査イベントを確認できずローカル試験プロバイダーへの要求が発生した。登録の起動・実行環境の原因は未確定で、承認記録の段階へは進めていない。詳細は performance.md。"
         }
       ]
     },
@@ -1322,7 +1345,7 @@
         },
         {
           "status": "pending",
-          "claim": "Windowsで記録性能ケースの5秒超過とNode 22の配布物・doctorシナリオのファイル時間切れを観測。読取専用検査と再生成、両ハーネスのdoctorを分けて検証対象を維持したが、全体の時間予算充足は未確認。詳細は intent-review.md。"
+          "claim": "Windows Node 22 / 24の最新全体検査は190件完走、187件成功・性能3件失敗。以前の配布物・doctorシナリオの時間切れは今回再発しなかったが、記録性能ケースは5秒超過もあり時間予算は未達。詳細は performance.md。"
         },
         {
           "status": "implemented",
@@ -1333,6 +1356,11 @@
           "status": "implemented",
           "path": "tests/content/status-eval.test.mjs",
           "claim": "評価素材6件の同じ監査スキーマをテスト内で一度だけコンパイルする。Linux で観測した重複コンパイルによる時間切れに対処し、ケース・アサーション・入力・時間予算を維持する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/registry/validator-reuse.test.mjs",
+          "claim": "テスト用スキーマ検証器の再利用を確認する。runHookの初回コンパイルは計測開始前で、fixture検査内容・CPU並列数・時間予算は維持する。"
         }
       ]
     },

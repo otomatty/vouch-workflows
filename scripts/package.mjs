@@ -27,33 +27,36 @@ for (let i = 0; i < args.length; i++) {
   else throw new Error("PACKAGE-ARGS: use [--check] [--out directory]");
 }
 
-/** Reject links, including existing ancestors of a not-yet-created destination.
- * @param {string} path
- */
+/** One synchronous preflight snapshot; reset before checking every destination.
+ * @type {Map<string,import('node:fs').Stats|undefined>} */
+const inspected = new Map();
+
+/** @param {string} path @returns {import('node:fs').Stats|undefined} */
 function unlinked(path) {
-  for (let current = path; ; current = dirname(current)) {
-    let stat;
-    try {
-      stat = lstatSync(current);
-    } catch (error) {
-      if (
-        !(error instanceof Error) ||
-        !("code" in error) ||
-        error.code !== "ENOENT"
-      )
-        throw error;
-    }
-    if (stat && (stat.isSymbolicLink() || (stat.isFile() && stat.nlink !== 1)))
-      throw new Error(`PACKAGE-LINK: ${current}`);
-    if (current === dirname(current)) return;
+  if (inspected.has(path)) return inspected.get(path);
+  const parent = dirname(path);
+  if (parent !== path) unlinked(parent);
+  let stat;
+  try {
+    stat = lstatSync(path);
+  } catch (error) {
+    if (
+      !(error instanceof Error) ||
+      !("code" in error) ||
+      error.code !== "ENOENT"
+    )
+      throw error;
   }
+  if (stat && (stat.isSymbolicLink() || (stat.isFile() && stat.nlink !== 1)))
+    throw new Error(`PACKAGE-LINK: ${path}`);
+  inspected.set(path, stat);
+  return stat;
 }
 
 /** @param {string} path @returns {string[]} */
 function files(path) {
-  unlinked(path);
-  if (!existsSync(path)) return [];
-  const stat = lstatSync(path);
+  const stat = unlinked(path);
+  if (!stat) return [];
   if (stat.isFile()) return [path];
   if (!stat.isDirectory()) throw new Error(`PACKAGE-TYPE: ${path}`);
   return readdirSync(path)
@@ -108,6 +111,7 @@ for (const name of manifests) {
 const existing = files(output);
 const extra = existing.filter((path) => !expected.has(path));
 if (extra.length) throw new Error(`PACKAGE-EXTRA: ${extra.join(", ")}`);
+inspected.clear();
 for (const path of expected.keys()) unlinked(path);
 if (check) {
   for (const [path, bytes] of expected) {
