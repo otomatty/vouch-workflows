@@ -15,7 +15,7 @@ test("Codex distribution reproduces exact source bytes and registers every produ
       bytes,
     ]),
     ...["installation.json", "registration.json"].map((name) => [
-      ".codex/registry/" + name,
+      `.codex/registry/${name}`,
       readFileSync(
         name === "installation.json"
           ? "harness/codex/installation.json"

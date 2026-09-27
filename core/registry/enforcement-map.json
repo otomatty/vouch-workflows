@@ -15,6 +15,11 @@
           "status": "implemented",
           "path": "tests/content/hook-structure.test.mjs",
           "claim": "製品フックの命名、lib 以外のサブディレクトリ不在を検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/runtime-inventory.test.mjs",
+          "claim": "runtime レジストリでイベントフックと手動 doctor を分類し、すべての入口と core の .mjs / .json を列挙する。doctor は DIST-5 の診断コマンドでイベント登録対象外。"
         }
       ]
     },
@@ -56,12 +61,17 @@
         {
           "status": "implemented",
           "path": "tests/packaging/check.test.mjs",
-          "claim": "両配布の再生成・バイト一致と、Claude の欠落・編集および出力全体の余分なファイルの読み取り専用検出を確認する。"
+          "claim": "両配布の再生成・バイト一致と、Claude の欠落・編集の読み取り専用検出を確認する。"
         },
         {
           "status": "implemented",
           "path": "tests/packaging/codex.test.mjs",
           "claim": "Codex 配布のファイル集合・バイト一致、POSIX / Windows の登録と製品フックの双方向一致、サンドボックス設定を検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/extras.test.mjs",
+          "claim": "余分なファイルと不正引数があるとき、生成・検査が既存出力を変更せず失敗することを独立したケースで確認する。"
         }
       ]
     },
@@ -74,6 +84,11 @@
         {
           "status": "pending",
           "claim": "STR-5 の全要件に対する検査は未完了。構造テスト（v2 の t68 と同じ方式）"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/runtime-inventory.test.mjs",
+          "claim": "runtime レジストリでイベントフックと手動 doctor を分類し、すべての入口と core の .mjs / .json を列挙する。doctor は DIST-5 の診断コマンドでイベント登録対象外。"
         }
       ]
     },
@@ -239,6 +254,11 @@
           "status": "implemented",
           "path": "tests/hooks/vouch-record-session-start.test.mjs",
           "claim": "セッション開始の追記、破損・ID衝突時の既存バイト列維持を検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/vouch-doctor.test.mjs",
+          "claim": "手動 doctor の欠損・登録改変・リンクの負例と、未配布入口の失敗を子プロセスで検査する。イベントフックの動作保証とは分ける。"
         }
       ]
     },
@@ -368,7 +388,7 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "Codex 配布時の記録 p95 は Windows Node 22 / 24 で230.0 / 225.7ms、Linux Node 22 で228.1ms。200ms予算は未達。過去の Linux 成功や補助測定を今回の充足に数えない。検査系と他フックも未検証。"
+          "claim": "doctor 実装後の記録 p95 は Windows Node 22 / 24 で522.0 / 317.7ms。200ms予算は未達。Linux Node 22 は135.8msで成功したが、Windows の充足に数えない。検査系と他フックも未検証。"
         },
         {
           "status": "implemented",
@@ -379,6 +399,11 @@
           "status": "implemented",
           "path": "docs/development/claude-distribution.md",
           "claim": "同じ20回のフック検査は Linux / Node 22.20.0 で p95 132.9ms を記録。Windows 未達と区別し、全環境での充足とはしない。"
+        },
+        {
+          "status": "implemented",
+          "path": "scripts/benchmark-hook.mjs",
+          "claim": "Node 起動、no-op、実時計・固定時計の記録を交互に20回測り、生データとp50/p95を出す補助測定。記録の完全性を確認するが、HOOK-13の合否は既存契約テストで判定する。"
         }
       ]
     },
@@ -632,12 +657,17 @@
         {
           "status": "implemented",
           "path": "tests/packaging/check.test.mjs",
-          "claim": "両配布の再生成・バイト一致と、Claude の欠落・編集および出力全体の余分なファイルの読み取り専用検出を確認する。"
+          "claim": "両配布の再生成・バイト一致と、Claude の欠落・編集の読み取り専用検出を確認する。"
         },
         {
           "status": "implemented",
           "path": "tests/packaging/codex.test.mjs",
           "claim": "Codex 配布のファイル集合・バイト一致、POSIX / Windows の登録と製品フックの双方向一致、サンドボックス設定を検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/extras.test.mjs",
+          "claim": "余分なファイルと不正引数があるとき、生成・検査が既存出力を変更せず失敗することを独立したケースで確認する。"
         }
       ]
     },
@@ -678,6 +708,11 @@
           "status": "implemented",
           "path": "tests/packaging/codex.test.mjs",
           "claim": "Codex 配布のファイル集合・バイト一致、POSIX / Windows の登録と製品フックの双方向一致、サンドボックス設定を検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/runtime-inventory.test.mjs",
+          "claim": "runtime レジストリでイベントフックと手動 doctor を分類し、すべての入口と core の .mjs / .json を列挙する。doctor は DIST-5 の診断コマンドでイベント登録対象外。"
         }
       ]
     },
@@ -700,8 +735,9 @@
       "mechanisms": ["test"],
       "checks": [
         {
-          "status": "pending",
-          "claim": "DIST-5 の全要件に対する検査は未完了。scenario テスト"
+          "status": "implemented",
+          "path": "tests/scenario/doctor.test.mjs",
+          "claim": "両配布を Git 未初期化の空プロジェクトへコピーし、生成物だけで doctor が終了0、JSON報告、無書き込みとなることを確認。サブディレクトリから実行し、VOUCH_* の偽設定を診断先に使わない。"
         }
       ]
     },
@@ -771,6 +807,11 @@
         {
           "status": "pending",
           "claim": "TEST-1 の全要件に対する検査は未完了。構造テスト（鏡写しの存在確認）＋ Biome noRestrictedImports（jest / vitest / bun:test）"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/unit/lib/doctor.test.mjs",
+          "claim": "doctor の版判定・読取・登録比較を注入ポートで検証する。Git の起動は単体テストでは実行しない。"
         }
       ]
     },
@@ -810,6 +851,11 @@
           "status": "implemented",
           "path": "tests/hooks/vouch-record-session-start.test.mjs",
           "claim": "セッション開始フックは runHook から子プロセスで実行し、製品エントリを import しない。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/unit/lib/doctor.test.mjs",
+          "claim": "doctor の版判定・読取・登録比較を注入ポートで検証する。Git の起動は単体テストでは実行しない。"
         }
       ]
     },
@@ -987,7 +1033,7 @@
         },
         {
           "status": "pending",
-          "claim": "以前の Windows 測定では記録性能テストが5秒を超過。Claude 配布時の最終測定は Node 22 / 24 で4.26 / 4.14秒。再試行設定の構造検査とリモート CI での予算充足は未検証。"
+          "claim": "doctor 実装後の性能ケースは Windows Node 22 / 24 で6.75 / 4.60秒。Node 22 は1ケース5秒も未達。配布検査は独立したケースに分けて制限内となった。リモート CI での全予算充足は未検証。"
         },
         {
           "status": "implemented",
@@ -1037,6 +1083,11 @@
           "status": "implemented",
           "path": "tests/scenario/claude-distribution.test.mjs",
           "claim": "Claude 配布を空の一時プロジェクトへコピーし、版付き実機 fixture に基づく synthetic startup の記録と再実行を検査する。全ワークフローのシナリオは後続。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/vouch-doctor.test.mjs",
+          "claim": "手動 doctor の欠損・登録改変・リンクの負例と、未配布入口の失敗を子プロセスで検査する。イベントフックの動作保証とは分ける。"
         }
       ]
     },

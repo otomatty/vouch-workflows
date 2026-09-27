@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vouch.dev/schemas/runtime.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "nodeMinimum",
+    "hooks",
+    "commands",
+    "files",
+    "gitTimeoutMs"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "nodeMinimum": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "hooks": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^vouch-[a-z-]+\\.mjs$"
+      },
+      "uniqueItems": true
+    },
+    "commands": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^vouch-[a-z-]+\\.mjs$"
+      },
+      "uniqueItems": true
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^(hooks|registry)/[a-zA-Z0-9./-]+$"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "gitTimeoutMs": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2000
+    }
+  }
+}

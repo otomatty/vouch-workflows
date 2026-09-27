@@ -1,4 +1,5 @@
-import { isAbsolute, resolve } from "node:path";
+import { dirname, isAbsolute, relative, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { newId, now } from "./clock.mjs";
 
 /**
@@ -28,5 +29,16 @@ export function readContext(env = process.env) {
     generation: env.VOUCH_GENERATION || "untracked",
     now,
     newId,
+  };
+}
+
+/** @param {string} entryUrl @returns {import('./runtime-contracts.mjs').DoctorEnvironment} */
+export function readDoctorContext(entryUrl) {
+  const directory = resolve(dirname(fileURLToPath(entryUrl)), "..");
+  const projectRoot = resolve(directory, "..");
+  return {
+    projectRoot,
+    installationRoot: relative(projectRoot, directory),
+    nodeVersion: process.versions.node,
   };
 }

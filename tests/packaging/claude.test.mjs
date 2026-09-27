@@ -18,7 +18,7 @@ test("Claude distribution reproduces exact source bytes and registers every prod
       bytes,
     ]),
     ...["installation.json", "registration.json"].map((name) => [
-      ".claude/registry/" + name,
+      `.claude/registry/${name}`,
       readFileSync(
         name === "installation.json"
           ? "harness/claude/installation.json"

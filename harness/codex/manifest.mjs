@@ -1,6 +1,14 @@
 /** @satisfies {{files:{from:string,to:string}[]}} */
 export default {
   files: [
+    {
+      from: "harness/codex/installation.json",
+      to: ".codex/registry/installation.json",
+    },
+    {
+      from: "harness/codex/hooks.json",
+      to: ".codex/registry/registration.json",
+    },
     { from: "core/hooks", to: ".codex/hooks" },
     { from: "core/registry", to: ".codex/registry" },
     { from: "harness/codex/hooks.json", to: ".codex/hooks.json" },

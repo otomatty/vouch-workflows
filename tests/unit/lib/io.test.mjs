@@ -289,22 +289,28 @@ test("doctor io converts failures to diagnostic JSON and exit two without hook s
 });
 
 test("doctor io defaults create the file store and use stdout and process exit status", async (t) => {
+  t.plan(3);
+  let actualRoot = "";
   const { runDoctor } = await import("../../../core/hooks/lib/io.mjs");
   const { pathToFileURL } = await import("node:url");
   const box = await sandbox(t, { git: false });
   const oldCode = process.exitCode;
   let output = "";
-  const spy = t.mock.method(process.stdout, "write", (text) => {
-    output += String(text);
-    return true;
-  });
+  const spy = t.mock.method(
+    process.stdout,
+    "write",
+    (/** @type {string|Uint8Array} */ text) => {
+      output += String(text);
+      return true;
+    },
+  );
   t.after(() => {
     spy.mock.restore();
     process.exitCode = oldCode;
   });
   await runDoctor(
     async (_files, environment) => {
-      t.assert.equal(environment.projectRoot, box.root);
+      actualRoot = environment.projectRoot;
       return {
         v: 1,
         ok: true,
@@ -315,7 +321,7 @@ test("doctor io defaults create the file store and use stdout and process exit s
     { git: () => ({ ok: true, detail: "Git" }) },
   );
   spy.mock.restore();
-  t.plan(3);
+  t.assert.equal(actualRoot, box.root);
   t.assert.equal(JSON.parse(output).ok, true);
   t.assert.equal(process.exitCode, 0);
 });

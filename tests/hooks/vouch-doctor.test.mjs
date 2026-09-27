@@ -1,6 +1,6 @@
-import { readFile, rm, symlink, writeFile } from "node:fs/promises";
-import { join } from "node:path";
-import { installDoctor } from "../helpers/doctor.mjs";
+import { link, readFile, rm, writeFile } from "node:fs/promises";
+import { join, resolve } from "node:path";
+import { installDoctor, runDoctorEntry } from "../helpers/doctor.mjs";
 import { hookTest as test } from "../helpers/hook-test.mjs";
 import { tree } from "../helpers/packaging.mjs";
 import { validator } from "../helpers/registry.mjs";
@@ -36,8 +36,27 @@ test("doctor rejects broken registration and a linked registration file", async 
   const outside = install.box.path("outside.json");
   await writeFile(outside, original);
   await rm(target);
-  await symlink(outside, target, "file");
+  await link(outside, target);
   const linked = install.run();
   t.assert.equal(linked.status, 2);
   t.assert.match(linked.stdout, /FS-LINK/);
+});
+
+test("source doctor reports the missing installation descriptor instead of claiming installation", (t) => {
+  const result = runDoctorEntry(
+    resolve("core/hooks/vouch-doctor.mjs"),
+    process.cwd(),
+  );
+  const report = JSON.parse(result.stdout);
+  t.plan(4);
+  t.assert.equal(result.status, 2, result.stderr);
+  t.assert.equal(result.stderr, "");
+  t.assert.equal(validator("doctor-report")(report), true);
+  t.assert.equal(
+    report.checks.some(
+      (/** @type {{id:string,ok:boolean}} */ check) =>
+        check.id === "DOCTOR-INSTALLATION" && !check.ok,
+    ),
+    true,
+  );
 });

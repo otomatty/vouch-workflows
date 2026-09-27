@@ -4,6 +4,24 @@ import { join } from "node:path";
 import { packageRun } from "./packaging.mjs";
 import { sandbox } from "./runtime.mjs";
 
+/** Manual CLI, intentionally separate from versioned event fixtures.
+ * @param {string} entry @param {string} cwd
+ */
+export function runDoctorEntry(entry, cwd) {
+  return spawnSync(process.execPath, [entry], {
+    cwd,
+    input: "not a hook event",
+    encoding: "utf8",
+    windowsHide: true,
+    timeout: 4000,
+    env: {
+      ...process.env,
+      VOUCH_PROJECT_ROOT: join(cwd, "not-the-target"),
+      VOUCH_HARNESS: "wrong",
+    },
+  });
+}
+
 /** @param {import('node:test').TestContext} t @param {'claude'|'codex'} harness */
 export async function installDoctor(t, harness) {
   const box = await sandbox(t, { git: false });
@@ -18,21 +36,6 @@ export async function installDoctor(t, harness) {
     root,
     directory: join(root, `.${harness}`),
     run: () =>
-      spawnSync(
-        process.execPath,
-        [join(root, `.${harness}`, "hooks/vouch-doctor.mjs")],
-        {
-          cwd,
-          input: "not a hook event",
-          encoding: "utf8",
-          windowsHide: true,
-          timeout: 4000,
-          env: {
-            ...process.env,
-            VOUCH_PROJECT_ROOT: box.path("not-the-target"),
-            VOUCH_HARNESS: "wrong",
-          },
-        },
-      ),
+      runDoctorEntry(join(root, `.${harness}`, "hooks/vouch-doctor.mjs"), cwd),
   };
 }

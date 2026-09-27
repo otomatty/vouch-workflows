@@ -1,5 +1,5 @@
 import { createIntentAuditStore } from "./audit.mjs";
-import { readContext } from "./env.mjs";
+import { readContext, readDoctorContext } from "./env.mjs";
 import { createFileStore } from "./fs.mjs";
 import { isHookResult, parseInput } from "./validation.mjs";
 
@@ -70,4 +70,45 @@ export async function run(main, options = {}) {
     }
   }
   finish(code);
+}
+
+/** Manual diagnostics have their own output and failure contract, without stdin.
+ * @param {import('./runtime-contracts.mjs').DoctorMain} main
+ * @param {string} entryUrl
+ * @param {import('./runtime-contracts.mjs').DoctorOptions} [options]
+ */
+export async function runDoctor(main, entryUrl, options = {}) {
+  const stdout = options.stdout ?? process.stdout;
+  const finish =
+    options.finish ??
+    ((code) => {
+      process.exitCode = code;
+    });
+  /** @type {import('./runtime-contracts.mjs').DoctorReport} */ let report;
+  try {
+    const environment = options.environment ?? readDoctorContext(entryUrl);
+    const files =
+      options.files ?? (await createFileStore(environment.projectRoot));
+    const git = options.git ?? (await import("./doctor-process.mjs")).gitStatus;
+    report = await main(files, environment, git());
+  } catch (error) {
+    report = {
+      v: 1,
+      ok: false,
+      checks: [
+        {
+          id: "DOCTOR-IO",
+          ok: false,
+          detail: error instanceof Error ? error.message : String(error),
+        },
+      ],
+    };
+  }
+  try {
+    stdout.write(`${JSON.stringify(report)}\n`);
+  } catch {
+    finish(2);
+    return;
+  }
+  finish(report.ok ? 0 : 2);
 }
