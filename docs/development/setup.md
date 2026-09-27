@@ -60,7 +60,7 @@ GitHub Actions は Ubuntu / Windows × Node.js 22.19.0 / 24.x で `npm ci`、doc
 4. [セッション開始フック](session-start.md)を実装しました。現在の PC では p95 200ms を超え、`check` は失敗します。残りの製品フック、doctor / status / Intent 下書き以外の Skill 操作、承認の真正性検査、エージェント、rules / intent / decisions 以外の日英テンプレートは未実装です。
 5. 両ハーネスの manifest・登録設定と `scripts/package.mjs` を実装しました。`package`、`package:check` を追加し、`check` のテスト成功後に実行します。[Claude 配布](claude-distribution.md)を参照してください。[Codex 配布](codex-distribution.md)も実装・実機確認済みです。配布先 [doctor](doctor.md) も実装しました。[Doctor Skill](doctor-skill.md) と Node 未導入時の案内も配布します。[status と共通文書](status.md)、AGENTS.md、日英 rules テンプレートも配布します。[Intent 下書き](intent.md)と日英 intent / decisions テンプレートも追加しました。他の Skill・エージェント・成果物テンプレートは未実装です。
 6. [Intent 承認証跡の照合](approval-evidence.md)を追加しました。文書の版・実機入力の識別子・親ゲート・待ち時間を純粋関数で照合します。照合の一致は承認許可ではありません。[レビュー記録フック](intent-review.md)で、明示操作から gate.opened / intent.approved を記録します。真正性保証・書き込み保護・状態変更は未実装です。
-7. [Windows の性能改善と実機再検証](performance.md)で、配布の事前検査とテストのスキーマコンパイルの重複を削減しました。Node 22.19.0 / 24.13.0 とも全190件を完走し、187件成功・性能3件失敗です。Codexのレビュー入口の実機再検証では記録を確認できず、原因調査が必要です。
+7. [Windows の性能改善と実機再検証](performance.md)で、配布の事前検査とテストのスキーマコンパイルの重複を削減しました。その時点ではNode 22.19.0 / 24.13.0 とも全190件を完走し、187件成功・性能3件失敗でした。Codexの記録欠落は後続調査で検証環境のPATHEXT欠落と特定し、[隔離した実機検証コマンド](codex-review-smoke.md)でレビュー・承認証跡の記録を確認しました。人の実承認やモデル評価とは区別します。この回帰テストを含む最新の検査は両Nodeで全200件完走、197件成功・性能3件失敗です。
 8. シナリオ、全ルールの強制テスト、夜間ミューテーション CI と失敗時の Issue 作成、手動評価スイート。
 
 Stryker の設定と `mutate` コマンドは用意しています。Intent の承認証跡・時刻差分の対象を限定した測定は[承認証跡の照合](approval-evidence.md)に記録しています。lib 全体の基準測定と夜間 CI は未実施です。モデル評価のコマンドは本体実装に合わせて追加します。

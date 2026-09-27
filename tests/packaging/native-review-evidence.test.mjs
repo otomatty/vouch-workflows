@@ -34,39 +34,45 @@ test("native review evidence verifies recorded relationships without claiming hu
 
 test("native review verification rejects a provider request or changed installation or draft", (t) => {
   t.plan(3);
-  t.assert.ok(
+  t.assert.equal(
     verifyNativeReview({ ...observed, providerRequests: 1 }).includes(
       "NATIVE-PROVIDER",
     ),
+    true,
   );
-  t.assert.ok(
+  t.assert.equal(
     verifyNativeReview({
       ...observed,
       actualDraft: `${capture.draft}changed`,
     }).includes("NATIVE-DRAFT"),
+    true,
   );
-  t.assert.ok(
+  t.assert.equal(
     verifyNativeReview({ ...observed, distributionUnchanged: false }).includes(
       "NATIVE-DISTRIBUTION",
     ),
+    true,
   );
 });
 
 test("native review verification rejects malformed synthetic missing or unrelated evidence", (t) => {
   t.plan(5);
-  t.assert.ok(
+  t.assert.equal(
     verifyNativeReview({ ...observed, events: [] }).includes("NATIVE-EVENTS"),
+    true,
   );
-  t.assert.ok(
+  t.assert.equal(
     verifyNativeReview({ ...observed, events: [{}] }).includes("NATIVE-EVENTS"),
+    true,
   );
-  t.assert.ok(
+  t.assert.equal(
     verifyNativeReview({
       ...observed,
       events: observed.events.map((row) => ({ ...row, synthetic: true })),
     }).includes("NATIVE-EVENTS"),
+    true,
   );
-  t.assert.ok(
+  t.assert.equal(
     verifyNativeReview({
       ...observed,
       events: observed.events.map((row) =>
@@ -75,11 +81,13 @@ test("native review verification rejects malformed synthetic missing or unrelate
           : row,
       ),
     }).includes("NATIVE-RELATION"),
+    true,
   );
-  t.assert.ok(
+  t.assert.equal(
     verifyNativeReview({
       ...observed,
       events: observed.events.filter((row) => row.type !== "session.started"),
     }).includes("NATIVE-EVENTS"),
+    true,
   );
 });

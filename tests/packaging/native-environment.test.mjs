@@ -20,12 +20,13 @@ test("isolated Windows environment preserves executable lookup without inheritin
     OPENAI_API_KEY: "not-a-real-key",
     HTTPS_PROXY: "not-a-real-proxy",
     NODE_OPTIONS: "--invalid",
+    TERM: "dumb",
     CODEX_HOME: "C:/personal",
     VOUCH_INTENT: "personal",
   };
   const before = { ...source };
   const env = nativeEnvironment(source, scope, "win32");
-  t.plan(3);
+  t.plan(2);
   t.assert.deepEqual(env, {
     PATH: source.pAtH,
     PATHEXT: source.pAtHeXt,
@@ -37,7 +38,6 @@ test("isolated Windows environment preserves executable lookup without inheritin
     VOUCH_HARNESS: "claude",
   });
   t.assert.deepEqual(source, before);
-  t.assert.equal(probeNode instanceof Function, true);
 });
 
 test("isolated environment rejects missing lookup variables before starting a CLI", (t) => {

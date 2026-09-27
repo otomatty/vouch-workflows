@@ -256,7 +256,12 @@
         },
         {
           "status": "pending",
-          "claim": "Codex 0.153.4の隔離した対話CLIでレビュー入口を再検証したが、監査イベントを確認できずローカル試験プロバイダーへの要求が発生した。登録の起動・実行環境の原因は未確定で、承認記録の段階へは進めていない。詳細は performance.md。"
+          "claim": "Codexレビュー記録はWindows対話CLIで確認済み。非対話経路、他の版・OS、実機異常系の全保証は未検証。真正性や状態更新許可は記録成功から導出しない。"
+        },
+        {
+          "status": "implemented",
+          "path": "docs/development/codex-review-smoke.md",
+          "claim": "Windows / Codex 0.153.4のworkspace-write対話CLIで変更していない配布登録からsession.started 2件、gate.opened / intent.approvedを各1件観測。ローカル試験プロバイダー要求0件、下書きと配布ファイル不変。スクリプト入力の実機確認であり、人の同意やモデル評価ではない。"
         }
       ]
     },
@@ -482,7 +487,7 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "Windowsの最新全体検査では、Node 24のレビュー開始304.6ms・承認253.3ms・セッション開始247.6ms、Node 22は356.5ms・351.4ms・279.2msでp95 200ms未満を満たさない。過去と今回の検証範囲は performance.md に記録する。"
+          "claim": "Windowsの最新全体検査では、Node 24のレビュー開始352.5ms・承認267.6ms・セッション開始247.6ms、Node 22は323.6ms・267.8ms・257.8msでp95 200ms未満を満たさない。今回の検証範囲は codex-review-smoke.md、前回の計測は performance.md。"
         },
         {
           "status": "implemented",
@@ -618,11 +623,21 @@
         {
           "status": "implemented",
           "path": "docs/development/intent-review.md",
-          "claim": "Claude 2.1.280の隔離したネイティブCLIで生成済み登録からゲート・承認記録を観測した。スクリプト入力の確認であり、人の実承認やモデル評価ではない。Codexの後日の失敗記録は performance.md。"
+          "claim": "Claude 2.1.280の隔離したネイティブCLIで生成済み登録からゲート・承認記録を観測した。スクリプト入力の確認であり、人の実承認やモデル評価ではない。Codexの後続確認は codex-review-smoke.md。"
         },
         {
           "status": "pending",
-          "claim": "Codex 0.153.4の隔離した対話CLIでレビュー入口を再検証したが、監査イベントを確認できずローカル試験プロバイダーへの要求が発生した。登録の起動・実行環境の原因は未確定で、承認記録の段階へは進めていない。詳細は performance.md。"
+          "claim": "Codexレビュー記録はWindows対話CLIで確認済み。非対話経路、他の版・OS、実機異常系の全保証は未検証。真正性や状態更新許可は記録成功から導出しない。"
+        },
+        {
+          "status": "implemented",
+          "path": "docs/development/codex-review-smoke.md",
+          "claim": "Windows / Codex 0.153.4のworkspace-write対話CLIで変更していない配布登録からsession.started 2件、gate.opened / intent.approvedを各1件観測。ローカル試験プロバイダー要求0件、下書きと配布ファイル不変。スクリプト入力の実機確認であり、人の同意やモデル評価ではない。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/native-review-evidence.test.mjs",
+          "claim": "保存した実機監査出力の関係を検査し、欠損・合成記録・親子不一致・プロバイダー要求・配布や下書きの変更を成功としない。人の承認を判定するフックではない。"
         }
       ]
     },
@@ -1140,6 +1155,16 @@
         {
           "status": "pending",
           "claim": "TEST-4 の全要件に対する検査は未完了。CI が並列で実行 ＋ 構造テスト（process.chdir、リポジトリ直下への書き込み禁止）"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/native-environment.test.mjs",
+          "claim": "手動実機検証用の環境がOSの実行ファイル探索を保ち、認証・親の設定・NODE_OPTIONSを引き継がないことを検査する。名前によるNode起動失敗はCLI起動前に拒否する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/native-hook-trust.test.mjs",
+          "claim": "実機検証の隔離設定へ信頼を保存する前に、コピーしたprojectの2登録・イベントとコマンドの対応・ハッシュを確認する。外部・追加・相違した登録は拒否する。"
         }
       ]
     },
@@ -1345,7 +1370,7 @@
         },
         {
           "status": "pending",
-          "claim": "Windows Node 22 / 24の最新全体検査は190件完走、187件成功・性能3件失敗。以前の配布物・doctorシナリオの時間切れは今回再発しなかったが、記録性能ケースは5秒超過もあり時間予算は未達。詳細は performance.md。"
+          "claim": "Windows Node 22 / 24の最新全体検査は200件完走、197件成功・性能3件失敗。キャンセルはないが、記録性能ケースは5秒超過もあり時間予算は未達。詳細は codex-review-smoke.md。"
         },
         {
           "status": "implemented",
