@@ -21,3 +21,19 @@
  */
 
 export {};
+
+/**
+ * Manual distribution diagnostic, separate from the stdin hook protocol.
+ * No configuration repair, audit writes, or harness trust claims.
+ * @typedef {{projectRoot:string,installationRoot:string,nodeVersion:string}} DoctorEnvironment
+ * @typedef {{id:string,ok:boolean,detail:string}} DoctorCheck
+ * @typedef {{v:1,ok:boolean,checks:DoctorCheck[]}} DoctorReport
+ * @typedef {{ok:boolean,detail:string}} GitStatus
+ * @typedef {(files:FileStore,environment:DoctorEnvironment,git:GitStatus)=>Promise<DoctorReport>} DoctorMain
+ * @typedef {object} DoctorOptions
+ * @property {DoctorEnvironment} [environment]
+ * @property {FileStore} [files]
+ * @property {() => GitStatus} [git]
+ * @property {{write:(text:string)=>unknown}} [stdout]
+ * @property {(code:0|2)=>void} [finish]
+ */
