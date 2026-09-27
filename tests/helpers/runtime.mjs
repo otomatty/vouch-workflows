@@ -7,6 +7,9 @@ import { pathToFileURL } from "node:url";
 import { isDeepStrictEqual } from "node:util";
 import { isContractFixture, readJson, validator } from "./registry.mjs";
 
+// Compile immutable test schemas once per test process, outside measured hook executions.
+const validateFixture = validator("harness-fixture");
+
 /** @param {string} [instant] @returns {import('../../core/hooks/lib/runtime-contracts.mjs').Clock} */
 export function fakeClock(instant = "2026-09-27T00:00:00.000Z") {
   return {
@@ -71,7 +74,7 @@ export function capturedPrompt() {
 }
 
 /** @returns {import('../../core/hooks/lib/contracts.mjs').HarnessFixture} */
-export function capturedSession() {
+function capturedSession() {
   return readJson("tests/fixtures/harness/claude/SessionStart.json");
 }
 
@@ -101,7 +104,7 @@ export function promptFor(root) {
  * Product entries and the separate transport driver share the same observation boundary.
  * @param {string} mode
  * @param {import('../../core/hooks/lib/contracts.mjs').HarnessFixture} fixture
- * @param {{root:string,raw?:string,intent?:string,instant?:string,coverage?:boolean}} options
+ * @param {{root:string,raw?:string,intent?:string,instant?:string,coverage?:boolean,configuredHarness?:'claude'|'codex'}} options
  */
 export function runHook(mode, fixture, options) {
   const reference =
@@ -115,7 +118,7 @@ export function runHook(mode, fixture, options) {
   )
     throw new Error("TEST-7: no versioned capture for this harness event");
   if (
-    !validator("harness-fixture")(fixture) ||
+    !validateFixture(fixture) ||
     fixture.version !== reference.version ||
     (!fixture.synthetic && !isDeepStrictEqual(fixture, reference))
   )
@@ -124,10 +127,10 @@ export function runHook(mode, fixture, options) {
     );
   const started = performance.now();
   const product = mode === "vouch-record-session-start";
-  const env = {
+  /** @type {NodeJS.ProcessEnv} */ const env = {
     ...process.env,
     VOUCH_PROJECT_ROOT: options.root,
-    VOUCH_HARNESS: fixture.harness,
+    VOUCH_HARNESS: options.configuredHarness ?? fixture.harness,
     VOUCH_GENERATION: "test",
     VOUCH_INTENT: options.intent ?? "",
     VOUCH_TEST_TIME: options.instant ?? fakeClock().now(),

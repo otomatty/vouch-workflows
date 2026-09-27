@@ -1,3 +1,4 @@
+import { createIntentAuditStore } from "./audit.mjs";
 import { readContext } from "./env.mjs";
 import { createFileStore } from "./fs.mjs";
 import { isHookResult, parseInput } from "./validation.mjs";
@@ -38,13 +39,22 @@ export async function run(main, options = {}) {
         throw new Error("HOOK-14: invalid file_path");
       await files.resolvePath(path);
     }
-    const result = await main(input, context);
+    const audit =
+      options.audit ??
+      context.audit ??
+      (context.intent
+        ? createIntentAuditStore(files, context.intent)
+        : undefined);
+    const result = await main(input, {
+      ...context,
+      ...(audit ? { audit } : {}),
+    });
     if (!isHookResult(result))
       throw new Error("HOOK-3: invalid handler result");
     if (result.events?.length) {
-      if (!options.audit)
+      if (!audit)
         throw new Error("AUDIT-MISSING: explicit audit destination required");
-      await options.audit.append(result.events);
+      await audit.append(result.events);
     }
     if (result.decision === "deny") {
       stderr.write(`${result.reason}\n`);

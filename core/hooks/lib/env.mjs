@@ -17,6 +17,7 @@ export function readContext(env = process.env) {
   return {
     projectRoot: resolve(root),
     harness,
+    ...(env.VOUCH_INTENT ? { intent: env.VOUCH_INTENT } : {}),
     generation: env.VOUCH_GENERATION || "untracked",
     now,
     newId,

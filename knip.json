@@ -5,7 +5,8 @@
     "harness/*/manifest.mjs",
     "scripts/*.mjs",
     "tests/**/*.test.mjs",
-    "tests/helpers/no-network.mjs"
+    "tests/helpers/no-network.mjs",
+    "tests/helpers/fixed-clock.mjs"
   ],
   "project": [
     "core/**/*.mjs",

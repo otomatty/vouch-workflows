@@ -35,7 +35,9 @@ Stryker 10 の `typed-rest-client` が固定する `qs` に npm audit の指摘�
 
 テストは CPU 並列数で実行し、1 テストの上限を予算表から読みます。テスト用 preload は `fetch` を例外に差し替えます。`node:http` など別の通信手段まで遮断するサンドボックスではありません。
 
-unit のカバレッジ設定は行 95% / 分岐 95% / 関数 100%、hooks は行 90% / 分岐 85% です。unit は共通 lib の実装を検査します。現在の hooks は共通 io のテスト用 driver が対象で、製品フックのカバレッジは未測定と表示します。空の階層を個別指定すると失敗します。packaging・scenario は未実装です。
+Node.js 22 の `--test-timeout` は分離したテストファイル全体にも適用されます。複数ケースのある hooks では、ファイルの上限を check と同じ90秒、各ケースを `hookTest()` の `timeout: 5000` と経過時間検査で5秒に制限します。同期の子プロセス待ちでタイマーが遅れても成功扱いにしません。時間予算そのものは変更していません。
+
+unit のカバレッジ設定は行 95% / 分岐 95% / 関数 100%、hooks は行 90% / 分岐 85% です。unit は共通 lib、hooks は共通 io の driver とセッション開始フックを検査します。製品フックの子プロセスのカバレッジを集計し、全エントリのソースがレポートにあることも検査します。空の階層を個別指定すると失敗します。packaging・scenario は未実装です。
 
 GitHub Actions は Ubuntu / Windows × Node.js 22.19.0 / 24.x で `npm ci`、doctor、check を実行します。検査コマンド全体の 90 秒予算は `scripts/check.mjs` が監視します。依存ダウンロードと runner 起動はこの計測に含めず、ジョブ全体のタイムアウトは 5 分です。
 
@@ -53,11 +55,11 @@ GitHub Actions は Ubuntu / Windows × Node.js 22.19.0 / 24.x で `npm ci`、doc
 ## 本体実装で追加するもの
 
 1. レジストリ、入出力スキーマ、JSDoc の契約は実装済みです。[契約の説明](contracts.md)と `core/registry/enforcement-map.json` に検査範囲を記載しています。
-2. `sandbox()`、`runHook()`、fake clock と共通 lib は実装済みです。[共通ランタイム](runtime.md)を参照してください。golden 比較は後続です。
-3. Claude Code 2.1.280 の `UserPromptSubmit` を採取済みです。他イベントと版情報のある Codex fixture は未採取です。既存の Codex 9件は原本と一致しますが、版番号が未記録のため契約実行には未適格です。手製の変種は `synthetic: true` で分離しています。
-4. 製品フック、Skill、エージェント、日英テンプレート。
+2. `sandbox()`、`runHook()`、fake clock と共通 lib は実装済みです。[共通ランタイム](runtime.md)を参照してください。セッション開始の JSONL を golden と全文比較します。
+3. Claude Code 2.1.280 の `UserPromptSubmit` と `SessionStart` を採取済みです。他イベントと版情報のある Codex fixture は未採取です。既存の Codex 9件は原本と一致しますが、版番号が未記録のため契約実行には未適格です。手製の変種は `synthetic: true` で分離しています。
+4. [セッション開始フック](session-start.md)を実装しました。現在の PC では p95 200ms を超え、`check` は失敗します。残りの製品フック、Skill、エージェント、日英テンプレートは未実装です。
 5. ハーネスの manifest と `scripts/package.mjs`。その段階で `package`、`package:check` を追加し、`check` に配布物のバイト一致検査を組み込みます。
-6. シナリオ、フック子プロセスのカバレッジ収集、全ルールの強制テスト、夜間ミューテーション CI と失敗時の Issue 作成、手動評価スイート。
+6. シナリオ、全ルールの強制テスト、夜間ミューテーション CI と失敗時の Issue 作成、手動評価スイート。
 
 Stryker の設定と `mutate` コマンドは用意しています。ミューテーションスコアはまだ測定していません。配布物とモデル評価のコマンドも本体実装に合わせて追加します。
 

@@ -11,37 +11,62 @@ function canonical(value) {
   return JSON.stringify(value);
 }
 
+/** @param {string|null} text @returns {Map<string,import('./contracts.mjs').AuditEvent>} */
+function records(text) {
+  const result = new Map();
+  if (!text) return result;
+  if (!text.endsWith("\n"))
+    throw new Error("AUDIT-CORRUPT: missing final newline");
+  for (const line of text.slice(0, -1).split("\n")) {
+    /** @type {unknown} */ let event;
+    try {
+      event = JSON.parse(line);
+    } catch {
+      throw new Error("AUDIT-CORRUPT: invalid JSON");
+    }
+    if (!isAuditEvent(event) || result.has(event.id))
+      throw new Error("AUDIT-CORRUPT: invalid or repeated record");
+    result.set(event.id, event);
+  }
+  return result;
+}
+
+/** @param {import('./runtime-contracts.mjs').FileStore} files @param {string} intent */
+export function createIntentAuditStore(files, intent) {
+  if (!/^[a-z0-9][a-z0-9_-]{0,127}$/.test(intent))
+    throw new Error("AUDIT-SCOPE: invalid configured intent");
+  return createAuditStore(files, `vouch/intents/${intent}/audit/events.jsonl`);
+}
+
+/** @param {import('./contracts.mjs').AuditStore|undefined} store @param {string} id */
+export async function findEvent(store, id) {
+  if (!store?.find)
+    throw new Error("AUDIT-MISSING: session recording requires lookup");
+  return store.find(id);
+}
+
 /**
  * Append-only logical log, atomically replaced by FileStore. No partial batches.
  * @param {import('./runtime-contracts.mjs').FileStore} files
  * @param {string} path Explicit installation-owned destination.
- * @returns {import('./runtime-contracts.mjs').AuditStore}
+ * @returns {import('./runtime-contracts.mjs').AuditStore & {find:(id:string) => Promise<import('./contracts.mjs').AuditEvent|undefined>}}
  */
 export function createAuditStore(files, path) {
   return {
+    async find(id) {
+      return records(await files.readText(path)).get(id);
+    },
     async append(events) {
-      if (!events.every(isAuditEvent))
+      const batch = structuredClone(events);
+      if (!batch.every(isAuditEvent))
         throw new Error("AUDIT-SCHEMA: invalid event");
-      if (events.length === 0) return "duplicate";
+      if (batch.length === 0) return "duplicate";
       const changed = await files.updateText(path, (before) => {
-        /** @type {Map<string,string>} */ const known = new Map();
-        if (before) {
-          if (!before.endsWith("\n"))
-            throw new Error("AUDIT-CORRUPT: missing final newline");
-          for (const line of before.slice(0, -1).split("\n")) {
-            /** @type {unknown} */ let event;
-            try {
-              event = JSON.parse(line);
-            } catch {
-              throw new Error("AUDIT-CORRUPT: invalid JSON");
-            }
-            if (!isAuditEvent(event) || known.has(event.id))
-              throw new Error("AUDIT-CORRUPT: invalid or repeated record");
-            known.set(event.id, canonical(event));
-          }
-        }
+        const known = new Map(
+          [...records(before)].map(([id, event]) => [id, canonical(event)]),
+        );
         let appended = "";
-        for (const event of events) {
+        for (const event of batch) {
           const content = canonical(event);
           const existing = known.get(event.id);
           if (existing !== undefined) {

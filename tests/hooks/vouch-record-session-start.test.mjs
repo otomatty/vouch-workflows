@@ -1,7 +1,7 @@
 import { symlink } from "node:fs/promises";
-import { test } from "node:test";
 import budgets from "../../core/registry/budgets.json" with { type: "json" };
 import { assertGolden } from "../helpers/golden.mjs";
+import { hookTest as test } from "../helpers/hook-test.mjs";
 import { validator } from "../helpers/registry.mjs";
 import {
   promptFor,
@@ -46,7 +46,7 @@ test("session startup emits a complete registered event matching the golden", as
       undefined,
     ],
   );
-  await assertGolden(t, "session-start", log);
+  await assertGolden(t, "session-start.jsonl", log);
 });
 
 test("session replay retains the first timestamp and distinct sessions append once", async (t) => {
@@ -75,8 +75,23 @@ test("session replay retains the first timestamp and distinct sessions append on
   t.assert.equal(replay.stderr, "");
   t.assert.equal(second.stderr, "");
   t.assert.equal(rows.length, 2);
-  t.assert.equal(JSON.stringify(rows[0]) + "\n", first);
+  t.assert.equal(`${JSON.stringify(rows[0])}\n`, first);
   t.assert.notEqual(rows[0].id, rows[1].id);
+});
+
+test("Claude payload under an unsupported installed harness cannot claim a startup", async (t) => {
+  const box = await sandbox(t);
+  const fixture = sessionFor(box.root);
+  // Negative installation configuration, not a fabricated Codex capture.
+  const result = runHook(hook, fixture, {
+    root: box.root,
+    intent,
+    configuredHarness: "codex",
+  });
+  t.plan(3);
+  t.assert.equal(result.exitCode, 0);
+  t.assert.equal(result.stderr, "");
+  await t.assert.rejects(box.read(path), { code: "ENOENT" });
 });
 
 test("explicit intent scope separates logs and never trusts a payload intent", async (t) => {
@@ -144,7 +159,7 @@ test("corrupt or conflicting audit records fail open and preserve every byte", a
   const valid = JSON.parse(await box.read(path));
   const cases = [
     "not json\n",
-    JSON.stringify({ ...valid, actor: "model" }) + "\n",
+    `${JSON.stringify({ ...valid, actor: "model" })}\n`,
   ];
   t.plan(cases.length * 4);
   for (const before of cases) {

@@ -28,18 +28,19 @@ for (const suite of suites) {
   }
   const flags = [
     "--test",
-    `--test-timeout=${budgets.timing.testTimeoutMs}`,
+    // Node 22 times out the whole file; hookTest enforces five seconds per case.
+    `--test-timeout=${suite === "hooks" ? budgets.timing.checkTimeoutMs : budgets.timing.testTimeoutMs}`,
     `--test-concurrency=${availableParallelism()}`,
     "--import=./tests/helpers/no-network.mjs",
   ];
-  const productHooks = readdirSync("core/hooks").some((name) =>
+  const productHooks = readdirSync("core/hooks").filter((name) =>
     name.endsWith(".mjs"),
   );
-  if (suite === "hooks" && !productHooks)
+  if (suite === "hooks" && productHooks.length === 0)
     console.log(
       "Transport tests only; product hook coverage is not measured yet.",
     );
-  if (suite === "unit" || (suite === "hooks" && productHooks)) {
+  if (suite === "unit" || (suite === "hooks" && productHooks.length > 0)) {
     const coverage =
       suite === "unit" ? budgets.coverage.lib : budgets.coverage.hooks;
     flags.push(
@@ -52,9 +53,23 @@ for (const suite of suites) {
       flags.push(`--test-coverage-functions=${budgets.coverage.lib.functions}`);
   }
   const result = spawnSync(process.execPath, [...flags, ...tests], {
-    stdio: "inherit",
+    encoding: "utf8",
+    maxBuffer: 8 * 1024 * 1024,
     windowsHide: true,
   });
+  process.stdout.write(result.stdout ?? "");
+  process.stderr.write(result.stderr ?? "");
   if (result.error) throw result.error;
+  if (suite === "hooks") {
+    for (const name of productHooks) {
+      const measured = result.stdout
+        .split("\n")
+        .some(
+          (line) => line.includes(name) && /\|\s*\d+(?:\.\d+)?\s*\|/.test(line),
+        );
+      if (!measured)
+        throw new Error(`TEST-8: no child process coverage for ${name}`);
+    }
+  }
   if (result.status !== 0) process.exit(result.status ?? 1);
 }

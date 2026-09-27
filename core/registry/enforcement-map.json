@@ -10,6 +10,11 @@
         {
           "status": "pending",
           "claim": "STR-1 の全要件に対する検査は未完了。構造テスト"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/hook-structure.test.mjs",
+          "claim": "製品フックの命名、lib 以外のサブディレクトリ不在を検査する。"
         }
       ]
     },
@@ -95,12 +100,22 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "HOOK-2: 製品フック導入後の全エントリに対する検査は未実装。共通処理とテスト用 driver の検証だけでは充足しない。"
+          "claim": "HOOK-2: セッション開始以外の製品フックとハーネスへの実登録は未検証。現在の1本の成功を製品全体の充足に数えない。"
         },
         {
           "status": "implemented",
           "path": "tests/hooks/io.test.mjs",
           "claim": "共通 io の driver で例外時0を確認。製品エントリの形式と例外境界は後続。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/vouch-record-session-start.test.mjs",
+          "claim": "セッション開始フックの例外・破損時に ID 付き stderr と終了0を観測する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/hook-structure.test.mjs",
+          "claim": "製品フックのトップレベル副作用が run(main) 1回だけであることを AST で検査する。"
         }
       ]
     },
@@ -112,12 +127,17 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "HOOK-3: 製品フック導入後の全エントリに対する検査は未実装。共通処理とテスト用 driver の検証だけでは充足しない。"
+          "claim": "HOOK-3: セッション開始以外の製品フックとハーネスへの実登録は未検証。現在の1本の成功を製品全体の充足に数えない。"
         },
         {
           "status": "implemented",
           "path": "tests/hooks/io.test.mjs",
           "claim": "共通 io の driver で許可0・理由付き遮断2を観測する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/vouch-record-session-start.test.mjs",
+          "claim": "セッション開始フックの正常・no-op・エラーは終了0であることを検査する。"
         }
       ]
     },
@@ -140,6 +160,11 @@
           "status": "implemented",
           "path": "tests/hooks/io.test.mjs",
           "claim": "共通 io の driver の stdout が空であることを検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/vouch-record-session-start.test.mjs",
+          "claim": "セッション開始フックの stdout が空であることを子プロセスで検査する。"
         }
       ]
     },
@@ -174,11 +199,11 @@
         {
           "status": "implemented",
           "path": ".dependency-cruiser.cjs",
-          "claim": "fs importをlib/fs.mjsに限定する。追記専用・原子性は未検査。"
+          "claim": "fs import を lib/fs.mjs に限定する。"
         },
         {
           "status": "pending",
-          "claim": "HOOK-6: 製品フック導入後の全エントリに対する検査は未実装。共通処理とテスト用 driver の検証だけでは充足しない。"
+          "claim": "HOOK-6: セッション開始以外の製品フックとハーネスへの実登録は未検証。現在の1本の成功を製品全体の充足に数えない。"
         },
         {
           "status": "implemented",
@@ -189,6 +214,11 @@
           "status": "implemented",
           "path": "tests/unit/lib/audit.test.mjs",
           "claim": "共通 AuditStore の既存行保存・全バッチ検証・重複排除を検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/vouch-record-session-start.test.mjs",
+          "claim": "セッション開始の追記、破損・ID衝突時の既存バイト列維持を検査する。"
         }
       ]
     },
@@ -201,7 +231,7 @@
         {
           "status": "implemented",
           "path": "biome.json",
-          "claim": "process.envの参照をenv.mjsに限定する。process.exitの直接使用検査は未実装。"
+          "claim": "process.env の参照を env.mjs に限定する。"
         },
         {
           "status": "pending",
@@ -211,6 +241,11 @@
           "status": "implemented",
           "path": "tests/unit/lib/env.test.mjs",
           "claim": "環境からの trusted root と harness の検査。全製品コードの境界強制は後続。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/hook-structure.test.mjs",
+          "claim": "全 runtime の process.exit / exitCode の直接参照を io.mjs に限定する。"
         }
       ]
     },
@@ -228,6 +263,11 @@
           "status": "implemented",
           "path": "tests/unit/lib/clock.test.mjs",
           "claim": "共通 clock の UTC 時刻とセッション・入力識別子に基づく決定的 ID を検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/hook-structure.test.mjs",
+          "claim": "全 runtime の Date.now / new Date / Math.random / randomUUID の直接呼び出しを clock.mjs に限定する。"
         }
       ]
     },
@@ -239,12 +279,17 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "HOOK-9: 製品フック導入後の全エントリに対する検査は未実装。共通処理とテスト用 driver の検証だけでは充足しない。"
+          "claim": "HOOK-9: セッション開始以外の製品フックとハーネスへの実登録は未検証。現在の1本の成功を製品全体の充足に数えない。"
         },
         {
           "status": "implemented",
           "path": "tests/hooks/io.test.mjs",
-          "claim": "固定イベントを返す共通 io driver の再実行で audit が増えないことを確認する。製品 emitter の再実行は未検証。"
+          "claim": "固定イベントを返す共通 io driver の再実行で audit が増えないことを確認する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/vouch-record-session-start.test.mjs",
+          "claim": "セッション開始は同一 ID の再実行時に最初の ts を保持し、別 session / Intent を分離する。"
         }
       ]
     },
@@ -257,6 +302,11 @@
         {
           "status": "pending",
           "claim": "HOOK-10 の全要件に対する検査は未完了。構造テスト（appendEvent( の引数を静的に抽出して台帳と照合）"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/hook-structure.test.mjs",
+          "claim": "製品フックの type プロパティが文字列リテラルかつ登録済みであることを AST で検査する。"
         }
       ]
     },
@@ -298,7 +348,12 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "HOOK-13 の全要件に対する検査は未完了。契約テスト"
+          "claim": "現在の PC で記録 p95 200ms が未達。空の Node プロセス20回の p95 も256ms。環境と実装の改善後に再検証する。検査系と他フックも未検証。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/vouch-record-session-start.test.mjs",
+          "claim": "20回の子プロセス起動を含む記録 p95 を計測する。200ms の閾値は維持。現在の PC では未達でテストは失敗する。"
         }
       ]
     },
@@ -315,12 +370,17 @@
         },
         {
           "status": "pending",
-          "claim": "HOOK-14: 製品フック導入後の全エントリに対する検査は未実装。共通処理とテスト用 driver の検証だけでは充足しない。"
+          "claim": "HOOK-14: セッション開始以外の製品フックとハーネスへの実登録は未検証。現在の1本の成功を製品全体の充足に数えない。"
         },
         {
           "status": "implemented",
           "path": "tests/unit/lib/io.test.mjs",
           "claim": "共通 io の不正入力・例外・tool_input.file_path の検査呼び出しを確認する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/vouch-record-session-start.test.mjs",
+          "claim": "セッション開始フックで不正入力6種、stdin の intent 無視、設定 scope とリンクを検査する。"
         }
       ]
     },
@@ -355,7 +415,12 @@
         },
         {
           "status": "pending",
-          "claim": "全27種の emit 契約テストと、台帳×fixture×子プロセステストの照合をフック実装後に追加する。"
+          "claim": "session.started 以外の26イベントは製品 emit 未実装。fixture の成功は製品の発火実績ではない。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/vouch-record-session-start.test.mjs",
+          "claim": "session.started の製品 emit を完全スキーマと golden で検証する。残り26種は未実装。"
         }
       ]
     },
@@ -669,6 +734,11 @@
         {
           "status": "pending",
           "claim": "TEST-3 の全要件に対する検査は未完了。dependency-cruiser（tests/hooks → core/hooks/*.mjs の import 禁止）＋ 構造テスト（tests/unit に child_process 禁止）"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/vouch-record-session-start.test.mjs",
+          "claim": "セッション開始フックは runHook から子プロセスで実行し、製品エントリを import しない。"
         }
       ]
     },
@@ -715,6 +785,11 @@
         {
           "status": "pending",
           "claim": "TEST-6 の全要件に対する検査は未完了。helper ＋ reviewer（golden 差分の理由）"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/vouch-record-session-start.test.mjs",
+          "claim": "セッション開始の JSONL を golden と全文比較する。更新は UPDATE_GOLDEN=1 の明示時だけ。"
         }
       ]
     },
@@ -731,12 +806,17 @@
         },
         {
           "status": "pending",
-          "claim": "TEST-7: Claude の他イベントと Codex の版付き実機 fixture は未採取。既存 Codex 9件の version:null は維持する。"
+          "claim": "Claude は UserPromptSubmit と SessionStart startup を採取済み。他イベントと Codex の版付き実機 fixture は未採取。既存 Codex 9件の version:null を維持する。"
         },
         {
           "status": "implemented",
           "path": "tests/registry/captured-fixture.test.mjs",
           "claim": "Claude Code 2.1.280 の UserPromptSubmit 1件の版・出所・原文との一致を検査する。他イベントと版付き Codex は未採取。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/registry/session-start.test.mjs",
+          "claim": "Claude Code 2.1.280 の SessionStart startup の採取原文・版・来歴を照合する。変種は synthetic とし、Codex の版不明9件は保持する。"
         }
       ]
     },
@@ -749,11 +829,16 @@
         {
           "status": "implemented",
           "path": "scripts/test.mjs",
-          "claim": "unit/hooks階層のカバレッジ閾値を設定。実行時コードとフック子プロセス集計、除外コメント検査は未実装。"
+          "claim": "lib 95/95/100、hooks 90/85 の閾値とフック子プロセスのカバレッジを検査する。全製品エントリのソースがレポートに存在することも要求する。"
         },
         {
           "status": "pending",
           "claim": "TEST-8 の全要件に対する検査は未完了。node --test --experimental-test-coverage --test-coverage-lines=... ＋ 構造テスト（除外コメントの grep）"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/hook-structure.test.mjs",
+          "claim": "全 runtime の node:coverage ignore / disable コメントを拒否する。"
         }
       ]
     },
@@ -807,7 +892,7 @@
         {
           "status": "implemented",
           "path": "scripts/test.mjs",
-          "claim": "各テスト5秒の予算と並列実行。再試行設定の検査は未実装。"
+          "claim": "CPU数で並列実行する。Node 22 のファイル単位タイムアウトと hooks の各ケース5秒は分けて扱う。"
         },
         {
           "status": "implemented",
@@ -816,7 +901,12 @@
         },
         {
           "status": "pending",
-          "claim": "TEST-12 の全要件に対する検査は未完了。CI 設定 ＋ 構造テスト（CI 設定の grep）"
+          "claim": "現在の PC では記録性能テストが5秒を超える。再試行設定の構造検査も未実装。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/helpers/hook-test.mjs",
+          "claim": "hooks の各ケースに timeout 5000 と同期処理の経過時間検査を適用する。"
         }
       ]
     },
@@ -845,12 +935,17 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "TEST-14: 製品フック導入後の全エントリに対する検査は未実装。共通処理とテスト用 driver の検証だけでは充足しない。"
+          "claim": "TEST-14: セッション開始以外の製品フックとハーネスへの実登録は未検証。現在の1本の成功を製品全体の充足に数えない。"
         },
         {
           "status": "implemented",
           "path": "tests/hooks/io.test.mjs",
           "claim": "共通 io driver に空・非JSON・必須欠落・型不正・境界外cwd・1MiBを入力し、mainの副作用が起きないことを確認する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/vouch-record-session-start.test.mjs",
+          "claim": "セッション開始フックに空・非JSON・必須欠落・型不正・境界外cwd・1MiBを入力する。"
         }
       ]
     },

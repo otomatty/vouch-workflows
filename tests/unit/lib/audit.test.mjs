@@ -2,6 +2,7 @@ import { test } from "node:test";
 import {
   createAuditStore,
   createIntentAuditStore,
+  findEvent,
 } from "../../../core/hooks/lib/audit.mjs";
 import { readJson } from "../../helpers/registry.mjs";
 import { memoryFiles } from "../../helpers/runtime.mjs";
@@ -11,14 +12,34 @@ function event() {
   return readJson("tests/fixtures/audit/hook.check.jsonl");
 }
 
+test("event lookup rejects a missing reader and preserves matching records", async (t) => {
+  t.plan(3);
+  await t.assert.rejects(findEvent(undefined, "id"), /AUDIT-MISSING/);
+  await t.assert.rejects(
+    findEvent({ append: async () => "duplicate" }, "id"),
+    /AUDIT-MISSING/,
+  );
+  const sample = event();
+  t.assert.deepEqual(
+    await findEvent(
+      createAuditStore(
+        memoryFiles({ audit: `${JSON.stringify(sample)}\n` }),
+        "audit",
+      ),
+      sample.id,
+    ),
+    sample,
+  );
+});
+
 test("audit lookup validates the whole log before returning an event", async (t) => {
   const sample = event();
-  const files = memoryFiles({ audit: JSON.stringify(sample) + "\n" });
+  const files = memoryFiles({ audit: `${JSON.stringify(sample)}\n` });
   const audit = createAuditStore(files, "audit");
   t.plan(5);
   t.assert.deepEqual(await audit.find?.(sample.id), sample);
   t.assert.equal(await audit.find?.("absent"), undefined);
-  files.data.set("audit", JSON.stringify(sample) + "\ninvalid\n");
+  files.data.set("audit", `${JSON.stringify(sample)}\ninvalid\n`);
   await t.assert.rejects(audit.find(sample.id), /AUDIT-CORRUPT/);
   files.data.set(
     "audit",
@@ -99,4 +120,28 @@ test("audit rejects broken existing logs and invalid new records", async (t) => 
   );
   t.assert.equal(await files.readText("audit"), null);
   t.assert.equal(await audit.append([]), "duplicate");
+});
+
+test("audit snapshots a validated batch before an asynchronous file update", async (t) => {
+  const sample = event();
+  const original = structuredClone(sample);
+  const files = memoryFiles();
+  const audit = createAuditStore(
+    {
+      ...files,
+      updateText: async (path, update) => {
+        await Promise.resolve();
+        return files.updateText(path, update);
+      },
+    },
+    "audit",
+  );
+  const pending = audit.append([sample]);
+  sample.actor = "model";
+  t.plan(2);
+  t.assert.equal(await pending, "appended");
+  t.assert.deepEqual(
+    JSON.parse((await files.readText("audit")) ?? "null"),
+    original,
+  );
 });

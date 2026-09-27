@@ -7,17 +7,17 @@
 | モジュール | API | 契約 |
 | --- | --- | --- |
 | `clock.mjs` | `now()`, `newId(session, identity)` | UTC 時刻、セッションと入力識別子の決定的 ID |
-| `env.mjs` | `readContext(env?)` | 明示された `VOUCH_PROJECT_ROOT` と `VOUCH_HARNESS` を読む。未設定や不正値は拒否 |
+| `env.mjs` | `readContext(env?)` | 明示された root・harness と任意の `VOUCH_INTENT` を読む。root・harness の未設定や不正値は拒否 |
 | `validation.mjs` | `parseInput(text)`, `isAuditEvent(value)`, `isHookResult(value)`, `assertSupportedSchema(schema)` | 既存 JSON Schema の利用部分を依存ゼロで評価。ロード時に対応語彙を確認し、未知の構文はエラー |
 | `fs.mjs` | `createFileStore(root)` | root 内の読み込み・原子的な更新。シンボリックリンク・junction・複数リンクのファイルを拒否 |
-| `audit.mjs` | `createAuditStore(files, path)` | `append(events)` でスキーマ検証、既存行保存、ID 重複排除。破損・ID衝突は書かずに拒否 |
+| `audit.mjs` | `createAuditStore(files, path)`, `createIntentAuditStore(files, intent)`, `findEvent(store, id)` | `find(id)` は全ログ検証後に検索。`append(events)` はバッチをコピー・検証し、既存行保存と重複排除。破損・ID衝突は書かずに拒否 |
 | `io.mjs` | `run(main, options?)` | stdin のサイズ・JSON・スキーマ・パスを検査し main を呼ぶ。例外は ID 付き stderr と終了0、遮断は理由付き終了2 |
 
 `run()` は不正入力なら main を呼びません。未知のトップレベル入力フィールドを取り除き、`tool_input` のキーは各ツールの入力として保持します。1 MiB 以上は拒否します。パスの字句上の `../` だけでは判定せず、解決先と実在する祖先を検査します。
 
 `HookMain` の返値は内部用です。正常時の stdout は空、遮断理由は stderr に出します。内部のイベントや `decision: allow` をハーネス向け JSON として直接出力しません。再開要約などのハーネス固有 JSON は後続のアダプタで定義します。
 
-監査先は `RuntimeOptions.audit` で明示します。入力のパスやイベントの intent 名から書き込み先を作りません。events を返す main に監査先がなければエラーにし、記録に成功したように見せません。
+監査先は `RuntimeOptions.audit` で明示するか、設定元の `VOUCH_INTENT` から構成します。context と記録処理は同じストアを使います。入力のパスやイベントの intent 名から書き込み先を作りません。events を返す main に監査先がなければエラーにし、記録に成功したように見せません。
 
 ファイル更新は隣接するロックディレクトリ内に一時ファイルを作り、書き込みと sync の後で rename します。監査では既存のバイト列をそのまま先頭に残します。不正 UTF-8 は置換文字で読み進めず拒否します。既存 ID の同一レコードは省略し、内容の異なるレコード、末尾改行の欠落、不正 JSON、既存の重複 ID は拒否します。バッチ全体を検証してから一度だけ置換するため、途中のレコードだけが残ることはありません。
 
@@ -39,7 +39,7 @@
 
 採取方法は [Claude Code hooks reference](https://code.claude.com/docs/en/hooks#userpromptsubmit) の stdin と exit 2 に従います。Codex `0.153.4` の版は確認しましたが、新たな実機 payload は採取していません。[Codex のフック](https://learn.chatgpt.com/docs/hooks#review-and-trust-hooks)には定義ごとの信頼確認があるため、既存9件の版番号をこの版で埋めません。
 
-## 実装と検証の記録
+## 共通ランタイム導入時の検証記録
 
 契約のコミットは `31f8dc7`、実装前テストは `3c9683c` です。実装前の unit は、6モジュールの `ERR_MODULE_NOT_FOUND` で失敗することを確認しました。その後に共通処理を実装しました。
 
@@ -49,10 +49,10 @@ Node.js 22.19.0 でも同じ `npm run check` が29.2秒で成功し、67件と�
 
 原仕様、`docs/aidlc-v2-reference/`、既存の Codex payload は変更していません。採取原文との JSON 値の一致と、手製の変種に synthetic が必要なことを検査します。ミューテーションスコアと Linux での実行結果は未測定です。
 
-## 後続の実装
+## セッション開始フック追加後の状態
 
-製品フックへの `run(main)` の接続、ハーネスごとの登録・出力アダプタ、全27イベントの発火、承認の真正性、監査の親子関係・計測、成果物からの状態導出、p95時間予算が残っています。Skill・エージェント・テンプレート・配布・移行処理・シナリオも未実装です。`enforcement-map.json` は共通処理の検査を implemented として追加し、製品全体の検査は pending に残しています。
+`run(main)` を使う最初の製品フックで `session.started` の発火・再実行・失敗時の挙動を検査しています。ハーネスごとの登録・出力アダプタ、残り26イベントの発火、承認の真正性、監査の親子関係・計測、成果物からの状態導出は未実装です。Skill・エージェント・テンプレート・配布・移行処理・シナリオも残っています。現在の PC では p95 時間予算が未達です。[今回の検証記録](session-start.md)と `enforcement-map.json` に範囲を分けて記載しています。
 
-次は製品フック1本に対象を絞り、対象イベントの版付き実機 fixture、入力識別子、監査先と失敗時の挙動を契約化してから、子プロセステストと実装を追加します。実機に含まれる `prompt_id` は現行スキーマ外なので、使用する emitter で契約に昇格させます。同じ文面の別操作とリプレイを区別し、同じ ID で再生成した時刻だけが変わって衝突することを防ぐ必要があります。
+次は性能基準を満たす実行条件と実装を確認したうえで、ハーネスへの登録を進めます。後続の UserPromptSubmit emitter で使う `prompt_id` は現行スキーマ外なので、その契約で定義します。同じ文面の別操作とリプレイを区別する必要があります。
 
 `cwd` と `tool_input.file_path` は共通 io で検査します。その他のツール固有パス、シェルコマンド内のパス、プロジェクト外に置かれる transcript は、この段階では読み書きせず、対象のフックで別途契約を定義します。

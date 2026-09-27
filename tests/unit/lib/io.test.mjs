@@ -54,7 +54,7 @@ test("io shares the configured intent store between the handler and event persis
   t.assert.equal(port.output.stderr, "");
   t.assert.equal(
     port.options.files.data.get("vouch/intents/scope/audit/events.jsonl"),
-    JSON.stringify(sample) + "\n",
+    `${JSON.stringify(sample)}\n`,
   );
 });
 
