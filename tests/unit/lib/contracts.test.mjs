@@ -1,6 +1,11 @@
 import { test } from "node:test";
 import { validator } from "../../helpers/registry.mjs";
 
+// Compile once per file; every case still validates its own value.
+const validateAudit = validator("audit-event");
+const validateResult = validator("hook-result");
+const validateProcess = validator("hook-process");
+
 /** @typedef {import('../../../core/hooks/lib/contracts.mjs').HookMain} HookMain */
 /** @typedef {import('../../../core/hooks/lib/contracts.mjs').AuditEvent} AuditEvent */
 /** @typedef {import('../../../core/hooks/lib/contracts.mjs').HookResult} HookResult */
@@ -24,14 +29,10 @@ test("JSDoc valid examples also satisfy the corresponding wire schemas", (t) => 
   /** @type {HookProcessResult} */
   const processResult = { exitCode: 0, stdout: null, stderr: "" };
   t.plan(3);
-  t.assert.equal(validator("audit-event")(audit), true, "HOOK-11: typed audit");
+  t.assert.equal(validateAudit(audit), true, "HOOK-11: typed audit");
+  t.assert.equal(validateResult(result), true, "HOOK-11: typed result");
   t.assert.equal(
-    validator("hook-result")(result),
-    true,
-    "HOOK-11: typed result",
-  );
-  t.assert.equal(
-    validator("hook-process")(processResult),
+    validateProcess(processResult),
     true,
     "HOOK-11: typed process",
   );
@@ -70,12 +71,12 @@ test("JSDoc rejects impossible decision and audit discriminants", (t) => {
   // @ts-expect-error HookMain must return a decision.
   const badMain = () => ({ exitCode: 0 });
   t.plan(5);
-  t.assert.equal(validator("hook-result")(noReason), false, "HOOK-11");
-  t.assert.equal(validator("hook-process")(badExit), false, "HOOK-11");
-  t.assert.equal(validator("audit-event")(badType), false, "HOOK-11");
-  t.assert.equal(validator("audit-event")(badTokens), false, "HOOK-11");
+  t.assert.equal(validateResult(noReason), false, "HOOK-11");
+  t.assert.equal(validateProcess(badExit), false, "HOOK-11");
+  t.assert.equal(validateAudit(badType), false, "HOOK-11");
+  t.assert.equal(validateAudit(badTokens), false, "HOOK-11");
   t.assert.equal(
-    validator("hook-result")(
+    validateResult(
       badMain(
         {
           session_id: "s",
@@ -128,7 +129,7 @@ test("typed approval evidence binds complete metadata to its harness", (t) => {
     revision: evidence.revision,
     synthetic: true,
   };
-  const validate = validator("audit-event");
+  const validate = validateAudit;
   t.plan(3);
   t.assert.equal(validate({ ...incomplete, ...evidence }), true);
   t.assert.equal(validate({ ...incomplete, ...mismatched }), false);
