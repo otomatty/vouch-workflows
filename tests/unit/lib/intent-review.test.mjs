@@ -10,6 +10,8 @@ test("review commands are exact operator inputs and do not infer consent", (t) =
     ["承認します", null],
     [`Please vouch approve ${gate}`, null],
     ["vouch reviewer", null],
+    ["vouch reviews tomorrow", null],
+    ["vouch approves tomorrow", null],
     ["vouch review ", { kind: "invalid" }],
     ["vouch review\n", { kind: "invalid" }],
     ["vouch approve", { kind: "invalid" }],

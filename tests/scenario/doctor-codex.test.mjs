@@ -3,7 +3,7 @@ import { hookTest as test } from "../helpers/hook-test.mjs";
 import { tree } from "../helpers/packaging.mjs";
 import { validator } from "../helpers/registry.mjs";
 
-const harness = /** @type {"claude"|"codex"} */ ("claude");
+const harness = /** @type {"claude"|"codex"} */ ("codex");
 test(`${harness} doctor runs in a Git-uninitialized project with only generated files`, async (t) => {
   const install = await installDoctor(t, harness);
   const before = tree(install.root);
