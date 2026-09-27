@@ -46,7 +46,10 @@ test("Codex distribution reproduces exact source bytes and registers every produ
   t.assert.equal(packageRun(["--out", box.path("dist"), "--check"]).status, 0);
   const settings = JSON.parse(await box.read("dist/codex/.codex/hooks.json"));
   t.assert.deepEqual(Object.keys(settings), ["hooks"]);
-  t.assert.deepEqual(Object.keys(settings.hooks), ["SessionStart"]);
+  t.assert.deepEqual(Object.keys(settings.hooks), [
+    "SessionStart",
+    "UserPromptSubmit",
+  ]);
   const [registration] = settings.hooks.SessionStart;
   t.assert.equal(settings.hooks.SessionStart.length, 1);
   t.assert.equal(registration.matcher, "startup");
@@ -63,7 +66,16 @@ test("Codex distribution reproduces exact source bytes and registers every produ
       command.type,
       ...[command.command, command.commandWindows].map(
         (/** @type {string} */ text) =>
-          [...text.matchAll(/vouch-[a-z-]+\.mjs/g)]
+          [
+            ...[
+              text,
+              settings.hooks.UserPromptSubmit[0].hooks[0][
+                text === command.command ? "command" : "commandWindows"
+              ],
+            ]
+              .join(" ")
+              .matchAll(/vouch-[a-z-]+\.mjs/g),
+          ]
             .map((match) => match[0])
             .sort(),
       ),

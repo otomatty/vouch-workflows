@@ -134,7 +134,7 @@ export function runHook(mode, fixture, options) {
       "TEST-7: changed payload must be marked synthetic with matching capture version",
     );
   const started = performance.now();
-  const product = mode === "vouch-record-session-start";
+  const product = /^vouch-[a-z-]+$/.test(mode);
   /** @type {NodeJS.ProcessEnv} */ const env = {
     ...process.env,
     VOUCH_PROJECT_ROOT: options.root,
@@ -150,7 +150,7 @@ export function runHook(mode, fixture, options) {
       ? [
           "--disable-warning=ExperimentalWarning",
           `--import=${pathToFileURL(resolve("tests/helpers/fixed-clock.mjs")).href}`,
-          resolve("core/hooks/vouch-record-session-start.mjs"),
+          resolve(`core/hooks/${mode}.mjs`),
         ]
       : [resolve("tests/fixtures/runtime/driver.mjs"), mode],
     {

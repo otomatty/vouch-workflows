@@ -52,7 +52,10 @@ test("Claude distribution reproduces exact source bytes and registers every prod
   );
   t.assert.deepEqual(Object.keys(settings).sort(), ["env", "hooks"]);
   t.assert.deepEqual(settings.env, { VOUCH_HARNESS: "claude" });
-  t.assert.deepEqual(Object.keys(settings.hooks), ["SessionStart"]);
+  t.assert.deepEqual(Object.keys(settings.hooks), [
+    "SessionStart",
+    "UserPromptSubmit",
+  ]);
   const [registration] = settings.hooks.SessionStart;
   t.assert.equal(settings.hooks.SessionStart.length, 1);
   t.assert.equal(registration.matcher, "startup");
@@ -65,7 +68,10 @@ test("Claude distribution reproduces exact source bytes and registers every prod
       ],
     },
   ]);
-  const registered = registration.hooks
+  const registered = [
+    ...registration.hooks,
+    ...settings.hooks.UserPromptSubmit[0].hooks,
+  ]
     .map((/** @type {{args:string[]}} */ hook) =>
       hook.args[0]?.split("/").at(-1),
     )

@@ -349,3 +349,25 @@ test("doctor io uses exit two if its diagnostic output stream is closed", async 
   t.plan(1);
   t.assert.equal(code, 2);
 });
+
+test("io supplies contained artifact reads instead of trusting a caller override", async (t) => {
+  const port = ports(JSON.stringify(promptFor(process.cwd()).payload));
+  port.options.files.data.set("intent.md", "draft bytes");
+  let observed;
+  t.plan(2);
+  await run(
+    async (_input, ctx) => {
+      observed = await ctx.readText?.("intent.md");
+      return { decision: "allow" };
+    },
+    {
+      ...port.options,
+      context: {
+        ...port.options.context,
+        readText: async () => "untrusted override",
+      },
+    },
+  );
+  t.assert.equal(observed, "draft bytes");
+  t.assert.equal(port.output.code, 0);
+});
