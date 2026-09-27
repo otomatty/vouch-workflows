@@ -326,6 +326,16 @@
           "claim": "fs import を lib/fs.mjs に限定する。"
         },
         {
+          "status": "implemented",
+          "path": "tests/unit/lib/fs-driver.test.mjs",
+          "claim": "既定の同期操作と公開Promise契約、非同期ポート互換、write/sync/close失敗時の保全、fsyncとclose、置換前リンク再検査、UTF-8 BOM、片付けエラーを検査する。外部からの手編集の遮断は証明しない。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/fs-native-path.test.mjs",
+          "claim": "版付きfixtureから明示的にsyntheticとした日本語sessionをrunHookで2回記録し、日本語・空白・引用符を含むrootでの正常終了、追記内容、ロック解放を確認する。CLIの実機採取ではない。"
+        },
+        {
           "status": "pending",
           "claim": "HOOK-6: 他の製品フックは未検証。Claude / Codex SessionStart の実登録では正常記録のみ観測済みで、実機異常系の全保証は未検証。"
         },
@@ -487,7 +497,7 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "Windowsの最新全体検査では、Node 24のレビュー開始352.5ms・承認267.6ms・セッション開始247.6ms、Node 22は323.6ms・267.8ms・257.8msでp95 200ms未満を満たさない。今回の検証範囲は codex-review-smoke.md、前回の計測は performance.md。"
+          "claim": "Windowsの同期ファイル操作への変更後もp95 200ms未満は未達。Node 24はレビュー開始304.0ms・承認278.1ms・セッション開始275.1ms、Node 22は412.6ms・412.0ms・461.9ms。Linux Node 22.20.0でも今回の全体検査では承認307.1msで未達。単独交互比較は変更前146.4ms・変更後102.9msだが、全体検査の失敗を置き換えない。詳細は file-store-performance.md。"
         },
         {
           "status": "implemented",
@@ -1320,6 +1330,11 @@
           "status": "implemented",
           "path": "docs/development/intent-review.md",
           "claim": "新規 intent-review と io の変更行に限定した33変異を全検出し100%、生存0。lib全体の変更前比較と夜間CIは未実施。"
+        },
+        {
+          "status": "implemented",
+          "path": "docs/development/file-store-performance.md",
+          "claim": "fs.mjs全体を変更前後で測定し、85.12%から92.59%、生存18件から10件、新規生存0件。lib全体の基準測定・夜間CI・Issue作成は未実施。"
         }
       ]
     },
@@ -1370,7 +1385,7 @@
         },
         {
           "status": "pending",
-          "claim": "Windows Node 22 / 24の最新全体検査は200件完走、197件成功・性能3件失敗。キャンセルはないが、記録性能ケースは5秒超過もあり時間予算は未達。詳細は codex-review-smoke.md。"
+          "claim": "Windows Node 22 / 24の全体検査は212件完走、209件成功・性能3件失敗。キャンセルはないが記録性能ケースは5秒を超える場合があり、時間予算は未達。詳細は file-store-performance.md。"
         },
         {
           "status": "implemented",

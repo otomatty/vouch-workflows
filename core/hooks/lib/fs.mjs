@@ -1,5 +1,33 @@
-import * as fs from "node:fs/promises";
+import * as fs from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+
+/** Direct I/O in the isolated hook process; every FileStore boundary still awaits.
+ * @type {import('./runtime-contracts.mjs').FileOperations} */
+const native = {
+  realpath: fs.realpathSync.native,
+  stat: fs.statSync,
+  lstat: fs.lstatSync,
+  readFile: fs.readFileSync,
+  mkdir: fs.mkdirSync,
+  rename: fs.renameSync,
+  rm(path) {
+    try {
+      fs.unlinkSync(path);
+    } catch (error) {
+      if (!hasCode(error, "ENOENT")) throw error;
+    }
+  },
+  rmdir: fs.rmdirSync,
+  open(path, flags, mode) {
+    const descriptor = fs.openSync(path, flags, mode);
+    return {
+      writeFile: (text, encoding) =>
+        fs.writeFileSync(descriptor, text, encoding),
+      sync: () => fs.fsyncSync(descriptor),
+      close: () => fs.closeSync(descriptor),
+    };
+  },
+};
 
 /** @param {unknown} error @param {string} code */
 function hasCode(error, code) {
@@ -13,7 +41,7 @@ function hasCode(error, code) {
  * @param {import('./runtime-contracts.mjs').FileOperations} [operations]
  * @returns {Promise<import('./runtime-contracts.mjs').FileStore>}
  */
-export async function createFileStore(root, operations = fs) {
+export async function createFileStore(root, operations = native) {
   const base = await operations.realpath(root);
   if (!(await operations.stat(base)).isDirectory())
     throw new Error("FS-ROOT: directory required");
