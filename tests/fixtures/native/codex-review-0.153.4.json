@@ -1,0 +1,89 @@
+{
+  "kind": "native-cli-observation",
+  "sourceCommit": "e31a8c7",
+  "harness": "codex",
+  "version": "0.153.4",
+  "scripted": true,
+  "humanApproval": false,
+  "modelEvaluation": false,
+  "sandbox": "read-only",
+  "draft": "---\nstatus: draft\n---\n# Scripted Codex native input exercise\n",
+  "observation": {
+    "version": "codex-cli 0.153.4",
+    "trusted": 2,
+    "providerRequests": 0,
+    "results": [
+      {
+        "type": "gate.opened",
+        "observed": true,
+        "code": null
+      },
+      {
+        "type": "intent.approved",
+        "observed": true,
+        "code": null
+      }
+    ],
+    "events": [
+      {
+        "id": "evt_cff42bacd4d7c84721f13c8f68f3e22831737dd81896a00ac33ae9b21fce0826",
+        "v": 1,
+        "type": "session.started",
+        "ts": "2026-09-27T15:54:39.346Z",
+        "actor": "hook",
+        "harness": "codex",
+        "intent": "260928-native-review",
+        "session": "01a0e393-4eb6-7133-84a5-b1098cb6dfb8"
+      },
+      {
+        "id": "evt_e6a8efebc998905318ad5f3cb8a307bb384023cffa038dff379daf9efdb7c367",
+        "v": 1,
+        "type": "gate.opened",
+        "ts": "2026-09-27T15:54:40.831Z",
+        "actor": "hook",
+        "harness": "codex",
+        "intent": "260928-native-review",
+        "session": "01a0e393-4eb6-7133-84a5-b1098cb6dfb8",
+        "source": "intent",
+        "revision": {
+          "path": "intent.md",
+          "sha256": "59b77ebed4f2d96440c8dbec6b6c8b3ac200d4f6d56fba3d89faa86edee1d342"
+        }
+      },
+      {
+        "id": "evt_2142f5b12d8db78fe522d78b8dadd77480a19a9d8f076850c4383f25e83058c5",
+        "v": 1,
+        "type": "session.started",
+        "ts": "2026-09-27T15:54:45.736Z",
+        "actor": "hook",
+        "harness": "codex",
+        "intent": "260928-native-review",
+        "session": "01a0e393-6816-7ae2-8c80-c3237e621922"
+      },
+      {
+        "id": "evt_6e8082b8330036fbbb0467b13491a15ef1fd9d8969bdfb5955243f0669882f49",
+        "v": 1,
+        "type": "intent.approved",
+        "ts": "2026-09-27T15:54:47.202Z",
+        "actor": "human",
+        "intent": "260928-native-review",
+        "session": "01a0e393-6816-7ae2-8c80-c3237e621922",
+        "source": "intent",
+        "parent": "evt_e6a8efebc998905318ad5f3cb8a307bb384023cffa038dff379daf9efdb7c367",
+        "wait_ms": 6371,
+        "revision": {
+          "path": "intent.md",
+          "sha256": "59b77ebed4f2d96440c8dbec6b6c8b3ac200d4f6d56fba3d89faa86edee1d342"
+        },
+        "harness": "codex",
+        "submission": {
+          "hook_event_name": "UserPromptSubmit",
+          "field": "turn_id",
+          "id": "01a0e393-6988-7a72-9ff8-1ca2131987f3",
+          "prompt_sha256": "5081536f7a28808223a7287d103ccd2c0f5f87693036ff3da32810bc94c4e7b5"
+        }
+      }
+    ],
+    "draftUnchanged": true
+  }
+}
