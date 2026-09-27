@@ -111,7 +111,8 @@
  * @property {string} generation Knowledge generation to compare with citations.
  * @property {() => string} now UTC time supplied by clock.mjs.
  * @property {(session:string,inputIdentity:string) => string} newId Deterministic event identity.
- * @typedef {(input:HookInput,ctx:HookContext) => HookResult|Promise<HookResult>} HookMain
+ * @typedef {HookContext & {readText:(path:string) => Promise<string|null>}} ReadyHookContext io validates FileStore before invoking main.
+ * @typedef {(input:HookInput,ctx:ReadyHookContext) => HookResult|Promise<HookResult>} HookMain
  */
 
 /**

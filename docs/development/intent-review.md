@@ -19,7 +19,7 @@ VOUCH_PROJECT_ROOT / VOUCH_HARNESS / VOUCH_INTENT はインストール側の設
 
 ## 保存と再送
 
-io が検証済み FileStore の readText を HookContext へ渡します。読み取り先は vouch/intents/<設定されたintent>/intent.md だけです。FileStore のパス境界・リンク拒否・UTF-8 検証を使います。成果物本文や人の発言本文は監査へ複製しません。
+io が検証済み FileStore の readText を HookContext へ渡します。HookMain は、この読み取りポートが必須の ReadyHookContext を受け取ります。設定入力の HookContext と実行時の契約を区別します。読み取り先は vouch/intents/<設定されたintent>/intent.md だけです。FileStore のパス境界・リンク拒否・UTF-8 検証を使います。成果物本文や人の発言本文は監査へ複製しません。
 
 gate.opened の ID は session、event type、harness、intent、入力IDの種類と値から作ります。版を ID の材料にせず、同じ入力IDを別の版へ付け替えた再送を新しい操作にはしません。ts は同じ ID の最初の記録を保持します。記録には actor:hook / source:intent / session / harness / revision を含めます。
 
