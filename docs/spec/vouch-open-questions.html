@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vouch 未決事項の判断依頼</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  color-scheme: light;
+  --bg:#F5F7F9; --surface:#FFFFFF; --surface-2:#EDF1F5;
+  --text:#1B2430; --muted:#5B6775; --line:#D6DDE5; --line-strong:#A9B4C0;
+  --accent:#0F6E8C; --accent-soft:#DDEFF5;
+  --human:#B84A0E; --human-soft:#FBE8DC;
+  --ok:#1F7A4D; --ok-soft:#DFF2E7;
+  --warn:#B42318; --warn-soft:#FBE3E1;
+  --hook:#5B4A9E; --hook-soft:#E8E3F6;
+  --code-bg:#EEF2F6;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:#11161C; --surface:#1A2129; --surface-2:#222B35;
+    --text:#E6EAEF; --muted:#9AA5B1; --line:#2E3946; --line-strong:#4A5766;
+    --accent:#5CBCD9; --accent-soft:#163A46;
+    --human:#F29A5F; --human-soft:#3F2415;
+    --ok:#5BC08A; --ok-soft:#173A29;
+    --warn:#F08A82; --warn-soft:#44201D;
+    --hook:#B3A4E8; --hook-soft:#2A2344;
+    --code-bg:#151B22;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#11161C; --surface:#1A2129; --surface-2:#222B35;
+  --text:#E6EAEF; --muted:#9AA5B1; --line:#2E3946; --line-strong:#4A5766;
+  --accent:#5CBCD9; --accent-soft:#163A46;
+  --human:#F29A5F; --human-soft:#3F2415;
+  --ok:#5BC08A; --ok-soft:#173A29;
+  --warn:#F08A82; --warn-soft:#44201D;
+  --hook:#B3A4E8; --hook-soft:#2A2344;
+  --code-bg:#151B22;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:"IBM Plex Sans JP","Hiragino Sans","Yu Gothic UI","Noto Sans JP",system-ui,sans-serif;
+  font-size:15px; line-height:1.75;
+  padding-block:0 64px; padding-inline:16px;
+  -webkit-font-smoothing:antialiased;
+}
+code,.mono{font-family:"IBM Plex Mono","SFMono-Regular",Menlo,Consolas,monospace;font-size:.92em}
+code{background:var(--code-bg);padding:.08em .4em;border-radius:4px}
+pre{background:var(--code-bg);border-radius:6px;padding:12px 14px;font-family:"IBM Plex Mono",monospace;font-size:12.5px;line-height:1.6;overflow-x:auto;margin:12px 0}
+pre code{background:none;padding:0;font-size:inherit}
+a{color:var(--accent)}
+h1,h2,h3,h4{line-height:1.3;text-wrap:balance;margin:0}
+h1{font-size:clamp(26px,4vw,36px);font-weight:700;letter-spacing:-.01em}
+h2{font-size:22px;font-weight:700}
+h3{font-size:16px;font-weight:700;margin-top:22px;margin-bottom:6px}
+h4{font-size:14px;font-weight:700;margin-top:14px;margin-bottom:4px}
+p{margin:0 0 12px}
+ul,ol{margin:0 0 12px;padding-left:1.4em}
+li{margin:2px 0}
+.wrap{max-width:1040px;margin:0 auto}
+.prose{max-width:760px}
+header.top{padding-block:40px 24px;border-bottom:1px solid var(--line)}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.lede{font-size:17px;color:var(--muted);max-width:760px;margin-top:12px}
+.meta{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:16px;font-size:13px;color:var(--muted)}
+.meta b{color:var(--text);font-weight:500}
+.pill{display:inline-block;padding:1px 9px;border-radius:999px;font-size:12px;font-weight:500;line-height:1.7;white-space:nowrap;vertical-align:middle}
+.pill.accent{background:var(--accent-soft);color:var(--accent)}
+.pill.human{background:var(--human-soft);color:var(--human)}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.hook{background:var(--hook-soft);color:var(--hook)}
+.pill.muted{background:var(--surface-2);color:var(--muted)}
+section{padding-block:40px;border-bottom:1px solid var(--line)}
+section:last-of-type{border-bottom:0}
+.sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:6px;flex-wrap:wrap}
+.sec-head .n{font-family:"IBM Plex Mono",monospace;font-size:14px;color:var(--human);min-width:2.5ch;font-weight:500}
+.sec-sub{font-size:13px;color:var(--muted);margin-bottom:14px}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:12px 0 8px}
+.tbl{overflow-x:auto}
+th,td{text-align:left;vertical-align:top;padding:8px 10px;border-bottom:1px solid var(--line)}
+th{font-weight:500;color:var(--muted);font-size:13px;border-bottom:1px solid var(--line-strong);white-space:nowrap}
+td.k{font-weight:500;white-space:nowrap}
+td.c{text-align:center}
+figure{margin:20px 0 8px}
+figure svg{max-width:100%;height:auto;display:block}
+figcaption{font-size:13px;color:var(--muted);margin-top:8px;max-width:760px}
+.fig-scroll{overflow-x:auto}
+.fig-scroll svg{min-width:640px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin:12px 0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px 16px}
+.card h3{margin-top:0}
+.note{font-size:13px;color:var(--muted)}
+.src{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--accent);word-break:break-all}
+/* question card */
+.ask{background:var(--surface);border:1px solid var(--line);border-radius:6px;overflow:hidden;font-size:14px;margin:14px 0}
+.ask .hd{padding:10px 14px;border-bottom:1px solid var(--line);background:var(--human-soft);color:var(--human);font-weight:700;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.ask .hd span{font-weight:500;font-size:12.5px}
+.ask .sec{padding:12px 14px;border-bottom:1px solid var(--line)}
+.ask .sec:last-child{border-bottom:0}
+.ask .sec > b{display:block;font-weight:700;margin-bottom:4px}
+.opt{display:grid;grid-template-columns:2.4em 1fr;gap:10px;padding:10px 0;border-bottom:1px dotted var(--line)}
+.opt:last-child{border-bottom:0}
+.opt .l{font-family:"IBM Plex Mono",monospace;color:var(--accent);font-weight:700;font-size:15px;padding-top:1px}
+.opt .t{font-weight:700}
+.opt .pc{display:grid;grid-template-columns:5.5em 1fr;gap:4px 8px;margin-top:6px;font-size:13.5px}
+.opt .pc .lab{color:var(--muted);font-size:12.5px;padding-top:1px}
+.opt .pc .lab.plus{color:var(--ok)}
+.opt .pc .lab.minus{color:var(--warn)}
+.opt .pc .lab.ev{color:var(--accent)}
+.rec{background:var(--accent-soft);border-radius:6px;padding:10px 14px;margin-top:10px}
+.rec b{color:var(--accent)}
+.summary{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px 16px;margin-top:20px}
+.summary table{margin:6px 0 0}
+.answer{background:var(--human-soft);border-radius:6px;padding:12px 16px;margin-top:14px;font-size:14px}
+.answer b{color:var(--human)}
+footer{padding-top:24px;font-size:13px;color:var(--muted)}
+@media (max-width:520px){
+  .opt .pc{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="eyebrow">Decision request · Vouch open questions · answered 2026-09-27</div>
+  <h1>Vouch 未決事項の判断依頼</h1>
+  <p class="lede">決定記録 rev 3 に残った6つの未決事項を、Vouch で定めた「判断依頼の形式」（状況 → 選択肢ごとのメリット・デメリット・根拠 → 推奨 → 未回答時の既定）でまとめた。この文書自体が、Vouch で人に判断を仰ぐ時の見本になる。</p>
+  <div class="meta">
+    <span>更新 <b>2026-09-27</b></span>
+    <span>状態 <span class="pill ok">すべて決着（A）</span></span>
+    <span>元文書 <b>vouch-decision-record.html §18</b></span>
+    <span>根拠の書式 <b>パス:行@コミット / 公式文書#節</b></span>
+  </div>
+
+  <div class="summary">
+    <b>一覧</b>
+    <div class="tbl"><table>
+      <thead><tr><th>#</th><th>論点</th><th>推奨</th><th>未回答時の既定</th><th>設計への影響</th></tr></thead>
+      <tbody>
+        <tr><td class="k"><a href="#q1">Q1</a></td><td>監査イベントの最小集合と計測項目</td><td>A：約25種の新台帳 ＋ 共通計測フィールド。v2 名は対応表で移行</td><td>A</td><td><span class="pill warn">前提</span> JSONL スキーマの設計に必要</td></tr>
+        <tr><td class="k"><a href="#q2">Q2</a></td><td>確認点の粒度の既定</td><td>A：論点ごとの固定4点。H は Unit ごとを追加</td><td>A</td><td><span class="pill muted">設計中に既定可</span></td></tr>
+        <tr><td class="k"><a href="#q3">Q3</a></td><td>品質層 × リスク階層</td><td>A：階層で段階化（全階層4層、M 以上 +4層、H +3層）</td><td>A</td><td><span class="pill muted">設計中に既定可</span></td></tr>
+        <tr><td class="k"><a href="#q4">Q4</a></td><td>図の標準セット</td><td>A：目的別の最小セット（Mermaid 5種）</td><td>A</td><td><span class="pill muted">設計中に既定可</span></td></tr>
+        <tr><td class="k"><a href="#q5">Q5</a></td><td>AI 操作検証の環境</td><td>A：ローカル既定、サービス依存はコンテナ、CI は再実行の場</td><td>A</td><td><span class="pill muted">設計中に既定可</span></td></tr>
+        <tr><td class="k"><a href="#q6">Q6</a></td><td>Brief と判断依頼の言語</td><td>A：<code>rules.md</code> で選択、既定は日本語。識別子は英語</td><td>A</td><td><span class="pill muted">設計中に既定可</span></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+  <div class="answer"><b>回答（2026-09-27）</b>：Q1: A、Q2: A、Q3: A、Q4: A、Q5: A、Q6: A。すべて推奨案を採用。決定内容は決定記録 rev 3 の §18 に転記した。この文書は根拠と選択肢の記録として残す。同日、ワークフローの名称を v3 から <b>Vouch</b> に改めた。</div>
+</header>
+
+<!-- Q1 -->
+<section id="q1">
+  <div class="sec-head"><span class="n">Q1</span><h2>監査イベントの最小集合と計測項目</h2></div>
+  <div class="sec-sub">監査ログを「後で分析するための計測データ」にするために、どのイベントを記録し、各イベントにどの計測値を持たせるか。</div>
+
+  <div class="ask">
+    <div class="hd">判断依頼 Q1 · 監査イベント台帳と計測フィールド <span>ブロック: する（JSONL スキーマの前提）</span></div>
+    <div class="sec"><b>状況</b>
+      <p>v2 の台帳は 91 イベント・22 カテゴリ <span class="src">core/knowledge/vouch-shared/audit-format.md:26</span>。そのうち Swarm（7）、Worktree（7）、Practices（4）、Merge Dispatch（3）、Sensor（5）、Bolt（4）、Plan Approval / Reviewer Enforcement（3）など、<b>Vouch で廃止する機能に属するものが約40種</b>ある。v2 のイベントは Markdown ブロック形式で、所要時間の欄はない（<code>Timestamp</code> と <code>Event</code> をエミッタが書く）<span class="src">audit-format.md:16-22</span>。</p>
+      <p>計測値の取得可能性はハーネスで異なる。Claude Code ではトランスクリプトからトークン使用量を読めるが、Codex では読めない（v2 の使用量フックは Claude 専用で「Kiro / Codex / opencode は producer を持たず no-data に縮退」と明記）<span class="src">core/hooks/vouch-fold-usage.ts:20-25</span>。フックが受け取れるイベントは両ハーネスとも SessionStart / UserPromptSubmit / PreToolUse / PostToolUse / PreCompact / SubagentStop / Stop <span class="src">harness/claude/settings.json（hooks）</span> <span class="src">harness/codex/emit.ts:35-60</span>。</p>
+    </div>
+    <div class="sec"><b>選択肢</b>
+      <div class="opt"><span class="l">A</span><div><span class="t">新しい台帳（約25種）＋ 共通計測フィールド。v2 名は対応表で移行</span> <span class="pill accent">推奨</span>
+        <div class="pc">
+          <span class="lab plus">メリット</span><span>Vouch の4ステージ・確認点・判断依頼・フック検査に対応した名前だけになり、分析の軸（<code>type</code> ＋ <code>check</code> / <code>stage</code> / <code>unit</code>）が単純になる。計測フィールドを最初から全イベントに持てる。台帳が小さいので P-7 の複雑性予算に収まる</span>
+          <span class="lab minus">デメリット</span><span>v2 の record を移行する時に名前の変換が要る。対応表にない v2 イベントは <code>legacy.&lt;NAME&gt;</code> として原文のまま残すので、情報は失わないが分析からは外れる</span>
+          <span class="lab ev">根拠</span><span>v2 台帳の廃止対象カテゴリ <span class="src">audit-format.md:26 以降の「Swarm」「Worktree」「Practices」「Merge Dispatch」「Sensor Events」「Construction Bolt Events」</span>／Vouch の4ステージと人の接点 <span class="src">vouch-decision-record.html §5, §6</span>／JSONL の例 <span class="src">vouch-decision-record.html §11</span></span>
+        </div>
+      </div></div>
+      <div class="opt"><span class="l">B</span><div><span class="t">v2 の 91 種をそのまま継承し、計測フィールドだけ足す</span>
+        <div class="pc">
+          <span class="lab plus">メリット</span><span>移行が 1:1 で済み、v2 に慣れたチームに馴染みがある。t48 のような既存テストの考え方を流用できる</span>
+          <span class="lab minus">デメリット</span><span>約40種は発火する場面が Vouch に存在せず、台帳の半分が死んだ名前になる。SUBJECT_PAST_VERB の大文字名は JSON の <code>type</code> としては扱いにくく、<code>check</code> や <code>unit</code> の軸で集計しにくい。P-7（膨張を繰り返さない）に反する</span>
+          <span class="lab ev">根拠</span><span>廃止機能の一覧 <span class="src">vouch-decision-record.html §1, §5（吸収する v2 のステージ）</span>／命名規約 <span class="src">audit-format.md:12-14</span></span>
+        </div>
+      </div></div>
+      <div class="opt"><span class="l">C</span><div><span class="t">中間：v2 で生き残る概念は v2 名を保ち、Vouch 固有のものだけ追加（約35種）</span>
+        <div class="pc">
+          <span class="lab plus">メリット</span><span>STAGE_STARTED / GATE_APPROVED / QUESTION_ANSWERED など主要イベントの名前が変わらず、v2 の分析スクリプトが一部そのまま動く</span>
+          <span class="lab minus">デメリット</span><span>大文字の v2 名と小文字ドット区切りの Vouch 名が混在し、台帳の一貫性が落ちる。結局 v2 名にも計測フィールドを足すので、A に対して得られるのは名前の互換だけ</span>
+          <span class="lab ev">根拠</span><span>v2 主要イベントの一覧 <span class="src">audit-format.md「Stage Lifecycle」「Interaction Events」</span></span>
+        </div>
+      </div></div>
+    </div>
+    <div class="sec"><b>推奨と既定</b>
+      <div class="rec"><b>推奨 A。</b>移行 Skill が v2 名 → Vouch 名の対応表を持ち、対応のない v2 イベントは <code>legacy.&lt;NAME&gt;</code> で原文保存する。<b>未回答時の既定：A。</b>影響範囲：監査ログの JSONL スキーマ、フックの記録処理、移行 Skill、<code>/vouch report</code>。</div>
+    </div>
+  </div>
+
+  <h3>A 案の具体：イベント台帳（約25種）</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>カテゴリ</th><th>イベント</th><th>固有の計測値</th><th>v2 からの対応</th></tr></thead>
+    <tbody>
+      <tr><td class="k">Intent</td><td><code>intent.created</code> <code>intent.approved</code> <code>intent.completed</code></td><td>completed に総時間の内訳（AI 作業 / 人の待ち / 人のレビュー）</td><td>WORKFLOW_STARTED / GATE_APPROVED / WORKFLOW_COMPLETED</td></tr>
+      <tr><td class="k">ステージ</td><td><code>stage.started</code> <code>stage.completed</code></td><td><code>duration_ms</code>、Build は <code>loop_iterations</code>、<code>tests</code></td><td>STAGE_STARTED / STAGE_COMPLETED</td></tr>
+      <tr><td class="k">Unit</td><td><code>unit.started</code> <code>unit.completed</code></td><td><code>risk</code>、<code>files_changed</code>、<code>lines_changed</code></td><td>UNIT_STARTED / UNIT_COMPLETED</td></tr>
+      <tr><td class="k">確認点・ゲート</td><td><code>checkpoint.confirmed</code> <code>gate.opened</code> <code>gate.approved</code> <code>gate.rejected</code></td><td>opened → approved の <code>wait_ms</code>（人のレビュー時間）、<code>source: intent | pr</code></td><td>STAGE_AWAITING_APPROVAL / GATE_APPROVED / GATE_REJECTED</td></tr>
+      <tr><td class="k">判断依頼</td><td><code>question.asked</code> <code>question.answered</code> <code>question.defaulted</code></td><td><code>blocking</code>、<code>options</code>、asked → answered の <code>wait_ms</code>、既定で進めた場合は <code>defaulted</code></td><td>DECISION_RECORDED / QUESTION_ANSWERED</td></tr>
+      <tr><td class="k">脇質問</td><td><code>aside.asked</code> <code>aside.answered</code></td><td><code>duration_ms</code></td><td>（新規）</td></tr>
+      <tr><td class="k">フック検査</td><td><code>hook.check</code> <code>hook.denied</code></td><td><code>check: contract | dod | freshness | citation | format</code>、<code>result</code>、<code>duration_ms</code></td><td>SENSOR_PASSED / SENSOR_FAILED / *_BLOCKED</td></tr>
+      <tr><td class="k">レビュー</td><td><code>review.requested</code> <code>review.completed</code></td><td><code>iteration</code>、<code>findings</code>、<code>sabotage: {tried, caught}</code>、<code>harness</code></td><td>REVIEW_REQUESTED / REVIEW_COMPLETED</td></tr>
+      <tr><td class="k">知識</td><td><code>knowledge.refreshed</code></td><td><code>scope</code>（差分 / 全体）、<code>duration_ms</code></td><td>ARTIFACT_UPDATED（codekb）</td></tr>
+      <tr><td class="k">セッション</td><td><code>session.started</code> <code>session.resumed</code> <code>session.compacted</code> <code>session.ended</code></td><td>resumed に復元にかかった <code>duration_ms</code></td><td>SESSION_*</td></tr>
+      <tr><td class="k">学習・移行</td><td><code>learn.recorded</code> <code>migration.completed</code></td><td>追記したルール数、移行したファイル数</td><td>RULE_LEARNED /（新規）</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>A 案の具体：共通の計測フィールド</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>フィールド</th><th>意味</th><th>取得元</th><th>ハーネス差</th></tr></thead>
+    <tbody>
+      <tr><td class="k"><code>id</code> <code>v</code> <code>type</code> <code>ts</code></td><td>識別子、スキーマ版、種別、発生時刻（UTC）</td><td>フック</td><td>なし</td></tr>
+      <tr><td class="k"><code>intent</code> <code>stage</code> <code>unit</code></td><td>どの作業か</td><td>成果物の frontmatter</td><td>なし</td></tr>
+      <tr><td class="k"><code>actor</code></td><td>model / hook / human / reviewer</td><td>フックの入力（UserPromptSubmit は human）</td><td>なし</td></tr>
+      <tr><td class="k"><code>parent</code></td><td>対になる開始イベント</td><td>フックが直前の未完了イベントを引く</td><td>なし</td></tr>
+      <tr><td class="k"><code>duration_ms</code></td><td>開始 → 完了</td><td>parent の ts との差</td><td>なし</td></tr>
+      <tr><td class="k"><code>wait_ms</code></td><td>人への依頼 → 人の回答</td><td>question / gate の対</td><td>なし</td></tr>
+      <tr><td class="k"><code>tokens</code></td><td>入力 / 出力 / キャッシュ</td><td>トランスクリプト</td><td><span class="pill hook">Claude Code のみ</span>。Codex は省略</td></tr>
+      <tr><td class="k"><code>session</code></td><td>セッション ID</td><td>フックの入力</td><td>なし</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- Q2 -->
+<section id="q2">
+  <div class="sec-head"><span class="n">Q2</span><h2>確認点の粒度の既定</h2></div>
+  <div class="sec-sub">モブ・エラボレーション（Intent ＋ Design）の中で、人が「この理解で合っているか」を確認する点をどの粒度で置くか。<code>rules.md</code> で変えられる前提で、既定を決める。</div>
+
+  <figure>
+    <div class="fig-scroll">
+    <svg viewBox="0 0 1040 230" role="img" aria-label="確認点の粒度の3案を同じ Intent の時間軸に並べた図。A は論点ごとに固定4点、B は Unit ごとに Unit 数だけ、C は設計セクションごとに多数。人の中断回数が A、B、C の順に増える">
+      <defs>
+        <marker id="arq2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+      <g fill="currentColor" font-size="12" font-family="IBM Plex Sans JP, sans-serif">
+        <!-- phase labels -->
+        <rect x="120" y="20" width="440" height="22" rx="3" fill="var(--accent-soft)"/>
+        <text x="340" y="35" text-anchor="middle" font-size="11">Intent（AC → 非ゴール → 分割・Unit・階層）</text>
+        <rect x="570" y="20" width="300" height="22" rx="3" fill="none" stroke="var(--accent)" stroke-dasharray="5 3"/>
+        <text x="720" y="35" text-anchor="middle" font-size="11">Design（必要時）</text>
+        <polygon points="900,24 908,31 900,38 892,31" fill="var(--human)"/>
+        <text x="900" y="56" text-anchor="middle" font-size="10" fill="var(--human)">承認</text>
+
+        <!-- row A -->
+        <text x="20" y="84" font-size="12" font-weight="700">A</text>
+        <text x="40" y="84" font-size="11">論点ごと</text>
+        <line x1="120" y1="80" x2="900" y2="80" stroke="currentColor" stroke-width="1" opacity=".4"/>
+        <g fill="var(--human)"><circle cx="230" cy="80" r="5"/><circle cx="360" cy="80" r="5"/><circle cx="520" cy="80" r="5"/><circle cx="800" cy="80" r="5"/></g>
+        <text x="230" y="100" text-anchor="middle" font-size="9.5">AC 確定</text>
+        <text x="360" y="100" text-anchor="middle" font-size="9.5">非ゴール・最小実装</text>
+        <text x="520" y="100" text-anchor="middle" font-size="9.5">分割・Unit・階層</text>
+        <text x="800" y="100" text-anchor="middle" font-size="9.5">設計採択</text>
+        <text x="930" y="84" font-size="10" opacity=".8">4 回</text>
+
+        <!-- row B -->
+        <text x="20" y="139" font-size="12" font-weight="700">B</text>
+        <text x="40" y="139" font-size="11">Unit ごと</text>
+        <line x1="120" y1="135" x2="900" y2="135" stroke="currentColor" stroke-width="1" opacity=".4"/>
+        <g fill="var(--human)"><circle cx="230" cy="135" r="5"/><circle cx="440" cy="135" r="5"/><circle cx="480" cy="135" r="5"/><circle cx="520" cy="135" r="5"/><circle cx="560" cy="135" r="5"/><circle cx="660" cy="135" r="5"/><circle cx="740" cy="135" r="5"/><circle cx="820" cy="135" r="5"/></g>
+        <text x="230" y="155" text-anchor="middle" font-size="9.5">AC 確定</text>
+        <text x="500" y="155" text-anchor="middle" font-size="9.5">Unit ごとに1回（U1〜U4）</text>
+        <text x="740" y="155" text-anchor="middle" font-size="9.5">Unit ごとの設計</text>
+        <text x="930" y="139" font-size="10" opacity=".8">1 ＋ Unit 数 × 2 回</text>
+
+        <!-- row C -->
+        <text x="20" y="194" font-size="12" font-weight="700">C</text>
+        <text x="40" y="194" font-size="11">節ごと</text>
+        <line x1="120" y1="190" x2="900" y2="190" stroke="currentColor" stroke-width="1" opacity=".4"/>
+        <g fill="var(--human)">
+          <circle cx="160" cy="190" r="4"/><circle cx="200" cy="190" r="4"/><circle cx="240" cy="190" r="4"/><circle cx="280" cy="190" r="4"/><circle cx="320" cy="190" r="4"/><circle cx="360" cy="190" r="4"/><circle cx="400" cy="190" r="4"/><circle cx="440" cy="190" r="4"/><circle cx="480" cy="190" r="4"/><circle cx="520" cy="190" r="4"/>
+          <circle cx="600" cy="190" r="4"/><circle cx="640" cy="190" r="4"/><circle cx="680" cy="190" r="4"/><circle cx="720" cy="190" r="4"/><circle cx="760" cy="190" r="4"/><circle cx="800" cy="190" r="4"/><circle cx="840" cy="190" r="4"/>
+        </g>
+        <text x="500" y="212" text-anchor="middle" font-size="9.5">成果物の節ごとに1回（10〜20 回）</text>
+        <text x="930" y="194" font-size="10" opacity=".8">10〜20 回</text>
+      </g>
+    </svg>
+    </div>
+    <figcaption>図1. 同じ Intent での確認点の数。A は論点が変わる境目だけ、B は Unit の数に比例、C は節の数に比例する。</figcaption>
+  </figure>
+
+  <div class="ask">
+    <div class="hd">判断依頼 Q2 · 確認点の粒度 <span>ブロック: しない（rules.md の既定値）</span></div>
+    <div class="sec"><b>状況</b>
+      <p>v2 は「深さ」で質問量を決めており、Standard で1ステージ 5〜8 問、Comprehensive で 8〜12 問以上を目安にしていた <span class="src">core/vouch-common/protocols/stage-protocol.md:868-870</span>。v2 の Construction では「質問は例外であって日常ではない」と明記している <span class="src">stage-protocol.md:339</span>。Vouch では Intent を1画面に収め、Unit は 5 つ以下を目安に分割する <span class="src">vouch-decision-record.html §6「分割の原則」</span>。確認点は監査ログに <code>checkpoint.confirmed</code> として残り、人の中断回数と待ち時間が計測される。</p>
+    </div>
+    <div class="sec"><b>選択肢</b>
+      <div class="opt"><span class="l">A</span><div><span class="t">論点ごとの固定4点（AC 確定 → 非ゴールと最小実装の線引き → 分割・Unit・リスク階層 → 設計採択）。H 階層の Intent だけ Unit ごとの確認を自動で追加</span> <span class="pill accent">推奨</span>
+        <div class="pc">
+          <span class="lab plus">メリット</span><span>人が「何を確認しているか」が毎回同じで学習コストがない。1 Intent あたりの中断が 4 回（Design 不要なら 3 回）で、同期の儀式が 30〜60 分に収まる。H だけ細かくなるのでリスクと手間が比例する</span>
+          <span class="lab minus">デメリット</span><span>大きな Intent（Unit 5 つ）では「分割・Unit・階層」の確認点が重くなる。ただし Unit 5 つ以下の分割原則があるので上限は決まっている</span>
+          <span class="lab ev">根拠</span><span>分割原則 <span class="src">vouch-decision-record.html §6</span>／v2 の質問量の目安 <span class="src">stage-protocol.md:868-870</span>／リスク階層 <span class="src">vouch-decision-record.html §9</span></span>
+        </div>
+      </div></div>
+      <div class="opt"><span class="l">B</span><div><span class="t">Unit ごと（AC 確定 1 回 ＋ Unit ごとに Intent 1 回・Design 1 回）</span>
+        <div class="pc">
+          <span class="lab plus">メリット</span><span>Unit の境界と責務を人が1つずつ確認できる。チーム分業（Unit ごとに担当が違う）に合う</span>
+          <span class="lab minus">デメリット</span><span>Unit 4 つで 9 回の中断になり、L/M の Intent では過剰。人の待ち時間の割合（目標 20% 未満）を圧迫する</span>
+          <span class="lab ev">根拠</span><span>成功指標「人の待ち時間の割合」<span class="src">vouch-decision-record.html §17</span>／v2 の per-unit 反復（unit-major Construction）で Unit ごとの gate が重かった経緯 <span class="src">docs/roadmap.md「2.5.56 Code Generation joins the unit-major Construction walk」</span></span>
+        </div>
+      </div></div>
+      <div class="opt"><span class="l">C</span><div><span class="t">成果物の節ごと（intent.md / design.md の見出しごとに1回）</span>
+        <div class="pc">
+          <span class="lab plus">メリット</span><span>最も細かく、モデルの理解のずれを早く捕まえられる。教育目的（ワークショップ）には向く</span>
+          <span class="lab minus">デメリット</span><span>10〜20 回の中断になり、v2 の「最大約70回の操作」と同じ問題に戻る。人が判断ではなく確認作業に時間を使う</span>
+          <span class="lab ev">根拠</span><span>v2 の操作回数の実測 <span class="src">vouch-decision-record.html §1</span></span>
+        </div>
+      </div></div>
+    </div>
+    <div class="sec"><b>推奨と既定</b>
+      <div class="rec"><b>推奨 A。</b><code>rules.md</code> の <code>checkpoints:</code> で <code>topic</code>（A）/ <code>unit</code>（B）/ <code>section</code>（C）を選べるようにし、既定は <code>topic</code>。H 階層は <code>topic + unit</code> を自動適用。<b>未回答時の既定：A。</b>影響範囲：Intent Skill の進行、rules.md のテンプレート、監査ログの <code>checkpoint.confirmed</code>。</div>
+    </div>
+  </div>
+</section>
+
+<!-- Q3 -->
+<section id="q3">
+  <div class="sec-head"><span class="n">Q3</span><h2>品質層 × リスク階層</h2></div>
+  <div class="sec-sub">品質モデルの 11 次元（決定記録 §7）を、どのリスク階層で必須にするか。必須にした層は reviewer の観点表で「証拠あり / なし / 該当なし」を必ず埋め、証拠なしは PR 承認前に解消する。</div>
+
+  <div class="ask">
+    <div class="hd">判断依頼 Q3 · 品質層の必須範囲 <span>ブロック: しない（観点表の既定値）</span></div>
+    <div class="sec"><b>状況</b>
+      <p>リスク階層はすでに Design の要否・破壊検査の回数・人が読む範囲を決めている <span class="src">vouch-decision-record.html §9</span>。品質層をどの階層で必須にするかを決めないと、reviewer の観点表と Brief の「主張と証拠」の必須行が定まらない。v2 では review_class（advisory / blocking）をコストのダイヤルとして持っていた <span class="src">docs/roadmap.md「reviewer-class cost dial (#718)」</span>。</p>
+    </div>
+    <div class="sec"><b>選択肢</b>
+      <div class="opt"><span class="l">A</span><div><span class="t">階層で段階化する（下の表）</span> <span class="pill accent">推奨</span>
+        <div class="pc">
+          <span class="lab plus">メリット</span><span>L の Intent は「正しさ・契約・保守性・判断の根拠」の4層だけで済み、Brief をスキムする運用と釣り合う。H は全11層で、人がコードを読む Intent には reviewer の証拠も揃う</span>
+          <span class="lab minus">デメリット</span><span>階層の判定を間違えると層が抜ける。ただし階層は人が確認点で承認するので、判定はモデル任せにならない</span>
+          <span class="lab ev">根拠</span><span>階層ごとの人のレビュー範囲 <span class="src">vouch-decision-record.html §9</span>／破壊検査の回数 L0 / M1 / H3（決定済み）</span>
+        </div>
+      </div></div>
+      <div class="opt"><span class="l">B</span><div><span class="t">全 11 層を全階層で必須にする</span>
+        <div class="pc">
+          <span class="lab plus">メリット</span><span>抜けがなく、観点表が常に同じ形。分析で階層間の比較がしやすい</span>
+          <span class="lab minus">デメリット</span><span>文言修正の L でも脅威モデル観点表や性能計測を埋めることになり、reviewer の時間と Brief の長さが L でも H 並みになる。「該当なし」が大半を占め、観点表が形骸化する</span>
+          <span class="lab ev">根拠</span><span>L の例（文言・設定・テスト追加）<span class="src">vouch-decision-record.html §9</span></span>
+        </div>
+      </div></div>
+      <div class="opt"><span class="l">C</span><div><span class="t">正しさと契約の整合だけ必須、他は任意</span>
+        <div class="pc">
+          <span class="lab plus">メリット</span><span>最も軽い。テストと型検査はフックが自動で証拠を出すので、reviewer の手間がほぼゼロ</span>
+          <span class="lab minus">デメリット</span><span>「テストだけでは足りない」という Vouch の品質モデルの前提と矛盾する。根本解決かどうか、設計の整合、セキュリティが H でも任意になる</span>
+          <span class="lab ev">根拠</span><span>品質モデル §7「テストが保証できるのは仕様どおり動くかだけ」<span class="src">vouch-decision-record.html §7</span></span>
+        </div>
+      </div></div>
+    </div>
+    <div class="sec"><b>推奨と既定</b>
+      <div class="rec"><b>推奨 A。未回答時の既定：A。</b>影響範囲：reviewer の観点表テンプレート、Brief §3 の必須行、Intent の AC ごとの検証方法の宣言。</div>
+    </div>
+  </div>
+
+  <h3>A 案の具体：必須の層（● 必須 / ○ 任意 / — 対象外）</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>品質の次元</th><th>L</th><th>M</th><th>H</th><th>証拠を出すのは</th></tr></thead>
+    <tbody>
+      <tr><td class="k">正しさ（AC に紐づくテスト、DoD）</td><td class="c">●</td><td class="c">●</td><td class="c">●</td><td>フック（DoD 実行）</td></tr>
+      <tr><td class="k">契約の整合（型・スキーマ・静的解析）</td><td class="c">●</td><td class="c">●</td><td class="c">●</td><td>フック（contract 検査）</td></tr>
+      <tr><td class="k">保守性（静的解析、規約監査）</td><td class="c">●</td><td class="c">●</td><td class="c">●</td><td>フック ＋ reviewer</td></tr>
+      <tr><td class="k">判断の質と根拠（参照元、決定ログ）</td><td class="c">●</td><td class="c">●</td><td class="c">●</td><td>フック（引用検査）＋ reviewer</td></tr>
+      <tr><td class="k">テスト自体の品質（破壊検査）</td><td class="c">—</td><td class="c">● 1箇所</td><td class="c">● 3箇所</td><td>reviewer</td></tr>
+      <tr><td class="k">要件の妥当性・ユースケース網羅</td><td class="c">○</td><td class="c">●</td><td class="c">●</td><td>Intent の網羅表 ＋ モブ</td></tr>
+      <tr><td class="k">設計の質（境界・依存ルール）</td><td class="c">○</td><td class="c">●</td><td class="c">●</td><td>フック（依存ルール）＋ reviewer</td></tr>
+      <tr><td class="k">根本解決か（その場しのぎ検出）</td><td class="c">○</td><td class="c">●</td><td class="c">●</td><td>reviewer</td></tr>
+      <tr><td class="k">セキュリティ（脅威モデル観点表）</td><td class="c">—</td><td class="c">○</td><td class="c">●</td><td>Design ＋ reviewer</td></tr>
+      <tr><td class="k">非機能（性能・リソースの計測）</td><td class="c">—</td><td class="c">○</td><td class="c">●</td><td>builder の計測ログ</td></tr>
+      <tr><td class="k">実使用（AI 操作の探索的検証）</td><td class="c">—</td><td class="c">○</td><td class="c">●</td><td>reviewer</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">依存監査（脆弱な依存の検出）はセキュリティ層とは別に、DoD の一部として全階層でフックが実行する。</p>
+</section>
+
+<!-- Q4 -->
+<section id="q4">
+  <div class="sec-head"><span class="n">Q4</span><h2>図の標準セット</h2></div>
+  <div class="sec-sub">「1変更1図」「差分は色で」「詳細度は段階化」の原則のもと、Intent・Design・Brief でそれぞれどの図を必須にするか。</div>
+
+  <div class="ask">
+    <div class="hd">判断依頼 Q4 · 必須の図 <span>ブロック: しない（テンプレートの既定値）</span></div>
+    <div class="sec"><b>状況</b>
+      <p>図は Markdown 内の Mermaid で書く方針。GitHub は Markdown の <code>```mermaid</code> ブロックをそのまま描画する <span class="src">docs.github.com「Creating diagrams」（Writing on GitHub › Working with advanced formatting）</span>。Mermaid が安定して描けるのは flowchart、sequenceDiagram、classDiagram、erDiagram、stateDiagram-v2 で、C4 図は experimental 扱い <span class="src">mermaid.js.org「C4 Diagram (experimental)」</span>。v2 の設計ステージは Domain / Contract / Functional / NFR / Infra の5つに分かれ、それぞれ文書中心だった <span class="src">core/vouch-common/stages/construction/*.md</span>。</p>
+    </div>
+    <div class="sec"><b>選択肢</b>
+      <div class="opt"><span class="l">A</span><div><span class="t">目的別の最小セット（下の表）。Mermaid の安定5種だけを使う</span> <span class="pill accent">推奨</span>
+        <div class="pc">
+          <span class="lab plus">メリット</span><span>各成果物に「必ずある図」が決まるので、読む人が図の場所と意味を覚えられる。GitHub でそのまま描画され、差分は色（<code>classDef</code>）で示せる。C4 の experimental な記法に依存しない</span>
+          <span class="lab minus">デメリット</span><span>C4 の container 図のような「システム全体の俯瞰」は flowchart で代用するので、C4 に慣れたチームには物足りない。図の種類が固定なので、UI 中心の変更ではスクリーンショットで補う必要がある</span>
+          <span class="lab ev">根拠</span><span>GitHub の Mermaid 対応 <span class="src">docs.github.com「Creating diagrams」</span>／Mermaid の図の種類 <span class="src">mermaid.js.org「Diagram Syntax」</span>／図解の原則 <span class="src">vouch-decision-record.html §14</span></span>
+        </div>
+      </div></div>
+      <div class="opt"><span class="l">B</span><div><span class="t">C4 フルセット（Context / Container / Component / Code）を Design で毎回作る</span>
+        <div class="pc">
+          <span class="lab plus">メリット</span><span>体系が確立していて、アーキテクチャ全体を段階的に俯瞰できる。基準図（知識レイヤー）を C4 で持てば差分図も同じ体系で描ける</span>
+          <span class="lab minus">デメリット</span><span>Mermaid の C4 は experimental で描画が不安定。1 Intent の変更に対して4階層は過剰で、Design が条件付き（必要時のみ）という Vouch の方針と合わない。人が読む量が増える</span>
+          <span class="lab ev">根拠</span><span><span class="src">mermaid.js.org「C4 Diagram (experimental)」</span>／Design は条件付き <span class="src">vouch-decision-record.html §5</span></span>
+        </div>
+      </div></div>
+      <div class="opt"><span class="l">C</span><div><span class="t">種類は決めず「1変更1図」だけを規定し、図の選択はモデルに任せる</span>
+        <div class="pc">
+          <span class="lab plus">メリット</span><span>最も柔軟で、P-1（判断はモデル）に沿う。変更の性質に最適な図を毎回選べる</span>
+          <span class="lab minus">デメリット</span><span>成果物ごとに図の種類が変わり、読む側が毎回「この図は何を示すか」を読み解く必要がある。レビュー負荷軽減の目的（人が構造を覚えて速く読む）に反する</span>
+          <span class="lab ev">根拠</span><span>Review Brief の固定構造の狙い <span class="src">vouch-decision-record.html §14</span></span>
+        </div>
+      </div></div>
+    </div>
+    <div class="sec"><b>推奨と既定</b>
+      <div class="rec"><b>推奨 A。</b>必須の図に加えて、モデルが必要と判断した図を足すのは自由（C の柔軟さは「追加」として残す）。<b>未回答時の既定：A。</b>影響範囲：intent.md / design.md / review.md のテンプレート、知識レイヤーの基準図の形式。</div>
+    </div>
+  </div>
+
+  <h3>A 案の具体：必須の図</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>成果物</th><th>必須</th><th>条件付きで必須</th><th>Mermaid</th></tr></thead>
+    <tbody>
+      <tr><td class="k">知識レイヤー（基準図）</td><td>コンポーネント図（層と依存の向き）</td><td>データモデル図（DB があれば）</td><td><code>flowchart</code>、<code>erDiagram</code></td></tr>
+      <tr><td class="k">intent.md</td><td>ユーザー操作のフロー図（誰が何をして何が起きるか）</td><td>影響範囲図：基準図に今回触る箇所を色付け（brownfield）</td><td><code>flowchart</code></td></tr>
+      <tr><td class="k">design.md</td><td>差分コンポーネント図（追加・変更・削除を色分け）、変更フローのシーケンス図</td><td>データ差分図（スキーマ変更時）、状態遷移図（ライフサイクル変更時）、契約図（公開 API 変更時は <code>classDiagram</code>）</td><td><code>flowchart</code>、<code>sequenceDiagram</code>、<code>erDiagram</code>、<code>stateDiagram-v2</code>、<code>classDiagram</code></td></tr>
+      <tr><td class="k">review.md（Brief）</td><td>変更した主フローのシーケンス図 1 つ</td><td>UI 変更は Before / After スクリーンショット、設計変更時は design.md の差分図を再掲</td><td><code>sequenceDiagram</code></td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">差分の色は3色固定（追加 = 緑、変更 = 橙、削除 = 赤の取り消し）を <code>classDef</code> で定義し、テンプレートに同梱する。設計パックの単一 HTML 出力では Mermaid をブラウザで描画する。</p>
+</section>
+
+<!-- Q5 -->
+<section id="q5">
+  <div class="sec-head"><span class="n">Q5</span><h2>AI 操作による検証の環境</h2></div>
+  <div class="sec-sub">「自動テスト → AI がアプリを操作 → 人」の2段目を、どこで実行するか。ブラウザ操作・CLI 実行・API 呼び出しと、そのスクリーンショットやログを証拠として残す場所。</div>
+
+  <figure>
+    <div class="fig-scroll">
+    <svg viewBox="0 0 940 210" role="img" aria-label="AI 操作検証の3つの環境。ローカルはハーネスのサンドボックス内でブラウザを操作し即座に証拠を得る。コンテナは DB などのサービスを含む再現環境を builder が起動する。CI は PR ごとに同じ検証を再実行し、Brief から結果を参照する">
+      <defs>
+        <marker id="arq5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+      <g fill="currentColor" font-size="12" font-family="IBM Plex Sans JP, sans-serif">
+        <rect x="20" y="30" width="280" height="110" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.6"/>
+        <text x="160" y="54" text-anchor="middle" font-weight="700" font-size="13">A. ローカル（ハーネス内）</text>
+        <text x="160" y="74" text-anchor="middle" font-size="11" opacity=".85">builder / reviewer が Playwright でブラウザを操作</text>
+        <text x="160" y="92" text-anchor="middle" font-size="11" opacity=".85">CLI・API は直接叩く。証拠は shot / log</text>
+        <text x="160" y="110" text-anchor="middle" font-size="11" opacity=".85">往復が最速。既定</text>
+        <text x="160" y="128" text-anchor="middle" font-size="10" opacity=".7">Codex はサンドボックス設定が要る</text>
+
+        <rect x="330" y="30" width="280" height="110" rx="5" fill="var(--surface)" stroke="currentColor" stroke-width="1.2"/>
+        <text x="470" y="54" text-anchor="middle" font-weight="700" font-size="13">B. コンテナ（再現環境）</text>
+        <text x="470" y="74" text-anchor="middle" font-size="11" opacity=".85">DB・キュー・外部 API のモックを compose で起動</text>
+        <text x="470" y="92" text-anchor="middle" font-size="11" opacity=".85">構成は knowledge/infra/ に置き、鮮度チェック対象</text>
+        <text x="470" y="110" text-anchor="middle" font-size="11" opacity=".85">サービス依存がある時だけ</text>
+        <text x="470" y="128" text-anchor="middle" font-size="10" opacity=".7">起動に時間がかかる</text>
+
+        <rect x="640" y="30" width="280" height="110" rx="5" fill="var(--surface)" stroke="currentColor" stroke-width="1.2"/>
+        <text x="780" y="54" text-anchor="middle" font-weight="700" font-size="13">C. CI（再実行の場）</text>
+        <text x="780" y="74" text-anchor="middle" font-size="11" opacity=".85">PR ごとに同じ検証を再実行し、artifact に残す</text>
+        <text x="780" y="92" text-anchor="middle" font-size="11" opacity=".85">Brief から CI の実行 URL を参照</text>
+        <text x="780" y="110" text-anchor="middle" font-size="11" opacity=".85">開発中の往復には使わない</text>
+        <text x="780" y="128" text-anchor="middle" font-size="10" opacity=".7">AI は結果を待つだけ</text>
+
+        <line x1="300" y1="85" x2="330" y2="85" stroke="currentColor" stroke-width="1.4" marker-end="url(#arq5)"/>
+        <line x1="610" y1="85" x2="640" y2="85" stroke="currentColor" stroke-width="1.4" marker-end="url(#arq5)"/>
+        <text x="315" y="160" text-anchor="middle" font-size="10" opacity=".8">サービス依存なら</text>
+        <text x="625" y="160" text-anchor="middle" font-size="10" opacity=".8">PR で再実行</text>
+        <text x="470" y="195" text-anchor="middle" font-size="11">推奨：A を既定に、B は必要時に builder が起動、C は再現性の担保。三者で同じ手順（demo.sh）を使う</text>
+      </g>
+    </svg>
+    </div>
+    <figcaption>図2. 3つの環境は排他ではなく役割が違う。開発中の往復は A、サービス依存は B、再現性は C。</figcaption>
+  </figure>
+
+  <div class="ask">
+    <div class="hd">判断依頼 Q5 · AI 操作検証の環境 <span>ブロック: しない（Build / Verify Skill の既定）</span></div>
+    <div class="sec"><b>状況</b>
+      <p>Claude Code の実行環境では Chromium と Playwright が同梱され、追加インストールなしにブラウザ操作ができる（本セッションの環境でも <code>PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers</code> が設定済み）。Codex はサンドボックス（<code>workspace-write</code>）で <code>.git</code> が読み取り専用になるなど制約があり、headless 実行には <code>writable_roots</code> の設定が要る <span class="src">harness/codex/skills/vouch/SKILL.md:199</span>。v2 の Build and Test はテスト実行が中心で、AI がアプリを操作する検証は定義していなかった <span class="src">core/vouch-common/stages/construction/build-and-test.md</span>。証拠の書式は <code>shot:</code> と <code>log:</code> で統一済み <span class="src">vouch-decision-record.html §7</span>。</p>
+    </div>
+    <div class="sec"><b>選択肢</b>
+      <div class="opt"><span class="l">A</span><div><span class="t">ローカル既定。サービス依存があればコンテナを builder が起動。CI は PR で同じ手順を再実行する</span> <span class="pill accent">推奨</span>
+        <div class="pc">
+          <span class="lab plus">メリット</span><span>開発中の往復が最速で、builder が壊れたらその場で直せる。DB などが要る時だけコンテナを使うので普段は軽い。CI で同じ <code>demo.sh</code> を回すので、Brief の証拠が第三者にも再現できる</span>
+          <span class="lab minus">デメリット</span><span>3つの環境の差（ポート、環境変数、データ）を <code>knowledge/infra/</code> で管理する必要がある。Codex ではサンドボックス設定を配布物に含める必要がある</span>
+          <span class="lab ev">根拠</span><span>Playwright 同梱の実行環境（本セッションの環境情報）／Codex サンドボックスの制約 <span class="src">harness/codex/skills/vouch/SKILL.md:199</span>／知識レイヤーのインフラ項目 <span class="src">vouch-decision-record.html §12</span></span>
+        </div>
+      </div></div>
+      <div class="opt"><span class="l">B</span><div><span class="t">常にコンテナ（devcontainer / compose）で検証する</span>
+        <div class="pc">
+          <span class="lab plus">メリット</span><span>環境差がなく、証拠の再現性が最も高い。本番に近い構成で探索的検証ができる</span>
+          <span class="lab minus">デメリット</span><span>文言修正の L でもコンテナを起動することになり、往復が遅い。プロジェクトに compose 定義がないと使えず、導入の障壁になる</span>
+          <span class="lab ev">根拠</span><span>L 階層の例と分割原則 <span class="src">vouch-decision-record.html §6, §9</span></span>
+        </div>
+      </div></div>
+      <div class="opt"><span class="l">C</span><div><span class="t">CI だけで検証し、AI はローカルで操作しない</span>
+        <div class="pc">
+          <span class="lab plus">メリット</span><span>ローカルの環境差やサンドボックスの問題を避けられる。証拠が常に CI の artifact に残る</span>
+          <span class="lab minus">デメリット</span><span>AI が「操作して壊れた箇所をその場で直す」ループが回らず、検証の優先順位②（AI がアプリを操作）が実質的に消える。探索的検証（未知の未知）は CI の固定手順では見つからない</span>
+          <span class="lab ev">根拠</span><span>検証の優先順位 <span class="src">vouch-decision-record.html §8</span>／探索的検証の位置づけ <span class="src">vouch-decision-record.html §7「実使用での問題」</span></span>
+        </div>
+      </div></div>
+    </div>
+    <div class="sec"><b>推奨と既定</b>
+      <div class="rec"><b>推奨 A。未回答時の既定：A。</b>影響範囲：Build / Verify Skill、<code>knowledge/infra/</code> の形式、Codex 配布物のサンドボックス設定、<code>demo.sh</code> のテンプレート。</div>
+    </div>
+  </div>
+</section>
+
+<!-- Q6 -->
+<section id="q6">
+  <div class="sec-head"><span class="n">Q6</span><h2>Brief と判断依頼の言語</h2></div>
+  <div class="sec-sub">人が読む成果物（Intent、Brief、判断依頼、decisions.md）の言語を固定するか、設定にするか。</div>
+
+  <div class="ask">
+    <div class="hd">判断依頼 Q6 · 人が読む成果物の言語 <span>ブロック: しない（rules.md の既定値）</span></div>
+    <div class="sec"><b>状況</b>
+      <p>v2 には言語設定がなく、成果物は英語で書かれる前提だった <span class="src">core/vouch-common/protocols/stage-protocol.md（英語のテンプレート）</span>。このチームの決定記録と判断依頼は日本語で運用している。識別子（<code>AC-1</code>、<code>Q-3</code>、<code>D-4</code>、イベント種別、ファイルパス）は言語に関係なく英数字で、監査ログの分析にも使う。</p>
+    </div>
+    <div class="sec"><b>選択肢</b>
+      <div class="opt"><span class="l">A</span><div><span class="t"><code>rules.md</code> の <code>language:</code> で選択。既定は日本語。識別子・イベント種別・コミットメッセージの型は英語固定</span> <span class="pill accent">推奨</span>
+        <div class="pc">
+          <span class="lab plus">メリット</span><span>チームの言語で Brief と判断依頼が読める。英語圏のチームや OSS プロジェクトでも同じ配布物が使える。識別子が英語固定なので、監査ログの分析と grep は言語に依存しない</span>
+          <span class="lab minus">デメリット</span><span>テンプレートの見出し（「主張と証拠」など）を言語ごとに持つ必要がある。日本語と英語の2つを最初に用意し、他は後回しになる</span>
+          <span class="lab ev">根拠</span><span>証拠と参照元の書式が英数字 <span class="src">vouch-decision-record.html §7</span>／Brief の固定構造 <span class="src">vouch-decision-record.html §14</span></span>
+        </div>
+      </div></div>
+      <div class="opt"><span class="l">B</span><div><span class="t">日本語固定</span>
+        <div class="pc">
+          <span class="lab plus">メリット</span><span>テンプレートが1つで済み、最も単純。このチームの用途には十分</span>
+          <span class="lab minus">デメリット</span><span>英語話者のメンバーや OSS 公開時に使えない。upstream（awslabs）へ還元する道が閉じる</span>
+          <span class="lab ev">根拠</span><span>上流リポジトリは英語 <span class="src">README.md</span></span>
+        </div>
+      </div></div>
+      <div class="opt"><span class="l">C</span><div><span class="t">英語固定（コードや規約と同じ言語に揃える）</span>
+        <div class="pc">
+          <span class="lab plus">メリット</span><span>コード・コミット・PR と言語が揃い、モデルの出力も安定しやすい。upstream 互換</span>
+          <span class="lab minus">デメリット</span><span>このチームの人が Brief を読む速度が落ち、「コードを読まなくても判断できる」というレビュー負荷軽減の目的に反する</span>
+          <span class="lab ev">根拠</span><span>転換③「人は Review Brief を読み、判断だけをする」<span class="src">vouch-decision-record.html §3</span></span>
+        </div>
+      </div></div>
+    </div>
+    <div class="sec"><b>推奨と既定</b>
+      <div class="rec"><b>推奨 A。未回答時の既定：A（既定 <code>ja</code>）。</b>影響範囲：成果物テンプレート（ja / en の2セット）、Skill の出力指示、rules.md のテンプレート。</div>
+    </div>
+  </div>
+</section>
+
+<footer>Vouch 未決事項の判断依頼 · 2026-09-27 · 決定記録 rev 3 §18 に対応。根拠は本リポジトリのファイル位置と公式文書の節で示した。</footer>
+</div>
+</body>
+</html>

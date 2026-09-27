@@ -1,0 +1,27 @@
+{
+  "$schema": "./budgets.schema.json",
+  "lines": {
+    "hookFile": 150,
+    "hooksTotal": 1500,
+    "libFile": 300,
+    "libTotal": 3000,
+    "orchestrator": 150,
+    "stageSkill": 200,
+    "agentsMd": 60,
+    "agent": 80,
+    "packageScript": 150
+  },
+  "context": { "alwaysLoadedTokens": 8000, "bytesPerToken": 3 },
+  "timing": {
+    "recordP95Ms": 200,
+    "checkP95Ms": 2000,
+    "samples": 20,
+    "testTimeoutMs": 5000,
+    "checkTimeoutMs": 90000
+  },
+  "coverage": {
+    "lib": { "lines": 95, "branches": 95, "functions": 100 },
+    "hooks": { "lines": 90, "branches": 85 }
+  },
+  "mutation": { "score": 80 }
+}

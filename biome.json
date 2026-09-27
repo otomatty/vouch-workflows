@@ -1,0 +1,70 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.4.16/schema.json",
+  "files": {
+    "includes": [
+      "**",
+      "!!docs/aidlc-v2-reference",
+      "!!docs/spec",
+      "!!node_modules",
+      "!!dist",
+      "!!coverage",
+      "!!reports",
+      "!!.stryker-tmp",
+      "!!graphify-out",
+      "!!tests/fixtures",
+      "!!tests/golden",
+      "!!package-lock.json"
+    ]
+  },
+  "formatter": { "enabled": true, "indentStyle": "space", "indentWidth": 2 },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "style": {
+        "useNodejsImportProtocol": "error",
+        "noRestrictedImports": {
+          "level": "error",
+          "options": {
+            "paths": {
+              "jest": "TEST-1: use node:test",
+              "vitest": "TEST-1: use node:test",
+              "bun:test": "TEST-1: use node:test"
+            }
+          }
+        }
+      },
+      "suspicious": { "noExplicitAny": "error" }
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["core/hooks/**"],
+      "linter": {
+        "rules": {
+          "suspicious": { "noConsole": "error" },
+          "style": {
+            "noProcessEnv": "error",
+            "noRestrictedGlobals": {
+              "level": "error",
+              "options": {
+                "deniedGlobals": {
+                  "fetch": "HOOK-5: hooks must not access the network",
+                  "WebSocket": "HOOK-5: hooks must not access the network"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["core/hooks/lib/io.mjs"],
+      "linter": { "rules": { "suspicious": { "noConsole": "off" } } }
+    },
+    {
+      "includes": ["core/hooks/lib/env.mjs"],
+      "linter": { "rules": { "style": { "noProcessEnv": "off" } } }
+    }
+  ]
+}

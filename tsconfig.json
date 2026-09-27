@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2023"],
+    "allowJs": true,
+    "checkJs": true,
+    "strict": true,
+    "noEmit": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "resolveJsonModule": true,
+    "types": ["node"],
+    "skipLibCheck": true
+  },
+  "include": [
+    "core/**/*.mjs",
+    "harness/**/*.mjs",
+    "scripts/**/*.mjs",
+    "*.config.mjs"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "docs",
+    "coverage",
+    "reports",
+    ".stryker-tmp"
+  ]
+}

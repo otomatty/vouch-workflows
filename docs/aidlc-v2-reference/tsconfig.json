@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "allowImportingTsExtensions": true,
+    "types": ["bun-types"]
+  },
+  "include": [
+    "core/**/*.ts",
+    "harness/**/*.ts",
+    "scripts/**/*.ts",
+    "plugins/*/tools/**/*.ts"
+  ],
+  "exclude": [
+    "harness/*/hooks/*-adapter.ts"
+  ]
+}

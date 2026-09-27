@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vouch 実装ルール</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  color-scheme: light;
+  --bg:#F5F7F9; --surface:#FFFFFF; --surface-2:#EDF1F5;
+  --text:#1B2430; --muted:#5B6775; --line:#D6DDE5; --line-strong:#A9B4C0;
+  --accent:#0F6E8C; --accent-soft:#DDEFF5;
+  --human:#B84A0E; --human-soft:#FBE8DC;
+  --ok:#1F7A4D; --ok-soft:#DFF2E7;
+  --warn:#B42318; --warn-soft:#FBE3E1;
+  --hook:#5B4A9E; --hook-soft:#E8E3F6;
+  --code-bg:#EEF2F6;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:#11161C; --surface:#1A2129; --surface-2:#222B35;
+    --text:#E6EAEF; --muted:#9AA5B1; --line:#2E3946; --line-strong:#4A5766;
+    --accent:#5CBCD9; --accent-soft:#163A46;
+    --human:#F29A5F; --human-soft:#3F2415;
+    --ok:#5BC08A; --ok-soft:#173A29;
+    --warn:#F08A82; --warn-soft:#44201D;
+    --hook:#B3A4E8; --hook-soft:#2A2344;
+    --code-bg:#151B22;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#11161C; --surface:#1A2129; --surface-2:#222B35;
+  --text:#E6EAEF; --muted:#9AA5B1; --line:#2E3946; --line-strong:#4A5766;
+  --accent:#5CBCD9; --accent-soft:#163A46;
+  --human:#F29A5F; --human-soft:#3F2415;
+  --ok:#5BC08A; --ok-soft:#173A29;
+  --warn:#F08A82; --warn-soft:#44201D;
+  --hook:#B3A4E8; --hook-soft:#2A2344;
+  --code-bg:#151B22;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:"IBM Plex Sans JP","Hiragino Sans","Yu Gothic UI","Noto Sans JP",system-ui,sans-serif;
+  font-size:15px; line-height:1.75;
+  padding-block:0 64px; padding-inline:16px;
+  -webkit-font-smoothing:antialiased;
+}
+code,.mono{font-family:"IBM Plex Mono","SFMono-Regular",Menlo,Consolas,monospace;font-size:.92em}
+code{background:var(--code-bg);padding:.08em .4em;border-radius:4px}
+pre{background:var(--code-bg);border-radius:6px;padding:12px 14px;font-family:"IBM Plex Mono",monospace;font-size:12.5px;line-height:1.6;overflow-x:auto;margin:12px 0}
+pre code{background:none;padding:0;font-size:inherit}
+a{color:var(--accent)}
+h1,h2,h3,h4{line-height:1.3;text-wrap:balance;margin:0}
+h1{font-size:clamp(26px,4vw,36px);font-weight:700;letter-spacing:-.01em}
+h2{font-size:22px;font-weight:700;margin-top:8px}
+h3{font-size:16px;font-weight:700;margin-top:24px;margin-bottom:6px}
+p{margin:0 0 12px}
+ul,ol{margin:0 0 12px;padding-left:1.4em}
+li{margin:2px 0}
+.wrap{max-width:1040px;margin:0 auto}
+.prose{max-width:760px}
+header.top{padding-block:40px 24px;border-bottom:1px solid var(--line)}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.lede{font-size:17px;color:var(--muted);max-width:760px;margin-top:12px}
+.meta{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:16px;font-size:13px;color:var(--muted)}
+.meta b{color:var(--text);font-weight:500}
+.pill{display:inline-block;padding:1px 9px;border-radius:999px;font-size:12px;font-weight:500;line-height:1.7;white-space:nowrap;vertical-align:middle}
+.pill.accent{background:var(--accent-soft);color:var(--accent)}
+.pill.human{background:var(--human-soft);color:var(--human)}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.hook{background:var(--hook-soft);color:var(--hook)}
+.pill.muted{background:var(--surface-2);color:var(--muted)}
+nav.toc{margin-top:24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:4px 24px;font-size:14px}
+nav.toc a{text-decoration:none;color:var(--text);display:flex;gap:10px;padding:3px 0;border-bottom:1px dotted var(--line)}
+nav.toc a span.n{font-family:"IBM Plex Mono",monospace;color:var(--muted);font-size:12px;min-width:2ch;padding-top:2px}
+section{padding-block:40px;border-bottom:1px solid var(--line)}
+section:last-of-type{border-bottom:0}
+.sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:14px;flex-wrap:wrap}
+.sec-head .n{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--accent);min-width:2.5ch}
+figure{margin:20px 0 8px}
+figure svg{max-width:100%;height:auto;display:block}
+figcaption{font-size:13px;color:var(--muted);margin-top:8px;max-width:760px}
+.fig-scroll{overflow-x:auto}
+.fig-scroll svg{min-width:640px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;margin:12px 0 8px}
+.tbl{overflow-x:auto}
+th,td{text-align:left;vertical-align:top;padding:7px 9px;border-bottom:1px solid var(--line)}
+th{font-weight:500;color:var(--muted);font-size:12.5px;border-bottom:1px solid var(--line-strong);white-space:nowrap}
+td.id{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--accent);white-space:nowrap}
+td.k{font-weight:500;white-space:nowrap}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin:12px 0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px 16px}
+.card h3{margin-top:0}
+.tree{background:var(--code-bg);border-radius:6px;padding:12px 14px;font-family:"IBM Plex Mono",monospace;font-size:12.5px;line-height:1.6;overflow-x:auto;white-space:pre;margin:12px 0}
+.tree .c{color:var(--muted)}
+.principle{border-left:3px solid var(--accent);padding-left:14px}
+.principle + .principle{margin-top:14px}
+.principle b{display:block;font-size:15px}
+.note{font-size:13px;color:var(--muted)}
+.ask{background:var(--human-soft);border-radius:6px;padding:12px 16px;margin-top:14px;font-size:14px}
+.ask b{color:var(--human)}
+.q{display:grid;grid-template-columns:3ch 1fr;gap:10px;padding:10px 0;border-bottom:1px dotted var(--line)}
+.q .n{font-family:"IBM Plex Mono",monospace;color:var(--human);font-size:13px;padding-top:2px}
+footer{padding-top:24px;font-size:13px;color:var(--muted)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="eyebrow">Implementation rules · draft</div>
+  <h1>Vouch 実装ルール — 構造・Lint・テスト</h1>
+  <p class="lede">Vouch をこのリポジトリで実装するための、コードの構造、機械で強制できる実装ルール、厳格なテストのルール。判断でしか守れないルールは「reviewer」と明記し、それ以外はすべて Lint・型検査・テスト・CI 予算のどれかで落ちるようにする。ルールには ID を付け、違反時の出力に ID を出す。</p>
+  <div class="meta">
+    <span>更新 <b>2026-09-27</b></span>
+    <span>前提 <b>Vouch 決定記録 rev 3</b></span>
+    <span>実行時 <b>node ≥ 22、依存ゼロ</b></span>
+    <span>開発時 <b>npm、Biome、tsc、dependency-cruiser、markdownlint、knip</b></span>
+  </div>
+  <nav class="toc" aria-label="目次">
+    <a href="#s1"><span class="n">1</span>方針</a>
+    <a href="#s2"><span class="n">2</span>リポジトリ構造</a>
+    <a href="#s3"><span class="n">3</span>ツールチェーン</a>
+    <a href="#s4"><span class="n">4</span>実装ルール（Lint が効く）</a>
+    <a href="#s5"><span class="n">5</span>テストのルール</a>
+    <a href="#s6"><span class="n">6</span>予算と CI</a>
+    <a href="#s7"><span class="n">7</span>骨格コード</a>
+    <a href="#s8"><span class="n">8</span>確認事項</a>
+  </nav>
+</header>
+
+<!-- 1 -->
+<section id="s1">
+  <div class="sec-head"><span class="n">01</span><h2>方針</h2></div>
+  <div class="prose">
+    <div class="principle"><b>ルールは機械で守る。守れないルールは「判断」と明記する。</b>この文書の各ルールは「強制手段」の列を持つ。手段は Biome / tsc / depcruise / markdownlint / knip / 構造テスト / CI 予算 / reviewer のいずれか。reviewer 以外は CI が落とす。reviewer は Vouch の reviewer エージェントと人の観点表に載せる。</div>
+    <div class="principle"><b>実行時は依存ゼロ、開発時は使えるものを使う。</b>利用者に配るフックは node の組み込みモジュールだけで動く plain JavaScript。このリポジトリの開発ツール（Biome、TypeScript の型検査、dependency-cruiser、markdownlint、knip、Stryker）は devDependencies に置き、配布物には含めない。</div>
+    <div class="principle"><b>テストは契約を検証する。実装の写しを書かない。</b>フックは子プロセスとして起動し、stdin / stdout / 終了コード / ファイルへの副作用だけを検証する。ライブラリは純粋関数として直接検証する。Skill と成果物テンプレートは構造テストで検証する。モデルの振る舞いは評価スイート（CI 外）で検証する。</div>
+    <div class="principle"><b>Vouch の運用ルールは、このリポジトリ自身にも適用する。</b>契約 → テスト → 実装のコミット順、主張には証拠、Review Brief で PR を出す。Vouch の最初の利用者はこのリポジトリ。</div>
+  </div>
+</section>
+
+<!-- 2 -->
+<section id="s2">
+  <div class="sec-head"><span class="n">02</span><h2>リポジトリ構造</h2></div>
+  <div class="prose"><p>v2 の <code>core/tools/</code>（10.5 万行の TS エンジン）は持たない。実行時コードは <code>core/hooks/</code> だけで、他はすべて Markdown / JSON のデータ。依存の向きを固定し、dependency-cruiser で逆流を落とす。</p></div>
+<div class="tree">core/
+├─ hooks/                        <span class="c"># 実行時。node ESM、依存ゼロ、ビルドなし</span>
+│  ├─ lib/                       <span class="c"># 純粋関数。node: 組み込みだけを import</span>
+│  │  ├─ io.mjs                  <span class="c"># stdin/stdout/exit の唯一の入口。run(main) ラッパ</span>
+│  │  ├─ audit.mjs               <span class="c"># appendEvent()。events.jsonl を開く唯一の場所</span>
+│  │  ├─ fs.mjs                  <span class="c"># ファイル読み書きの唯一の場所（原子的書き込み）</span>
+│  │  ├─ env.mjs                 <span class="c"># process.env を読む唯一の場所</span>
+│  │  ├─ clock.mjs               <span class="c"># now() / id()。テストで差し替える</span>
+│  │  ├─ frontmatter.mjs  git.mjs  citation.mjs  contract.mjs  dod.mjs  freshness.mjs  ...
+│  └─ vouch-&lt;verb&gt;-&lt;object&gt;.mjs  <span class="c"># 1フック1ファイル。lib を呼ぶだけの薄い層（≤150行）</span>
+├─ skills/                       <span class="c"># Markdown。{{HARNESS_DIR}} トークンでハーネス非依存</span>
+│  ├─ vouch/SKILL.md             <span class="c"># オーケストレータ（≤150行）</span>
+│  ├─ vouch-intent/  vouch-design/  vouch-build/  vouch-verify/  vouch-migrate/
+│  └─ vouch-kb-*/                <span class="c"># 必要時のみ読む知識</span>
+├─ agents/                       <span class="c"># builder / reviewer / explorer（Markdown ＋ frontmatter）</span>
+├─ templates/{ja,en}/            <span class="c"># intent / design / build-log / review / decisions / rules / 判断依頼</span>
+├─ registry/                     <span class="c"># 単一の正典。Markdown 内の数値・一覧はここから検証する</span>
+│  ├─ audit-events.json          <span class="c"># 台帳 ＋ JSON Schema（Q1）</span>
+│  ├─ audit-migration.json       <span class="c"># v2 の 91 名 → Vouch 名（未対応は legacy）</span>
+│  ├─ quality-layers.json        <span class="c"># 層 × 階層（Q3）</span>
+│  ├─ diagrams.json              <span class="c"># 成果物ごとの必須図（Q4）</span>
+│  ├─ enforcement-map.json       <span class="c"># Skill 中の MUST/NEVER → 強制手段</span>
+│  └─ budgets.json               <span class="c"># 行数・トークン・時間の予算</span>
+└─ AGENTS.md                     <span class="c"># 配布する共通ルール（≤60行）</span>
+harness/
+├─ claude/  manifest.mjs  settings.json          <span class="c"># コピー先の対応表とフック登録</span>
+└─ codex/   manifest.mjs  hooks.json  agent-toml.mjs   <span class="c"># Markdown エージェント → TOML の変換</span>
+scripts/
+└─ package.mjs                   <span class="c"># コピーとトークン置換だけ（≤150行）。--check で dist の差分を検出</span>
+dist/{claude,codex}/             <span class="c"># 生成物。手編集禁止</span>
+tests/
+├─ helpers/                      <span class="c"># sandbox()、runHook()、fixtures loader、fake clock</span>
+├─ fixtures/                     <span class="c"># ハーネスのイベント JSON（版つき）、intent フォルダ、v2 record</span>
+├─ golden/                       <span class="c"># 期待出力（events.jsonl、描画済みテンプレート）</span>
+├─ unit/lib/                     <span class="c"># lib と 1:1 対応</span>
+├─ hooks/                        <span class="c"># フックの契約テスト（子プロセス）</span>
+├─ registry/  content/  packaging/  scenario/
+└─ eval/                         <span class="c"># モデル込みの評価。CI では走らせない</span></div>
+
+  <figure>
+    <div class="fig-scroll">
+    <svg viewBox="0 0 940 300" role="img" aria-label="依存の向き。フックは lib だけを import し、lib は node の組み込みだけを import する。Skill とテンプレートはレジストリを参照し、package スクリプトが core を dist にコピーする。テストはすべてを参照できるが、実行時コードはテストを参照できない">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+      <g fill="currentColor" font-size="12" font-family="IBM Plex Sans JP, sans-serif">
+        <!-- runtime column -->
+        <rect x="20" y="20" width="300" height="200" rx="6" fill="none" stroke="var(--hook)" stroke-width="1.4" stroke-dasharray="6 4"/>
+        <text x="170" y="42" text-anchor="middle" font-weight="700" font-size="13" fill="var(--hook)">実行時（配布物）</text>
+        <rect x="40" y="56" width="260" height="40" rx="4" fill="var(--hook-soft)" stroke="var(--hook)" stroke-width="1.4"/>
+        <text x="170" y="80" text-anchor="middle">hooks/vouch-*.mjs（薄い層）</text>
+        <rect x="40" y="116" width="260" height="40" rx="4" fill="var(--hook-soft)" stroke="var(--hook)" stroke-width="1.4"/>
+        <text x="170" y="140" text-anchor="middle">hooks/lib/*.mjs（純粋関数）</text>
+        <rect x="40" y="176" width="260" height="32" rx="4" fill="var(--surface)" stroke="currentColor" stroke-width="1"/>
+        <text x="170" y="197" text-anchor="middle" font-size="11">node: 組み込みモジュールのみ</text>
+        <line x1="170" y1="96" x2="170" y2="116" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar)"/>
+        <line x1="170" y1="156" x2="170" y2="176" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar)"/>
+        <text x="180" y="110" font-size="10" opacity=".75">import</text>
+        <text x="180" y="170" font-size="10" opacity=".75">import</text>
+        <!-- forbidden arrows -->
+        <path d="M60,76 C10,76 10,136 40,136" fill="none" stroke="var(--warn)" stroke-width="1.2" stroke-dasharray="3 3"/>
+        <text x="44" y="52" font-size="9.5" fill="var(--warn)">hook↔hook ✗</text>
+        <text x="332" y="120" font-size="9.5" fill="var(--warn)">lib → hooks ✗</text>
+        <text x="332" y="132" font-size="9.5" fill="var(--warn)">lib → npm ✗</text>
+
+        <!-- data column -->
+        <rect x="420" y="20" width="240" height="200" rx="6" fill="none" stroke="var(--accent)" stroke-width="1.4" stroke-dasharray="6 4"/>
+        <text x="540" y="42" text-anchor="middle" font-weight="700" font-size="13" fill="var(--accent)">データ（配布物）</text>
+        <rect x="440" y="56" width="200" height="40" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+        <text x="540" y="80" text-anchor="middle">skills / agents / templates</text>
+        <rect x="440" y="116" width="200" height="40" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+        <text x="540" y="140" text-anchor="middle">registry/*.json（正典）</text>
+        <line x1="540" y1="96" x2="540" y2="116" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar)"/>
+        <text x="550" y="110" font-size="10" opacity=".75">参照（テストで整合）</text>
+        <line x1="440" y1="146" x2="300" y2="146" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar)" stroke-dasharray="5 4"/>
+        <text x="370" y="160" text-anchor="middle" font-size="10" opacity=".75">lib が読む</text>
+        <rect x="440" y="176" width="200" height="32" rx="4" fill="var(--surface)" stroke="currentColor" stroke-width="1"/>
+        <text x="540" y="197" text-anchor="middle" font-size="11">AGENTS.md（≤60行）</text>
+
+        <!-- build column -->
+        <rect x="700" y="20" width="220" height="90" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"/>
+        <text x="810" y="42" text-anchor="middle" font-weight="700" font-size="13">生成</text>
+        <rect x="720" y="56" width="180" height="40" rx="4" fill="var(--surface)" stroke="currentColor" stroke-width="1"/>
+        <text x="810" y="80" text-anchor="middle">scripts/package.mjs → dist/</text>
+        <line x1="660" y1="76" x2="720" y2="76" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar)"/>
+        <text x="810" y="122" text-anchor="middle" font-size="10" opacity=".75">core/ と harness/ をコピー（--check で差分検出）</text>
+
+        <!-- tests -->
+        <rect x="700" y="130" width="220" height="90" rx="6" fill="var(--ok-soft)" stroke="var(--ok)" stroke-width="1.4"/>
+        <text x="810" y="152" text-anchor="middle" font-weight="700" font-size="13" fill="var(--ok)">tests/（開発時）</text>
+        <text x="810" y="174" text-anchor="middle" font-size="11">すべてを参照できる</text>
+        <text x="810" y="192" text-anchor="middle" font-size="11">実行時コードからは参照できない</text>
+        <text x="810" y="210" text-anchor="middle" font-size="11">devDependencies はここだけ</text>
+        <line x1="700" y1="175" x2="670" y2="175" stroke="var(--ok)" stroke-width="1.2" marker-end="url(#ar)"/>
+        <path d="M700,200 C600,260 300,260 170,220" fill="none" stroke="var(--ok)" stroke-width="1.2" marker-end="url(#ar)"/>
+
+        <text x="20" y="285" font-size="11" opacity=".8">実線＝許可される依存。赤の点線＝dependency-cruiser が落とす依存。lib はレジストリ JSON を読むが、Skill やテストは読まない。</text>
+      </g>
+    </svg>
+    </div>
+    <figcaption>図1. 依存の向き。フック → lib → node 組み込み、の一方向。lib はレジストリを読める。テストはすべてを参照できるが、実行時コードはテストと npm パッケージを参照できない。</figcaption>
+  </figure>
+</section>
+
+<!-- 3 -->
+<section id="s3">
+  <div class="sec-head"><span class="n">03</span><h2>ツールチェーン</h2></div>
+  <div class="tbl"><table>
+    <thead><tr><th>用途</th><th>ツール</th><th>理由</th><th>v2 から</th></tr></thead>
+    <tbody>
+      <tr><td class="k">実行時</td><td>node ≥ 22（LTS）。<code>package.json</code> の <code>engines</code> で宣言</td><td>決定記録 rev 3。組み込みの <code>node:test</code>、<code>--experimental-test-coverage</code>、<code>t.plan()</code> が使える</td><td>bun を廃止</td></tr>
+      <tr><td class="k">パッケージ管理</td><td>npm ＋ <code>package-lock.json</code>、CI は <code>npm ci</code></td><td>node に同梱。追加インストールなし</td><td>bun.lock を廃止</td></tr>
+      <tr><td class="k">Lint / 整形</td><td>Biome 2.x（既存 2.4.16）。<code>formatter.enabled: true</code> に変更</td><td>単一バイナリで JS / JSON を扱える。<code>noRestrictedImports</code>、<code>useNodejsImportProtocol</code>、<code>noConsole</code>、<code>noProcessEnv</code> が使える</td><td>継続。整形も有効化</td></tr>
+      <tr><td class="k">型検査</td><td>TypeScript 6（既存）を <code>tsc --checkJs --noEmit</code> で使う。型は JSDoc</td><td>フックは plain JS のまま、型の厳密さは TS と同等にできる。ビルドが要らない</td><td>.ts → .mjs ＋ JSDoc</td></tr>
+      <tr><td class="k">依存方向</td><td>dependency-cruiser（<code>.dependency-cruiser.cjs</code>）</td><td>hooks ↔ hooks、lib → hooks、実行時 → npm、循環 を落とせる。Biome にはこの検査がない</td><td>新規</td></tr>
+      <tr><td class="k">Markdown</td><td>markdownlint-cli2（<code>.markdownlint-cli2.jsonc</code>）</td><td>Skill / テンプレート / AGENTS.md の見出し階層、コードフェンスの言語指定、行末空白を落とせる</td><td>新規</td></tr>
+      <tr><td class="k">未使用検出</td><td>knip（既存 6）</td><td>使われない lib、export、devDependency を落とす</td><td>継続。entry を .mjs に</td></tr>
+      <tr><td class="k">テスト</td><td><code>node --test</code> ＋ <code>node:assert/strict</code>。フレームワークなし</td><td>依存ゼロ。カバレッジ閾値（<code>--test-coverage-lines</code> ほか）も組み込み</td><td>bun test を廃止</td></tr>
+      <tr><td class="k">ミューテーション</td><td>StrykerJS（夜間のみ）</td><td>「テストが本当に検証しているか」を lib に対して機械で測る。Vouch の破壊検査の自動版</td><td>新規</td></tr>
+      <tr><td class="k">JSON Schema</td><td>ajv（テストの devDependency）</td><td>レジストリと監査イベントの検証</td><td>新規</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">npm scripts：<code>lint</code>（biome ＋ markdownlint ＋ depcruise ＋ knip）、<code>typecheck</code>（tsc --checkJs）、<code>test</code>（node --test、カバレッジ閾値つき）、<code>package</code> / <code>package:check</code>、<code>check</code>（lint ＋ typecheck ＋ test ＋ package:check ＝ CI と同じ）、<code>mutate</code>（Stryker、夜間）、<code>eval</code>（評価スイート、手動）。</p>
+</section>
+
+<!-- 4 -->
+<section id="s4">
+  <div class="sec-head"><span class="n">04</span><h2>実装ルール（Lint が効く）</h2></div>
+  <div class="prose"><p>「強制手段」が reviewer 以外のルールは、違反すると CI が落ちる。構造テストは <code>tests/content/</code> と <code>tests/registry/</code> の <code>node --test</code> で動くテストで、失敗メッセージにルール ID を含める。</p></div>
+
+  <h3>STR — 構造</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>ID</th><th>ルール</th><th>強制手段</th></tr></thead>
+    <tbody>
+      <tr><td class="id">STR-1</td><td>1フック1ファイル。ファイル名は <code>vouch-&lt;verb&gt;-&lt;object&gt;.mjs</code>（例 <code>vouch-check-citation.mjs</code>、<code>vouch-record-event.mjs</code>）。<code>lib/</code> 以外のサブディレクトリを作らない</td><td>構造テスト</td></tr>
+      <tr><td class="id">STR-2</td><td>依存の向き：hooks → lib のみ。lib → <code>node:</code> 組み込みと <code>registry/*.json</code> のみ。hooks 同士、lib → hooks、実行時 → tests、実行時 → npm、循環はすべて禁止</td><td>dependency-cruiser</td></tr>
+      <tr><td class="id">STR-3</td><td><code>core/</code> にハーネス固有のパス（<code>.claude/</code>、<code>.codex/</code>、<code>.agents/</code>）を書かない。<code>{{HARNESS_DIR}}</code> トークンを使う</td><td>構造テスト（grep）</td></tr>
+      <tr><td class="id">STR-4</td><td><code>dist/</code> は生成物。<code>core/</code> と <code>harness/</code> から <code>package.mjs</code> でバイト一致で再生成できる</td><td><code>package.mjs --check</code></td></tr>
+      <tr><td class="id">STR-5</td><td>数値・一覧の正典は <code>registry/*.json</code>。Markdown や Skill に書かれた数（イベント数、ステージ数、予算）はレジストリと一致する</td><td>構造テスト（v2 の t68 と同じ方式）</td></tr>
+      <tr><td class="id">STR-6</td><td><code>scripts/package.mjs</code> はコピー・トークン置換・Markdown → TOML 変換だけを行う。条件分岐で内容を変えない（内容の差はすべて <code>harness/&lt;name&gt;/</code> のファイルで表現する）</td><td>構造テスト（package.mjs の import と行数）＋ reviewer</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>HOOK — フック</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>ID</th><th>ルール</th><th>強制手段</th></tr></thead>
+    <tbody>
+      <tr><td class="id">HOOK-1</td><td>依存ゼロ。<code>import</code> は <code>node:</code> 接頭辞つきの組み込みか <code>./lib/</code> だけ。<code>package.json</code> に <code>dependencies</code> を持たない</td><td>Biome <code>useNodejsImportProtocol</code> ＋ dependency-cruiser ＋ 構造テスト（package.json）</td></tr>
+      <tr><td class="id">HOOK-2</td><td>決して例外で落ちない。エントリは <code>run(main)</code>（<code>lib/io.mjs</code>）だけで、<code>main</code> の例外は捕捉して stderr に ID つきで出し、終了コード 0 で抜ける。ハーネスを壊す終了コードは出さない</td><td>契約テスト（不正な stdin で終了コード 0）＋ 構造テスト（エントリ形式）</td></tr>
+      <tr><td class="id">HOOK-3</td><td>終了コードの契約：0 ＝ 許可 / 何もしない、2 ＝ 遮断（理由は stderr、ハーネスがモデルに渡す）。それ以外は使わない</td><td>契約テスト</td></tr>
+      <tr><td class="id">HOOK-4</td><td>stdout は JSON か空。人が読む文は stderr。<code>console.*</code> をフックと lib で直接呼ばない（<code>lib/io.mjs</code> の <code>respond()</code> / <code>warn()</code> だけ）</td><td>Biome <code>noConsole</code>（<code>lib/io.mjs</code> のみ除外）</td></tr>
+      <tr><td class="id">HOOK-5</td><td>判断しない・外に出ない。<code>node:http</code>、<code>node:https</code>、<code>node:net</code>、<code>node:dns</code>、<code>fetch</code>、<code>WebSocket</code> を使わない。モデルや外部 API を呼ばない</td><td>Biome <code>noRestrictedImports</code> ＋ <code>noRestrictedGlobals</code>（fetch, WebSocket）</td></tr>
+      <tr><td class="id">HOOK-6</td><td>ファイル I/O は <code>lib/fs.mjs</code> だけが <code>node:fs</code> を import する。監査ログは <code>lib/audit.mjs</code> の <code>appendEvent()</code> だけが開く（append-only、1行1イベント、書き込みは原子的）</td><td>Biome <code>noRestrictedImports</code>（<code>node:fs</code> を <code>lib/fs.mjs</code> 以外で禁止）＋ 契約テスト</td></tr>
+      <tr><td class="id">HOOK-7</td><td><code>process.env</code> は <code>lib/env.mjs</code> だけが読む。<code>process.exit</code> は <code>lib/io.mjs</code> だけが呼ぶ</td><td>Biome <code>noProcessEnv</code>（env.mjs のみ除外）＋ 構造テスト（<code>process.exit</code> の grep）</td></tr>
+      <tr><td class="id">HOOK-8</td><td>時刻と ID は <code>lib/clock.mjs</code> の <code>now()</code> / <code>newId()</code> だけ。<code>Date.now()</code>、<code>new Date()</code>、<code>Math.random()</code>、<code>crypto.randomUUID()</code> を他で呼ばない</td><td>構造テスト（grep）</td></tr>
+      <tr><td class="id">HOOK-9</td><td>冪等。同じ入力で2回実行しても監査ログに同じイベントが2行入らない（イベント ID は入力とセッションから決定的に導出する）</td><td>契約テスト（2回実行して行数を比較）</td></tr>
+      <tr><td class="id">HOOK-10</td><td>emit するイベント <code>type</code> は文字列リテラルで書き、<code>registry/audit-events.json</code> に存在する。動的に組み立てない</td><td>構造テスト（<code>appendEvent(</code> の引数を静的に抽出して台帳と照合）</td></tr>
+      <tr><td class="id">HOOK-11</td><td>型は JSDoc で完全に付け、<code>tsc --checkJs --strict --noEmit</code> が通る。<code>any</code> と <code>@ts-ignore</code> を使わない</td><td>tsc ＋ Biome <code>noExplicitAny</code>（JSDoc）＋ 構造テスト（<code>@ts-ignore</code> の grep）</td></tr>
+      <tr><td class="id">HOOK-12</td><td>行数予算：フック1本 ≤ 150 行、フック合計 ≤ 1,500 行、lib 合計 ≤ 3,000 行、lib 1ファイル ≤ 300 行（空行・コメント込み）</td><td>CI 予算（<code>registry/budgets.json</code>）</td></tr>
+      <tr><td class="id">HOOK-13</td><td>時間予算：記録系フック p95 &lt; 200 ms、検査系 p95 &lt; 2 s（DoD 実行は <code>rules.md</code> のコマンドに従うため対象外）。予算は契約テストが計測する</td><td>契約テスト</td></tr>
+      <tr><td class="id">HOOK-14</td><td>入力の検証：ハーネスのイベント JSON は <code>lib/io.mjs</code> のスキーマで検証し、未知のフィールドは無視、必須欠落は「何もしない」で抜ける。入力を信用してパスを組み立てない（パストラバーサル禁止：解決後のパスが project root 配下であることを検査）</td><td>契約テスト（不正入力、<code>../</code> を含むパス）</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>REG — レジストリ</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>ID</th><th>ルール</th><th>強制手段</th></tr></thead>
+    <tbody>
+      <tr><td class="id">REG-1</td><td><code>audit-events.json</code> は JSON Schema（draft 2020-12）を持ち、各イベントに <code>fields</code>（必須 / 任意）、<code>measures</code>、<code>pairs_with</code>（開始 ↔ 完了）を定義する。台帳自体もスキーマで検証する</td><td>registry テスト（ajv）</td></tr>
+      <tr><td class="id">REG-2</td><td>台帳のすべてのイベントに、<code>tests/fixtures/audit/&lt;type&gt;.jsonl</code> の fixture と、それを emit する契約テストがある。台帳に載っているのに誰も emit しないイベントは削除する</td><td>registry テスト（台帳 × fixture × テストの突き合わせ）</td></tr>
+      <tr><td class="id">REG-3</td><td><code>audit-migration.json</code> は v2 台帳の全 91 名をキーに持つ（v2 の <code>audit-format.md</code> を fixture として保存し、比較する）。値は Vouch 名か <code>legacy</code></td><td>registry テスト</td></tr>
+      <tr><td class="id">REG-4</td><td><code>enforcement-map.json</code>：Skill / AGENTS.md / テンプレートの中で <code>MUST</code>、<code>NEVER</code>、<code>必ず</code>、<code>禁止</code> を含む行は <code>[R-xxx]</code> タグを持ち、map に <code>hook | lint | test | reviewer | human</code> のどれかで登録されている。登録のない強制語は落ちる</td><td>content テスト</td></tr>
+      <tr><td class="id">REG-5</td><td><code>budgets.json</code> が唯一の予算表。CI の予算検査はここだけを読む</td><td>CI 予算</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>DOC — Skill・エージェント・テンプレート</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>ID</th><th>ルール</th><th>強制手段</th></tr></thead>
+    <tbody>
+      <tr><td class="id">DOC-1</td><td>SKILL.md の frontmatter はスキーマに従う（<code>name</code>、<code>description</code>、<code>user-invocable</code>、<code>reads</code>：常時読み込むか）。エージェントの frontmatter も同様（<code>name</code>、<code>inputs</code>、<code>tools</code>、<code>disallowed</code>）</td><td>content テスト（ajv）</td></tr>
+      <tr><td class="id">DOC-2</td><td>行数予算：オーケストレータ ≤ 150 行、各ステージ Skill ≤ 200 行、AGENTS.md ≤ 60 行、エージェント ≤ 80 行。常時読み込み合計（AGENTS.md ＋ オーケストレータ ＋ rules テンプレート）≤ 8,000 トークン（推定：バイト数 ÷ 3 で保守的に見積もる）</td><td>CI 予算</td></tr>
+      <tr><td class="id">DOC-3</td><td>Skill が指示するコマンドは許可リストから：<code>node {{HARNESS_DIR}}/hooks/...</code>、<code>git ...</code>、<code>rules.md</code> の DoD コマンド。<code>bun</code>、<code>npx</code>、<code>curl</code> を書かない</td><td>content テスト（コードフェンス内の grep）</td></tr>
+      <tr><td class="id">DOC-4</td><td>ja / en テンプレートは同じ節 ID を同じ順序で持つ（<code>&lt;!-- sec:claims --&gt;</code> のようなマーカー）。片方だけの節を作らない</td><td>content テスト</td></tr>
+      <tr><td class="id">DOC-5</td><td>Markdown の体裁：見出しは1段ずつ、コードフェンスに言語、行末空白なし、1行の長さは制限しない（日本語のため）</td><td>markdownlint</td></tr>
+      <tr><td class="id">DOC-6</td><td>相対リンクと <code>{{HARNESS_DIR}}</code> を含むパスは、置換後に <code>dist/</code> で実在する</td><td>packaging テスト</td></tr>
+      <tr><td class="id">DOC-7</td><td>テンプレートに必須の図（<code>registry/diagrams.json</code>）の Mermaid プレースホルダがあり、種類は安定5種のどれか</td><td>content テスト</td></tr>
+      <tr><td class="id">DOC-8</td><td>Skill は「何を・いつ・完了条件」を書く。手順を逐一書かない。判断の指示には根拠（レジストリか決定記録の節）を添える</td><td>reviewer</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>DIST — 配布物</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>ID</th><th>ルール</th><th>強制手段</th></tr></thead>
+    <tbody>
+      <tr><td class="id">DIST-1</td><td><code>dist/</code> は <code>package.mjs</code> の出力とバイト一致</td><td><code>package.mjs --check</code></td></tr>
+      <tr><td class="id">DIST-2</td><td><code>dist/</code> にテスト、fixture、golden、devDependency 由来のファイルを含まない</td><td>packaging テスト</td></tr>
+      <tr><td class="id">DIST-3</td><td>Claude の <code>settings.json</code> と Codex の <code>hooks.json</code> が登録するフックは実在し、登録されていないフックは存在しない（両方向）</td><td>packaging テスト</td></tr>
+      <tr><td class="id">DIST-4</td><td>Codex の TOML エージェントは Markdown エージェントから生成し、往復（TOML → Markdown）で元に戻る</td><td>packaging テスト</td></tr>
+      <tr><td class="id">DIST-5</td><td>配布物を空のプロジェクトにコピーし、<code>node .claude/hooks/vouch-doctor.mjs</code> が exit 0 で通る（node と git 以外を要求しない）</td><td>scenario テスト</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>DEP — 依存</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>ID</th><th>ルール</th><th>強制手段</th></tr></thead>
+    <tbody>
+      <tr><td class="id">DEP-1</td><td><code>package.json</code> に <code>dependencies</code> がない。<code>engines.node</code> を宣言する</td><td>構造テスト</td></tr>
+      <tr><td class="id">DEP-2</td><td>devDependencies は完全固定（<code>^</code> / <code>~</code> なし）。<code>package-lock.json</code> をコミットし、CI は <code>npm ci</code></td><td>構造テスト（package.json の grep）</td></tr>
+      <tr><td class="id">DEP-3</td><td>使われない lib、export、devDependency を残さない</td><td>knip</td></tr>
+      <tr><td class="id">DEP-4</td><td>CI は node 22 と 24 の両方で走る</td><td>CI 設定</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- 5 -->
+<section id="s5">
+  <div class="sec-head"><span class="n">05</span><h2>テストのルール</h2></div>
+  <div class="prose"><p>テストは <code>node --test</code> だけで動く。階層ごとに「何を・どう検証するか」を固定し、階層を横断するテスト（lib のテストがフックを子プロセスで起動する等）を書かない。</p></div>
+
+  <h3>階層</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>階層</th><th>対象</th><th>検証の仕方</th><th>必須の網羅</th><th>CI</th></tr></thead>
+    <tbody>
+      <tr><td class="k">unit</td><td><code>hooks/lib/*.mjs</code></td><td>直接 import。純粋関数として入力 → 出力。I/O は <code>lib/fs.mjs</code> をテスト用実装に差し替える</td><td>lib と 1:1 対応のテストファイル。分岐 95%</td><td>毎 PR</td></tr>
+      <tr><td class="k">hooks</td><td><code>hooks/vouch-*.mjs</code></td><td>子プロセスで起動し、stdin / stdout / stderr / 終了コード / sandbox 内のファイルと <code>events.jsonl</code> を検証</td><td>各フックに 5 ケース：許可、遮断、不正入力、冪等、時間予算</td><td>毎 PR</td></tr>
+      <tr><td class="k">registry</td><td><code>registry/*.json</code></td><td>スキーマ検証、fixture との突き合わせ、v2 対応表の完全性</td><td>全イベントに fixture ＋ emit するテスト</td><td>毎 PR</td></tr>
+      <tr><td class="k">content</td><td>skills / agents / templates / AGENTS.md</td><td>構造テスト（frontmatter、予算、許可コマンド、強制語のタグ、ja/en 対応、必須図）</td><td>全ファイル</td><td>毎 PR</td></tr>
+      <tr><td class="k">packaging</td><td><code>scripts/package.mjs</code>、<code>harness/</code></td><td>バイト一致、登録の両方向一致、TOML 往復、dist に不要物なし</td><td>両ハーネス</td><td>毎 PR</td></tr>
+      <tr><td class="k">scenario</td><td>1 Intent の一連の流れ</td><td>fixture のハーネスイベント列を順に投入し、最終的な intent フォルダと <code>events.jsonl</code> を golden と比較</td><td>bugfix / feature / brownfield / 移行 の4本</td><td>毎 PR</td></tr>
+      <tr><td class="k">mutation</td><td><code>hooks/lib/</code></td><td>StrykerJS。生き残った変異はテストの穴</td><td>ミューテーションスコア ≥ 80%</td><td>夜間</td></tr>
+      <tr><td class="k">eval</td><td>Skill ＋ モデル</td><td>代表タスクを Claude Code / Codex で実行し、監査ログから指標を集計。人の承認率も記録</td><td>決定記録 §17 の指標</td><td>手動 / リリース前</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>TEST — 書き方のルール</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>ID</th><th>ルール</th><th>強制手段</th></tr></thead>
+    <tbody>
+      <tr><td class="id">TEST-1</td><td>ランナーは <code>node --test</code>、アサーションは <code>node:assert/strict</code> のみ。ファイル名は <code>*.test.mjs</code>。配置は対象と鏡写し（<code>core/hooks/lib/audit.mjs</code> ↔ <code>tests/unit/lib/audit.test.mjs</code>）</td><td>構造テスト（鏡写しの存在確認）＋ Biome <code>noRestrictedImports</code>（jest / vitest / bun:test）</td></tr>
+      <tr><td class="id">TEST-2</td><td>すべてのテストは <code>t.plan(n)</code> でアサーション数を宣言する。アサーションのないテスト、計画と実数が違うテストは失敗する</td><td><code>node:test</code> の plan ＋ 構造テスト（<code>test(</code> ブロックに <code>t.plan</code> があるか）</td></tr>
+      <tr><td class="id">TEST-3</td><td>フックの契約テストはフックを <code>import</code> しない。<code>helpers/runHook()</code> で子プロセスとして起動する。lib のテストは子プロセスを起動しない</td><td>dependency-cruiser（tests/hooks → core/hooks/*.mjs の import 禁止）＋ 構造テスト（tests/unit に <code>child_process</code> 禁止）</td></tr>
+      <tr><td class="id">TEST-4</td><td>隔離：各テストは <code>helpers/sandbox()</code> で <code>mkdtemp</code> の作業ディレクトリと git リポジトリを作り、そこにだけ書く。テスト間で状態を共有しない。<code>--test-concurrency</code> を CPU 数にしても通る</td><td>CI が並列で実行 ＋ 構造テスト（<code>process.chdir</code>、リポジトリ直下への書き込み禁止）</td></tr>
+      <tr><td class="id">TEST-5</td><td>決定性：時刻と ID は <code>helpers/fakeClock()</code> で固定する。<code>setTimeout</code> による待機、<code>Date.now()</code>、<code>Math.random()</code> をテストに書かない。ネットワークは <code>helpers/</code> が <code>fetch</code> を例外に差し替える</td><td>構造テスト（grep）＋ helper</td></tr>
+      <tr><td class="id">TEST-6</td><td>golden：<code>events.jsonl</code> と描画済みテンプレートは <code>tests/golden/</code> と全文比較する。更新は <code>UPDATE_GOLDEN=1</code> でのみ行い、PR の Brief に差分の理由を書く。インラインスナップショットは使わない</td><td>helper ＋ reviewer（golden 差分の理由）</td></tr>
+      <tr><td class="id">TEST-7</td><td>fixture のハーネスイベント JSON は実機から記録し、<code>harness</code> と <code>version</code> を持つ。手で作ったイベントは <code>synthetic: true</code> を付ける。実機 fixture が1つもないイベント種別は契約テストで使えない</td><td>registry テスト（fixture のメタデータ）</td></tr>
+      <tr><td class="id">TEST-8</td><td>カバレッジ閾値：lib は行 95% / 分岐 95% / 関数 100%、フックは行 90% / 分岐 85%。閾値未満は CI が落ちる。除外コメント（<code>/* node:coverage ignore */</code>）は使わない</td><td><code>node --test --experimental-test-coverage --test-coverage-lines=... </code>＋ 構造テスト（除外コメントの grep）</td></tr>
+      <tr><td class="id">TEST-9</td><td>ミューテーション：<code>hooks/lib/</code> のスコア ≥ 80%（夜間）。下回ったら Issue を自動で開く。lib を変更する PR は、生き残った変異が増えていないことを Brief に書く</td><td>Stryker（夜間）＋ reviewer</td></tr>
+      <tr><td class="id">TEST-10</td><td>契約 → テスト → 実装：バグ修正は再現テストが先に落ちるコミットを含む。新機能は lib の型（JSDoc typedef）とフックの入出力スキーマを先にコミットし、tsc が通ってからテストを書く</td><td>reviewer（git log のコミット順）＋ このリポジトリ自身の Vouch フック</td></tr>
+      <tr><td class="id">TEST-11</td><td>1テスト1主張。テスト名は英語の文で「対象 ＋ 条件 → 期待」（例 <code>appendEvent rejects a type missing from the registry</code>）。日本語はコメントに</td><td>reviewer</td></tr>
+      <tr><td class="id">TEST-12</td><td>時間：1テスト ≤ 5 s（<code>--test-timeout=5000</code>）、CI の全体 ≤ 90 s（夜間を除く）。再試行（<code>--test-retries</code> や CI の retry）は禁止。不安定なテストは同じ PR で直すか削除する</td><td>CI 設定 ＋ 構造テスト（CI 設定の grep）</td></tr>
+      <tr><td class="id">TEST-13</td><td>テストは <code>core/skills/</code> を実行時に読まない（content テストを除く）。必要な内容は fixture にコピーする。テストが他のテストの出力に依存しない</td><td>dependency-cruiser ＋ 構造テスト</td></tr>
+      <tr><td class="id">TEST-14</td><td>不正入力の網羅：契約テストの「不正入力」ケースは、空、非 JSON、必須欠落、型違い、<code>../</code> を含むパス、巨大入力（1 MB）の6種を必ず含む</td><td>構造テスト（ケース名の grep）</td></tr>
+      <tr><td class="id">TEST-15</td><td>scenario テストの golden 差分は、必ず監査イベントの差分として読める形で出す（行番号ではなく <code>type</code> と <code>fields</code> の差）。helper が JSONL を比較する</td><td>helper</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- 6 -->
+<section id="s6">
+  <div class="sec-head"><span class="n">06</span><h2>予算と CI</h2></div>
+  <h3><code>registry/budgets.json</code></h3>
+  <div class="tbl"><table>
+    <thead><tr><th>予算</th><th>値</th><th>測り方</th><th>超過は</th></tr></thead>
+    <tbody>
+      <tr><td class="k">フック1本</td><td class="num">≤ 150 行</td><td>空行・コメント込み</td><td>CI が落ちる</td></tr>
+      <tr><td class="k">フック合計 / lib 合計</td><td class="num">≤ 1,500 行 / ≤ 3,000 行</td><td>同上</td><td>CI が落ちる。予算の引き上げは Opus 5.5 での失敗の実証と決定記録の改訂が条件</td></tr>
+      <tr><td class="k">オーケストレータ Skill</td><td class="num">≤ 150 行</td><td>SKILL.md の行数</td><td>CI が落ちる</td></tr>
+      <tr><td class="k">常時読み込み</td><td class="num">≤ 8,000 トークン</td><td>AGENTS.md ＋ オーケストレータ ＋ rules テンプレートのバイト数 ÷ 3</td><td>CI が落ちる</td></tr>
+      <tr><td class="k">package.mjs</td><td class="num">≤ 150 行</td><td>行数</td><td>CI が落ちる</td></tr>
+      <tr><td class="k">記録系フックの時間</td><td class="num">p95 &lt; 200 ms</td><td>契約テストで 20 回実行</td><td>CI が落ちる</td></tr>
+      <tr><td class="k">検査系フックの時間</td><td class="num">p95 &lt; 2 s</td><td>同上（DoD 実行を除く）</td><td>CI が落ちる</td></tr>
+      <tr><td class="k">テスト全体</td><td class="num">≤ 90 s</td><td>CI のジョブ時間</td><td>CI が落ちる</td></tr>
+      <tr><td class="k">カバレッジ</td><td class="num">lib 95/95/100、hooks 90/85</td><td>node の組み込みカバレッジ</td><td>CI が落ちる</td></tr>
+      <tr><td class="k">ミューテーションスコア</td><td class="num">≥ 80%</td><td>Stryker（夜間）</td><td>Issue を開く</td></tr>
+    </tbody>
+  </table></div>
+
+  <figure>
+    <div class="fig-scroll">
+    <svg viewBox="0 0 940 230" role="img" aria-label="CI パイプライン。PR ごとに lint、typecheck、test、budget、dist-check の5段が順に走り、どれかが落ちるとマージできない。夜間に mutation が走り、リリース前に eval を手動で走らせる">
+      <defs>
+        <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+      <g fill="currentColor" font-size="12" font-family="IBM Plex Sans JP, sans-serif">
+        <text x="20" y="28" font-size="13" font-weight="700">毎 PR（node 22 と 24）</text>
+        <g stroke="var(--accent)" stroke-width="1.4" fill="var(--accent-soft)">
+          <rect x="20" y="44" width="160" height="64" rx="5"/>
+          <rect x="204" y="44" width="160" height="64" rx="5"/>
+          <rect x="388" y="44" width="160" height="64" rx="5"/>
+          <rect x="572" y="44" width="160" height="64" rx="5"/>
+          <rect x="756" y="44" width="160" height="64" rx="5"/>
+        </g>
+        <text x="100" y="66" text-anchor="middle" font-weight="700">lint</text>
+        <text x="100" y="84" text-anchor="middle" font-size="10.5" opacity=".85">biome · markdownlint</text>
+        <text x="100" y="98" text-anchor="middle" font-size="10.5" opacity=".85">depcruise · knip</text>
+        <text x="284" y="66" text-anchor="middle" font-weight="700">typecheck</text>
+        <text x="284" y="84" text-anchor="middle" font-size="10.5" opacity=".85">tsc --checkJs --strict</text>
+        <text x="468" y="66" text-anchor="middle" font-weight="700">test</text>
+        <text x="468" y="84" text-anchor="middle" font-size="10.5" opacity=".85">unit · hooks · registry · content</text>
+        <text x="468" y="98" text-anchor="middle" font-size="10.5" opacity=".85">packaging · scenario ＋ カバレッジ閾値</text>
+        <text x="652" y="66" text-anchor="middle" font-weight="700">budget</text>
+        <text x="652" y="84" text-anchor="middle" font-size="10.5" opacity=".85">行数 · トークン · 時間</text>
+        <text x="652" y="98" text-anchor="middle" font-size="10.5" opacity=".85">registry/budgets.json</text>
+        <text x="836" y="66" text-anchor="middle" font-weight="700">dist-check</text>
+        <text x="836" y="84" text-anchor="middle" font-size="10.5" opacity=".85">package.mjs --check</text>
+        <text x="836" y="98" text-anchor="middle" font-size="10.5" opacity=".85">バイト一致</text>
+        <line x1="180" y1="76" x2="204" y2="76" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar2)"/>
+        <line x1="364" y1="76" x2="388" y2="76" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar2)"/>
+        <line x1="548" y1="76" x2="572" y2="76" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar2)"/>
+        <line x1="732" y1="76" x2="756" y2="76" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar2)"/>
+        <text x="468" y="130" text-anchor="middle" font-size="11">どれかが落ちればマージ不可。違反メッセージはルール ID（例 <tspan font-family="IBM Plex Mono, monospace">HOOK-6</tspan>）を含む</text>
+
+        <text x="20" y="168" font-size="13" font-weight="700">夜間</text>
+        <rect x="20" y="180" width="252" height="40" rx="5" fill="var(--hook-soft)" stroke="var(--hook)" stroke-width="1.4"/>
+        <text x="146" y="205" text-anchor="middle">mutation（Stryker、lib、スコア ≥ 80%）</text>
+        <text x="300" y="168" font-size="13" font-weight="700">リリース前（手動）</text>
+        <rect x="300" y="180" width="340" height="40" rx="5" fill="var(--human-soft)" stroke="var(--human)" stroke-width="1.4"/>
+        <text x="470" y="205" text-anchor="middle">eval（代表タスクを両ハーネスで実行、監査ログから指標を集計）</text>
+        <text x="660" y="205" font-size="11" opacity=".8">結果は Brief の証拠として PR に載せる</text>
+      </g>
+    </svg>
+    </div>
+    <figcaption>図2. CI の5段は毎 PR、mutation は夜間、eval はリリース前。すべての検査は <code>npm run check</code> でローカルでも同じ順に走る。</figcaption>
+  </figure>
+</section>
+
+<!-- 7 -->
+<section id="s7">
+  <div class="sec-head"><span class="n">07</span><h2>骨格コード</h2></div>
+  <div class="prose"><p>ルールが実際にどう見えるかを、フック1本と契約テスト1本で示す。ここに書いた形以外のエントリや起動方法は STR-1 / HOOK-2 / TEST-3 で落ちる。</p></div>
+
+  <h3>フック：<code>core/hooks/vouch-check-citation.mjs</code></h3>
+<pre><code>// @ts-check
+import { run } from "./lib/io.mjs";
+import { readArtifact, projectRoot } from "./lib/fs.mjs";
+import { checkCitations } from "./lib/citation.mjs";
+
+/**
+ * PostToolUse(Write|Edit): 成果物の「## 参照元」の参照先が存在し、最新世代かを検査する。
+ * 判断はしない。検査結果を返し、空の参照元だけを遮る（HOOK-5）。
+ * @type {import("./lib/io.mjs").HookMain}
+ */
+export async function main(input, ctx) {
+  const path = input.tool_input?.file_path;
+  if (!path || !/vouch\/intents\/[^/]+\/(intent|design|review)\.md$/.test(path)) {
+    return { decision: "allow" };                     // 対象外は何もしない（HOOK-2）
+  }
+  const artifact = await readArtifact(projectRoot(input), path);  // root 配下に解決（HOOK-14）
+  const result = checkCitations(artifact, ctx.generation);        // 純粋関数（lib）
+  return {
+    decision: result.empty ? "deny" : "allow",
+    reason: result.empty ? "REF-EMPTY: ## 参照元 が空です。根拠にした知識を書いてください" : undefined,
+    events: [{ type: "hook.check", check: "citation", result: result.empty ? "fail" : "pass",
+               missing: result.missing.length, stale: result.stale.length }],   // 台帳にある型（HOOK-10）
+  };
+}
+
+run(main);   // stdin を検証し、例外を捕捉し、events を appendEvent し、exit 0/2 を決める唯一の入口</code></pre>
+
+  <h3>契約テスト：<code>tests/hooks/vouch-check-citation.test.mjs</code></h3>
+<pre><code>import { test } from "node:test";
+import assert from "node:assert/strict";
+import { sandbox, runHook, event } from "../helpers/index.mjs";
+
+test("check-citation denies an artifact whose ## 参照元 is empty", async (t) => {
+  t.plan(3);                                                          // TEST-2
+  const sb = await sandbox({ intent: "minimal", clock: "2026-09-27T00:00:00Z" });   // TEST-4/5
+  await sb.write("vouch/intents/260927-x/intent.md", sb.template("intent", { sources: [] }));
+
+  const r = await runHook("vouch-check-citation.mjs", event("claude", "PostToolUse", {
+    tool_name: "Write", tool_input: { file_path: sb.path("vouch/intents/260927-x/intent.md") },
+  }), { cwd: sb.root });                                               // TEST-3: 子プロセス
+
+  assert.equal(r.exitCode, 2);                                         // HOOK-3
+  assert.match(r.stderr, /REF-EMPTY/);
+  assert.deepEqual(sb.audit().map((e) => [e.type, e.check, e.result]),
+    [["hook.check", "citation", "fail"]]);                             // HOOK-6/10
+});
+
+test("check-citation is idempotent for the same input", async (t) => {
+  t.plan(1);
+  const sb = await sandbox({ intent: "minimal" });
+  const ev = event("claude", "PostToolUse", { tool_name: "Write",
+    tool_input: { file_path: sb.path("vouch/intents/260927-x/review.md") } });
+  await runHook("vouch-check-citation.mjs", ev, { cwd: sb.root });
+  await runHook("vouch-check-citation.mjs", ev, { cwd: sb.root });
+  assert.equal(sb.audit().length, 1);                                  // HOOK-9
+});
+
+test("check-citation ignores malformed stdin and exits 0", async (t) => {
+  t.plan(2);
+  const sb = await sandbox();
+  for (const bad of ["", "not json", "{}", '{"tool_input":{"file_path":"../../etc/passwd"}}']) {
+    const r = await runHook("vouch-check-citation.mjs", bad, { cwd: sb.root, raw: true });
+    if (r.exitCode !== 0) assert.fail(`exit ${r.exitCode} for ${JSON.stringify(bad)}`);
+  }
+  assert.equal(sb.audit().length, 0);                                  // HOOK-2/14
+  assert.ok(true);
+});</code></pre>
+  <p class="note">最後のテストは TEST-14 の6種（空、非 JSON、必須欠落、型違い、<code>../</code>、巨大入力）をすべて含む形に広げる。<code>helpers/</code> の <code>sandbox()</code> は <code>mkdtemp</code> ＋ <code>git init</code> ＋ fixture のコピー、<code>runHook()</code> は <code>node</code> の子プロセス起動と時間計測、<code>event()</code> は実機から記録した fixture の読み込みを担う。</p>
+</section>
+
+<!-- 8 -->
+<section id="s8">
+  <div class="sec-head"><span class="n">08</span><h2>決定と次の作業</h2></div>
+  <div class="prose"><p>リポジトリの土台に関わる3点は、推奨どおりに確定した（2026-09-27）。</p></div>
+  <div class="tbl"><table>
+    <thead><tr><th>#</th><th>決定</th><th>含意</th></tr></thead>
+    <tbody>
+      <tr><td class="id">C1</td><td>bun から node へ全面移行する。テストは <code>node --test</code>、スクリプトは npm</td><td>AI-DLC v2 のテスト（464 本、bun 前提）は Vouch に引き継がない。v2 は LTS ブランチで bun のまま維持する</td></tr>
+      <tr><td class="id">C2</td><td>フックは plain JavaScript（<code>.mjs</code>）＋ JSDoc ＋ <code>tsc --checkJs --strict</code></td><td>ビルドなしで配れ、利用者がそのままソースを読める。型の厳密さは TS と同等</td></tr>
+      <tr><td class="id">C3</td><td>Stryker を最初から入れる（夜間、lib 対象、スコア ≥ 80%）</td><td>lib が育つ前から「テストが本当に検証しているか」を測る。しきい値未満は Issue を開く</td></tr>
+      <tr><td class="id">C4</td><td>名称は <b>Vouch</b>。コマンド <code>/vouch</code>、ディレクトリ <code>vouch/</code>、フック <code>vouch-*.mjs</code>、リポジトリは新規 <code>vouch-workflows</code> を既定</td><td>AI-DLC v2 と識別子が衝突しないので、同じプロジェクトに v2 と Vouch を並存させて移行できる</td></tr>
+    </tbody>
+  </table></div>
+  <div class="ask"><b>次の作業</b>：この文書の内容を実体にする。順番は ① <code>registry/</code> のスキーマと予算 → ② <code>lib/io.mjs</code>・<code>audit.mjs</code>・<code>fs.mjs</code>・<code>clock.mjs</code> と helpers（テスト基盤） → ③ Biome / depcruise / markdownlint / tsc の設定と構造テスト（ルールを先に効かせる） → ④ フックを1本ずつ、契約 → テスト → 実装の順で。</div>
+</section>
+
+<footer>Vouch 実装ルール · 2026-09-27 · 決定記録 rev 3 と未決事項の回答に基づく。</footer>
+</div>
+</body>
+</html>

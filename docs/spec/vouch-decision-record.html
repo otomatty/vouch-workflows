@@ -1,0 +1,1203 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vouch 決定記録</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  color-scheme: light;
+  --bg:#F5F7F9; --surface:#FFFFFF; --surface-2:#EDF1F5;
+  --text:#1B2430; --muted:#5B6775; --line:#D6DDE5; --line-strong:#A9B4C0;
+  --accent:#0F6E8C; --accent-soft:#DDEFF5;
+  --human:#B84A0E; --human-soft:#FBE8DC;
+  --ok:#1F7A4D; --ok-soft:#DFF2E7;
+  --warn:#B42318; --warn-soft:#FBE3E1;
+  --hook:#5B4A9E; --hook-soft:#E8E3F6;
+  --removed:#8C96A2;
+  --code-bg:#EEF2F6;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:#11161C; --surface:#1A2129; --surface-2:#222B35;
+    --text:#E6EAEF; --muted:#9AA5B1; --line:#2E3946; --line-strong:#4A5766;
+    --accent:#5CBCD9; --accent-soft:#163A46;
+    --human:#F29A5F; --human-soft:#3F2415;
+    --ok:#5BC08A; --ok-soft:#173A29;
+    --warn:#F08A82; --warn-soft:#44201D;
+    --hook:#B3A4E8; --hook-soft:#2A2344;
+    --removed:#6E7986;
+    --code-bg:#151B22;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#11161C; --surface:#1A2129; --surface-2:#222B35;
+  --text:#E6EAEF; --muted:#9AA5B1; --line:#2E3946; --line-strong:#4A5766;
+  --accent:#5CBCD9; --accent-soft:#163A46;
+  --human:#F29A5F; --human-soft:#3F2415;
+  --ok:#5BC08A; --ok-soft:#173A29;
+  --warn:#F08A82; --warn-soft:#44201D;
+  --hook:#B3A4E8; --hook-soft:#2A2344;
+  --removed:#6E7986;
+  --code-bg:#151B22;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:"IBM Plex Sans JP","Hiragino Sans","Yu Gothic UI","Noto Sans JP",system-ui,sans-serif;
+  font-size:15px; line-height:1.75;
+  padding-block:0 64px; padding-inline:16px;
+  -webkit-font-smoothing:antialiased;
+}
+code,.mono{font-family:"IBM Plex Mono","SFMono-Regular",Menlo,Consolas,monospace;font-size:.92em}
+code{background:var(--code-bg);padding:.08em .4em;border-radius:4px}
+pre{background:var(--code-bg);border-radius:6px;padding:12px 14px;font-family:"IBM Plex Mono",monospace;font-size:12.5px;line-height:1.6;overflow-x:auto;margin:12px 0}
+pre code{background:none;padding:0;font-size:inherit}
+a{color:var(--accent)}
+h1,h2,h3{line-height:1.3;text-wrap:balance;margin:0}
+h1{font-size:clamp(26px,4vw,36px);font-weight:700;letter-spacing:-.01em}
+h2{font-size:22px;font-weight:700;margin-top:8px}
+h3{font-size:16px;font-weight:700;margin-top:24px;margin-bottom:6px}
+p{margin:0 0 12px}
+ul,ol{margin:0 0 12px;padding-left:1.4em}
+li{margin:2px 0}
+.wrap{max-width:1040px;margin:0 auto}
+.prose{max-width:760px}
+header.top{padding-block:40px 24px;border-bottom:1px solid var(--line)}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.lede{font-size:17px;color:var(--muted);max-width:760px;margin-top:12px}
+.meta{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:16px;font-size:13px;color:var(--muted)}
+.meta b{color:var(--text);font-weight:500}
+.pill{display:inline-block;padding:1px 9px;border-radius:999px;font-size:12px;font-weight:500;line-height:1.7;border:1px solid transparent;white-space:nowrap;vertical-align:middle}
+.pill.accent{background:var(--accent-soft);color:var(--accent)}
+.pill.human{background:var(--human-soft);color:var(--human)}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.hook{background:var(--hook-soft);color:var(--hook)}
+.pill.muted{background:var(--surface-2);color:var(--muted)}
+.pill.rev{background:var(--human-soft);color:var(--human);font-size:11px;padding:0 7px}
+.pill.rev3{background:var(--hook-soft);color:var(--hook);font-size:11px;padding:0 7px}
+nav.toc{margin-top:24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:4px 24px;font-size:14px}
+nav.toc a{text-decoration:none;color:var(--text);display:flex;gap:10px;padding:3px 0;border-bottom:1px dotted var(--line)}
+nav.toc a span.n{font-family:"IBM Plex Mono",monospace;color:var(--muted);font-size:12px;min-width:2ch;padding-top:2px}
+.revlog{margin-top:20px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px 14px;font-size:13px}
+.revlog b{font-weight:500}
+.revlog p{margin:0}
+.revlog p + p{margin-top:6px}
+section{padding-block:40px;border-bottom:1px solid var(--line)}
+section:last-of-type{border-bottom:0}
+.sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:14px;flex-wrap:wrap}
+.sec-head .n{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--accent);min-width:2.5ch}
+figure{margin:20px 0 8px}
+figure svg{max-width:100%;height:auto;display:block}
+figcaption{font-size:13px;color:var(--muted);margin-top:8px;max-width:760px}
+.fig-scroll{overflow-x:auto}
+.fig-scroll svg{min-width:640px}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:12px 0 8px}
+.tbl{overflow-x:auto}
+th,td{text-align:left;vertical-align:top;padding:8px 10px;border-bottom:1px solid var(--line)}
+th{font-weight:500;color:var(--muted);font-size:13px;border-bottom:1px solid var(--line-strong);white-space:nowrap}
+td.k{font-weight:500;white-space:nowrap}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:16px 0 8px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px 14px}
+.stat .v{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2}
+.stat .l{font-size:12px;color:var(--muted);margin-top:4px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin:12px 0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px 16px}
+.card h3{margin-top:0}
+.card .tag{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--accent);letter-spacing:.04em}
+.shift{border-left:3px solid var(--accent);padding-left:14px}
+.shift + .shift{margin-top:14px}
+.shift b{display:block;font-size:15px}
+.rule{display:grid;grid-template-columns:5ch 1fr;gap:8px;padding:8px 0;border-bottom:1px dotted var(--line);font-size:14px}
+.rule .id{font-family:"IBM Plex Mono",monospace;color:var(--accent);font-size:13px;padding-top:2px}
+.rule b{font-weight:500}
+.deny{background:var(--warn-soft);border:1px solid transparent;border-radius:6px;padding:12px 16px;margin-top:14px}
+.deny h3{margin-top:0;color:var(--warn)}
+.deny ul{margin-bottom:0}
+.allow{background:var(--ok-soft);border-radius:6px;padding:12px 16px}
+.allow h3{margin-top:0;color:var(--ok)}
+.resolved{background:var(--ok-soft);border-radius:6px;padding:12px 16px;margin:12px 0}
+.resolved h3{margin-top:0;color:var(--ok)}
+.resolved p:last-child{margin-bottom:0}
+.brief{background:var(--surface);border:1px solid var(--line);border-radius:6px;overflow:hidden;font-size:14px;margin:12px 0}
+.brief .hd{padding:10px 14px;border-bottom:1px solid var(--line);background:var(--surface-2);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.brief .hd b{font-weight:700}
+.brief .row{display:grid;grid-template-columns:2.2em 1fr auto;gap:10px;padding:8px 14px;border-bottom:1px solid var(--line);align-items:start}
+.brief .row:last-child{border-bottom:0}
+.brief .row .n{font-family:"IBM Plex Mono",monospace;color:var(--muted);font-size:12px;padding-top:3px}
+.brief .row small{display:block;color:var(--muted);font-size:12px}
+.brief .row .d{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.ask{background:var(--surface);border:1px solid var(--line);border-radius:6px;overflow:hidden;font-size:14px;margin:12px 0}
+.ask .hd{padding:10px 14px;border-bottom:1px solid var(--line);background:var(--human-soft);color:var(--human);font-weight:700}
+.ask .sec{padding:10px 14px;border-bottom:1px solid var(--line)}
+.ask .sec:last-child{border-bottom:0}
+.ask .sec b{font-weight:500}
+.ask .opt{display:grid;grid-template-columns:2.2em 1fr;gap:8px;padding:6px 0}
+.ask .opt .l{font-family:"IBM Plex Mono",monospace;color:var(--accent);font-weight:500}
+.ask .opt small{display:block;color:var(--muted);font-size:12.5px}
+.ask .opt .src{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--accent)}
+.tree{background:var(--code-bg);border-radius:6px;padding:12px 14px;font-family:"IBM Plex Mono",monospace;font-size:12.5px;line-height:1.6;overflow-x:auto;white-space:pre;margin:12px 0}
+.tree .c{color:var(--muted)}
+.chip{display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:-1px;margin-right:6px}
+.q{display:grid;grid-template-columns:3ch 1fr;gap:10px;padding:10px 0;border-bottom:1px dotted var(--line)}
+.q .n{font-family:"IBM Plex Mono",monospace;color:var(--human);font-size:13px;padding-top:2px}
+.note{font-size:13px;color:var(--muted)}
+footer{padding-top:24px;font-size:13px;color:var(--muted)}
+@media (max-width:520px){
+  .rule{grid-template-columns:1fr}
+  .brief .row{grid-template-columns:2.2em 1fr}
+  .brief .row .d{grid-column:2;justify-content:flex-start}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="eyebrow">Decision record · draft · rev 3</div>
+  <h1>Vouch — ここまでに決まったこと</h1>
+  <p class="lede">AI-DLC v2.10.0（以下 v2）の後継として、新しいワークフロー Vouch を作る。最小限のハーネスとステージで構成し、判断は強いモデルに任せ、機械的にできることはフックに任せ、品質を「証拠と参照元」で保証し、人はコードではなく「主張と証拠」を読む。人の関与は Intent 承認と PR 承認の2回に絞り、作業単位の分割でレビューを最小にする。この文書は設計前の合意事項をまとめたもので、設計の詳細はまだ決めていない。</p>
+  <div class="meta">
+    <span>更新 <b>2026-09-27</b></span>
+    <span>対象モデル <b>Opus 5.5</b></span>
+    <span>ハーネス <b>Claude Code / Codex</b></span>
+    <span>ランタイム <b>node（フック用）</b></span>
+    <span>状態 <span class="pill accent">要件整理まで完了</span></span>
+  </div>
+  <div class="revlog">
+    <p><b>rev 3 で変わったこと</b>（<span class="pill rev3">rev 3</span> が目印）：フックのランタイムは node、縮退モードは実装しない／監査ログは「後で分析するための計測データ」と位置づけ、所要時間などを構造化して記録する／人に判断を仰ぐ時は選択肢ごとにメリット・デメリットと根拠（コード・公式文書）を示す／人のレビューのタイミングを明文化した／人のレビューが最小になるように作業単位を分割する／L 階層の PR も人が Brief をスキムしてマージする（自動マージなし）／未回答の判断依頼は既定案で進めて Brief に明記する／9/27 に未決事項 Q1〜Q6 がすべて決着（§18）／9/27 に名称を <b>Vouch</b> に改めた。AI-DLC の第3版ではなく、別の新しいワークフローとして作る（§2）。</p>
+    <p><b>rev 2</b>（<span class="pill rev">改訂</span>）：監査ログの踏襲／フックの活用／知識の鮮度と参照元／根本解決の最小実装／契約先行／モブ・エラボレーションの統合と確認点／質問数の無制限／脇質問と再開。</p>
+  </div>
+  <nav class="toc" aria-label="目次">
+    <a href="#s1"><span class="n">1</span>なぜ Vouch か</a>
+    <a href="#s2"><span class="n">2</span>決まった前提</a>
+    <a href="#s3"><span class="n">3</span>3つの転換</a>
+    <a href="#s4"><span class="n">4</span>原則と禁止リスト</a>
+    <a href="#s5"><span class="n">5</span>ライフサイクルと儀式</a>
+    <a href="#s6"><span class="n">6</span>人のレビューのタイミングと作業単位の分割</a>
+    <a href="#s7"><span class="n">7</span>品質モデル</a>
+    <a href="#s8"><span class="n">8</span>検証の方針</a>
+    <a href="#s9"><span class="n">9</span>独立検証とリスク階層</a>
+    <a href="#s10"><span class="n">10</span>判断依頼の形式</a>
+    <a href="#s11"><span class="n">11</span>Git・監査ログ・フック</a>
+    <a href="#s12"><span class="n">12</span>知識の鮮度と参照元</a>
+    <a href="#s13"><span class="n">13</span>根本解決と最小実装</a>
+    <a href="#s14"><span class="n">14</span>Review Brief と図解</a>
+    <a href="#s15"><span class="n">15</span>配布物</a>
+    <a href="#s16"><span class="n">16</span>v2 からの移行</a>
+    <a href="#s17"><span class="n">17</span>成功指標</a>
+    <a href="#s18"><span class="n">18</span>未決事項</a>
+  </nav>
+</header>
+
+<!-- 1 -->
+<section id="s1">
+  <div class="sec-head"><span class="n">01</span><h2>なぜ Vouch か</h2></div>
+  <div class="prose">
+    <p>v2 は「モデルがステップを飛ばすたびに、機械的な強制（フック・レシート・ガード）を足す」方針で成長した。その結果、エンジンと配布物が肥大化し、AI 駆動開発そのものが重くなった。一方で README 自身が Opus 4.8 を推奨しており、強いモデル前提の設計なのに弱いモデル対策のコストを全員が払っている。</p>
+    <p>Vouch は「判断はモデル、機械的処理はフック」と役割を分け、v2 の TypeScript エンジン（ルーティング・状態機械）を持たない。フックと監査ログの仕組みは踏襲するが、判断を代行させない。</p>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="v">10.5万行</div><div class="l">エンジンの TypeScript（core/tools + hooks）</div></div>
+    <div class="stat"><div class="v">約4万トークン</div><div class="l">1ステージごとに常時読み込むコンテキスト</div></div>
+    <div class="stat"><div class="v">33 / 14 / 11</div><div class="l">ステージ / エージェント / スコープ</div></div>
+    <div class="stat"><div class="v">最大 約70回</div><div class="l">classic スコープでの人の操作回数</div></div>
+    <div class="stat"><div class="v">17本 / 91種</div><div class="l">フック / 監査イベント</div></div>
+    <div class="stat"><div class="v">163回</div><div class="l">CHANGELOG に「guard」が現れる回数</div></div>
+  </div>
+  <p class="note">数値は本リポジトリの 2.7.0 時点の実測。上流の 2.10.0 も同じ傾向にある。</p>
+
+  <figure>
+    <div class="fig-scroll">
+    <svg viewBox="0 0 940 290" role="img" aria-label="v2 ではエンジンとフックがモデルを制御し bun が必須だが、Vouch ではモデルと Skill が判断し、フックが検査と記録を担い、成果物と監査ログを Git にコミットする">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+      <g fill="currentColor" font-size="12" font-family="IBM Plex Sans JP, sans-serif">
+        <text x="20" y="24" font-size="13" font-weight="700">v2.10 — エンジンがモデルを制御する</text>
+        <rect x="20" y="44" width="180" height="46" rx="4" fill="none" stroke="currentColor" stroke-width="1.2"/>
+        <text x="110" y="63" text-anchor="middle">Conductor</text>
+        <text x="110" y="80" text-anchor="middle" font-size="11" opacity=".7">SKILL.md 52KB</text>
+        <rect x="260" y="44" width="180" height="46" rx="4" fill="none" stroke="currentColor" stroke-width="1.2"/>
+        <text x="350" y="63" text-anchor="middle">Engine</text>
+        <text x="350" y="80" text-anchor="middle" font-size="11" opacity=".7">aidlc-orchestrate.ts ほか 10.5万行</text>
+        <line x1="200" y1="60" x2="260" y2="60" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar)"/>
+        <line x1="260" y1="74" x2="200" y2="74" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar)"/>
+        <text x="230" y="52" text-anchor="middle" font-size="10" opacity=".7">report</text>
+        <text x="230" y="88" text-anchor="middle" font-size="10" opacity=".7">directive</text>
+        <rect x="20" y="118" width="180" height="46" rx="4" fill="none" stroke="currentColor" stroke-width="1.2"/>
+        <text x="110" y="137" text-anchor="middle">Hooks 17本</text>
+        <text x="110" y="154" text-anchor="middle" font-size="11" opacity=".7">ガード・フリーズ・レシート</text>
+        <rect x="260" y="118" width="180" height="46" rx="4" fill="none" stroke="currentColor" stroke-width="1.2"/>
+        <text x="350" y="137" text-anchor="middle">State + Audit</text>
+        <text x="350" y="154" text-anchor="middle" font-size="11" opacity=".7">aidlc-state.md / 91イベント</text>
+        <line x1="110" y1="90" x2="110" y2="118" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar)"/>
+        <line x1="350" y1="90" x2="350" y2="118" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar)"/>
+        <text x="120" y="108" font-size="10" opacity=".7">判断も代行</text>
+        <text x="360" y="108" font-size="10" opacity=".7">書く</text>
+        <rect x="20" y="192" width="420" height="40" rx="4" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="5 4"/>
+        <text x="230" y="216" text-anchor="middle">bun ランタイム（利用者側に必須）＋ 状態機械</text>
+        <text x="230" y="262" text-anchor="middle" font-size="11" opacity=".7">配布物: ハーネスごとに約280ファイル・13.5万行</text>
+
+        <line x1="480" y1="20" x2="480" y2="270" stroke="currentColor" stroke-width="1" stroke-dasharray="2 4" opacity=".5"/>
+
+        <text x="520" y="24" font-size="13" font-weight="700">Vouch — モデルが判断し、フックが検査・記録する</text>
+        <rect x="520" y="44" width="180" height="46" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.6"/>
+        <text x="610" y="63" text-anchor="middle" font-weight="500">Model + Skills</text>
+        <text x="610" y="80" text-anchor="middle" font-size="11" opacity=".75">判断・生成（Markdown）</text>
+        <rect x="740" y="44" width="180" height="46" rx="4" fill="var(--hook-soft)" stroke="var(--hook)" stroke-width="1.6"/>
+        <text x="830" y="63" text-anchor="middle" font-weight="500">Hooks（node）</text>
+        <text x="830" y="80" text-anchor="middle" font-size="11" opacity=".75">検査・記録・遮断（機械的処理）</text>
+        <line x1="700" y1="60" x2="740" y2="60" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar)"/>
+        <line x1="740" y1="74" x2="700" y2="74" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar)"/>
+        <text x="720" y="52" text-anchor="middle" font-size="10" opacity=".7">イベント</text>
+        <text x="720" y="88" text-anchor="middle" font-size="10" opacity=".7">検査結果</text>
+        <rect x="520" y="118" width="180" height="46" rx="4" fill="none" stroke="currentColor" stroke-width="1.2"/>
+        <text x="610" y="137" text-anchor="middle">成果物が状態</text>
+        <text x="610" y="154" text-anchor="middle" font-size="11" opacity=".7">intent · design · review · decisions</text>
+        <rect x="740" y="118" width="180" height="46" rx="4" fill="none" stroke="currentColor" stroke-width="1.2"/>
+        <text x="830" y="137" text-anchor="middle">監査ログ（計測データ）</text>
+        <text x="830" y="154" text-anchor="middle" font-size="11" opacity=".7">append-only JSONL、フックだけが書く</text>
+        <line x1="610" y1="90" x2="610" y2="118" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar)"/>
+        <text x="620" y="108" font-size="10" opacity=".7">書く</text>
+        <line x1="830" y1="90" x2="830" y2="118" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar)"/>
+        <text x="840" y="108" font-size="10" opacity=".7">書く</text>
+        <rect x="520" y="192" width="400" height="40" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.6"/>
+        <text x="720" y="216" text-anchor="middle" font-weight="500">Git — branch / commit / PR が証跡と最終ゲート</text>
+        <line x1="610" y1="164" x2="610" y2="192" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar)"/>
+        <line x1="830" y1="164" x2="830" y2="192" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar)"/>
+        <text x="720" y="182" text-anchor="middle" font-size="10" opacity=".7">commit</text>
+        <text x="720" y="262" text-anchor="middle" font-size="11" opacity=".7">配布物: AGENTS.md ＋ Skill ＋ エージェント定義 ＋ フック（node、依存ゼロ）</text>
+      </g>
+    </svg>
+    </div>
+    <figcaption>図1. v2 はエンジンがモデルを挟んで制御し、判断まで代行する。Vouch はモデルが判断し、フックは検査・記録・遮断だけを行い、成果物と監査ログを Git にコミットすることが証跡になる。</figcaption>
+  </figure>
+</section>
+
+<!-- 2 -->
+<section id="s2">
+  <div class="sec-head"><span class="n">02</span><h2>決まった前提と制約</h2></div>
+  <div class="tbl"><table>
+    <thead><tr><th>項目</th><th>決定</th><th>含意</th></tr></thead>
+    <tbody>
+      <tr><td class="k">対象モデル</td><td>Opus 5.5</td><td>手順を強制せず、モデルの判断を信頼する設計にできる</td></tr>
+      <tr><td class="k">ハーネス</td><td>Claude Code、Codex の2つ</td><td>7ハーネス展開をやめる。ハーネス横断レビューができる</td></tr>
+      <tr><td class="k">対象範囲</td><td>開発チーム特化。Ideation と Operation は含めない</td><td>要件 → 設計 → 構築 → 検証 の4ステージに絞る</td></tr>
+      <tr><td class="k">名称 <span class="pill rev3">rev 3</span></td><td><b>Vouch</b>。AI-DLC v2 の後継だが、第3版ではなく別の新しいワークフロー</td><td>「AI が自分の仕事に証拠で保証（vouch）し、人は判断だけをする」。コマンドは <code>/vouch</code>、作業ディレクトリは <code>vouch/</code>、フックは <code>vouch-*.mjs</code>。バージョンは 0.1.0 から始め、GA で 1.0.0。リポジトリは新規 <code>vouch-workflows</code> を既定とし、この文書群は当面 <code>aidlc-workflows/docs/rfcs/</code> に置く</td></tr>
+      <tr><td class="k">ランタイム <span class="pill rev3">rev 3</span></td><td>フックは node で書く。縮退モードは実装しない</td><td>利用者側の実行時依存は git ＋ node。フックは依存ゼロの plain JavaScript（ESM）でビルド不要。v2 の 10.5 万行エンジン・状態機械・ルーティングは持たない</td></tr>
+      <tr><td class="k">監査ログ <span class="pill rev3">rev 3</span></td><td>v2 の仕組みを踏襲し、目的を「後で分析するための計測データ」と定める</td><td>各イベントの所要時間・待ち時間・回数・トークンなど取得できるデータを構造化（JSONL）で記録する。フックだけが書く（§11）</td></tr>
+      <tr><td class="k">フック</td><td>機械的に処理できることは積極的にフックに任せる</td><td>検査・記録・遮断はフック、判断はモデル。判断を代行させない（§11）</td></tr>
+      <tr><td class="k">判断依頼の形式 <span class="pill rev3">rev 3</span></td><td>人に判断を仰ぐ時は、選択肢を提示し、各選択肢のメリット・デメリットを根拠（コード・公式文書）つきで説明する</td><td>推奨案と、未回答時の既定動作も添える（§10）</td></tr>
+      <tr><td class="k">人のレビュー <span class="pill rev3">rev 3</span></td><td>Intent 承認と PR 承認の2回に絞る。作業単位を分割してレビューを最小にする。L 階層の PR も人が Brief をスキムしてマージする（自動マージはしない）</td><td>H の変更は最小の Intent に隔離し、L/M はまとめる（§6）。「人が PR をマージする」に例外を設けない</td></tr>
+      <tr><td class="k">未回答の判断依頼 <span class="pill rev3">rev 3</span></td><td>既定案で進めて Brief に明記する。止まるのは既定案が作れない時だけ</td><td>人の回答を待って作業が止まることがなくなる。既定案で進めた判断は Brief §7 に一覧で載り、PR 承認時に覆せる（§10）</td></tr>
+      <tr><td class="k">知識と参照元</td><td>既存コード・設計・インフラ・背景・規約を常に最新に保ち、成果物に参照元を必ず載せる</td><td>鮮度チェックと引用検査はフック、再走査は explorer（§12）</td></tr>
+      <tr><td class="k">実装の姿勢</td><td>理想の設計・ユースケースの漏れ・リファクタ候補を常に意識し、根本解決の必要最小限の実装をする</td><td>Intent と Design に「理想形との差分」を必ず含める（§13）</td></tr>
+      <tr><td class="k">実装前の固め</td><td>TDD に加えて、型定義・データ定義・静的解析を実装前にチェックする</td><td>契約 → テスト → 実装 の順をコミット順で証明し、フックが検査する（§11）</td></tr>
+      <tr><td class="k">v2 互換</td><td>record を Vouch へ移行する</td><td>移行も Skill（<code>/vouch migrate</code>）。監査ログも移行する。元の record は保存する</td></tr>
+      <tr><td class="k">品質の考え方</td><td>テストだけでは不十分。多層の証拠で担保する</td><td>§7 の品質モデル</td></tr>
+      <tr><td class="k">儀式</td><td>モブ・エラボレーションは Intent ＋ Design で1つにまとめ、確認点ごとに人が確認する。モブ・レビューは継続</td><td>確認点の粒度は設定できる（§5）</td></tr>
+      <tr><td class="k">レビューの質問</td><td>数を制限しない。必要な質問はすべて行う</td><td>優先度順に並べ、記録にある答えは再質問しない（§14）</td></tr>
+      <tr><td class="k">脇質問と再開</td><td>いつでも既存のコンテキストに影響を与えずに質問でき、いつでもスラッシュコマンドで再開できる</td><td>状態は成果物と監査ログから導出する（§5）</td></tr>
+      <tr><td class="k">検証の優先</td><td>自動テスト → AI がアプリを操作 → 人</td><td>禁止事項以外は禁止しない</td></tr>
+      <tr><td class="k">理解のしやすさ</td><td>設計は図解を主とする</td><td>Brief と設計成果物に図を必ず付ける</td></tr>
+    </tbody>
+  </table></div>
+  <div class="resolved">
+    <h3>解決済み：ツール依存とフックの両立 <span class="pill rev3">rev 3</span></h3>
+    <p>rev 2 で衝突していた「ツール依存なし」と「フックを活用」は、利用者側の実行時依存を <b>git ＋ node</b> に限定することで解決した。フックは依存ゼロの plain JavaScript で、パッケージのインストールもビルドも要らない。縮退モードは実装せず、node が無い環境は対象外とする（<code>/vouch status</code> と <code>/vouch doctor</code> が node の有無を検査する）。</p>
+  </div>
+</section>
+
+<!-- 3 -->
+<section id="s3">
+  <div class="sec-head"><span class="n">03</span><h2>3つの転換</h2></div>
+  <div class="prose">
+    <div class="shift"><b>① エンジンを捨て、Git ＋ フック ＋ 監査ログに置き換える</b>v2 の TypeScript エンジン（ルーティング・状態機械・レシート）は持たない。状態は成果物の frontmatter から導出し、証跡は git と append-only の監査ログ、機械的な検査・記録・遮断は node のフックが担う。最終ゲートは、人が PR をマージする行為そのもの。</div>
+    <div class="shift"><b>② 品質は「主張 ＋ 証拠 ＋ 参照元」で保証する</b>品質に関するすべての主張に、テスト名・コマンド出力・スクリーンショット・コミットのいずれかの証拠を付ける。すべての成果物に、どの知識（コード・設計・インフラ・背景・規約）を根拠にしたかの参照元を付ける。証拠や参照元のない主張は無効で、フックが機械的に検査する。</div>
+    <div class="shift"><b>③ 人は Review Brief を読み、判断だけをする</b>コードを見なくても判断できる固定構造の文書を Verify の成果物にし、そのまま PR 本文にする。人の関与は Intent 承認と PR 承認の2回に絞り、その間は先送りできない判断依頼だけが届く。判断依頼は選択肢・メリット・デメリット・根拠を添えて、人が調べなくても決められる形にする。</div>
+  </div>
+</section>
+
+<!-- 4 -->
+<section id="s4">
+  <div class="sec-head"><span class="n">04</span><h2>原則と禁止リスト</h2></div>
+  <div class="grid2">
+    <div>
+      <div class="rule"><span class="id">P-1</span><div><b>判断はモデル、機械的処理はフック。</b>手順を強制せず、禁止リストと不変条件だけを持つ。フックは判断しない。検査・記録・遮断だけを行い、判断が要る結果はモデルへ返す。</div></div>
+      <div class="rule"><span class="id">P-2</span><div><b>成果物が状態、監査ログが証跡と計測。</b>状態機械を持たない。状態は成果物の frontmatter から導出し、出来事とその所要時間は append-only の監査ログに残す。</div></div>
+      <div class="rule"><span class="id">P-3</span><div><b>主張には証拠を、成果物には参照元を、判断依頼には根拠を付ける。</b>証拠の形式を統一する（test / log / shot / commit）。参照元と根拠は <code>パス:行@コミット</code> か文書 ID か公式文書の URL＋節。<span class="pill rev3">rev 3</span></div></div>
+      <div class="rule"><span class="id">P-4</span><div><b>常時読み込むものは最小にする。</b>専門知識は必要な時だけ読む。ただし知識レイヤーは常に最新に保つ。</div></div>
+      <div class="rule"><span class="id">P-5</span><div><b>根本解決の必要最小限。</b>その場しのぎをしない。理想の設計との差分を常に意識し、根本原因を解決するのに必要な最小の変更をする。</div></div>
+      <div class="rule"><span class="id">P-6</span><div><b>人の時間を最小にする。</b>人の関与は Intent 承認と PR 承認の2回。作業単位は人が1回で判断できる大きさに分割し、H の変更を隔離する。先送りできる質問は Brief に溜める。<span class="pill rev3">rev 3</span></div></div>
+      <div class="rule"><span class="id">P-7</span><div><b>複雑性の予算を CI で守る。</b>v2 の膨張を繰り返さない。フックにも行数の予算を置く。予算超過は Opus 5.5 での失敗の実証が条件。</div></div>
+    </div>
+    <div>
+      <div class="deny">
+        <h3>禁止リスト（これ以外は禁止しない）</h3>
+        <ul>
+          <li>テストを通すためにテストを改変・削除する</li>
+          <li>証拠を捏造する、証拠や参照元のない主張をする</li>
+          <li>根拠のない選択肢で人に判断を迫る <span class="pill rev3">rev 3</span></li>
+          <li>人の承認なしに <code>approved</code> にする、承認を代行する</li>
+          <li>監査ログを手で書く・編集する（モデルも人も）</li>
+          <li>本番データに触る、<code>main</code> に直接 push する</li>
+          <li>禁止リストに載っていないことを禁止する</li>
+        </ul>
+      </div>
+      <div class="allow" style="margin-top:14px">
+        <h3>守る不変条件</h3>
+        <ul style="margin-bottom:0">
+          <li>人の承認なしに approved にならない</li>
+          <li>承認済みの計画なしに実装しない</li>
+          <li>契約（型・データ定義）とテストより先に実装をコミットしない</li>
+          <li>作った者とは別のコンテキストで検証する</li>
+          <li>受入基準がテスト・検証記録まで追跡できる</li>
+          <li>すべての成果物に参照元があり、参照先が存在する</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <p class="note">禁止リストのうち機械的に判定できるもの（テストファイルの削除、main への push、監査ログの手編集、approved への無断変更、根拠欄が空の判断依頼）はフックが遮る。判定に判断が要るもの（その場しのぎかどうか、根拠が妥当か）は reviewer が見る。</p>
+</section>
+
+<!-- 5 -->
+<section id="s5">
+  <div class="sec-head"><span class="n">05</span><h2>ライフサイクルと儀式</h2></div>
+  <div class="prose"><p>4ステージ。人間ゲートは Intent と Verify の2回で、Design は計画で必要と判断した時だけ行う。同期の儀式は2つ。モブ・エラボレーションは Intent と Design をまとめて1つの儀式で行い、その中に「確認点」を置いて、ある程度の粒度で人が確認できるようにする。</p></div>
+  <figure>
+    <div class="fig-scroll">
+    <svg viewBox="0 0 1000 360" role="img" aria-label="Intent、Design、Build、Verify の4ステージ。Intent と Verify に人間ゲート、Design は条件付き。Intent と Design には人の確認点があり、1つのモブ・エラボレーションが両方を覆う。Build はテストが通るまでループし、Verify の指摘は Build に戻る。explorer、builder、reviewer の3エージェント。脇質問と再開はいつでもできる">
+      <defs>
+        <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+      <g fill="currentColor" font-size="12" font-family="IBM Plex Sans JP, sans-serif">
+        <g stroke="var(--human)" stroke-width="1.4" fill="var(--human-soft)">
+          <rect x="47" y="14" width="416" height="30" rx="15"/>
+          <rect x="707" y="14" width="196" height="30" rx="15"/>
+        </g>
+        <text x="255" y="34" text-anchor="middle" font-size="10.5" fill="var(--human)">モブ・エラボレーション（Intent ＋ Design をまとめて。確認点ごとに人が確認）</text>
+        <text x="805" y="34" text-anchor="middle" font-size="10.5" fill="var(--human)">モブ・レビュー ＋ 振り返り</text>
+        <circle cx="500" cy="29" r="4" fill="var(--human)"/>
+        <text x="510" y="33" font-size="10" opacity=".8">= 人の確認点（粒度は設定できる）</text>
+        <line x1="145" y1="44" x2="145" y2="100" stroke="var(--human)" stroke-width="1" stroke-dasharray="3 3"/>
+        <line x1="365" y1="44" x2="365" y2="100" stroke="var(--human)" stroke-width="1" stroke-dasharray="3 3"/>
+        <line x1="805" y1="44" x2="805" y2="100" stroke="var(--human)" stroke-width="1" stroke-dasharray="3 3"/>
+
+        <g stroke="var(--accent)" stroke-width="1.6" fill="var(--accent-soft)">
+          <rect x="60" y="100" width="170" height="70" rx="5"/>
+          <rect x="500" y="100" width="170" height="70" rx="5"/>
+          <rect x="720" y="100" width="170" height="70" rx="5"/>
+        </g>
+        <rect x="280" y="100" width="170" height="70" rx="5" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-dasharray="6 4"/>
+        <g fill="var(--human)">
+          <circle cx="100" cy="100" r="4"/><circle cx="145" cy="100" r="4"/><circle cx="190" cy="100" r="4"/>
+          <circle cx="330" cy="100" r="4"/><circle cx="400" cy="100" r="4"/>
+        </g>
+        <text x="145" y="128" text-anchor="middle" font-weight="700" font-size="14">Intent</text>
+        <text x="145" y="148" text-anchor="middle" font-size="11" opacity=".8">目的・AC・理想形・計画</text>
+        <text x="365" y="128" text-anchor="middle" font-weight="700" font-size="14">Design</text>
+        <text x="365" y="148" text-anchor="middle" font-size="11" opacity=".8">条件付き：差分図・契約・観点表</text>
+        <text x="585" y="128" text-anchor="middle" font-weight="700" font-size="14">Build</text>
+        <text x="585" y="148" text-anchor="middle" font-size="11" opacity=".8">契約→テスト→実装の順で</text>
+        <text x="805" y="128" text-anchor="middle" font-weight="700" font-size="14">Verify</text>
+        <text x="805" y="148" text-anchor="middle" font-size="11" opacity=".8">独立検証 → Brief → PR</text>
+
+        <line x1="230" y1="135" x2="280" y2="135" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar2)"/>
+        <line x1="450" y1="135" x2="500" y2="135" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar2)"/>
+        <line x1="670" y1="135" x2="720" y2="135" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar2)"/>
+        <g fill="var(--human)">
+          <polygon points="230,127 238,135 230,143 222,135"/>
+          <polygon points="450,127 458,135 450,143 442,135"/>
+          <polygon points="890,127 898,135 890,143 882,135"/>
+        </g>
+        <text x="230" y="190" text-anchor="middle" font-size="10" fill="var(--human)">人が承認</text>
+        <text x="450" y="190" text-anchor="middle" font-size="10" fill="var(--human)">承認（必要時）</text>
+        <text x="890" y="190" text-anchor="middle" font-size="10" fill="var(--human)">PR 承認</text>
+        <line x1="898" y1="135" x2="940" y2="135" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar2)"/>
+        <rect x="940" y="118" width="50" height="34" rx="4" fill="none" stroke="currentColor" stroke-width="1.2"/>
+        <text x="965" y="132" text-anchor="middle" font-size="10">Learn</text>
+        <text x="965" y="145" text-anchor="middle" font-size="9" opacity=".7">rules.md</text>
+
+        <path d="M545,170 C545,205 625,205 625,170" fill="none" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar2)"/>
+        <text x="585" y="204" text-anchor="middle" font-size="10" opacity=".8">テストと DoD が通るまで</text>
+        <path d="M760,170 C760,235 630,235 630,175" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#ar2)"/>
+        <text x="695" y="245" text-anchor="middle" font-size="10" opacity=".8">指摘を戻す（人を介さず、上限あり）</text>
+
+        <g fill="none" stroke="currentColor" stroke-width="1.2">
+          <rect x="60" y="270" width="170" height="40" rx="4"/>
+          <rect x="500" y="270" width="170" height="40" rx="4"/>
+          <rect x="720" y="270" width="170" height="40" rx="4"/>
+        </g>
+        <text x="145" y="287" text-anchor="middle" font-size="11">explorer</text>
+        <text x="145" y="302" text-anchor="middle" font-size="10" opacity=".7">調査・再走査 → codekb/</text>
+        <text x="585" y="287" text-anchor="middle" font-size="11">builder × N</text>
+        <text x="585" y="302" text-anchor="middle" font-size="10" opacity=".7">Unit ごとに worktree で並列</text>
+        <text x="805" y="287" text-anchor="middle" font-size="11">reviewer</text>
+        <text x="805" y="302" text-anchor="middle" font-size="10" opacity=".7">別コンテキスト・別ハーネス推奨</text>
+        <line x1="145" y1="170" x2="145" y2="270" stroke="currentColor" stroke-width="1" stroke-dasharray="3 3" opacity=".6"/>
+        <line x1="585" y1="212" x2="585" y2="270" stroke="currentColor" stroke-width="1" stroke-dasharray="3 3" opacity=".6"/>
+        <line x1="840" y1="170" x2="840" y2="270" stroke="currentColor" stroke-width="1" stroke-dasharray="3 3" opacity=".6"/>
+
+        <rect x="60" y="324" width="930" height="28" rx="4" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="4 3" opacity=".7"/>
+        <text x="525" y="342" text-anchor="middle" font-size="10.5">いつでも：<tspan font-family="IBM Plex Mono, monospace">/vouch ask</tspan>（既存コンテキストに影響しない脇質問） · <tspan font-family="IBM Plex Mono, monospace">/vouch</tspan>（中断からの再開。状態は成果物と監査ログから導出）</text>
+      </g>
+    </svg>
+    </div>
+    <figcaption>図2. 4ステージのライフサイクル。◆ が人間ゲート、● が人の確認点。上段は同期の儀式（モブ・エラボレーションは Intent と Design を覆う）、下段は3エージェント、最下段はいつでも使える脇質問と再開。</figcaption>
+  </figure>
+
+  <div class="tbl"><table>
+    <thead><tr><th>ステージ</th><th>成果物</th><th>何をするか</th><th>吸収する v2 のステージ</th></tr></thead>
+    <tbody>
+      <tr><td class="k">Intent <span class="pill human">◆</span></td><td><code>intent.md</code></td><td>explorer が既存コードを調査（知識レイヤーが古ければ再走査）。人と対話して受入基準（AC-n）を確定。理想形との差分・ユースケースの漏れ・リファクタ候補・根本原因を明記。作業単位の分割案、Unit 分割・リスク階層・AC ごとの検証方法を提案し、確認点を経て1回の承認を得る</td><td>Initialization ×3、Reverse Engineering、Requirements、User Stories、Practices Discovery、Units Generation、Delivery Planning</td></tr>
+      <tr><td class="k">Design <span class="pill muted">条件付き</span></td><td><code>design.md</code></td><td>高リスク Unit または計画が要求した時のみ。図解を主とし、基準図との差分で示す。契約（型・データ定義・インターフェース）を先に固める。代替案とトレードオフ表を添える</td><td>Domain / Contract / Functional / NFR / Infra Design、Mockups</td></tr>
+      <tr><td class="k">Build <span class="pill muted">⟳</span></td><td>コード、テスト、<code>build-log.md</code></td><td>Unit ごとに builder を worktree で並列実行。契約（型・スキーマ・データ定義が型検査と静的解析を通る）→ テスト（red）→ 実装（green）→ refactor をコミット順で証明。DoD コマンドの出力を記録。フックが順序と検査結果と所要時間を監査ログに残す</td><td>Code Generation、Build and Test、CI Pipeline</td></tr>
+      <tr><td class="k">Verify <span class="pill human">◆</span></td><td><code>review.md</code>、<code>rules.md</code> への追記</td><td>別コンテキストの reviewer が敵対的に検証（破壊検査、その場しのぎの検出を含む）。Review Brief を PR 本文にして人が承認。学びを rules.md に追記</td><td>reviewer 機構、sensors、governance、learnings</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>儀式（同期的な協働）</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>儀式</th><th>いつ</th><th>AI が用意するもの</th><th>人が確認・決定すること</th></tr></thead>
+    <tbody>
+      <tr><td class="k">モブ・エラボレーション</td><td>Intent と Design をまとめて1回（必要なら分割して継続）</td><td>1画面 Intent、作業単位の分割案、論点一覧、ユーザー操作のフロー図、用語集、「現状はこう動く」の証拠、理想形との差分、差分図、代替案とトレードオフ表、脅威モデル観点表（H 階層）</td><td>確認点ごとに確認：AC の確定 → 非ゴール → 理想形と最小実装の線引き → 分割と Unit とリスク階層 → 設計の採択。確認は監査ログに記録</td></tr>
+      <tr><td class="k">モブ・レビュー</td><td>Verify の後</td><td>Review Brief、AI 操作によるデモ、判断依頼（必要な数だけ、根拠つき）</td><td>判断依頼への回答、PR 承認、末尾5分で振り返り</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">確認点は既定で論点ごとの固定4点（AC 確定 → 非ゴールと最小実装の線引き → 分割・Unit・リスク階層 → 設計採択）。H 階層は Unit ごとの確認を自動で追加する。粒度は <code>rules.md</code> の <code>checkpoints:</code>（<code>topic</code> / <code>unit</code> / <code>section</code>）で変更できる。非同期でも回せる：事前読み → 同期で決定 → 事後反映。決定は <code>decisions.md</code> に人の言葉で記録し、監査ログにも残る。H 階層の Unit ではモブ・コンストラクション（AI の構築を同期で見て方向修正）を任意で行う。</p>
+
+  <h3>いつでもできること</h3>
+  <div class="grid2">
+    <div class="card"><div class="tag">/vouch ask "&lt;質問&gt;"</div><h3>脇質問</h3><p>ワークフロー中に気になったことを、進行中のコンテキストに影響を与えずに聞ける。別コンテキスト（サブエージェント）が intent フォルダと知識レイヤーを読み取り専用で参照して答える。状態は変えない。質問と答えは監査ログに残るので、後で同じことを聞かれない。</p></div>
+    <div class="card"><div class="tag">/vouch</div><h3>再開</h3><p>中断（セッション終了、コンテキスト圧縮、クラッシュ、意図的な停止）の後、引数なしの <code>/vouch</code> でいつでも再開できる。現在地は成果物の frontmatter と監査ログの末尾から導出し、セッション開始フックが再開用の要約を渡す。<code>/vouch status</code> で現在地・確認点・未回答の判断依頼を見る。</p></div>
+  </div>
+</section>
+
+<!-- 6 -->
+<section id="s6">
+  <div class="sec-head"><span class="n">06</span><h2>人のレビューのタイミングと作業単位の分割</h2><span class="pill rev3">rev 3</span></div>
+  <div class="prose"><p>人が関与するのは、1つの Intent につき<b>同期の接点が2回</b>（Intent 承認、PR 承認）と、その間に届く<b>先送りできない判断依頼</b>だけ。先送りできる質問は Brief に溜めて PR 承認の時にまとめて答える。AI は人の回答を待つ間も他の Unit を止めない。</p></div>
+  <figure>
+    <div class="fig-scroll">
+    <svg viewBox="0 0 960 260" role="img" aria-label="1つの Intent の時間軸。前半のモブ・エラボレーションで人は確認点を経て Intent を承認する。中盤の自律作業では AI が Build と Verify を回し、人には先送りできない判断依頼だけが届く。後半のモブ・レビューで人は Brief を読んで判断依頼に答え、PR を承認する。監査ログが人の待ち時間と AI の作業時間を計測する">
+      <defs>
+        <marker id="ar7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+      <g fill="currentColor" font-size="12" font-family="IBM Plex Sans JP, sans-serif">
+        <!-- phase bands -->
+        <rect x="60" y="44" width="240" height="160" rx="4" fill="var(--human-soft)" opacity=".55"/>
+        <rect x="320" y="44" width="380" height="160" rx="4" fill="var(--accent-soft)" opacity=".45"/>
+        <rect x="720" y="44" width="200" height="160" rx="4" fill="var(--human-soft)" opacity=".55"/>
+        <text x="180" y="32" text-anchor="middle" font-size="11" font-weight="500">モブ・エラボレーション（同期）</text>
+        <text x="510" y="32" text-anchor="middle" font-size="11" font-weight="500">自律作業（人は待たない）</text>
+        <text x="820" y="32" text-anchor="middle" font-size="11" font-weight="500">モブ・レビュー（同期 or PR 上で非同期）</text>
+
+        <!-- lanes -->
+        <text x="20" y="84" font-size="11" font-weight="500" fill="var(--human)">人</text>
+        <line x1="40" y1="80" x2="940" y2="80" stroke="var(--human)" stroke-width="1" opacity=".5"/>
+        <text x="20" y="164" font-size="11" font-weight="500" fill="var(--accent)">AI</text>
+        <line x1="40" y1="160" x2="940" y2="160" stroke="var(--accent)" stroke-width="1" opacity=".5"/>
+
+        <!-- human events -->
+        <g fill="var(--human)">
+          <circle cx="110" cy="80" r="5"/><circle cx="160" cy="80" r="5"/><circle cx="210" cy="80" r="5"/>
+          <polygon points="280,70 290,80 280,90 270,80"/>
+          <polygon points="820,70 830,80 820,90 810,80"/>
+        </g>
+        <text x="160" y="64" text-anchor="middle" font-size="10">確認点（粒度は設定）</text>
+        <text x="280" y="106" text-anchor="middle" font-size="10" fill="var(--human)">Intent 承認</text>
+        <text x="820" y="106" text-anchor="middle" font-size="10" fill="var(--human)">PR 承認</text>
+        <text x="885" y="84" font-size="10" fill="var(--human)">Learn 5分</text>
+        <!-- deferred-not question -->
+        <polygon points="470,72 478,80 470,88 462,80" fill="var(--surface)" stroke="var(--human)" stroke-width="1.6"/>
+        <text x="470" y="62" text-anchor="middle" font-size="10" fill="var(--human)">先送りできない判断依頼だけ</text>
+        <line x1="470" y1="152" x2="470" y2="90" stroke="var(--human)" stroke-width="1" stroke-dasharray="3 3" marker-end="url(#ar7)"/>
+        <line x1="478" y1="90" x2="478" y2="152" stroke="var(--human)" stroke-width="1" stroke-dasharray="3 3" marker-end="url(#ar7)"/>
+        <text x="500" y="122" font-size="10" opacity=".8">他 Unit は継続</text>
+
+        <!-- AI events -->
+        <rect x="70" y="146" width="220" height="28" rx="4" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.2"/>
+        <text x="180" y="165" text-anchor="middle" font-size="10.5">explorer → Intent / Design 下書き</text>
+        <rect x="330" y="146" width="360" height="28" rx="4" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.2"/>
+        <text x="510" y="165" text-anchor="middle" font-size="10.5">Build ⟳ Verify（Unit 並列、reviewer との往復）</text>
+        <rect x="730" y="146" width="180" height="28" rx="4" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.2"/>
+        <text x="820" y="165" text-anchor="middle" font-size="10.5">Brief → PR → Learn</text>
+        <!-- deferred questions flow to brief -->
+        <path d="M560,174 C600,200 720,200 780,174" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#ar7)"/>
+        <text x="670" y="204" text-anchor="middle" font-size="10" opacity=".8">先送りできる質問は Brief に溜める</text>
+        <!-- checkpoints link -->
+        <line x1="110" y1="146" x2="110" y2="88" stroke="var(--human)" stroke-width="1" stroke-dasharray="3 3" opacity=".7"/>
+        <line x1="210" y1="146" x2="210" y2="88" stroke="var(--human)" stroke-width="1" stroke-dasharray="3 3" opacity=".7"/>
+
+        <!-- time axis -->
+        <line x1="40" y1="228" x2="940" y2="228" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar7)"/>
+        <text x="40" y="248" font-size="10" opacity=".8">時間 →　監査ログが計測：人の待ち時間 / AI の作業時間 / 判断依頼の回答までの時間 / 人がレビューに使った時間</text>
+      </g>
+    </svg>
+    </div>
+    <figcaption>図3. 1つの Intent での人の関与。同期の接点は Intent 承認と PR 承認の2回。自律作業の間は、先送りできない判断依頼だけが人に届き、その間も他の Unit は進む。</figcaption>
+  </figure>
+
+  <h3>人のレビューが発生する場面（すべて）</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>場面</th><th>いつ</th><th>人が読むもの</th><th>人が決めること</th><th>同期 / 非同期</th></tr></thead>
+    <tbody>
+      <tr><td class="k">確認点</td><td>モブ・エラボレーションの途中</td><td>1画面の要約（AC 群、分割案、Unit と階層、設計の要点）</td><td>「この理解で合っているか」</td><td>同期（非同期でも可）</td></tr>
+      <tr><td class="k">Intent 承認 <span class="pill human">◆</span></td><td>モブ・エラボレーションの最後</td><td>1画面 Intent（＋ 必要時 design.md の差分図）</td><td>この計画で作ってよいか</td><td>同期</td></tr>
+      <tr><td class="k">先送りできない判断依頼</td><td>Build / Verify の途中。これ以上進めないと止まる時だけ</td><td>判断依頼カード（§10）</td><td>選択肢から選ぶ。未回答なら既定案で進み、Brief §7 に明記される</td><td>非同期。他 Unit は止めない。既定案が作れない時だけ止まる</td></tr>
+      <tr><td class="k">PR 承認 <span class="pill human">◆</span></td><td>Verify の後、モブ・レビュー</td><td>Review Brief（L/M）。H はコアロジックの hunk も</td><td>溜まった判断依頼への回答、マージの可否</td><td>同期、または PR 上で非同期</td></tr>
+      <tr><td class="k">Learn</td><td>モブ・レビューの末尾5分</td><td>rules.md への追記案</td><td>採用するか</td><td>同期</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">これ以外の場面で人を呼ばない。Build の途中経過、テストの失敗と修正、reviewer との往復、フックの検査結果は監査ログと build-log に残り、人は Brief で結果だけを読む。H 階層でモブ・コンストラクションを行う場合は例外で、人が任意で同席する。</p>
+
+  <h3>作業単位の分割 — レビューを最小にするために</h3>
+  <div class="prose"><p>人のレビューの量を決めるのは「PR の数」ではなく「人が読まなければならない量」。分割の目的は、人がコードを読む箇所を H の変更だけに閉じ込め、それ以外は Brief だけで済ませること。分割案は Intent の最初にモデルが提案し、確認点で人が1回で承認する。</p></div>
+  <figure>
+    <div class="fig-scroll">
+    <svg viewBox="0 0 960 290" role="img" aria-label="1つの要望を4つの Intent に分割する例。準備リファクタ（振る舞い不変、L）、契約変更（H、人がコードを読むのはここだけ）、連携（M、Brief のみ）、文言と設定（L、Brief をスキム）。人のレビュー時間は合計約20分で、分割しなければ14ファイルの diff を読むことになる">
+      <defs>
+        <marker id="ar8" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+      <g fill="currentColor" font-size="12" font-family="IBM Plex Sans JP, sans-serif">
+        <rect x="20" y="100" width="200" height="90" rx="5" fill="none" stroke="currentColor" stroke-width="1.2"/>
+        <text x="120" y="128" text-anchor="middle" font-weight="500">1つの要望</text>
+        <text x="120" y="148" text-anchor="middle" font-size="11" opacity=".8">注文の在庫チェック</text>
+        <text x="120" y="166" text-anchor="middle" font-size="11" opacity=".8">14 ファイル、H / M / L が混在</text>
+        <line x1="220" y1="145" x2="290" y2="145" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar8)"/>
+        <text x="255" y="136" text-anchor="middle" font-size="10" opacity=".8">分割</text>
+
+        <!-- intents -->
+        <rect x="290" y="20" width="330" height="50" rx="5" fill="var(--ok-soft)" stroke="var(--ok)" stroke-width="1.4"/>
+        <text x="300" y="40" font-size="11.5" font-weight="500">0. 準備リファクタ（振る舞い不変）<tspan fill="var(--ok)" font-weight="700"> L</tspan></text>
+        <text x="300" y="58" font-size="10.5" opacity=".85">在庫参照を1箇所に寄せる。変更を簡単にしてから変える</text>
+
+        <rect x="290" y="85" width="330" height="50" rx="5" fill="var(--warn-soft)" stroke="var(--warn)" stroke-width="1.4"/>
+        <text x="300" y="105" font-size="11.5" font-weight="500">A. 在庫チェックの契約変更<tspan fill="var(--warn)" font-weight="700"> H</tspan></text>
+        <text x="300" y="123" font-size="10.5" opacity=".85">公開 API の応答と DB 制約。2 ファイル・約40行</text>
+
+        <rect x="290" y="150" width="330" height="50" rx="5" fill="var(--human-soft)" stroke="var(--human)" stroke-width="1.4"/>
+        <text x="300" y="170" font-size="11.5" font-weight="500">B. 在庫サービス連携<tspan fill="var(--human)" font-weight="700"> M</tspan></text>
+        <text x="300" y="188" font-size="10.5" opacity=".85">内部実装。契約は A で固定済み</text>
+
+        <rect x="290" y="215" width="330" height="50" rx="5" fill="var(--ok-soft)" stroke="var(--ok)" stroke-width="1.4"/>
+        <text x="300" y="235" font-size="11.5" font-weight="500">C. 文言・設定・テスト整理<tspan fill="var(--ok)" font-weight="700"> L</tspan></text>
+        <text x="300" y="253" font-size="10.5" opacity=".85">A・B と独立。いつでも入れられる</text>
+
+        <!-- dependency arrows -->
+        <line x1="455" y1="70" x2="455" y2="85" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar8)"/>
+        <line x1="455" y1="135" x2="455" y2="150" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar8)"/>
+        <text x="470" y="82" font-size="9.5" opacity=".7">先に</text>
+        <text x="470" y="147" font-size="9.5" opacity=".7">先に</text>
+
+        <!-- human cost column -->
+        <text x="660" y="14" font-size="11" font-weight="500">人のレビュー</text>
+        <line x1="620" y1="45" x2="660" y2="45" stroke="currentColor" stroke-width="1" stroke-dasharray="3 3"/>
+        <text x="668" y="41" font-size="11">Brief をスキム（テスト全通過が証拠）</text>
+        <text x="668" y="57" font-size="10.5" opacity=".8">約2分</text>
+        <line x1="620" y1="110" x2="660" y2="110" stroke="currentColor" stroke-width="1" stroke-dasharray="3 3"/>
+        <text x="668" y="106" font-size="11" fill="var(--warn)" font-weight="500">Brief ＋ 約40行の hunk を読む</text>
+        <text x="668" y="122" font-size="10.5" opacity=".8">約10分。人がコードを読むのはここだけ</text>
+        <line x1="620" y1="175" x2="660" y2="175" stroke="currentColor" stroke-width="1" stroke-dasharray="3 3"/>
+        <text x="668" y="171" font-size="11">Brief のみ（振る舞い差分と破壊検査）</text>
+        <text x="668" y="187" font-size="10.5" opacity=".8">約5分</text>
+        <line x1="620" y1="240" x2="660" y2="240" stroke="currentColor" stroke-width="1" stroke-dasharray="3 3"/>
+        <text x="668" y="236" font-size="11">Brief をスキム</text>
+        <text x="668" y="252" font-size="10.5" opacity=".8">約2分</text>
+        <line x1="660" y1="266" x2="940" y2="266" stroke="currentColor" stroke-width="1" opacity=".5"/>
+        <text x="668" y="283" font-size="11" font-weight="500">合計 約20分。分割なしなら 14 ファイルの diff を読む</text>
+      </g>
+    </svg>
+    </div>
+    <figcaption>図4. 分割の例。準備リファクタで変更を簡単にし、H の契約変更を最小の Intent に隔離し、M と L は Brief だけで済ませる。人がコードを読むのは A の約40行だけ。</figcaption>
+  </figure>
+  <div class="grid2">
+    <div class="card"><h3>分割の原則</h3>
+      <ul style="margin-bottom:0">
+        <li><b>1 Intent ＝ 1 PR ＝ 1 Brief ＝ 1つの振る舞いの変更。</b>Brief が1画面に収まる大きさ（目安：Unit 5 つ以下）</li>
+        <li><b>リスクで分ける。</b>H の変更は最小の Intent に隔離する。人がコードを読むのはそこだけ。L/M は1つの Intent にまとめる</li>
+        <li><b>先に「変更を簡単にする」リファクタを切り出す。</b>振る舞いを変えないリファクタは L の別 Intent にし、テスト全通過で安全を証明する。本体の変更が小さくなる</li>
+        <li><b>契約の変更は単独で。</b>公開 API・スキーマ・データ定義の変更は H の Intent として先に固め、後続はそれを参照する</li>
+        <li><b>依存順に並べ、後ろを待たせない。</b>後続 Intent は前の PR がマージされる前でも worktree で進める。レビューは順番に、まとめてでも行える</li>
+        <li><b>分割案は確認点で1回だけ承認。</b>分割を後から変えたい時はモデルが再提案し、差分だけ確認する</li>
+      </ul>
+    </div>
+    <div class="card"><h3>人のレビュー量を減らす他の仕組み</h3>
+      <ul style="margin-bottom:0">
+        <li>読むべき箇所ガイドで、hunk を core / plumbing / tests / generated / rename に分類し、読まなくてよいものを明示する</li>
+        <li>L 階層は Brief の「主張と証拠」と破壊検査の結果だけで判断できる形にする。マージは人が行う（自動マージはしない）</li>
+        <li>判断依頼はすべて選択肢と根拠つきで、人が調べる時間をゼロにする（§10）</li>
+        <li>記録にある答えは再質問しない。脇質問の答えも記録に残る</li>
+        <li>監査ログで「人がレビューに使った時間」を計測し、Intent の振り返りで分割の粒度を調整する</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 7 -->
+<section id="s7">
+  <div class="sec-head"><span class="n">07</span><h2>品質モデル — テストだけでは足りない</h2></div>
+  <div class="prose"><p>テストが保証できるのは「仕様どおりに振る舞うか」だけ。次の11の次元を、それぞれ別の証拠で担保する。凡例：<span class="chip" style="background:var(--ok)"></span>テストで担保できる <span class="chip" style="background:var(--human)"></span>一部できる <span class="chip" style="background:var(--warn)"></span>できない</p></div>
+  <div class="tbl"><table>
+    <thead><tr><th>品質の次元</th><th>テスト</th><th>担保手段</th><th>証拠の形式</th></tr></thead>
+    <tbody>
+      <tr><td class="k">正しさ（仕様どおり動く）</td><td><span class="chip" style="background:var(--ok)"></span>○</td><td>AC に紐づくテスト、DoD</td><td>test / log</td></tr>
+      <tr><td class="k">テスト自体の品質</td><td><span class="chip" style="background:var(--warn)"></span>✗</td><td>破壊検査、AC カバレッジ表</td><td>破壊検査の表</td></tr>
+      <tr><td class="k">要件の妥当性・ユースケースの網羅</td><td><span class="chip" style="background:var(--warn)"></span>✗</td><td>モブ・エラボレーション、既存ユースケース × 変更の影響表、デモ</td><td>decisions.md、網羅表</td></tr>
+      <tr><td class="k">設計の質（境界・結合・既存構造との整合）</td><td><span class="chip" style="background:var(--warn)"></span>✗</td><td>図解付き設計レビュー、依存ルールの検査（フック）</td><td>差分図、観点表</td></tr>
+      <tr><td class="k">根本解決か（その場しのぎでないか）</td><td><span class="chip" style="background:var(--warn)"></span>✗</td><td>理想形との差分、根本原因分析、reviewer のその場しのぎ検出</td><td>intent.md の差分表、観点表</td></tr>
+      <tr><td class="k">契約の整合（型・データ定義・インターフェース）</td><td><span class="chip" style="background:var(--human)"></span>△</td><td>型検査・スキーマ検証・静的解析を実装前に実行（フック）</td><td>log、監査ログ</td></tr>
+      <tr><td class="k">保守性（可読性・命名・重複・規約）</td><td><span class="chip" style="background:var(--human)"></span>△</td><td>静的解析、規約監査（rules.md 準拠）、reviewer の観点表</td><td>log、観点表</td></tr>
+      <tr><td class="k">セキュリティ</td><td><span class="chip" style="background:var(--human)"></span>△</td><td>依存監査、脅威モデル観点表（リスク階層に応じて）</td><td>log、観点表</td></tr>
+      <tr><td class="k">非機能（性能・リソース）</td><td><span class="chip" style="background:var(--human)"></span>△</td><td>計測を証拠として要求</td><td>log</td></tr>
+      <tr><td class="k">実使用での問題（未知の未知）</td><td><span class="chip" style="background:var(--warn)"></span>✗</td><td>AI がアプリを実際に操作する探索的検証</td><td>shot / log</td></tr>
+      <tr><td class="k">判断の質と根拠（なぜそう決めたか、何を参照したか）</td><td><span class="chip" style="background:var(--warn)"></span>✗</td><td>決定ログ、代替案の記録、参照元の明記と引用検査（フック）、根拠つき判断依頼</td><td>decisions.md、参照元</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">どの層をどの階層で必須にするかは §18 の Q3 で決着（L 4層 / M 8層 / H 11層）。証拠の書式は統一する：<code>test:ファイル › テスト名</code>、<code>log:build-log#L行</code>、<code>shot:画像パス</code>、<code>commit:ハッシュ</code>。参照元と根拠の書式：<code>src/orders.ts:88-104@a1b2c3d</code>、<code>design.md#契約@2026-09-20</code>、<code>rules.md#DoD</code>、<code>https://…（公式文書）#節</code>。</p>
+</section>
+
+<!-- 8 -->
+<section id="s8">
+  <div class="sec-head"><span class="n">08</span><h2>検証の方針</h2></div>
+  <div class="prose"><p>検証手段には優先順位がある。モデルが自動で検証できるなら、人に確認を求めない。方法の選択はモデルに任せ、禁止するのは「やってはいけないこと」だけ。</p></div>
+  <figure>
+    <div class="fig-scroll">
+    <svg viewBox="0 0 940 170" role="img" aria-label="検証手段の優先順位。左から、リポジトリ内の自動テスト、AI がアプリを実際に操作する検証、人による確認。できる限り左を選ぶ">
+      <defs>
+        <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+      <g fill="currentColor" font-size="12" font-family="IBM Plex Sans JP, sans-serif">
+        <rect x="20" y="30" width="270" height="80" rx="5" fill="var(--ok-soft)" stroke="var(--ok)" stroke-width="1.6"/>
+        <text x="155" y="56" text-anchor="middle" font-weight="700" font-size="13">① 自動テスト・静的検査（リポジトリ内）</text>
+        <text x="155" y="76" text-anchor="middle" font-size="11" opacity=".8">再現可能。AC に紐づく。フックと CI で再実行できる</text>
+        <text x="155" y="94" text-anchor="middle" font-size="11" opacity=".8">証拠: test / log</text>
+        <rect x="335" y="30" width="270" height="80" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.6"/>
+        <text x="470" y="56" text-anchor="middle" font-weight="700" font-size="13">② AI がアプリを操作する</text>
+        <text x="470" y="76" text-anchor="middle" font-size="11" opacity=".8">ブラウザ・CLI・API を実際に叩く。探索的検証も</text>
+        <text x="470" y="94" text-anchor="middle" font-size="11" opacity=".8">証拠: shot / log / 実行コマンド</text>
+        <rect x="650" y="30" width="270" height="80" rx="5" fill="var(--human-soft)" stroke="var(--human)" stroke-width="1.6"/>
+        <text x="785" y="56" text-anchor="middle" font-weight="700" font-size="13">③ 人が確認する</text>
+        <text x="785" y="76" text-anchor="middle" font-size="11" opacity=".8">判断・好み・業務妥当性だけ</text>
+        <text x="785" y="94" text-anchor="middle" font-size="11" opacity=".8">証拠: decisions.md（人の言葉）</text>
+        <line x1="290" y1="70" x2="335" y2="70" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar3)"/>
+        <line x1="605" y1="70" x2="650" y2="70" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar3)"/>
+        <text x="312" y="62" text-anchor="middle" font-size="10" opacity=".7">できない時</text>
+        <text x="627" y="62" text-anchor="middle" font-size="10" opacity=".7">できない時</text>
+        <line x1="900" y1="140" x2="40" y2="140" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar3)"/>
+        <text x="470" y="160" text-anchor="middle" font-size="11">できる限り左を選ぶ。左で済むものを右に回さない</text>
+      </g>
+    </svg>
+    </div>
+    <figcaption>図5. 検証手段の優先順位。人の確認は、モデルが検証できない「判断」だけに使う。</figcaption>
+  </figure>
+  <div class="grid2">
+    <div class="card"><div class="tag">V-1 / V-2</div><h3>自動で検証できるなら自動で</h3><p>AC ごとに「自動テスト / AI 操作 / 人」のどれで検証するかを Intent で宣言する。テストで担保できない AC は「手動確認」と明示し、判断依頼に必ず載せる。</p></div>
+    <div class="card"><div class="tag">V-3 / V-4</div><h3>方法は自由、証拠は必須</h3><p>モデルは検証方法を自分で選ぶ。AI 操作による検証はスクリーンショット・ログ・実行コマンドを残す。reviewer は builder の証拠を鵜呑みにせず、自分でも再現する。</p></div>
+  </div>
+</section>
+
+<!-- 9 -->
+<section id="s9">
+  <div class="sec-head"><span class="n">09</span><h2>独立検証の仕組みとリスク階層</h2></div>
+  <div class="prose"><p>reviewer は builder の会話を見ない。入力は成果物と diff だけ。Claude Code で作ったものを Codex で検証する（またはその逆）ことを推奨し、モデルの多様性で同じ盲点を共有するリスクを下げる。</p></div>
+  <figure>
+    <div class="fig-scroll">
+    <svg viewBox="0 0 960 300" role="img" aria-label="builder のコンテキストから reviewer へは成果物と diff だけが渡り、会話履歴は渡らない。reviewer は破壊検査と AI 操作による再現とその場しのぎの検出を行い、Review Brief を書き、それが PR 本文になって人が承認する">
+      <defs>
+        <marker id="ar4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+      <g fill="currentColor" font-size="12" font-family="IBM Plex Sans JP, sans-serif">
+        <rect x="20" y="30" width="250" height="200" rx="6" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="6 4"/>
+        <text x="145" y="52" text-anchor="middle" font-weight="700" font-size="13">コンテキスト A（builder）</text>
+        <text x="145" y="68" text-anchor="middle" font-size="10" opacity=".7">例: Claude Code</text>
+        <rect x="40" y="84" width="210" height="34" rx="4" fill="var(--surface-2)" stroke="currentColor" stroke-width="1"/>
+        <text x="145" y="106" text-anchor="middle" font-size="11">会話履歴・思考・試行錯誤</text>
+        <rect x="40" y="130" width="210" height="84" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+        <text x="145" y="150" text-anchor="middle" font-size="11" font-weight="500">成果物（参照元つき）</text>
+        <text x="145" y="168" text-anchor="middle" font-size="10.5" opacity=".85">intent.md · design.md</text>
+        <text x="145" y="184" text-anchor="middle" font-size="10.5" opacity=".85">diff（コミット順つき）</text>
+        <text x="145" y="200" text-anchor="middle" font-size="10.5" opacity=".85">build-log.md ＋ 監査ログ（フックの検査結果）</text>
+        <line x1="250" y1="172" x2="380" y2="172" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#ar4)"/>
+        <text x="315" y="164" text-anchor="middle" font-size="10" fill="var(--accent)">渡す</text>
+        <line x1="250" y1="101" x2="380" y2="101" stroke="var(--warn)" stroke-width="1.4" stroke-dasharray="4 4"/>
+        <line x1="308" y1="91" x2="322" y2="111" stroke="var(--warn)" stroke-width="2"/>
+        <line x1="322" y1="91" x2="308" y2="111" stroke="var(--warn)" stroke-width="2"/>
+        <text x="315" y="128" text-anchor="middle" font-size="10" fill="var(--warn)">見せない</text>
+        <rect x="380" y="30" width="300" height="200" rx="6" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="6 4"/>
+        <text x="530" y="52" text-anchor="middle" font-weight="700" font-size="13">コンテキスト B（reviewer）</text>
+        <text x="530" y="68" text-anchor="middle" font-size="10" opacity=".7">例: Codex（別ハーネス推奨）</text>
+        <g fill="none" stroke="currentColor" stroke-width="1">
+          <rect x="400" y="84" width="260" height="30" rx="4"/>
+          <rect x="400" y="122" width="260" height="30" rx="4"/>
+          <rect x="400" y="160" width="260" height="30" rx="4"/>
+        </g>
+        <text x="530" y="103" text-anchor="middle" font-size="11">破壊検査：壊してテストが落ちるか確認</text>
+        <text x="530" y="141" text-anchor="middle" font-size="11">AI 操作で振る舞いを自分で再現</text>
+        <text x="530" y="179" text-anchor="middle" font-size="11">観点表：11次元 ＋ その場しのぎの検出</text>
+        <text x="530" y="214" text-anchor="middle" font-size="10" opacity=".75">指摘は builder に戻す（人を介さず、上限あり）</text>
+        <line x1="680" y1="130" x2="740" y2="130" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar4)"/>
+        <rect x="740" y="96" width="200" height="68" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.6"/>
+        <text x="840" y="120" text-anchor="middle" font-weight="700" font-size="13">review.md</text>
+        <text x="840" y="138" text-anchor="middle" font-size="11" opacity=".85">Review Brief（コードなし）</text>
+        <text x="840" y="154" text-anchor="middle" font-size="11" opacity=".85">そのまま PR 本文になる</text>
+        <line x1="840" y1="164" x2="840" y2="210" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar4)"/>
+        <polygon points="840,214 852,226 840,238 828,226" fill="var(--human)"/>
+        <text x="840" y="256" text-anchor="middle" font-size="11" fill="var(--human)">人が PR を承認（最終ゲート）</text>
+        <text x="20" y="290" font-size="11" opacity=".8">builder の「やったこと」と reviewer の「壊そうとしたこと」を Brief に並べる。食い違う箇所が、人が見るべき場所。</text>
+      </g>
+    </svg>
+    </div>
+    <figcaption>図6. 独立検証の仕組み。reviewer に渡るのは成果物・diff・検査結果だけで、会話履歴は渡らない。Brief は PR 本文になり、人の承認が最終ゲート。</figcaption>
+  </figure>
+
+  <h3>リスク階層で厳格さを配分する</h3>
+  <p class="note">階層はモデルが Intent で提案し、人が確認点で承認する。階層は作業単位の分割の基準でもある（§6）。</p>
+  <div class="tbl"><table>
+    <thead><tr><th>階層</th><th>Design</th><th>破壊検査</th><th>人のレビュー</th><th>分割での扱い</th><th>例</th></tr></thead>
+    <tbody>
+      <tr><td class="k"><span class="pill ok">L</span></td><td>不要</td><td>なし</td><td>Brief をスキムして人がマージ（自動マージなし）</td><td>まとめてよい</td><td>文言修正、設定値、テスト追加、振る舞い不変のリファクタ</td></tr>
+      <tr><td class="k"><span class="pill human">M</span></td><td>任意</td><td>1箇所</td><td>Brief ＋ 読むべき箇所ガイドの5分版</td><td>まとめてよい</td><td>既存 API の内部変更</td></tr>
+      <tr><td class="k"><span class="pill warn">H</span></td><td>必須</td><td>3箇所</td><td>Brief ＋ コアロジックの hunk を人が読む。モブ・コンストラクション任意</td><td>最小の Intent に隔離</td><td>認証、決済、データ移行、公開契約の変更</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>破壊検査（軽量ミューテーションテスト）</h3>
+  <div class="prose"><p>reviewer が「ここを壊せばテストが落ちるはずだ」という箇所を選び、実際に壊してテストを実行し、落ちたことを確認して戻す。「テストが本当に何かを検証しているか」を最も安く証明できる。</p></div>
+  <div class="tbl"><table>
+    <thead><tr><th>破壊した箇所</th><th>期待</th><th>結果</th></tr></thead>
+    <tbody>
+      <tr><td><code>pricing.ts:41</code> の税率を 0 に</td><td>AC-4 が落ちる</td><td><span class="pill ok">落ちた</span></td></tr>
+      <tr><td><code>orders.ts:88</code> の在庫チェックを削除</td><td>AC-3 が落ちる</td><td><span class="pill warn">落ちなかった → 指摘 R-2</span></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- 10 -->
+<section id="s10">
+  <div class="sec-head"><span class="n">10</span><h2>判断依頼の形式</h2><span class="pill rev3">rev 3</span></div>
+  <div class="prose"><p>人に判断を仰ぐ時は、人が何も調べずに決められる形で出す。選択肢を提示し、各選択肢のメリット・デメリットを根拠（コードの該当箇所、公式文書の該当節）つきで説明し、推奨案と未回答時の既定動作を添える。根拠欄が空の判断依頼はフックが遮る。</p></div>
+  <div class="ask">
+    <div class="hd">判断依頼 Q-3 · 在庫不足時の HTTP ステータス · 階層 M · ブロック: しない（既定案で進めつつ回答を待つ）</div>
+    <div class="sec"><b>状況</b>：在庫不足の注文を拒否する応答コードが未定。既存 API は競合系のエラーに 409 を使っている <span class="mono" style="font-size:12px;color:var(--accent)">src/api/errors.ts:12-30@a1b2c3d</span>。フロントは 4xx をすべて同じトーストで表示する <span class="mono" style="font-size:12px;color:var(--accent)">web/src/api/client.ts:71@a1b2c3d</span>。</div>
+    <div class="sec">
+      <div class="opt"><span class="l">A</span><div><b>409 Conflict</b> <span class="pill accent">推奨</span><small>メリット：既存 API の慣例と一致し、クライアント側の変更が不要。リソース状態との衝突を表す意味にも合う。<br>デメリット：楽観ロック競合の 409 と区別するには <code>error.code</code> が必要。<br>根拠：<span class="src">RFC 9110 §15.5.10（409 Conflict）</span> · <span class="src">src/api/errors.ts:12@a1b2c3d</span> · <span class="src">rules.md#API エラー規約</span></small></div></div>
+      <div class="opt"><span class="l">B</span><div><b>422 Unprocessable Content</b><small>メリット：入力の意味的な不正として扱え、バリデーション系と同じ経路に乗る。<br>デメリット：既存 API に 422 の前例がなく、フロントのエラー分岐に追加が要る（<span class="src">web/src/api/client.ts:71</span>）。<br>根拠：<span class="src">RFC 9110 §15.5.21（422）</span> · <span class="src">knowledge/codekb/api-conventions.md#エラー</span></small></div></div>
+      <div class="opt"><span class="l">C</span><div><b>200 ＋ 本文で失敗を返す</b><small>メリット：なし（挙げるべき利点が見つからない）。<br>デメリット：HTTP の意味論に反し、監視で失敗が見えない。<span class="src">rules.md#API エラー規約</span> が禁止している。<br>根拠：<span class="src">rules.md#API エラー規約@2026-08-30</span></small></div></div>
+    </div>
+    <div class="sec"><b>未回答時の既定</b>：A で実装し、Brief §7 に「Q-3 未回答・既定 A」と明記する。<b>影響範囲</b>：Unit B のみ。他 Unit は継続。</div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>必須の項目</h3>
+      <ul style="margin-bottom:0">
+        <li><b>状況</b>：何が未定か、現状はどうなっているか（参照元つき）</li>
+        <li><b>選択肢</b>：2〜4 つ。「何もしない」も選択肢として検討し、載せない場合は理由を書く</li>
+        <li><b>各選択肢のメリット・デメリット・根拠</b>：根拠はコードの該当箇所（<code>パス:行@コミット</code>）か公式文書（URL＋節）。推測は「推測」と明記</li>
+        <li><b>推奨</b>：モデルの推奨と理由</li>
+        <li><b>未回答時の既定</b>：必ず既定案を示す。未回答なら既定案で進め、Brief §7 に「Q-n 未回答・既定 X」と明記する。止まるのは既定案が作れない時だけで、その理由を書く</li>
+        <li><b>ブロックの有無と影響範囲</b>：どの Unit が止まるか、他は継続するか</li>
+      </ul>
+    </div>
+    <div class="card"><h3>運用</h3>
+      <ul style="margin-bottom:0">
+        <li>ハーネスの構造化質問（Claude Code の <code>AskUserQuestion</code>、Codex の <code>request_user_input</code>）で選択肢を出し、カード本体は <code>decisions.md</code> に書く</li>
+        <li>先送りできる判断依頼は Brief §6 に溜め、PR 承認時にまとめて答える。先送りできないもの（これ以上進めない）だけ即時に出し、回答が来なければ既定案で進める</li>
+        <li>既定案で進めた判断は Brief §7 に一覧で載る。人は PR 承認時に覆せる。覆された場合は builder に戻して修正し、reviewer を再実行する</li>
+        <li>回答は人の言葉のまま <code>decisions.md</code> に記録し、監査ログに「質問 → 回答」の所要時間が残る</li>
+        <li>同じ論点は二度と聞かない。過去の回答は参照元として引く</li>
+        <li>Learn で、繰り返し出る論点は <code>rules.md</code> の規約に昇格させる</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 11 -->
+<section id="s11">
+  <div class="sec-head"><span class="n">11</span><h2>Git・監査ログ・フック</h2><span class="pill rev3">rev 3</span></div>
+  <div class="prose"><p>Intent ごとにブランチを切り、ゲートはコミット、承認は PR。状態は成果物の frontmatter から導出し、出来事とその計測値は監査ログに残す。契約 → テスト → 実装 の順序はコミット履歴が証明し、フックが検査する。</p></div>
+  <figure>
+    <div class="fig-scroll">
+    <svg viewBox="0 0 960 220" role="img" aria-label="vouch ブランチ上のコミット列。intent 承認、design 承認、型とデータ定義の契約コミット、失敗するテストのコミット、通る実装のコミット、リファクタ、review.md、そして人による PR マージで main に戻る">
+      <defs>
+        <marker id="ar5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+      <g fill="currentColor" font-size="11" font-family="IBM Plex Sans JP, sans-serif">
+        <line x1="20" y1="50" x2="940" y2="50" stroke="currentColor" stroke-width="2" opacity=".5"/>
+        <text x="20" y="38" font-family="IBM Plex Mono, monospace" font-size="11">main</text>
+        <path d="M80,50 C110,50 110,130 140,130" fill="none" stroke="var(--accent)" stroke-width="2"/>
+        <line x1="140" y1="130" x2="810" y2="130" stroke="var(--accent)" stroke-width="2"/>
+        <path d="M810,130 C860,130 860,50 900,50" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#ar5)"/>
+        <text x="140" y="118" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--accent)">vouch/260920-orders</text>
+        <g>
+          <polygon points="170,121 179,130 170,139 161,130" fill="var(--human)"/>
+          <text x="170" y="156" text-anchor="middle">intent approved</text>
+          <text x="170" y="171" text-anchor="middle" font-size="10" opacity=".7">承認の証跡</text>
+          <polygon points="260,121 269,130 260,139 251,130" fill="var(--human)"/>
+          <text x="260" y="156" text-anchor="middle">design approved</text>
+          <text x="260" y="171" text-anchor="middle" font-size="10" opacity=".7">必要時のみ</text>
+          <circle cx="360" cy="130" r="7" fill="var(--hook)"/>
+          <text x="360" y="156" text-anchor="middle" font-family="IBM Plex Mono, monospace">contract(U1)</text>
+          <text x="360" y="171" text-anchor="middle" font-size="10" opacity=".7">型・スキーマ・データ定義</text>
+          <text x="360" y="185" text-anchor="middle" font-size="10" opacity=".7">型検査・静的解析が通る</text>
+          <circle cx="465" cy="130" r="7" fill="var(--warn)"/>
+          <text x="465" y="156" text-anchor="middle" font-family="IBM Plex Mono, monospace">test(U1)</text>
+          <text x="465" y="171" text-anchor="middle" font-size="10" opacity=".7">落ちる（red）</text>
+          <circle cx="560" cy="130" r="7" fill="var(--ok)"/>
+          <text x="560" y="156" text-anchor="middle" font-family="IBM Plex Mono, monospace">feat(U1)</text>
+          <text x="560" y="171" text-anchor="middle" font-size="10" opacity=".7">通る（green）</text>
+          <circle cx="655" cy="130" r="7" fill="currentColor"/>
+          <text x="655" y="156" text-anchor="middle" font-family="IBM Plex Mono, monospace">refactor(U1)</text>
+          <circle cx="750" cy="130" r="7" fill="var(--accent)"/>
+          <text x="750" y="156" text-anchor="middle">review.md</text>
+          <text x="750" y="171" text-anchor="middle" font-size="10" opacity=".7">Review Brief</text>
+          <polygon points="900,41 909,50 900,59 891,50" fill="var(--human)"/>
+          <text x="900" y="30" text-anchor="middle" fill="var(--human)">PR merge（人）</text>
+        </g>
+        <path d="M340,100 L340,92 L580,92 L580,100" fill="none" stroke="currentColor" stroke-width="1"/>
+        <text x="460" y="84" text-anchor="middle" font-size="10">契約 → テスト → 実装 の順をコミット順で証明（フックが検査）</text>
+        <text x="20" y="210" font-size="11" opacity=".8">状態ファイルなし。<tspan font-family="IBM Plex Mono, monospace">/vouch</tspan> は成果物の frontmatter と監査ログを読んで再開する。監査ログは append-only でフックだけが書く。</text>
+      </g>
+    </svg>
+    </div>
+    <figcaption>図7. Intent のブランチ上で、承認はコミット、契約 → テスト → 実装 はコミット順、最終ゲートは人による PR マージ。</figcaption>
+  </figure>
+
+  <h3>監査ログ — 後で分析するための計測データ <span class="pill rev3">rev 3</span></h3>
+  <div class="prose"><p>監査ログの目的は「何が起きたか」の証跡に加えて、「それにどれだけかかったか」を後から分析できるようにすること。イベントごとに所要時間と、ハーネスから取得できる計測値を構造化して記録する。人が読む記録は <code>decisions.md</code>、機械が読む記録は監査ログ、と役割を分ける。</p></div>
+  <div class="grid2">
+    <div class="card"><h3>形式と原則</h3>
+      <ul style="margin-bottom:0">
+        <li>Intent ごとに <code>audit/events.jsonl</code>。1行1イベント、append-only。フックだけが書く</li>
+        <li>イベント種別は正典の台帳で管理し、勝手に増やさない（v2 と同じ）。台帳は約25種の新しい名前（<code>stage.completed</code>、<code>question.answered</code>、<code>hook.check</code> など）で、v2 名は移行時に対応表で変換し、対応のないものは <code>legacy.&lt;NAME&gt;</code> で原文保存する（§18）</li>
+        <li>各イベントに <code>ts</code>、<code>duration_ms</code>、<code>actor</code>（model / hook / human / reviewer）、<code>intent</code>・<code>stage</code>・<code>unit</code>、親イベント、結果、取得できれば <code>tokens</code>（Claude Code は使用量をフックで取れる）を持つ</li>
+        <li>人に関わるイベントは「依頼 → 回答」の対で待ち時間が測れる。フックの検査は「開始 → 結果」の対で所要時間が測れる</li>
+        <li>v2 の record を移行する時は、audit シャードも同じ台帳に変換して引き継ぐ（§16）</li>
+      </ul>
+    </div>
+    <div class="card"><h3>分析できること（例）</h3>
+      <ul style="margin-bottom:0">
+        <li>Intent の総時間の内訳：AI の作業時間 / 人の待ち時間 / 人がレビューに使った時間</li>
+        <li>ステージ別・Unit 別の所要時間、Build ⟳ Verify の反復回数</li>
+        <li>判断依頼の回数と回答までの時間、先送りできた割合</li>
+        <li>フック検査（契約・DoD・鮮度・引用）の失敗率と、失敗からの回復時間</li>
+        <li>破壊検査で検出したテストの穴の数、その場しのぎ検出の数</li>
+        <li>知識レイヤーが古かった回数、再走査にかかった時間</li>
+        <li>トークン / コスト（取得できるハーネスのみ）、リスク階層別の人のレビュー時間</li>
+      </ul>
+    </div>
+  </div>
+<pre><code>{"id":"evt_0042","type":"stage.completed","intent":"260920-orders","stage":"build","unit":"U1",
+ "actor":"model","ts":"2026-09-26T10:15:02Z","duration_ms":842000,"parent":"evt_0031",
+ "result":{"tests":128,"passed":128,"iterations":2},"tokens":{"in":184000,"out":21000},"v":1}
+{"id":"evt_0043","type":"question.asked","intent":"260920-orders","unit":"U2","actor":"model",
+ "ts":"2026-09-26T10:16:10Z","question":"Q-3","blocking":false,"options":3,"v":1}
+{"id":"evt_0051","type":"question.answered","intent":"260920-orders","unit":"U2","actor":"human",
+ "ts":"2026-09-26T13:02:44Z","question":"Q-3","choice":"A","wait_ms":10000000,"parent":"evt_0043","v":1}
+{"id":"evt_0052","type":"hook.check","intent":"260920-orders","unit":"U1","actor":"hook","check":"contract",
+ "ts":"2026-09-26T10:20:31Z","duration_ms":4100,"result":"pass","v":1}</code></pre>
+  <p class="note">分析は <code>/vouch report</code>（Skill。モデルが JSONL を読んで要約する）と、JSONL をそのまま jq・DuckDB・表計算で扱う方法の両方を想定する。分析用のダッシュボードは Vouch の範囲外。</p>
+
+  <h3>フックが担う機械的処理</h3>
+  <div class="prose"><p>境界は一つ：<b>フックは判断しない。検査・記録・遮断だけを行い、判断が要る結果はモデルへ返す。</b>フックは node で書く依存ゼロの plain JavaScript（ESM）で、ビルドもインストールも要らない。v2 が判断まで代行させて膨らんだ反省から、フックの総量にも行数の予算を置く。</p></div>
+  <div class="tbl"><table>
+    <thead><tr><th>機械的処理</th><th>フックがすること</th><th>モデル（または人）が判断すること</th></tr></thead>
+    <tbody>
+      <tr><td class="k">監査イベントの記録と計測</td><td>遷移・確認・決定・質問・検査結果を、所要時間と取得できる計測値つきで append-only に書く</td><td>—</td></tr>
+      <tr><td class="k">承認の真正性</td><td><code>status: approved</code> への変更を、人の決定が監査ログにある時だけ通す</td><td>承認するかどうかは人</td></tr>
+      <tr><td class="k">契約 → テスト → 実装 の順序</td><td>型検査・静的解析・スキーマ検証を実行して記録。順序違反のコミットを遮る</td><td>何を契約として固めるかはモデル</td></tr>
+      <tr><td class="k">DoD の実行と記録</td><td><code>rules.md</code> のコマンドを実行し、出力を build-log と監査ログに残す</td><td>失敗の原因分析と修正はモデル</td></tr>
+      <tr><td class="k">知識の鮮度チェック</td><td>codekb の世代と git HEAD、設計・インフラ文書の更新日を比べ、古ければ印を付ける</td><td>再走査の範囲は explorer</td></tr>
+      <tr><td class="k">引用検査</td><td>成果物の「参照元」と判断依頼の「根拠」の参照先が存在し、最新世代かを検査</td><td>何を引用するか、根拠が妥当かはモデル / reviewer</td></tr>
+      <tr><td class="k">判断依頼の形式検査</td><td>選択肢・メリット・デメリット・根拠・既定の各欄が埋まっているかを検査し、空なら遮る</td><td>内容の妥当性はモデル / 人</td></tr>
+      <tr><td class="k">禁止リストの機械的部分</td><td>テストファイルの削除・改変、main への push、監査ログの手編集を遮る</td><td>例外を認めるかは人</td></tr>
+      <tr><td class="k">セッション開始・再開</td><td>成果物と監査ログから現在地を復元し、再開用の要約と未回答の判断依頼を渡す</td><td>次に何をするかはモデル</td></tr>
+      <tr><td class="k">状態表示</td><td>statusline に現在の Intent・ステージ・確認点・未回答の判断依頼を出す</td><td>—</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- 12 -->
+<section id="s12">
+  <div class="sec-head"><span class="n">12</span><h2>知識の鮮度と参照元</h2></div>
+  <div class="prose"><p>既存コード・設計・インフラ・プロジェクト背景・コーディング規約を「知識レイヤー」として常に最新に保ち、AI のすべての成果物に、どの知識を根拠にしたかの参照元を必ず載せる。鮮度と引用の検査はフックが行い、再走査は explorer が行う。判断依頼の根拠も同じ仕組みで検査する。</p></div>
+  <figure>
+    <div class="fig-scroll">
+    <svg viewBox="0 0 940 290" role="img" aria-label="知識レイヤー（既存コード、設計、インフラ、背景、規約）をフックが鮮度チェックし、古ければ explorer が差分を再走査して更新する。AI の成果物は知識レイヤーを引用して参照元を載せ、フックが引用の参照先を検査する">
+      <defs>
+        <marker id="ar6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+      <g fill="currentColor" font-size="12" font-family="IBM Plex Sans JP, sans-serif">
+        <rect x="20" y="40" width="260" height="230" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.6"/>
+        <text x="150" y="64" text-anchor="middle" font-weight="700" font-size="13">知識レイヤー（常に最新）</text>
+        <g fill="var(--surface)" stroke="currentColor" stroke-width="1">
+          <rect x="40" y="80" width="220" height="26" rx="3"/>
+          <rect x="40" y="112" width="220" height="26" rx="3"/>
+          <rect x="40" y="144" width="220" height="26" rx="3"/>
+          <rect x="40" y="176" width="220" height="26" rx="3"/>
+          <rect x="40" y="208" width="220" height="26" rx="3"/>
+        </g>
+        <text x="150" y="98" text-anchor="middle" font-size="11">既存コード：codekb/、基準図</text>
+        <text x="150" y="130" text-anchor="middle" font-size="11">設計：design 文書、契約</text>
+        <text x="150" y="162" text-anchor="middle" font-size="11">インフラ：構成・環境</text>
+        <text x="150" y="194" text-anchor="middle" font-size="11">プロジェクト背景</text>
+        <text x="150" y="226" text-anchor="middle" font-size="11">コーディング規約：rules.md</text>
+        <text x="150" y="256" text-anchor="middle" font-size="10" opacity=".75" font-family="IBM Plex Mono, monospace">generation: a1b2c3d</text>
+        <rect x="340" y="56" width="240" height="60" rx="5" fill="var(--hook-soft)" stroke="var(--hook)" stroke-width="1.6"/>
+        <text x="460" y="80" text-anchor="middle" font-weight="500">鮮度チェック（フック）</text>
+        <text x="460" y="98" text-anchor="middle" font-size="10.5" opacity=".85">世代 vs git HEAD、文書の更新日</text>
+        <line x1="280" y1="86" x2="340" y2="86" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar6)"/>
+        <text x="310" y="78" text-anchor="middle" font-size="10" opacity=".7">検査</text>
+        <rect x="640" y="56" width="280" height="60" rx="5" fill="none" stroke="currentColor" stroke-width="1.2"/>
+        <text x="780" y="80" text-anchor="middle" font-weight="500">explorer が差分だけ再走査</text>
+        <text x="780" y="98" text-anchor="middle" font-size="10.5" opacity=".85">変わった領域を再分析し、基準図を更新</text>
+        <line x1="580" y1="86" x2="640" y2="86" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar6)"/>
+        <text x="610" y="78" text-anchor="middle" font-size="10" opacity=".7">古ければ</text>
+        <path d="M780,116 L780,140 L300,140" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="5 4"/>
+        <line x1="300" y1="140" x2="282" y2="140" stroke="currentColor" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#ar6)"/>
+        <text x="540" y="136" text-anchor="middle" font-size="10" opacity=".7">更新（監査ログに記録）</text>
+        <rect x="340" y="170" width="300" height="96" rx="5" fill="var(--surface)" stroke="currentColor" stroke-width="1.2"/>
+        <text x="490" y="190" text-anchor="middle" font-weight="500">AI の成果物・判断依頼</text>
+        <text x="490" y="206" text-anchor="middle" font-size="10.5" opacity=".85">intent.md · design.md · review.md · Q-n …</text>
+        <text x="360" y="226" font-size="10.5" font-family="IBM Plex Mono, monospace">## 参照元 / 根拠</text>
+        <text x="360" y="241" font-size="10" font-family="IBM Plex Mono, monospace" opacity=".85">src/orders.ts:88-104@a1b2c3d</text>
+        <text x="360" y="255" font-size="10" font-family="IBM Plex Mono, monospace" opacity=".85">RFC 9110 §15.5.10 · rules.md#DoD</text>
+        <line x1="280" y1="213" x2="340" y2="213" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#ar6)"/>
+        <text x="310" y="205" text-anchor="middle" font-size="10" fill="var(--accent)">引用</text>
+        <rect x="700" y="183" width="220" height="60" rx="5" fill="var(--hook-soft)" stroke="var(--hook)" stroke-width="1.6"/>
+        <text x="810" y="207" text-anchor="middle" font-weight="500">引用検査（フック）</text>
+        <text x="810" y="225" text-anchor="middle" font-size="10.5" opacity=".85">参照先が存在するか、最新世代か</text>
+        <line x1="640" y1="213" x2="700" y2="213" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar6)"/>
+        <text x="670" y="205" text-anchor="middle" font-size="10" opacity=".7">検査</text>
+      </g>
+    </svg>
+    </div>
+    <figcaption>図8. 上段：フックが知識レイヤーの鮮度を検査し、古ければ explorer が差分だけ再走査して更新する。下段：成果物と判断依頼は知識レイヤーを引用して参照元・根拠を載せ、フックが参照先を検査する。</figcaption>
+  </figure>
+  <div class="grid2">
+    <div class="card"><h3>知識レイヤーに入るもの</h3>
+      <ul style="margin-bottom:0">
+        <li><b>既存コード</b>：explorer の調査結果（構造、依存、基準となるアーキテクチャ図、用語集）と世代（コミット）</li>
+        <li><b>設計</b>：design 文書、契約（型・スキーマ・インターフェース）、過去の Intent の design.md</li>
+        <li><b>インフラ</b>：構成・環境・デプロイ方法（Operation は対象外だが、実装が依存する情報は持つ）</li>
+        <li><b>プロジェクト背景</b>：目的、制約、用語、関係者</li>
+        <li><b>コーディング規約</b>：<code>rules.md</code>（DoD、禁止リスト、Corrections、依存ルール、確認点の粒度）</li>
+        <li><b>公式文書の参照</b>：言語・フレームワーク・RFC など、判断依頼の根拠に使う外部文書の URL と節（本文は持たない）</li>
+      </ul>
+    </div>
+    <div class="card"><h3>参照元と根拠のルール</h3>
+      <ul style="margin-bottom:0">
+        <li>すべての成果物に <code>## 参照元</code> を置く。空は不可。判断依頼の各選択肢に根拠を置く。空は不可</li>
+        <li>書式は <code>パス:行@コミット</code>、<code>文書#節@日付</code>、または公式文書の URL＋節。フックが参照先の存在と世代を検査する（外部 URL は到達性のみ）</li>
+        <li>Review Brief の「主張と証拠」に加えて「根拠にした知識」を人が辿れる</li>
+        <li>知識が古いまま成果物を書いたら、鮮度チェックが監査ログに残し、Brief に警告が載る</li>
+        <li>Learn で <code>rules.md</code> に追記した内容も、次の Intent から参照元になる</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 13 -->
+<section id="s13">
+  <div class="sec-head"><span class="n">13</span><h2>根本解決と最小実装</h2></div>
+  <div class="prose"><p>既存プロジェクトでは「どう作るのが設計として理想か」を常に問い、ユースケースの漏れとリファクタできる箇所を意識し、その場しのぎではなく根本原因を解決する、必要最小限の実装をする。「最小」とは、根本原因を解決するのに必要な最小の変更であり、将来のための汎化はしない。</p></div>
+  <div class="grid2">
+    <div class="card"><h3>Intent / Design に必ず含めるもの</h3>
+      <ul style="margin-bottom:0">
+        <li><b>理想形</b>：このコードベースで理想的な作り方と、その根拠（参照元つき）</li>
+        <li><b>現状との差分</b>：理想形と現状のずれ。今回埋めるもの／埋めないもの</li>
+        <li><b>ユースケース網羅表</b>：既存ユースケース × 今回の変更の影響。漏れの候補</li>
+        <li><b>リファクタ候補</b>：今やる（根本原因に関わる、または変更を簡単にする準備リファクタ）／後回し（理由と記録先）</li>
+        <li><b>根本原因分析</b>（バグ修正）：なぜ起きたか、同種の箇所が他にないか</li>
+        <li><b>最小実装の線引き</b>：必要なもの／意図的にやらないもの。確認点で人が確認する</li>
+      </ul>
+    </div>
+    <div class="card"><h3>reviewer が検出する「その場しのぎ」</h3>
+      <ul style="margin-bottom:0">
+        <li>特殊ケースの分岐を足して根本原因に触れていない</li>
+        <li>エラーの握りつぶし、リトライで隠す</li>
+        <li>既存ロジックの複製（共通化すべきものを重複させる）</li>
+        <li>型の緩和（any 化、キャスト）、静的解析の抑制コメント</li>
+        <li>テストのスキップ・条件の緩和</li>
+        <li>理想形との差分に書かれていない設計上の妥協</li>
+      </ul>
+    </div>
+  </div>
+  <p class="note">これらは判断が要るのでフックではなく reviewer の観点表で見る。検出した項目は Brief の「主張と証拠」の反例として載せ、人が最終判断する。</p>
+</section>
+
+<!-- 14 -->
+<section id="s14">
+  <div class="sec-head"><span class="n">14</span><h2>Review Brief と図解</h2></div>
+  <div class="prose"><p>Verify の成果物 <code>review.md</code> は固定構造で、1〜4 節にはコードを一切書かない。読む人が深さを選べるように、各節に読む深さを付ける。</p></div>
+  <div class="brief">
+    <div class="hd"><b>Review Brief: 注文の在庫チェック（260920-orders）</b><span class="mono" style="color:var(--muted);font-size:12px">risk: H · units: 3 · files: 14（core 2 / plumbing 5 / tests 6 / generated 1）</span></div>
+    <div class="row"><span class="n">1</span><div><b>結論（3行）</b><small>何をして、何を変えていないか。判断依頼の有無</small></div><div class="d"><span class="pill accent">1画面</span></div></div>
+    <div class="row"><span class="n">2</span><div><b>振る舞いの差分（AC ごと、Before → After）</b><small>「空カートで POST /orders：500 → 400」。テストの Given/When/Then から生成</small></div><div class="d"><span class="pill accent">1画面</span></div></div>
+    <div class="row"><span class="n">3</span><div><b>主張と証拠</b><small>「既存の注文テストは全て通る — log:build-log#L12: 128 passed」</small></div><div class="d"><span class="pill accent">1画面</span></div></div>
+    <div class="row"><span class="n">4</span><div><b>シナリオ・ウォークスルー ＋ 図</b><small>変更したフローのシーケンス図を1つ以上。UI なら Before/After スクリーンショット</small></div><div class="d"><span class="pill accent">5分</span></div></div>
+    <div class="row"><span class="n">5</span><div><b>読むべき箇所ガイド</b><small>5分版 / 15分版。hunk を core / plumbing / tests / generated / rename に分類し、読まなくてよいものを明示</small></div><div class="d"><span class="pill accent">5分</span> <span class="pill muted">H は 15分</span></div></div>
+    <div class="row"><span class="n">6</span><div><b>判断してほしいこと（必要な質問はすべて、§10 の形式で）</b> <span class="pill rev3">rev 3</span><small>優先度順。依存関係のあるものはまとめる。記録に答えがあるものは載せない。各質問に選択肢・メリット・デメリット・根拠・推奨・既定を付ける</small></div><div class="d"><span class="pill human">人が答える</span></div></div>
+    <div class="row"><span class="n">7</span><div><b>私が決めたこと・仮定・参照元</b><small>decisions.md の D-n と、根拠にした知識の参照元。既定案で進めた判断依頼もここに。採用しなかった案も残す</small></div><div class="d"><span class="pill accent">5分</span></div></div>
+    <div class="row"><span class="n">8</span><div><b>破壊検査とその場しのぎ検出の結果</b><small>reviewer が壊した箇所・期待・結果の表。検出した妥協点</small></div><div class="d"><span class="pill accent">5分</span></div></div>
+    <div class="row"><span class="n">9</span><div><b>やっていないこと・既知の制限・後回しにしたリファクタ</b></div><div class="d"><span class="pill accent">1画面</span></div></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card"><h3>図解の原則</h3>
+      <ul style="margin-bottom:0">
+        <li><b>1変更1図</b>：変更したフローには必ず図を付ける</li>
+        <li><b>差分は色で</b>：基準図（知識レイヤー）に対して追加・変更・削除を色分けする</li>
+        <li><b>詳細度は段階化</b>：コンテキスト → コンポーネント → シーケンス → データ／状態の順で、読む人が深さを選ぶ</li>
+        <li><b>Mermaid で Markdown 内に置く</b>：GitHub でそのまま見える。設計パックは単一 HTML でも出力する</li>
+        <li><b>必須の図は成果物ごとに固定</b>：基準図＝コンポーネント図、Intent＝ユーザー操作フロー図、Design＝差分コンポーネント図＋シーケンス図、Brief＝主フローのシーケンス図（§18 Q4）</li>
+      </ul>
+    </div>
+    <div class="card"><h3>レビュー負荷を下げる工夫</h3>
+      <ul style="margin-bottom:0">
+        <li>人は主張を読み、証拠と参照元の存在で信頼する。疑わしい行だけ抜き取り検査する</li>
+        <li>受動的な「全部読む」を、能動的な「質問に答える」に変える。質問の数は制限しないが、答え済みは再質問しない</li>
+        <li>builder と reviewer の2つの独立した記述を並べ、食い違いを見るべき場所として示す</li>
+        <li>デモ手順（<code>demo.sh</code>、curl、操作手順）を添え、人が自分で叩ける</li>
+        <li>Intent ゲートも同じ思想で「1画面」に収める</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 15 -->
+<section id="s15">
+  <div class="sec-head"><span class="n">15</span><h2>配布物</h2><span class="pill rev3">rev 3</span></div>
+  <div class="prose"><p>配布物は AGENTS.md、Skill、エージェント定義、node のフック。利用者側の実行時依存は git ＋ node で、パッケージのインストールもビルドも要らない。v2 のエンジン・状態機械・ルーティングは持たない。このリポジトリ側は <code>core/</code> に一度書き、2ハーネスへコピーするだけにする。</p></div>
+<div class="tree">&lt;project&gt;/
+├─ AGENTS.md                         <span class="c"># 約60行。原則、4ステージ、不変条件、禁止リスト（両ハーネス共通）</span>
+├─ CLAUDE.md                         <span class="c"># 1行: @AGENTS.md</span>
+├─ .claude/skills/vouch/SKILL.md     <span class="c"># オーケストレータ（150行以下）。/vouch, ask, status, report, migrate, doctor</span>
+├─ .claude/skills/vouch-{intent,design,build,verify}/SKILL.md
+├─ .claude/skills/vouch-kb-{testing,security,api-design,...}/   <span class="c"># 必要時のみ読む知識</span>
+├─ .claude/agents/vouch-{builder,reviewer,explorer}.md
+├─ .claude/hooks/vouch-*.mjs          <span class="c"># node、依存ゼロの plain JavaScript。機械的処理のみ。行数の予算あり</span>
+├─ .agents/skills/ …  .codex/agents/*.toml  .codex/hooks/     <span class="c"># Codex 版（内容は同一）</span>
+└─ vouch/
+   ├─ rules.md                       <span class="c"># DoD ＋ 禁止リスト ＋ 依存ルール ＋ 確認点の粒度 ＋ Corrections</span>
+   ├─ knowledge/                     <span class="c"># 知識レイヤー：codekb/&lt;repo&gt;/、design/、infra/、background.md（世代つき）</span>
+   ├─ archive/aidlc-v2/                    <span class="c"># 移行元の v2 record（読み取り専用）</span>
+   └─ intents/&lt;YYMMDD-slug&gt;/
+      ├─ intent.md  design.md  build-log.md  review.md  decisions.md
+      └─ audit/events.jsonl          <span class="c"># 監査ログ（append-only、フックだけが書く、計測値つき）</span></div>
+  <div class="tbl"><table>
+    <thead><tr><th>概念</th><th>Claude Code</th><th>Codex</th></tr></thead>
+    <tbody>
+      <tr><td class="k">ルールの共有</td><td><code>AGENTS.md</code>（<code>CLAUDE.md</code> から参照）</td><td><code>AGENTS.md</code></td></tr>
+      <tr><td class="k">Skill</td><td><code>.claude/skills/</code></td><td><code>.agents/skills/</code></td></tr>
+      <tr><td class="k">エージェント</td><td><code>.claude/agents/*.md</code></td><td><code>.codex/agents/*.toml</code>（<code>max_depth = 1</code>）</td></tr>
+      <tr><td class="k">フック</td><td><code>settings.json</code> の hooks（SessionStart / PreToolUse / PostToolUse / Stop）→ <code>node .claude/hooks/vouch-*.mjs</code></td><td><code>.codex/hooks/</code> → 同じスクリプト</td></tr>
+      <tr><td class="k">構造化質問</td><td><code>AskUserQuestion</code></td><td><code>request_user_input</code></td></tr>
+      <tr><td class="k">脇質問</td><td>読み取り専用のサブエージェント</td><td>読み取り専用のエージェント</td></tr>
+      <tr><td class="k">並列 Build</td><td>Agent の worktree 分離</td><td><code>git worktree</code> ＋ エージェント</td></tr>
+      <tr><td class="k">状態</td><td colspan="2"><code>vouch/intents/&lt;slug&gt;/</code> の frontmatter <code>status:</code> と監査ログの末尾から導出</td></tr>
+      <tr><td class="k">計測値の取得</td><td>フックの入力とトランスクリプトから使用量を取れる</td><td>取れる範囲で記録し、取れない項目は省略</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- 16 -->
+<section id="s16">
+  <div class="sec-head"><span class="n">16</span><h2>v2 record からの移行</h2></div>
+  <div class="prose"><p>移行は Skill（<code>/vouch migrate</code>）。モデルが v2 record を読み、Vouch の intent フォルダを生成し、移行レポートを Review Brief の形式で出して人が承認する。「元ファイル → 行き先」の全件表を載せ、行き先のないファイルを明示する。元の record は <code>vouch/archive/aidlc-v2/</code> に残す。</p></div>
+  <div class="tbl"><table>
+    <thead><tr><th>v2 の成果物</th><th></th><th>Vouch の行き先</th></tr></thead>
+    <tbody>
+      <tr><td><code>aidlc-state.md</code> のチェックボックス</td><td>→</td><td>各成果物の <code>status:</code>。Intent / Design / Build / Verify のどこまで済んだか</td></tr>
+      <tr><td><code>ideation/*</code>（intent-statement、scope-document …）</td><td>→</td><td><code>intent.md</code> § 背景（付録）と <code>knowledge/background.md</code></td></tr>
+      <tr><td><code>requirements.md</code> ＋ user-stories</td><td>→</td><td><code>intent.md</code> § 受入基準。ストーリーの受入条件から AC-n を採番</td></tr>
+      <tr><td>domain-design、contract-design、units-generation、bolt-plan</td><td>→</td><td><code>design.md</code> ＋ <code>intent.md</code> の実行計画（Unit とリスク階層）。契約は <code>knowledge/design/</code> にも</td></tr>
+      <tr><td><code>construction/&lt;unit&gt;/</code> の functional / nfr / infra design</td><td>→</td><td><code>design.md</code> § Unit 別付録。インフラは <code>knowledge/infra/</code> にも</td></tr>
+      <tr><td>code-generation の <code>## Review</code> 付録</td><td>→</td><td><code>review.md</code>（履歴として）</td></tr>
+      <tr><td><code>audit/*.md</code>（シャード、91 種）</td><td>→</td><td><code>audit/events.jsonl</code> に Vouch の台帳へ変換して引き継ぐ。時刻は保持し、所要時間は隣接イベントから推定して <code>estimated: true</code> を付ける。人の決定は <code>decisions.md</code> にも抽出 <span class="pill rev3">rev 3</span></td></tr>
+      <tr><td><code>memory/{org,team,project}.md</code>、<code>phases/*.md</code></td><td>→</td><td><code>rules.md</code> に統合。チームが affirm していない org 既定は落とす</td></tr>
+      <tr><td><code>codekb/&lt;repo&gt;/</code></td><td>→</td><td><code>knowledge/codekb/&lt;repo&gt;/</code> に世代を付けて。移行直後に鮮度チェックが走る</td></tr>
+      <tr><td><code>operation/*</code></td><td>→</td><td><code>archive/aidlc-v2/</code> にのみ残す</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- 17 -->
+<section id="s17">
+  <div class="sec-head"><span class="n">17</span><h2>成功指標</h2><span class="pill rev3">rev 3</span></div>
+  <div class="tbl"><table>
+    <thead><tr><th>指標</th><th>v2</th><th>Vouch 目標</th><th>測り方</th></tr></thead>
+    <tbody>
+      <tr><td class="k">常時読み込むコンテキスト</td><td class="num">約4万トークン</td><td class="num">8千トークン未満</td><td>Skill と AGENTS.md の実測</td></tr>
+      <tr><td class="k">ステージ / エージェント / ハーネス</td><td class="num">33 / 14 / 7</td><td class="num">4 / 3 / 2</td><td>—</td></tr>
+      <tr><td class="k">人の同期接点 / Intent</td><td class="num">最大 約70回の操作</td><td class="num">2回 ＋ 設定した粒度の確認点</td><td>監査ログ</td></tr>
+      <tr><td class="k">人がレビューに使った時間 / Intent</td><td>計測なし</td><td>L: 5分以内、M: 15分以内、H: 30分以内（目安、振り返りで調整）</td><td>監査ログ（PR 承認までの人のイベント）</td></tr>
+      <tr><td class="k">人の待ち時間の割合</td><td>計測なし</td><td>Intent 総時間の 20% 未満</td><td>監査ログ（依頼 → 回答の対）</td></tr>
+      <tr><td class="k">先送りできない判断依頼 / Intent</td><td>—</td><td class="num">平均 1 回以下</td><td>監査ログ（<code>blocking: true</code>）</td></tr>
+      <tr><td class="k">利用者側の実行時依存</td><td>bun ＋ 10.5万行の TS エンジン</td><td>git ＋ node（エンジンなし、インストール不要）</td><td>—</td></tr>
+      <tr><td class="k">フック / 監査イベント</td><td class="num">17本 / 91種（判断も代行）</td><td>機械的処理のみ、行数の予算つき / 必要最小限の種別</td><td>CI の複雑性予算</td></tr>
+      <tr><td class="k">人がレビューで読むコード量</td><td>diff 全体</td><td>H 階層のコアロジック hunk のみ。L / M は Brief のみ</td><td>Brief の読むべき箇所ガイド</td></tr>
+      <tr><td class="k">テストの実効性の証明</td><td>なし</td><td>破壊検査の記録</td><td>監査ログ</td></tr>
+      <tr><td class="k">参照元・根拠のない成果物・判断依頼</td><td>—</td><td class="num">0</td><td>フックの検査</td></tr>
+      <tr><td class="k">知識レイヤーが古いまま書かれた成果物</td><td>—</td><td class="num">0</td><td>鮮度チェック</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">評価スイート：同じ代表タスク（bugfix、feature、greenfield、brownfield）を v2 / Vouch で走らせ、監査ログから上の指標を集計する。加えて「Brief だけを読んだ人が正しく承認 / 却下できた率」「判断依頼のカードだけで人が決められた率」「reviewer がその場しのぎを検出した率」を測る。</p>
+</section>
+
+<!-- 18 -->
+<section id="s18">
+  <div class="sec-head"><span class="n">18</span><h2>決着した既定と次のステップ</h2><span class="pill rev3">rev 3</span></div>
+  <div class="prose"><p>未決事項はすべて決着した（2026-09-27、Q1〜Q6 は推奨 A を採用）。各項目の選択肢・根拠・具体案は <a href="vouch-open-questions.html">vouch-open-questions.html</a> にある。ここでは決まった内容だけを記す。</p></div>
+  <div class="tbl"><table>
+    <thead><tr><th>論点</th><th>決定</th><th>反映先</th></tr></thead>
+    <tbody>
+      <tr><td class="k">フックのランタイム</td><td>node。縮退モードは実装しない</td><td>§2, §11, §15</td></tr>
+      <tr><td class="k">L 階層の PR</td><td>人が Brief をスキムしてマージ。自動マージはしない</td><td>§6, §9</td></tr>
+      <tr><td class="k">未回答の判断依頼</td><td>既定案で進めて Brief §7 に明記。止まるのは既定案が作れない時だけ</td><td>§6, §10</td></tr>
+      <tr><td class="k">監査イベント台帳（Q1）</td><td>約25種の新台帳（intent / stage / unit / checkpoint・gate / question / aside / hook / review / knowledge / session / learn・migration）＋ 共通計測フィールド（<code>ts</code>、<code>duration_ms</code>、<code>wait_ms</code>、<code>actor</code>、<code>parent</code>、<code>tokens</code> は Claude Code のみ）。v2 名は対応表で移行し、対応のないものは <code>legacy.&lt;NAME&gt;</code> で原文保存</td><td>§11、移行 §16</td></tr>
+      <tr><td class="k">確認点の粒度（Q2）</td><td>論点ごとの固定4点（AC 確定 → 非ゴールと最小実装の線引き → 分割・Unit・リスク階層 → 設計採択）。H 階層は Unit ごとの確認を自動追加。<code>rules.md</code> の <code>checkpoints: topic | unit | section</code> で変更可、既定 <code>topic</code></td><td>§5, §6</td></tr>
+      <tr><td class="k">品質層 × リスク階層（Q3）</td><td>L は4層必須（正しさ、契約の整合、保守性、判断の根拠）。M は +4層（テスト品質＝破壊検査1、要件の妥当性・網羅、設計の質、根本解決）。H は全11層（+ セキュリティ、非機能、実使用の探索的検証、破壊検査3）。依存監査は DoD として全階層</td><td>§7, §9、reviewer の観点表</td></tr>
+      <tr><td class="k">図の標準セット（Q4）</td><td>Mermaid の安定5種（flowchart / sequenceDiagram / classDiagram / erDiagram / stateDiagram-v2）。基準図＝コンポーネント図（＋ER）、Intent＝ユーザー操作フロー図（＋影響範囲図）、Design＝差分コンポーネント図＋変更フローのシーケンス図（＋データ差分・状態遷移・契約図）、Brief＝主フローのシーケンス図1つ（＋UI は Before/After）。差分の色は3色固定を <code>classDef</code> で同梱</td><td>§12, §14、テンプレート</td></tr>
+      <tr><td class="k">AI 操作検証の環境（Q5）</td><td>ローカル（ハーネス内、Playwright）を既定。サービス依存があれば builder がコンテナ（compose、構成は <code>knowledge/infra/</code>）を起動。CI は PR ごとに同じ <code>demo.sh</code> を再実行する再現の場。Codex はサンドボックス設定を配布物に含める</td><td>§8、Build / Verify Skill</td></tr>
+      <tr><td class="k">言語（Q6）</td><td><code>rules.md</code> の <code>language:</code> で選択、既定 <code>ja</code>。識別子（AC-n、Q-n、D-n）、イベント種別、コミットメッセージの型は英語固定。テンプレートは ja / en の2セット</td><td>§14, §15、テンプレート</td></tr>
+    </tbody>
+  </table></div>
+  <div class="card" style="margin-top:14px">
+    <h3>進め方</h3>
+    <ol style="margin-bottom:0">
+      <li>設計レベルへ落とし込む：Skill の構成、成果物テンプレート（ja / en）、監査イベント台帳と JSONL スキーマ、フック一覧と予算、知識レイヤーの形式、判断依頼カードの書式、Brief の書式、分割の提案手順、移行の手順</li>
+      <li>Claude Code 向けプロトタイプ：<code>SKILL.md</code>、3エージェント、node フック、Review Brief と判断依頼のテンプレート</li>
+      <li>評価スイートで v2 と比較し、監査ログから人の時間と待ち時間を集計して「判断はモデル、機械的処理はフック」の分担が成り立つか確かめる</li>
+      <li>Codex へ展開し、移行 Skill を整備して Vouch 1.0.0</li>
+    </ol>
+  </div>
+</section>
+
+<footer>Vouch 決定記録 rev 3 · 2026-09-27 · 設計前の合意事項。数値は本リポジトリの 2.7.0 時点の実測。</footer>
+</div>
+</body>
+</html>

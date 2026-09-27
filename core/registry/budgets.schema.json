@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "lines", "context", "timing", "coverage", "mutation"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "lines": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "hookFile",
+        "hooksTotal",
+        "libFile",
+        "libTotal",
+        "orchestrator",
+        "stageSkill",
+        "agentsMd",
+        "agent",
+        "packageScript"
+      ],
+      "properties": {
+        "hookFile": { "$ref": "#/$defs/positive" },
+        "hooksTotal": { "$ref": "#/$defs/positive" },
+        "libFile": { "$ref": "#/$defs/positive" },
+        "libTotal": { "$ref": "#/$defs/positive" },
+        "orchestrator": { "$ref": "#/$defs/positive" },
+        "stageSkill": { "$ref": "#/$defs/positive" },
+        "agentsMd": { "$ref": "#/$defs/positive" },
+        "agent": { "$ref": "#/$defs/positive" },
+        "packageScript": { "$ref": "#/$defs/positive" }
+      }
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["alwaysLoadedTokens", "bytesPerToken"],
+      "properties": {
+        "alwaysLoadedTokens": { "$ref": "#/$defs/positive" },
+        "bytesPerToken": { "$ref": "#/$defs/positive" }
+      }
+    },
+    "timing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recordP95Ms",
+        "checkP95Ms",
+        "samples",
+        "testTimeoutMs",
+        "checkTimeoutMs"
+      ],
+      "properties": {
+        "recordP95Ms": { "$ref": "#/$defs/positive" },
+        "checkP95Ms": { "$ref": "#/$defs/positive" },
+        "samples": { "$ref": "#/$defs/positive" },
+        "testTimeoutMs": { "$ref": "#/$defs/positive" },
+        "checkTimeoutMs": { "$ref": "#/$defs/positive" }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lib", "hooks"],
+      "properties": {
+        "lib": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["lines", "branches", "functions"],
+          "properties": {
+            "lines": { "$ref": "#/$defs/percentage" },
+            "branches": { "$ref": "#/$defs/percentage" },
+            "functions": { "$ref": "#/$defs/percentage" }
+          }
+        },
+        "hooks": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["lines", "branches"],
+          "properties": {
+            "lines": { "$ref": "#/$defs/percentage" },
+            "branches": { "$ref": "#/$defs/percentage" }
+          }
+        }
+      }
+    },
+    "mutation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["score"],
+      "properties": { "score": { "$ref": "#/$defs/percentage" } }
+    }
+  },
+  "$defs": {
+    "positive": { "type": "integer", "minimum": 1 },
+    "percentage": { "type": "integer", "minimum": 0, "maximum": 100 }
+  }
+}

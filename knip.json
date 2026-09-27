@@ -1,0 +1,25 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "core/hooks/*.mjs",
+    "harness/*/manifest.mjs",
+    "scripts/*.mjs",
+    "tests/**/*.test.mjs",
+    "tests/helpers/no-network.mjs"
+  ],
+  "project": [
+    "core/**/*.mjs",
+    "harness/**/*.mjs",
+    "scripts/**/*.mjs",
+    "tests/**/*.mjs",
+    "*.config.mjs"
+  ],
+  "ignore": [
+    "tests/fixtures/**",
+    "tests/golden/**",
+    "tests/eval/**",
+    "docs/**",
+    "dist/**"
+  ],
+  "ignoreDependencies": ["@stryker-mutator/command-runner"]
+}

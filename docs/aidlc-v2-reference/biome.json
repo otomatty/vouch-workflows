@@ -1,0 +1,70 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.4.16/schema.json",
+  "formatter": {
+    "enabled": false
+  },
+  "linter": {
+    "enabled": true
+  },
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "off"
+      }
+    }
+  },
+  "files": {
+    "includes": [
+      "**",
+      "!tests/fixtures/v05-mr9-sensor-fire/failing-linter/**",
+      "!dist/**"
+    ]
+  },
+  "overrides": [
+    {
+      "includes": ["tests/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noNonNullAssertion": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["core/tools/**", "harness/**", "scripts/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noNonNullAssertion": "off",
+            "useTemplate": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["core/tools/aidlc-knowledge.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noNonNullAssertion": "off",
+            "useTemplate": "off",
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["node:fs", "fs"],
+                    "importNamePattern": "(existsSync|lstatSync|statSync|fstatSync|readdirSync|readFileSync|realpathSync|accessSync|readlinkSync)",
+                    "invertImportNamePattern": true,
+                    "message": "aidlc-knowledge.ts may only bind read-only node:fs primitives directly; route every mutation (write, append, rename, rm, mkdir, symlink, link, fd-based write) through writeFileAtomic/writeBufferAtomic in aidlc-lib.ts. A namespace (`import * as fs`), default (`import fs`), or dynamic (`await import(\"node:fs\")`) import is refused outright because it hides every bound name from this rule."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

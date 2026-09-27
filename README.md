@@ -1,0 +1,41 @@
+# Vouch workflows
+
+Claude Code と Codex 向けの開発ワークフロー。仕様書は [docs/README.md](docs/README.md) から参照できます。
+
+現在は環境構築まで完了しています。フック、Skill、エージェント、配布物はこれから実装します。
+
+## 開発環境
+
+Node.js 22.19.0 以上、npm 10 以上、Git を使用します。ローカルの基準は Node.js 24.13.0 です。
+
+```sh
+npm ci
+npm run doctor
+npm run check
+```
+
+Windows で既存の npm 起動スクリプトが `MODULE_NOT_FOUND` になる場合は、Node.js 同梱の npm を直接使うラッパーで実行できます。
+
+```powershell
+.\scripts\npm.ps1 ci
+.\scripts\npm.ps1 run doctor
+.\scripts\npm.ps1 run check
+```
+
+依存パッケージはすべて開発用です。利用者に配るコードは Node.js 組み込みモジュールだけで動く `.mjs` とし、ビルドを挟みません。
+
+## コマンド
+
+| コマンド | 内容 |
+| --- | --- |
+| `npm run doctor` | Node.js、Git、固定バージョンの依存の導入状況 |
+| `npm run check` | Lint → 型検査 → テスト。CI と共通の入口 |
+| `npm run lint` | Biome、markdownlint、dependency-cruiser、knip |
+| `npm run format` | JS / JSON の整形と安全な自動修正 |
+| `npm run typecheck` | `.mjs` の JSDoc を TypeScript 6 で検査 |
+| `npm test` | 実装済みのテスト階層を実行 |
+| `npm run test:unit` | lib の単体テスト。未実装なら失敗 |
+| `npm run test:hooks` | フックの契約テスト。未実装なら失敗 |
+| `npm run mutate` | lib のミューテーション検査。lib と単体テストの実装後に使用 |
+
+環境の検証範囲と後続作業は [開発環境の説明](docs/development/setup.md) を参照してください。

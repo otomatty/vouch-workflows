@@ -1,0 +1,15 @@
+{
+  "globs": [
+    "*.md",
+    "core/**/*.md",
+    "harness/**/*.md",
+    "tests/**/*.md",
+    "docs/development/**/*.md"
+  ],
+  "ignores": ["tests/fixtures/**", "tests/golden/**"],
+  "config": {
+    "default": true,
+    "MD013": false,
+    "MD033": false
+  }
+}
