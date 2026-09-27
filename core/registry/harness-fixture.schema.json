@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vouch.dev/schemas/harness-fixture.json",
+  "type": "object",
+  "properties": {
+    "harness": {
+      "enum": ["claude", "codex"]
+    },
+    "version": {
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "synthetic": {
+      "type": "boolean"
+    },
+    "provenance": {
+      "enum": ["imported", "captured", "synthetic"]
+    },
+    "source": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "key": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": ["path", "commit", "key"],
+      "additionalProperties": false
+    },
+    "payload": {
+      "$ref": "https://vouch.dev/schemas/hook-input.json"
+    }
+  },
+  "required": ["harness", "version", "synthetic", "provenance", "payload"],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "synthetic": {
+            "const": true
+          }
+        },
+        "required": ["synthetic"]
+      },
+      "then": {
+        "properties": {
+          "provenance": {
+            "const": "synthetic"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "provenance": {
+            "enum": ["imported", "captured"]
+          }
+        },
+        "required": ["source"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "provenance": {
+            "const": "captured"
+          }
+        },
+        "required": ["provenance"]
+      },
+      "then": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  ]
+}

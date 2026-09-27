@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vouch.dev/schemas/audit-events.json",
+  "type": "object",
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "source": {
+      "type": "string",
+      "minLength": 1
+    },
+    "common": {
+      "type": "object",
+      "properties": {
+        "required": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "optional": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": ["required", "optional"],
+      "additionalProperties": false
+    },
+    "events": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "^[a-z]+\\.[a-z]+$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "fields": {
+            "type": "object",
+            "properties": {
+              "required": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "uniqueItems": true
+              },
+              "optional": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "uniqueItems": true
+              }
+            },
+            "required": ["required", "optional"],
+            "additionalProperties": false
+          },
+          "measures": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          },
+          "pairs_with": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          }
+        },
+        "required": ["fields", "measures", "pairs_with"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["version", "source", "common", "events"],
+  "additionalProperties": false
+}

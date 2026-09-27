@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vouch.dev/schemas/hook-result.json",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "decision": {
+          "const": "allow"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "https://vouch.dev/schemas/audit-event.json"
+          }
+        }
+      },
+      "required": ["decision"],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "decision": {
+          "const": "deny"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "https://vouch.dev/schemas/audit-event.json"
+          }
+        }
+      },
+      "required": ["decision", "reason"],
+      "additionalProperties": false
+    }
+  ]
+}

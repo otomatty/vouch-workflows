@@ -1,0 +1,244 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vouch.dev/schemas/diagrams.json",
+  "type": "object",
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "source": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mermaid": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "diff": {
+      "type": "object",
+      "properties": {
+        "added": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "const": "green"
+            },
+            "classDef": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": ["color", "classDef"],
+          "additionalProperties": false
+        },
+        "changed": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "const": "orange"
+            },
+            "classDef": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": ["color", "classDef"],
+          "additionalProperties": false
+        },
+        "removed": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "const": "red"
+            },
+            "classDef": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": ["color", "classDef"],
+          "additionalProperties": false
+        }
+      },
+      "required": ["added", "changed", "removed"],
+      "additionalProperties": false
+    },
+    "artifacts": {
+      "type": "object",
+      "properties": {
+        "knowledge": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "enum": [
+                  "flowchart",
+                  "sequenceDiagram",
+                  "classDiagram",
+                  "erDiagram",
+                  "stateDiagram-v2",
+                  "screenshot",
+                  "design-reference"
+                ]
+              },
+              "when": {
+                "enum": [
+                  "always",
+                  "database",
+                  "brownfield",
+                  "schema-change",
+                  "lifecycle-change",
+                  "public-api-change",
+                  "ui-change",
+                  "design-change"
+                ]
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": ["id", "kind", "when", "count"],
+            "additionalProperties": false
+          }
+        },
+        "intent": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "enum": [
+                  "flowchart",
+                  "sequenceDiagram",
+                  "classDiagram",
+                  "erDiagram",
+                  "stateDiagram-v2",
+                  "screenshot",
+                  "design-reference"
+                ]
+              },
+              "when": {
+                "enum": [
+                  "always",
+                  "database",
+                  "brownfield",
+                  "schema-change",
+                  "lifecycle-change",
+                  "public-api-change",
+                  "ui-change",
+                  "design-change"
+                ]
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": ["id", "kind", "when", "count"],
+            "additionalProperties": false
+          }
+        },
+        "design": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "enum": [
+                  "flowchart",
+                  "sequenceDiagram",
+                  "classDiagram",
+                  "erDiagram",
+                  "stateDiagram-v2",
+                  "screenshot",
+                  "design-reference"
+                ]
+              },
+              "when": {
+                "enum": [
+                  "always",
+                  "database",
+                  "brownfield",
+                  "schema-change",
+                  "lifecycle-change",
+                  "public-api-change",
+                  "ui-change",
+                  "design-change"
+                ]
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": ["id", "kind", "when", "count"],
+            "additionalProperties": false
+          }
+        },
+        "review": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "enum": [
+                  "flowchart",
+                  "sequenceDiagram",
+                  "classDiagram",
+                  "erDiagram",
+                  "stateDiagram-v2",
+                  "screenshot",
+                  "design-reference"
+                ]
+              },
+              "when": {
+                "enum": [
+                  "always",
+                  "database",
+                  "brownfield",
+                  "schema-change",
+                  "lifecycle-change",
+                  "public-api-change",
+                  "ui-change",
+                  "design-change"
+                ]
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": ["id", "kind", "when", "count"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["knowledge", "intent", "design", "review"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["version", "source", "mermaid", "diff", "artifacts"],
+  "additionalProperties": false
+}

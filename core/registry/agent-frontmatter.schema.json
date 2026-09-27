@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vouch.dev/schemas/agent-frontmatter.json",
+  "type": "object",
+  "properties": {
+    "name": {
+      "enum": ["vouch-builder", "vouch-reviewer", "vouch-explorer"]
+    },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "disallowed": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    }
+  },
+  "required": ["name", "inputs", "tools", "disallowed"],
+  "additionalProperties": false
+}

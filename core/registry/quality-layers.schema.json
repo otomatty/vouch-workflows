@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vouch.dev/schemas/quality-layers.json",
+  "type": "object",
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "source": {
+      "type": "string",
+      "minLength": 1
+    },
+    "dependency_audit": {
+      "type": "array",
+      "items": {
+        "enum": ["L", "M", "H"]
+      },
+      "uniqueItems": true
+    },
+    "sabotage": {
+      "type": "object",
+      "properties": {
+        "L": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "M": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "H": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": ["L", "M", "H"],
+      "additionalProperties": false
+    },
+    "layers": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tiers": {
+            "type": "object",
+            "properties": {
+              "L": {
+                "enum": ["required", "optional", "not-applicable"]
+              },
+              "M": {
+                "enum": ["required", "optional", "not-applicable"]
+              },
+              "H": {
+                "enum": ["required", "optional", "not-applicable"]
+              }
+            },
+            "required": ["L", "M", "H"],
+            "additionalProperties": false
+          },
+          "evidence_by": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          }
+        },
+        "required": ["id", "label", "tiers", "evidence_by"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["version", "source", "dependency_audit", "sabotage", "layers"],
+  "additionalProperties": false
+}

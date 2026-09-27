@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vouch.dev/schemas/enforcement-map.json",
+  "type": "object",
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "rules": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "^R-[A-Z]+-[0-9]+$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "rule_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1
+          },
+          "requirement": {
+            "type": "string",
+            "minLength": 1
+          },
+          "mechanisms": {
+            "type": "array",
+            "items": {
+              "enum": ["hook", "lint", "test", "reviewer", "human"]
+            },
+            "uniqueItems": true
+          },
+          "checks": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "const": "implemented"
+                    },
+                    "path": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "claim": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": ["status", "path", "claim"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "const": "pending"
+                    },
+                    "claim": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": ["status", "claim"],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          }
+        },
+        "required": [
+          "rule_id",
+          "source",
+          "requirement",
+          "mechanisms",
+          "checks"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["version", "rules"],
+  "additionalProperties": false
+}

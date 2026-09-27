@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vouch.dev/schemas/audit-migration.json",
+  "type": "object",
+  "minProperties": 1,
+  "propertyNames": {
+    "pattern": "^[A-Z][A-Z0-9_]*$"
+  },
+  "additionalProperties": {
+    "type": "string",
+    "pattern": "^(legacy|[a-z]+\\.[a-z]+)$"
+  }
+}

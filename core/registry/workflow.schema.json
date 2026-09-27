@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vouch.dev/schemas/workflow.json",
+  "type": "object",
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "stages": {
+      "type": "array",
+      "items": {
+        "enum": ["intent", "design", "build", "verify"]
+      },
+      "uniqueItems": true
+    },
+    "agents": {
+      "type": "array",
+      "items": {
+        "enum": ["builder", "reviewer", "explorer"]
+      },
+      "uniqueItems": true
+    },
+    "defaults": {
+      "type": "object",
+      "properties": {
+        "language": {
+          "enum": ["ja", "en"]
+        },
+        "checkpoints": {
+          "enum": ["topic", "unit", "section"]
+        },
+        "verification_environment": {
+          "const": "local"
+        },
+        "auto_merge": {
+          "const": false
+        }
+      },
+      "required": [
+        "language",
+        "checkpoints",
+        "verification_environment",
+        "auto_merge"
+      ],
+      "additionalProperties": false
+    },
+    "languages": {
+      "type": "array",
+      "items": {
+        "enum": ["ja", "en"]
+      },
+      "uniqueItems": true
+    },
+    "checkpoint_modes": {
+      "type": "array",
+      "items": {
+        "enum": ["topic", "unit", "section"]
+      },
+      "uniqueItems": true
+    },
+    "topic_checkpoints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "enum": ["acceptance", "scope", "units", "design"]
+          },
+          "when": {
+            "enum": ["always", "design-required"]
+          }
+        },
+        "required": ["id", "when"],
+        "additionalProperties": false
+      }
+    },
+    "high_risk_adds": {
+      "const": "unit"
+    },
+    "verification": {
+      "type": "object",
+      "properties": {
+        "local": {
+          "const": "Playwright"
+        },
+        "services": {
+          "const": "compose"
+        },
+        "ci": {
+          "const": "demo.sh"
+        }
+      },
+      "required": ["local", "services", "ci"],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "version",
+    "stages",
+    "agents",
+    "defaults",
+    "languages",
+    "checkpoint_modes",
+    "topic_checkpoints",
+    "high_risk_adds",
+    "verification"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vouch.dev/schemas/skill-frontmatter.json",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^vouch(?:-[a-z]+)*$"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "user-invocable": {
+      "type": "boolean"
+    },
+    "reads": {
+      "enum": ["always", "on-demand"]
+    }
+  },
+  "required": ["name", "description", "user-invocable", "reads"],
+  "additionalProperties": false
+}

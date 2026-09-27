@@ -1,0 +1,2947 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vouch.dev/schemas/audit-event.json",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "intent.created"
+        },
+        "ts": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$"
+        },
+        "actor": {
+          "enum": ["model", "hook", "human", "reviewer"]
+        },
+        "intent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage": {
+          "enum": ["intent", "design", "build", "verify"]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wait_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "harness": {
+          "enum": ["claude", "codex"]
+        },
+        "tokens": {
+          "type": "object",
+          "properties": {
+            "in": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "out": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cache": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["in", "out"],
+          "additionalProperties": false
+        },
+        "synthetic": {
+          "const": true
+        },
+        "risk": {
+          "enum": ["L", "M", "H"]
+        }
+      },
+      "required": ["id", "v", "type", "ts", "actor", "intent", "risk"],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": ["tokens"]
+          },
+          "then": {
+            "required": ["harness"],
+            "properties": {
+              "harness": {
+                "const": "claude"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "intent.approved"
+        },
+        "ts": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$"
+        },
+        "actor": {
+          "const": "human"
+        },
+        "intent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage": {
+          "enum": ["intent", "design", "build", "verify"]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wait_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "harness": {
+          "enum": ["claude", "codex"]
+        },
+        "tokens": {
+          "type": "object",
+          "properties": {
+            "in": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "out": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cache": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["in", "out"],
+          "additionalProperties": false
+        },
+        "synthetic": {
+          "const": true
+        },
+        "source": {
+          "const": "intent"
+        }
+      },
+      "required": [
+        "id",
+        "v",
+        "type",
+        "ts",
+        "actor",
+        "intent",
+        "source",
+        "parent",
+        "wait_ms"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": ["tokens"]
+          },
+          "then": {
+            "required": ["harness"],
+            "properties": {
+              "harness": {
+                "const": "claude"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "intent.completed"
+        },
+        "ts": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$"
+        },
+        "actor": {
+          "enum": ["model", "hook", "human", "reviewer"]
+        },
+        "intent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage": {
+          "enum": ["intent", "design", "build", "verify"]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wait_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "harness": {
+          "enum": ["claude", "codex"]
+        },
+        "tokens": {
+          "type": "object",
+          "properties": {
+            "in": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "out": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cache": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["in", "out"],
+          "additionalProperties": false
+        },
+        "synthetic": {
+          "const": true
+        },
+        "ai_work_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "human_wait_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "human_review_ms": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "id",
+        "v",
+        "type",
+        "ts",
+        "actor",
+        "intent",
+        "parent",
+        "duration_ms",
+        "ai_work_ms",
+        "human_wait_ms",
+        "human_review_ms"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": ["tokens"]
+          },
+          "then": {
+            "required": ["harness"],
+            "properties": {
+              "harness": {
+                "const": "claude"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "stage.started"
+        },
+        "ts": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$"
+        },
+        "actor": {
+          "enum": ["model", "hook", "human", "reviewer"]
+        },
+        "intent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage": {
+          "enum": ["intent", "design", "build", "verify"]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wait_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "harness": {
+          "enum": ["claude", "codex"]
+        },
+        "tokens": {
+          "type": "object",
+          "properties": {
+            "in": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "out": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cache": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["in", "out"],
+          "additionalProperties": false
+        },
+        "synthetic": {
+          "const": true
+        }
+      },
+      "required": ["id", "v", "type", "ts", "actor", "intent", "stage"],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": ["tokens"]
+          },
+          "then": {
+            "required": ["harness"],
+            "properties": {
+              "harness": {
+                "const": "claude"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "stage.completed"
+        },
+        "ts": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$"
+        },
+        "actor": {
+          "enum": ["model", "hook", "human", "reviewer"]
+        },
+        "intent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage": {
+          "enum": ["intent", "design", "build", "verify"]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wait_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "harness": {
+          "enum": ["claude", "codex"]
+        },
+        "tokens": {
+          "type": "object",
+          "properties": {
+            "in": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "out": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cache": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["in", "out"],
+          "additionalProperties": false
+        },
+        "synthetic": {
+          "const": true
+        },
+        "loop_iterations": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tests": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "id",
+        "v",
+        "type",
+        "ts",
+        "actor",
+        "intent",
+        "stage",
+        "parent",
+        "duration_ms"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": ["tokens"]
+          },
+          "then": {
+            "required": ["harness"],
+            "properties": {
+              "harness": {
+                "const": "claude"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "stage": {
+                "const": "build"
+              }
+            },
+            "required": ["stage"]
+          },
+          "then": {
+            "required": ["loop_iterations", "tests"]
+          }
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "unit.started"
+        },
+        "ts": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$"
+        },
+        "actor": {
+          "enum": ["model", "hook", "human", "reviewer"]
+        },
+        "intent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage": {
+          "enum": ["intent", "design", "build", "verify"]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wait_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "harness": {
+          "enum": ["claude", "codex"]
+        },
+        "tokens": {
+          "type": "object",
+          "properties": {
+            "in": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "out": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cache": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["in", "out"],
+          "additionalProperties": false
+        },
+        "synthetic": {
+          "const": true
+        },
+        "risk": {
+          "enum": ["L", "M", "H"]
+        }
+      },
+      "required": ["id", "v", "type", "ts", "actor", "intent", "unit", "risk"],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": ["tokens"]
+          },
+          "then": {
+            "required": ["harness"],
+            "properties": {
+              "harness": {
+                "const": "claude"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "unit.completed"
+        },
+        "ts": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$"
+        },
+        "actor": {
+          "enum": ["model", "hook", "human", "reviewer"]
+        },
+        "intent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage": {
+          "enum": ["intent", "design", "build", "verify"]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wait_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "harness": {
+          "enum": ["claude", "codex"]
+        },
+        "tokens": {
+          "type": "object",
+          "properties": {
+            "in": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "out": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cache": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["in", "out"],
+          "additionalProperties": false
+        },
+        "synthetic": {
+          "const": true
+        },
+        "risk": {
+          "enum": ["L", "M", "H"]
+        },
+        "files_changed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "lines_changed": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "id",
+        "v",
+        "type",
+        "ts",
+        "actor",
+        "intent",
+        "unit",
+        "risk",
+        "parent",
+        "duration_ms",
+        "files_changed",
+        "lines_changed"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": ["tokens"]
+          },
+          "then": {
+            "required": ["harness"],
+            "properties": {
+              "harness": {
+                "const": "claude"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "checkpoint.confirmed"
+        },
+        "ts": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$"
+        },
+        "actor": {
+          "const": "human"
+        },
+        "intent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage": {
+          "enum": ["intent", "design", "build", "verify"]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wait_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "harness": {
+          "enum": ["claude", "codex"]
+        },
+        "tokens": {
+          "type": "object",
+          "properties": {
+            "in": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "out": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cache": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["in", "out"],
+          "additionalProperties": false
+        },
+        "synthetic": {
+          "const": true
+        },
+        "checkpoint": {
+          "enum": ["acceptance", "scope", "units", "design", "unit", "section"]
+        },
+        "section": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": ["id", "v", "type", "ts", "actor", "intent", "checkpoint"],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": ["tokens"]
+          },
+          "then": {
+            "required": ["harness"],
+            "properties": {
+              "harness": {
+                "const": "claude"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "checkpoint": {
+                "const": "unit"
+              }
+            },
+            "required": ["checkpoint"]
+          },
+          "then": {
+            "required": ["unit"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "checkpoint": {
+                "const": "section"
+              }
+            },
+            "required": ["checkpoint"]
+          },
+          "then": {
+            "required": ["section"]
+          }
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "gate.opened"
+        },
+        "ts": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$"
+        },
+        "actor": {
+          "enum": ["model", "hook", "human", "reviewer"]
+        },
+        "intent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage": {
+          "enum": ["intent", "design", "build", "verify"]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wait_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "harness": {
+          "enum": ["claude", "codex"]
+        },
+        "tokens": {
+          "type": "object",
+          "properties": {
+            "in": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "out": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cache": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["in", "out"],
+          "additionalProperties": false
+        },
+        "synthetic": {
+          "const": true
+        },
+        "source": {
+          "enum": ["intent", "pr"]
+        }
+      },
+      "required": ["id", "v", "type", "ts", "actor", "intent", "source"],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": ["tokens"]
+          },
+          "then": {
+            "required": ["harness"],
+            "properties": {
+              "harness": {
+                "const": "claude"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "gate.approved"
+        },
+        "ts": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$"
+        },
+        "actor": {
+          "const": "human"
+        },
+        "intent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage": {
+          "enum": ["intent", "design", "build", "verify"]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wait_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "harness": {
+          "enum": ["claude", "codex"]
+        },
+        "tokens": {
+          "type": "object",
+          "properties": {
+            "in": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "out": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cache": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["in", "out"],
+          "additionalProperties": false
+        },
+        "synthetic": {
+          "const": true
+        },
+        "source": {
+          "enum": ["intent", "pr"]
+        }
+      },
+      "required": [
+        "id",
+        "v",
+        "type",
+        "ts",
+        "actor",
+        "intent",
+        "source",
+        "parent",
+        "wait_ms"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": ["tokens"]
+          },
+          "then": {
+            "required": ["harness"],
+            "properties": {
+              "harness": {
+                "const": "claude"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "gate.rejected"
+        },
+        "ts": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$"
+        },
+        "actor": {
+          "const": "human"
+        },
+        "intent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage": {
+          "enum": ["intent", "design", "build", "verify"]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wait_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "harness": {
+          "enum": ["claude", "codex"]
+        },
+        "tokens": {
+          "type": "object",
+          "properties": {
+            "in": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "out": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cache": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["in", "out"],
+          "additionalProperties": false
+        },
+        "synthetic": {
+          "const": true
+        },
+        "source": {
+          "enum": ["intent", "pr"]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "id",
+        "v",
+        "type",
+        "ts",
+        "actor",
+        "intent",
+        "source",
+        "parent",
+        "wait_ms",
+        "reason"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": ["tokens"]
+          },
+          "then": {
+            "required": ["harness"],
+            "properties": {
+              "harness": {
+                "const": "claude"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "question.asked"
+        },
+        "ts": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$"
+        },
+        "actor": {
+          "enum": ["model", "hook", "human", "reviewer"]
+        },
+        "intent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage": {
+          "enum": ["intent", "design", "build", "verify"]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wait_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "harness": {
+          "enum": ["claude", "codex"]
+        },
+        "tokens": {
+          "type": "object",
+          "properties": {
+            "in": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "out": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cache": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["in", "out"],
+          "additionalProperties": false
+        },
+        "synthetic": {
+          "const": true
+        },
+        "question": {
+          "type": "string",
+          "minLength": 1
+        },
+        "blocking": {
+          "type": "boolean"
+        },
+        "options": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "default": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "id",
+        "v",
+        "type",
+        "ts",
+        "actor",
+        "intent",
+        "question",
+        "blocking",
+        "options"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": ["tokens"]
+          },
+          "then": {
+            "required": ["harness"],
+            "properties": {
+              "harness": {
+                "const": "claude"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "blocking": {
+                "const": false
+              }
+            },
+            "required": ["blocking"]
+          },
+          "then": {
+            "required": ["default"]
+          }
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "question.answered"
+        },
+        "ts": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$"
+        },
+        "actor": {
+          "const": "human"
+        },
+        "intent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage": {
+          "enum": ["intent", "design", "build", "verify"]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wait_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "harness": {
+          "enum": ["claude", "codex"]
+        },
+        "tokens": {
+          "type": "object",
+          "properties": {
+            "in": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "out": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cache": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["in", "out"],
+          "additionalProperties": false
+        },
+        "synthetic": {
+          "const": true
+        },
+        "question": {
+          "type": "string",
+          "minLength": 1
+        },
+        "choice": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "id",
+        "v",
+        "type",
+        "ts",
+        "actor",
+        "intent",
+        "question",
+        "choice",
+        "parent",
+        "wait_ms"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": ["tokens"]
+          },
+          "then": {
+            "required": ["harness"],
+            "properties": {
+              "harness": {
+                "const": "claude"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "question.defaulted"
+        },
+        "ts": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$"
+        },
+        "actor": {
+          "enum": ["model", "hook", "human", "reviewer"]
+        },
+        "intent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage": {
+          "enum": ["intent", "design", "build", "verify"]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wait_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "harness": {
+          "enum": ["claude", "codex"]
+        },
+        "tokens": {
+          "type": "object",
+          "properties": {
+            "in": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "out": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cache": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["in", "out"],
+          "additionalProperties": false
+        },
+        "synthetic": {
+          "const": true
+        },
+        "question": {
+          "type": "string",
+          "minLength": 1
+        },
+        "choice": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "id",
+        "v",
+        "type",
+        "ts",
+        "actor",
+        "intent",
+        "question",
+        "choice",
+        "parent",
+        "wait_ms"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": ["tokens"]
+          },
+          "then": {
+            "required": ["harness"],
+            "properties": {
+              "harness": {
+                "const": "claude"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "aside.asked"
+        },
+        "ts": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$"
+        },
+        "actor": {
+          "enum": ["model", "hook", "human", "reviewer"]
+        },
+        "intent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage": {
+          "enum": ["intent", "design", "build", "verify"]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wait_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "harness": {
+          "enum": ["claude", "codex"]
+        },
+        "tokens": {
+          "type": "object",
+          "properties": {
+            "in": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "out": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cache": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["in", "out"],
+          "additionalProperties": false
+        },
+        "synthetic": {
+          "const": true
+        },
+        "question": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": ["id", "v", "type", "ts", "actor", "intent", "question"],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": ["tokens"]
+          },
+          "then": {
+            "required": ["harness"],
+            "properties": {
+              "harness": {
+                "const": "claude"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "aside.answered"
+        },
+        "ts": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$"
+        },
+        "actor": {
+          "enum": ["model", "hook", "human", "reviewer"]
+        },
+        "intent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage": {
+          "enum": ["intent", "design", "build", "verify"]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wait_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "harness": {
+          "enum": ["claude", "codex"]
+        },
+        "tokens": {
+          "type": "object",
+          "properties": {
+            "in": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "out": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cache": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["in", "out"],
+          "additionalProperties": false
+        },
+        "synthetic": {
+          "const": true
+        },
+        "question": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "id",
+        "v",
+        "type",
+        "ts",
+        "actor",
+        "intent",
+        "question",
+        "parent",
+        "duration_ms"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": ["tokens"]
+          },
+          "then": {
+            "required": ["harness"],
+            "properties": {
+              "harness": {
+                "const": "claude"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "hook.check"
+        },
+        "ts": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$"
+        },
+        "actor": {
+          "const": "hook"
+        },
+        "intent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage": {
+          "enum": ["intent", "design", "build", "verify"]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wait_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "harness": {
+          "enum": ["claude", "codex"]
+        },
+        "tokens": {
+          "type": "object",
+          "properties": {
+            "in": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "out": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cache": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["in", "out"],
+          "additionalProperties": false
+        },
+        "synthetic": {
+          "const": true
+        },
+        "check": {
+          "enum": ["contract", "dod", "freshness", "citation", "format"]
+        },
+        "result": {
+          "enum": ["pass", "fail"]
+        },
+        "missing": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "stale": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "id",
+        "v",
+        "type",
+        "ts",
+        "actor",
+        "check",
+        "result",
+        "duration_ms"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": ["tokens"]
+          },
+          "then": {
+            "required": ["harness"],
+            "properties": {
+              "harness": {
+                "const": "claude"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "hook.denied"
+        },
+        "ts": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$"
+        },
+        "actor": {
+          "const": "hook"
+        },
+        "intent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage": {
+          "enum": ["intent", "design", "build", "verify"]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wait_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "harness": {
+          "enum": ["claude", "codex"]
+        },
+        "tokens": {
+          "type": "object",
+          "properties": {
+            "in": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "out": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cache": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["in", "out"],
+          "additionalProperties": false
+        },
+        "synthetic": {
+          "const": true
+        },
+        "check": {
+          "enum": ["contract", "dod", "freshness", "citation", "format"]
+        },
+        "result": {
+          "const": "fail"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "id",
+        "v",
+        "type",
+        "ts",
+        "actor",
+        "check",
+        "result",
+        "reason",
+        "duration_ms"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": ["tokens"]
+          },
+          "then": {
+            "required": ["harness"],
+            "properties": {
+              "harness": {
+                "const": "claude"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "review.requested"
+        },
+        "ts": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$"
+        },
+        "actor": {
+          "enum": ["model", "hook", "human", "reviewer"]
+        },
+        "intent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage": {
+          "enum": ["intent", "design", "build", "verify"]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wait_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "harness": {
+          "enum": ["claude", "codex"]
+        },
+        "tokens": {
+          "type": "object",
+          "properties": {
+            "in": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "out": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cache": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["in", "out"],
+          "additionalProperties": false
+        },
+        "synthetic": {
+          "const": true
+        },
+        "iteration": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "id",
+        "v",
+        "type",
+        "ts",
+        "actor",
+        "intent",
+        "iteration",
+        "harness"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": ["tokens"]
+          },
+          "then": {
+            "required": ["harness"],
+            "properties": {
+              "harness": {
+                "const": "claude"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "review.completed"
+        },
+        "ts": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$"
+        },
+        "actor": {
+          "enum": ["model", "hook", "human", "reviewer"]
+        },
+        "intent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage": {
+          "enum": ["intent", "design", "build", "verify"]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wait_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "harness": {
+          "enum": ["claude", "codex"]
+        },
+        "tokens": {
+          "type": "object",
+          "properties": {
+            "in": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "out": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cache": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["in", "out"],
+          "additionalProperties": false
+        },
+        "synthetic": {
+          "const": true
+        },
+        "iteration": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "findings": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sabotage": {
+          "type": "object",
+          "properties": {
+            "tried": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "caught": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["tried", "caught"],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "id",
+        "v",
+        "type",
+        "ts",
+        "actor",
+        "intent",
+        "iteration",
+        "harness",
+        "findings",
+        "sabotage",
+        "parent",
+        "duration_ms"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": ["tokens"]
+          },
+          "then": {
+            "required": ["harness"],
+            "properties": {
+              "harness": {
+                "const": "claude"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "knowledge.refreshed"
+        },
+        "ts": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$"
+        },
+        "actor": {
+          "enum": ["model", "hook", "human", "reviewer"]
+        },
+        "intent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage": {
+          "enum": ["intent", "design", "build", "verify"]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wait_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "harness": {
+          "enum": ["claude", "codex"]
+        },
+        "tokens": {
+          "type": "object",
+          "properties": {
+            "in": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "out": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cache": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["in", "out"],
+          "additionalProperties": false
+        },
+        "synthetic": {
+          "const": true
+        },
+        "scope": {
+          "enum": ["diff", "full"]
+        }
+      },
+      "required": ["id", "v", "type", "ts", "actor", "scope", "duration_ms"],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": ["tokens"]
+          },
+          "then": {
+            "required": ["harness"],
+            "properties": {
+              "harness": {
+                "const": "claude"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "session.started"
+        },
+        "ts": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$"
+        },
+        "actor": {
+          "enum": ["model", "hook", "human", "reviewer"]
+        },
+        "intent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage": {
+          "enum": ["intent", "design", "build", "verify"]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wait_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "harness": {
+          "enum": ["claude", "codex"]
+        },
+        "tokens": {
+          "type": "object",
+          "properties": {
+            "in": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "out": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cache": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["in", "out"],
+          "additionalProperties": false
+        },
+        "synthetic": {
+          "const": true
+        }
+      },
+      "required": ["id", "v", "type", "ts", "actor", "session"],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": ["tokens"]
+          },
+          "then": {
+            "required": ["harness"],
+            "properties": {
+              "harness": {
+                "const": "claude"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "session.resumed"
+        },
+        "ts": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$"
+        },
+        "actor": {
+          "enum": ["model", "hook", "human", "reviewer"]
+        },
+        "intent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage": {
+          "enum": ["intent", "design", "build", "verify"]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wait_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "harness": {
+          "enum": ["claude", "codex"]
+        },
+        "tokens": {
+          "type": "object",
+          "properties": {
+            "in": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "out": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cache": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["in", "out"],
+          "additionalProperties": false
+        },
+        "synthetic": {
+          "const": true
+        }
+      },
+      "required": ["id", "v", "type", "ts", "actor", "session", "duration_ms"],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": ["tokens"]
+          },
+          "then": {
+            "required": ["harness"],
+            "properties": {
+              "harness": {
+                "const": "claude"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "session.compacted"
+        },
+        "ts": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$"
+        },
+        "actor": {
+          "enum": ["model", "hook", "human", "reviewer"]
+        },
+        "intent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage": {
+          "enum": ["intent", "design", "build", "verify"]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wait_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "harness": {
+          "enum": ["claude", "codex"]
+        },
+        "tokens": {
+          "type": "object",
+          "properties": {
+            "in": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "out": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cache": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["in", "out"],
+          "additionalProperties": false
+        },
+        "synthetic": {
+          "const": true
+        }
+      },
+      "required": ["id", "v", "type", "ts", "actor", "session"],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": ["tokens"]
+          },
+          "then": {
+            "required": ["harness"],
+            "properties": {
+              "harness": {
+                "const": "claude"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "session.ended"
+        },
+        "ts": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$"
+        },
+        "actor": {
+          "enum": ["model", "hook", "human", "reviewer"]
+        },
+        "intent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage": {
+          "enum": ["intent", "design", "build", "verify"]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wait_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "harness": {
+          "enum": ["claude", "codex"]
+        },
+        "tokens": {
+          "type": "object",
+          "properties": {
+            "in": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "out": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cache": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["in", "out"],
+          "additionalProperties": false
+        },
+        "synthetic": {
+          "const": true
+        }
+      },
+      "required": [
+        "id",
+        "v",
+        "type",
+        "ts",
+        "actor",
+        "session",
+        "parent",
+        "duration_ms"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": ["tokens"]
+          },
+          "then": {
+            "required": ["harness"],
+            "properties": {
+              "harness": {
+                "const": "claude"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "learn.recorded"
+        },
+        "ts": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$"
+        },
+        "actor": {
+          "enum": ["model", "hook", "human", "reviewer"]
+        },
+        "intent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage": {
+          "enum": ["intent", "design", "build", "verify"]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wait_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "harness": {
+          "enum": ["claude", "codex"]
+        },
+        "tokens": {
+          "type": "object",
+          "properties": {
+            "in": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "out": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cache": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["in", "out"],
+          "additionalProperties": false
+        },
+        "synthetic": {
+          "const": true
+        },
+        "rules_added": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": ["id", "v", "type", "ts", "actor", "intent", "rules_added"],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": ["tokens"]
+          },
+          "then": {
+            "required": ["harness"],
+            "properties": {
+              "harness": {
+                "const": "claude"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "migration.completed"
+        },
+        "ts": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$"
+        },
+        "actor": {
+          "enum": ["model", "hook", "human", "reviewer"]
+        },
+        "intent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage": {
+          "enum": ["intent", "design", "build", "verify"]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wait_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "harness": {
+          "enum": ["claude", "codex"]
+        },
+        "tokens": {
+          "type": "object",
+          "properties": {
+            "in": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "out": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cache": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["in", "out"],
+          "additionalProperties": false
+        },
+        "synthetic": {
+          "const": true
+        },
+        "files_migrated": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": ["id", "v", "type", "ts", "actor", "files_migrated"],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": ["tokens"]
+          },
+          "then": {
+            "required": ["harness"],
+            "properties": {
+              "harness": {
+                "const": "claude"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "type": "string",
+          "pattern": "^legacy\\.[A-Z][A-Z0-9_]*$"
+        },
+        "ts": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$"
+        },
+        "actor": {
+          "enum": ["model", "hook", "human", "reviewer"]
+        },
+        "intent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage": {
+          "enum": ["intent", "design", "build", "verify"]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wait_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "harness": {
+          "enum": ["claude", "codex"]
+        },
+        "tokens": {
+          "type": "object",
+          "properties": {
+            "in": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "out": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cache": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["in", "out"],
+          "additionalProperties": false
+        },
+        "synthetic": {
+          "const": true
+        },
+        "original_type": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "raw": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_path": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "id",
+        "v",
+        "type",
+        "ts",
+        "actor",
+        "original_type",
+        "raw",
+        "source_path"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": ["tokens"]
+          },
+          "then": {
+            "required": ["harness"],
+            "properties": {
+              "harness": {
+                "const": "claude"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

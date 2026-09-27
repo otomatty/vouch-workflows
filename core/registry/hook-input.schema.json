@@ -1,0 +1,180 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vouch.dev/schemas/hook-input.json",
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "cwd": {
+      "type": "string",
+      "minLength": 1
+    },
+    "hook_event_name": {
+      "enum": [
+        "SessionStart",
+        "UserPromptSubmit",
+        "PreToolUse",
+        "PostToolUse",
+        "PreCompact",
+        "SubagentStop",
+        "Stop"
+      ]
+    },
+    "transcript_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model": {
+      "type": "string",
+      "minLength": 1
+    },
+    "permission_mode": {
+      "type": "string",
+      "minLength": 1
+    },
+    "turn_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tool_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tool_input": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "tool_response": {},
+    "tool_use_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "type": "string",
+      "minLength": 1
+    },
+    "prompt": {
+      "type": "string",
+      "minLength": 1
+    },
+    "trigger": {
+      "type": "string",
+      "minLength": 1
+    },
+    "agent_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "agent_type": {
+      "type": "string",
+      "minLength": 1
+    },
+    "agent_transcript_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "stop_hook_active": {
+      "type": "boolean"
+    },
+    "last_assistant_message": {
+      "type": "string"
+    }
+  },
+  "required": ["session_id", "cwd", "hook_event_name"],
+  "additionalProperties": true,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "hook_event_name": {
+            "const": "SessionStart"
+          }
+        },
+        "required": ["hook_event_name"]
+      },
+      "then": {
+        "required": ["source"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "hook_event_name": {
+            "const": "UserPromptSubmit"
+          }
+        },
+        "required": ["hook_event_name"]
+      },
+      "then": {
+        "required": ["prompt"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "hook_event_name": {
+            "const": "PreToolUse"
+          }
+        },
+        "required": ["hook_event_name"]
+      },
+      "then": {
+        "required": ["tool_name", "tool_input"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "hook_event_name": {
+            "const": "PostToolUse"
+          }
+        },
+        "required": ["hook_event_name"]
+      },
+      "then": {
+        "required": ["tool_name", "tool_input", "tool_response"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "hook_event_name": {
+            "const": "PreCompact"
+          }
+        },
+        "required": ["hook_event_name"]
+      },
+      "then": {
+        "required": ["trigger"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "hook_event_name": {
+            "const": "SubagentStop"
+          }
+        },
+        "required": ["hook_event_name"]
+      },
+      "then": {
+        "required": ["agent_id"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "hook_event_name": {
+            "const": "Stop"
+          }
+        },
+        "required": ["hook_event_name"]
+      },
+      "then": {
+        "required": ["stop_hook_active"]
+      }
+    }
+  ]
+}
