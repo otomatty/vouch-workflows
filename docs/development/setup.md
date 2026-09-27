@@ -56,10 +56,10 @@ GitHub Actions は Ubuntu / Windows × Node.js 22.19.0 / 24.x で `npm ci`、doc
 
 1. レジストリ、入出力スキーマ、JSDoc の契約は実装済みです。[契約の説明](contracts.md)と `core/registry/enforcement-map.json` に検査範囲を記載しています。
 2. `sandbox()`、`runHook()`、fake clock と共通 lib は実装済みです。[共通ランタイム](runtime.md)を参照してください。セッション開始の JSONL を golden と全文比較します。
-3. Claude Code 2.1.280 の `UserPromptSubmit` と `SessionStart` を採取済みです。Codex 0.153.4 の同じ2イベントも採取済みです。他イベントの版付き fixture は未採取です。既存の Codex 9件は原本と一致しますが、版番号が未記録のため契約実行には未適格です。手製の変種は `synthetic: true` で分離しています。
-4. [セッション開始フック](session-start.md)を実装しました。現在の PC では p95 200ms を超え、`check` は失敗します。残りの製品フック、doctor / status / Intent 下書き以外の Skill 操作、承認の記録・真正性検査、エージェント、rules / intent / decisions 以外の日英テンプレートは未実装です。
+3. Claude Code 2.1.280 の `UserPromptSubmit` と `SessionStart` を採取済みです。Codex 0.153.4 の同じ2イベントも採取済みです。Claude の Write PreToolUse / PostToolUse も採取済みです。Codex のツール系と残りの版付き fixture は未採取です。既存の Codex 9件は原本と一致しますが、版番号が未記録のため契約実行には未適格です。手製の変種は `synthetic: true` で分離しています。
+4. [セッション開始フック](session-start.md)を実装しました。現在の PC では p95 200ms を超え、`check` は失敗します。残りの製品フック、doctor / status / Intent 下書き以外の Skill 操作、承認の真正性検査、エージェント、rules / intent / decisions 以外の日英テンプレートは未実装です。
 5. 両ハーネスの manifest・登録設定と `scripts/package.mjs` を実装しました。`package`、`package:check` を追加し、`check` のテスト成功後に実行します。[Claude 配布](claude-distribution.md)を参照してください。[Codex 配布](codex-distribution.md)も実装・実機確認済みです。配布先 [doctor](doctor.md) も実装しました。[Doctor Skill](doctor-skill.md) と Node 未導入時の案内も配布します。[status と共通文書](status.md)、AGENTS.md、日英 rules テンプレートも配布します。[Intent 下書き](intent.md)と日英 intent / decisions テンプレートも追加しました。他の Skill・エージェント・成果物テンプレートは未実装です。
-6. [Intent 承認証跡の照合](approval-evidence.md)を追加しました。文書の版・実機入力の識別子・親ゲート・待ち時間を純粋関数で照合します。照合の一致は承認許可ではなく、記録フック・真正性保証・書き込み保護は未実装です。
+6. [Intent 承認証跡の照合](approval-evidence.md)を追加しました。文書の版・実機入力の識別子・親ゲート・待ち時間を純粋関数で照合します。照合の一致は承認許可ではありません。[レビュー記録フック](intent-review.md)で、明示操作から gate.opened / intent.approved を記録します。真正性保証・書き込み保護・状態変更は未実装です。
 7. シナリオ、全ルールの強制テスト、夜間ミューテーション CI と失敗時の Issue 作成、手動評価スイート。
 
 Stryker の設定と `mutate` コマンドは用意しています。Intent の承認証跡・時刻差分の対象を限定した測定は[承認証跡の照合](approval-evidence.md)に記録しています。lib 全体の基準測定と夜間 CI は未実施です。モデル評価のコマンドは本体実装に合わせて追加します。

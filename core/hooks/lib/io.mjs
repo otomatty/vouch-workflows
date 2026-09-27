@@ -47,6 +47,7 @@ export async function run(main, options = {}) {
         : undefined);
     const result = await main(input, {
       ...context,
+      readText: (path) => files.readText(path),
       ...(audit ? { audit } : {}),
     });
     if (!isHookResult(result))

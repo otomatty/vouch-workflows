@@ -91,17 +91,27 @@
         {
           "status": "implemented",
           "path": "tests/packaging/edited.test.mjs",
-          "claim": "編集済みファイルを検査が変更せず検出し、明示的な再生成で原本のバイトへ復元することを確認する。"
+          "claim": "編集済みファイルを検査が変更せず検出することを確認する。再生成は別ケースで検査する。"
         },
         {
           "status": "implemented",
           "path": "tests/packaging/missing.test.mjs",
-          "claim": "欠損したファイルを検査が補完せず検出し、明示的な再生成で元の全ファイルを復元することを確認する。"
+          "claim": "欠損したファイルを検査が補完せず検出することを確認する。再生成は別ケースで検査する。"
         },
         {
           "status": "implemented",
           "path": "tests/content/intent.test.mjs",
           "claim": "追加した intent / decisions の4テンプレートを原本・両配布・新規 golden と全文比較する。既存 golden は変更しない。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/edited-regenerate.test.mjs",
+          "claim": "変更または欠損させた配布物を明示的に再生成し、元の全バイトへ復元することを確認する。Node 22 のファイル5秒予算内に収めるため、読取専用検査と独立したケースに分ける。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/missing-regenerate.test.mjs",
+          "claim": "変更または欠損させた配布物を明示的に再生成し、元の全バイトへ復元することを確認する。Node 22 のファイル5秒予算内に収めるため、読取専用検査と独立したケースに分ける。"
         }
       ]
     },
@@ -129,6 +139,11 @@
           "status": "implemented",
           "path": "tests/content/intent.test.mjs",
           "claim": "Intent 下書きの frontmatter、日英の節・質問カード・判断記録の欄と on-demand Skill を正典に照合する。モデルが適切に記入したことの証明ではない。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/registry/intent-review.test.mjs",
+          "claim": "明示操作の語彙・入力形式を intent-review レジストリと閉じたスキーマで検査する。"
         }
       ]
     },
@@ -196,6 +211,11 @@
           "status": "implemented",
           "path": "tests/content/hook-structure.test.mjs",
           "claim": "製品フックのトップレベル副作用が run(main) 1回だけであることを AST で検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/vouch-record-intent-review.test.mjs",
+          "claim": "レビュー記録フックの破損ログ・ID競合・リンク・書き込みロックによる例外を終了0と診断で返し、成功を報告せず既存ログを保持することを検査する。"
         }
       ]
     },
@@ -218,6 +238,11 @@
           "status": "implemented",
           "path": "tests/hooks/vouch-record-session-start.test.mjs",
           "claim": "セッション開始フックの正常・no-op・エラーは終了0であることを検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/vouch-record-intent-review.test.mjs",
+          "claim": "明示したレビュー・承認入力は記録後も終了2で消費する。不正な明示入力も理由付き終了2、対象外は終了0になることを検査する。状態変更の許可ではない。"
         }
       ]
     },
@@ -375,6 +400,11 @@
           "status": "implemented",
           "path": "tests/hooks/vouch-record-session-start.test.mjs",
           "claim": "セッション開始は同一 ID の再実行時に最初の ts を保持し、別 session / Intent を分離する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/vouch-record-intent-review.test.mjs",
+          "claim": "両ハーネスのゲート・承認の再送で最初の時刻を保持する。同じ入力IDの版・親ゲートの付け替えは競合し、別入力は区別する。"
         }
       ]
     },
@@ -438,7 +468,7 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "Intent 下書き追加後の Windows Node 22 / 24 の記録 p95 は225.4 / 299.1msで、200ms予算は未達。Node 24 の性能ケースは5.65秒で5秒予算も超過した。今回 Linux の性能は再計測していない。検査系と他フックも未検証。"
+          "claim": "レビュー記録追加後の Windows Node 24 はレビュー開始353.5ms・承認322.8ms・セッション開始311.0msでp95 200ms未満を満たさない。計測結果と他環境の検証範囲は intent-review.md に記録する。"
         },
         {
           "status": "implemented",
@@ -454,6 +484,16 @@
           "status": "implemented",
           "path": "scripts/benchmark-hook.mjs",
           "claim": "Node 起動、no-op、実時計・固定時計の記録を交互に20回測り、生データとp50/p95を出す補助測定。記録の完全性を確認するが、HOOK-13の合否は既存契約テストで判定する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/intent-review-performance.test.mjs",
+          "claim": "レビュー開始と承認記録を各20回計測し、既存のp95 200ms未満を要求する。Windowsでは未達で、合格扱いにしない。"
+        },
+        {
+          "status": "implemented",
+          "path": "docs/development/intent-review.md",
+          "claim": "Linux / Node 22.20.0 のレビュー開始と承認の各20回でp95 129.7ms / 114.5msを観測し予算内。Windowsの未達を解消したとは扱わない。"
         }
       ]
     },
@@ -549,7 +589,17 @@
         },
         {
           "status": "pending",
-          "claim": "Intent 承認証跡の純粋な照合 API は追加したが、gate.opened / intent.approved / checkpoint.confirmed の製品 emit、入力の信頼性保証、監査書き込み保護、承認許可・更新阻止は未実装。"
+          "claim": "gate.opened / intent.approved の明示操作による製品 emit は追加済み。checkpoint.confirmed、入力の信頼性保証、監査書き込み保護、承認許可・更新阻止は未実装。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/vouch-record-intent-review.test.mjs",
+          "claim": "gate.opened / intent.approved の両ハーネスの製品 emit をスキーマと新規 golden で全文比較する。fixture の入力変更は synthetic として扱う。"
+        },
+        {
+          "status": "implemented",
+          "path": "docs/development/intent-review.md",
+          "claim": "Claude 2.1.280 の隔離したネイティブ CLI で生成済み登録からゲート・承認記録を観測した。スクリプト入力の確認であり、人の実承認やモデル評価ではない。Codexの新記録入口のネイティブCLI確認は未実施。"
         }
       ]
     },
@@ -827,6 +877,16 @@
           "status": "implemented",
           "path": "tests/content/intent.test.mjs",
           "claim": "追加した intent / decisions の4テンプレートを原本・両配布・新規 golden と全文比較する。既存 golden は変更しない。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/scenario/claude-intent-review.test.mjs",
+          "claim": "claude の生成済み登録コマンドを子プロセスで起動し、空白・記号・日本語を含むパスからゲート・承認記録と終了2の伝播を確認する。ネイティブCLIの確認とは別。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/scenario/codex-intent-review.test.mjs",
+          "claim": "codex の生成済み登録コマンドを子プロセスで起動し、空白・記号・日本語を含むパスからゲート・承認記録と終了2の伝播を確認する。ネイティブCLIの確認とは別。"
         }
       ]
     },
@@ -1122,7 +1182,7 @@
         },
         {
           "status": "pending",
-          "claim": "Claude 2.1.280 / Codex 0.153.4 の UserPromptSubmit と SessionStart startup を採取済み。他イベントの版付き実機 fixture は未採取。既存 Codex 9件の version:null を維持する。"
+          "claim": "Claude 2.1.280 / Codex 0.153.4 の UserPromptSubmit と SessionStart startup を採取済み。Claude の Write 前後は別途採取済み。Codex のツール系と残りの版付き実機 fixture は未採取。既存 Codex 9件の version:null を維持する。"
         },
         {
           "status": "implemented",
@@ -1158,6 +1218,11 @@
           "status": "implemented",
           "path": "tests/unit/lib/approval.test.mjs",
           "claim": "既存の版付き Claude / Codex UserPromptSubmit から入力 ID の保持を検証する。承認の正常・破壊ケースは synthetic な手製データであり、実機の承認や新しいフック契約の検証ではない。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/registry/intent-review.test.mjs",
+          "claim": "Claude 2.1.280 の Write PreToolUse / PostToolUse の採取原本と wrapper のバイト由来・版を照合する。固定応答を使ったネイティブCLIの入力採取で、実モデル評価や人の承認実績ではない。Codexツール採取はポリシー拒否により未完了。"
         }
       ]
     },
@@ -1202,6 +1267,11 @@
           "status": "implemented",
           "path": "docs/development/approval-evidence.md",
           "claim": "追加した approval と変更した clock に限定して Stryker を測定。199変異中192検出、7生存、96.48%。生存理由を記録。lib 全体の変更前比較と夜間 CI / Issue 作成は未実施。"
+        },
+        {
+          "status": "implemented",
+          "path": "docs/development/intent-review.md",
+          "claim": "新規 intent-review と io の変更行に限定した33変異を全検出し100%、生存0。lib全体の変更前比較と夜間CIは未実施。"
         }
       ]
     },
@@ -1252,7 +1322,7 @@
         },
         {
           "status": "pending",
-          "claim": "Intent 下書き追加後の Windows Node 22 / 24 の性能ケースは4.30 / 5.65秒で、Node 24 は5秒予算も未達。初回 Node 22 の doctor Skill scenario のファイル5秒超過は、同じ6アサーションを保ってハーネス別ファイルに分けて解消した。予算と再試行なしの条件は変更していない。リモート CI の全予算充足は未検証。"
+          "claim": "Windowsで記録性能ケースの5秒超過とNode 22の配布物・doctorシナリオのファイル時間切れを観測。読取専用検査と再生成、両ハーネスのdoctorを分けて検証対象を維持したが、全体の時間予算充足は未確認。詳細は intent-review.md。"
         },
         {
           "status": "implemented",
@@ -1317,6 +1387,11 @@
           "status": "implemented",
           "path": "tests/hooks/vouch-doctor.test.mjs",
           "claim": "手動 doctor の欠損・登録改変・リンクの負例と、未配布入口の失敗を子プロセスで検査する。イベントフックの動作保証とは分ける。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/vouch-record-intent-review.test.mjs",
+          "claim": "レビュー記録入口に空・非JSON・必須欠落・型違い・境界外cwd・1MiBを入力し、成功報告と監査書き込みがないことを検査する。"
         }
       ]
     },
@@ -1355,7 +1430,12 @@
         {
           "status": "implemented",
           "path": "tests/unit/lib/approval.test.mjs",
-          "claim": "対象文書の版・別途渡した入力の識別子・設定スコープ・親ゲート・待ち時間の純粋な整合性を検査する。matches:true は真正性や同意の証明ではなく、承認の記録・許可・状態更新は未実装。"
+          "claim": "対象文書の版・別途渡した入力の識別子・設定スコープ・親ゲート・待ち時間の純粋な整合性を検査する。matches:true は真正性や同意の証明ではなく、承認の許可・状態更新は未実装。記録フックは別テストで検証する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/vouch-record-intent-review.test.mjs",
+          "claim": "明示入力に対する gate.opened / intent.approved の記録と版・入力識別子の整合性を検査する。状態変更・真正性保証・Build許可は未実装。"
         }
       ]
     },

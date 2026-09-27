@@ -1,5 +1,7 @@
 {
-  "env": { "VOUCH_HARNESS": "claude" },
+  "env": {
+    "VOUCH_HARNESS": "claude"
+  },
   "hooks": {
     "SessionStart": [
       {
@@ -10,6 +12,19 @@
             "command": "node",
             "args": [
               "${CLAUDE_PROJECT_DIR}/.claude/hooks/vouch-record-session-start.mjs"
+            ]
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/vouch-record-intent-review.mjs"
             ]
           }
         ]

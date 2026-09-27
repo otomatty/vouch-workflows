@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "open": "vouch review",
+  "approvePrefix": "vouch approve ",
+  "gatePattern": "^evt_[a-f0-9]{64}(?![\\s\\S])"
+}
