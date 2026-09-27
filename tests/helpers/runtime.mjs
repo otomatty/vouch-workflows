@@ -68,19 +68,27 @@ export function memoryFiles(initial = {}) {
   };
 }
 
-/** @returns {import('../../core/hooks/lib/contracts.mjs').HarnessFixture} */
-export function capturedPrompt() {
-  return readJson("tests/fixtures/harness/claude/UserPromptSubmit.json");
+/** @param {'claude'|'codex'} [harness] @returns {import('../../core/hooks/lib/contracts.mjs').HarnessFixture} */
+export function capturedPrompt(harness = "claude") {
+  return readJson(
+    harness === "codex"
+      ? "tests/fixtures/harness/codex/0.153.4/UserPromptSubmit.json"
+      : "tests/fixtures/harness/claude/UserPromptSubmit.json",
+  );
 }
 
-/** @returns {import('../../core/hooks/lib/contracts.mjs').HarnessFixture} */
-function capturedSession() {
-  return readJson("tests/fixtures/harness/claude/SessionStart.json");
+/** @param {'claude'|'codex'} [harness] @returns {import('../../core/hooks/lib/contracts.mjs').HarnessFixture} */
+function capturedSession(harness = "claude") {
+  return readJson(
+    harness === "codex"
+      ? "tests/fixtures/harness/codex/0.153.4/SessionStart.json"
+      : "tests/fixtures/harness/claude/SessionStart.json",
+  );
 }
 
-/** @param {string} root @returns {import('../../core/hooks/lib/contracts.mjs').HarnessFixture} */
-export function sessionFor(root) {
-  const capture = capturedSession();
+/** @param {string} root @param {'claude'|'codex'} [harness] @returns {import('../../core/hooks/lib/contracts.mjs').HarnessFixture} */
+export function sessionFor(root, harness = "claude") {
+  const capture = capturedSession(harness);
   return {
     ...capture,
     synthetic: true,
@@ -109,8 +117,8 @@ export function promptFor(root) {
 export function runHook(mode, fixture, options) {
   const reference =
     fixture.payload.hook_event_name === "SessionStart"
-      ? capturedSession()
-      : capturedPrompt();
+      ? capturedSession(fixture.harness)
+      : capturedPrompt(fixture.harness);
   if (
     !isContractFixture(reference) ||
     reference.harness !== fixture.harness ||

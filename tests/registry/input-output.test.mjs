@@ -10,7 +10,9 @@ test("input schema accepts imported Codex payloads without inventing version evi
   const original = readJson(
     "docs/aidlc-v2-reference/tests/fixtures/codex-hook-payloads/payloads.json",
   );
-  const files = readdirSync("tests/fixtures/harness/codex");
+  const files = readdirSync("tests/fixtures/harness/codex").filter((name) =>
+    name.endsWith(".json"),
+  );
   const validate = validator("harness-fixture");
   t.plan(files.length * 5 + 1);
   t.assert.deepEqual(

@@ -79,19 +79,20 @@ test("session replay retains the first timestamp and distinct sessions append on
   t.assert.notEqual(rows[0].id, rows[1].id);
 });
 
-test("Claude payload under an unsupported installed harness cannot claim a startup", async (t) => {
+test("installed harness selects audit identity independently of input claims", async (t) => {
   const box = await sandbox(t);
   const fixture = sessionFor(box.root);
-  // Negative installation configuration, not a fabricated Codex capture.
+  // Synthetic cross-harness configuration test, not Codex capture evidence.
   const result = runHook(hook, fixture, {
     root: box.root,
     intent,
     configuredHarness: "codex",
+    raw: JSON.stringify({ ...fixture.payload, harness: "claude" }),
   });
   t.plan(3);
   t.assert.equal(result.exitCode, 0);
   t.assert.equal(result.stderr, "");
-  await t.assert.rejects(box.read(path), { code: "ENOENT" });
+  t.assert.equal(JSON.parse(await box.read(path)).harness, "codex");
 });
 
 test("explicit intent scope separates logs and never trusts a payload intent", async (t) => {
