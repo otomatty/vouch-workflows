@@ -79,3 +79,20 @@ test("context reads only configured runtime environment values", (t) => {
   t.assert.match(context.now(), /^\d{4}-\d{2}-\d{2}T/);
   t.assert.match(context.newId("s", "i"), /^evt_/);
 });
+
+test("doctor context derives its target from its entry URL rather than caller environment", async (t) => {
+  const { readDoctorContext } = await import("../../../core/hooks/lib/env.mjs");
+  const { pathToFileURL } = await import("node:url");
+  const root = resolve("doctor project $ '");
+  t.plan(1);
+  t.assert.deepEqual(
+    readDoctorContext(
+      pathToFileURL(resolve(root, "install/hooks/vouch-doctor.mjs")).href,
+    ),
+    {
+      projectRoot: root,
+      installationRoot: "install",
+      nodeVersion: process.versions.node,
+    },
+  );
+});

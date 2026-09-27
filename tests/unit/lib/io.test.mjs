@@ -249,3 +249,97 @@ test("io catches path, handler, response, missing audit and persistence failures
   });
   t.assert.equal(events.length, 1);
 });
+
+test("doctor io converts failures to diagnostic JSON and exit two without hook stdin", async (t) => {
+  const { runDoctor } = await import("../../../core/hooks/lib/io.mjs");
+  t.plan(6);
+  for (const error of [new Error("failure"), "primitive", null]) {
+    const output = { text: "", code: -1 };
+    await runDoctor(
+      async () => {
+        if (error) throw error;
+        return {
+          v: 1,
+          ok: false,
+          checks: [{ id: "DOCTOR-GIT", ok: false, detail: "missing" }],
+        };
+      },
+      "unused",
+      {
+        environment: {
+          projectRoot: "/project",
+          installationRoot: "install",
+          nodeVersion: "22.19.0",
+        },
+        files: memoryFiles(),
+        git: () => ({ ok: true, detail: "Git" }),
+        stdout: {
+          write: (text) => {
+            output.text += text;
+          },
+        },
+        finish: (code) => {
+          output.code = code;
+        },
+      },
+    );
+    t.assert.equal(output.code, 2);
+    t.assert.equal(JSON.parse(output.text).ok, false);
+  }
+});
+
+test("doctor io defaults create the file store and use stdout and process exit status", async (t) => {
+  const { runDoctor } = await import("../../../core/hooks/lib/io.mjs");
+  const { pathToFileURL } = await import("node:url");
+  const box = await sandbox(t, { git: false });
+  const oldCode = process.exitCode;
+  let output = "";
+  const spy = t.mock.method(process.stdout, "write", (text) => {
+    output += String(text);
+    return true;
+  });
+  t.after(() => {
+    spy.mock.restore();
+    process.exitCode = oldCode;
+  });
+  await runDoctor(
+    async (_files, environment) => {
+      t.assert.equal(environment.projectRoot, box.root);
+      return {
+        v: 1,
+        ok: true,
+        checks: [{ id: "DOCTOR-GIT", ok: true, detail: "Git" }],
+      };
+    },
+    pathToFileURL(box.path("install/hooks/vouch-doctor.mjs")).href,
+    { git: () => ({ ok: true, detail: "Git" }) },
+  );
+  spy.mock.restore();
+  t.plan(3);
+  t.assert.equal(JSON.parse(output).ok, true);
+  t.assert.equal(process.exitCode, 0);
+});
+
+test("doctor io uses exit two if its diagnostic output stream is closed", async (t) => {
+  const { runDoctor } = await import("../../../core/hooks/lib/io.mjs");
+  let code = -1;
+  await runDoctor(async () => ({ v: 1, ok: true, checks: [] }), "unused", {
+    environment: {
+      projectRoot: "/project",
+      installationRoot: "install",
+      nodeVersion: "22.19.0",
+    },
+    files: memoryFiles(),
+    git: () => ({ ok: true, detail: "Git" }),
+    stdout: {
+      write: () => {
+        throw new Error("closed");
+      },
+    },
+    finish: (value) => {
+      code = value;
+    },
+  });
+  t.plan(1);
+  t.assert.equal(code, 2);
+});
