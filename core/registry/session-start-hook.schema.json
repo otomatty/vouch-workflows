@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vouch.dev/schemas/session-start-hook.json",
+  "description": "Handled subset of validated hook input. Other events and sources are no-ops.",
+  "allOf": [
+    { "$ref": "https://vouch.dev/schemas/hook-input.json" },
+    {
+      "type": "object",
+      "properties": {
+        "hook_event_name": { "const": "SessionStart" },
+        "source": { "const": "startup" }
+      },
+      "required": ["hook_event_name", "source"]
+    }
+  ]
+}

@@ -60,6 +60,7 @@
 /** @typedef {AuditCommon & {type:'migration.completed',files_migrated:number}} MigrationCompleted */
 /** @typedef {AuditCommon & {type:`legacy.${string}`,original_type:string,raw:string,source_path:string}} LegacyEvent */
 /** @typedef {IntentCreated|IntentApproved|IntentCompleted|StageStarted|StageCompleted|UnitStarted|UnitCompleted|CheckpointConfirmed|GateOpened|GateApproved|GateRejected|QuestionAsked|QuestionAnswered|QuestionDefaulted|AsideAsked|AsideAnswered|HookCheck|HookDenied|ReviewRequested|ReviewCompleted|KnowledgeRefreshed|SessionStarted|SessionResumed|SessionCompacted|SessionEnded|LearnRecorded|MigrationCompleted|LegacyEvent} AuditEvent */
+/** @typedef {{append:(events:AuditEvent[]) => Promise<'appended'|'duplicate'>,find?:(id:string) => Promise<AuditEvent|undefined>}} AuditStore */
 
 /**
  * Raw harness payload after structural validation. Unknown fields are accepted by
@@ -91,6 +92,8 @@
  * @typedef {object} HookContext
  * @property {string} projectRoot Trusted root; resolved paths still need containment checks.
  * @property {Harness} harness Selected by installation, not payload claims.
+ * @property {string} [intent] Explicit installed scope, never derived from stdin.
+ * @property {AuditStore} [audit] io supplies the configured intent store. Session recording requires find().
  * @property {string} generation Knowledge generation to compare with citations.
  * @property {() => string} now UTC time supplied by clock.mjs.
  * @property {(session:string,inputIdentity:string) => string} newId Deterministic event identity.

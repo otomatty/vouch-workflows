@@ -9,7 +9,7 @@
  * @property {(path:string) => Promise<string|null>} readText Return null only for a missing file.
  * @property {(path:string,update:TextUpdate) => Promise<boolean>} updateText Serialize with a lock; replace atomically.
  * @property {(path:string,text:string) => Promise<boolean>} writeText Write through updateText.
- * @typedef {{append:(events:AuditEvent[]) => Promise<'appended'|'duplicate'>}} AuditStore
+ * @typedef {import('./contracts.mjs').AuditStore} AuditStore
  * @typedef {object} RuntimeOptions
  * @property {HookContext} [context] Trusted installation configuration. Otherwise use env.mjs.
  * @property {AsyncIterable<Uint8Array|string>} [stdin]
