@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vouch.dev/schemas/intent-draft-frontmatter.json",
+  "description": "Metadata for newly authored Intent drafts only; not a validator for existing approved artifacts.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status"],
+  "properties": {
+    "status": {
+      "const": "draft"
+    }
+  }
+}

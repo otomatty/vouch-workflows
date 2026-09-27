@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vouch.dev/schemas/intent-authoring.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "skill",
+    "draft_frontmatter",
+    "intent_sections",
+    "decisions_sections",
+    "question_fields",
+    "option_fields",
+    "decision_fields",
+    "unit_guideline",
+    "question_options"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "skill": {
+      "const": "vouch-intent"
+    },
+    "draft_frontmatter": {
+      "$ref": "https://vouch.dev/schemas/intent-draft-frontmatter.json"
+    },
+    "intent_sections": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z-]*$"
+      }
+    },
+    "decisions_sections": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z-]*$"
+      }
+    },
+    "question_fields": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z-]*$"
+      }
+    },
+    "option_fields": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z-]*$"
+      }
+    },
+    "decision_fields": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z-]*$"
+      }
+    },
+    "unit_guideline": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "question_options": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["min", "max"],
+      "properties": {
+        "min": {
+          "const": 2
+        },
+        "max": {
+          "const": 4
+        }
+      }
+    }
+  }
+}
