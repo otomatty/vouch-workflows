@@ -69,7 +69,7 @@ test("real captured inputs preserve identity without treating the capture prompt
     const field = harness === "claude" ? "prompt_id" : "turn_id";
     t.assert.equal(fixture.synthetic, false);
     t.assert.equal(input?.[field], fixture.payload[field]);
-    t.assert.ok(input);
+    t.assert.equal(input !== null, true);
     if (input?.hook_event_name !== "UserPromptSubmit")
       throw new Error("fixture shape");
     t.assert.deepEqual(identifySubmission(input, harness), {
@@ -160,6 +160,21 @@ test("scope parent document input and wait mismatches cannot be reused as matchi
   const { gate, approval, input, text } = value;
   const cases = [
     { value: { ...value, intent: "other" }, reason: "scope" },
+    {
+      value: { ...value, gate: { ...gate, intent: "other" } },
+      reason: "scope",
+    },
+    {
+      value: {
+        ...value,
+        approval: {
+          ...approval,
+          harness: "codex",
+          submission: { ...approval.submission, field: "turn_id" },
+        },
+      },
+      reason: "scope",
+    },
     {
       value: { ...value, approval: { ...approval, intent: "other" } },
       reason: "scope",

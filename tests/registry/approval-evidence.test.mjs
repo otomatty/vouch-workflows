@@ -63,10 +63,10 @@ test("approval evidence wire contract and runtime agree on complete and malforme
       { ...approval, submission: { ...approval.submission, extra: true } },
     ])
       values.push({ value, valid: false });
-    for (const [key, shape] of [
+    for (const [key, shape] of /** @type {const} */ ([
       ["revision", approval.revision],
       ["submission", approval.submission],
-    ]) {
+    ])) {
       for (const field of Object.keys(shape)) {
         const edited = { ...shape };
         Reflect.deleteProperty(edited, field);

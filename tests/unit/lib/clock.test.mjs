@@ -42,7 +42,9 @@ test("elapsed UTC milliseconds validate calendar dates and time ordering", (t) =
     "2026-09-27T00:00:00+00:00",
     "2026-09-27T00:00:00Z\n",
   ];
-  t.plan(valid.length + invalid.length * 2 + 1);
+  t.plan(valid.length + invalid.length * 2 + 3);
+  t.assert.equal(elapsedMilliseconds("1970-01-01T00:00:00Z", "invalid"), null);
+  t.assert.equal(elapsedMilliseconds("1969-12-31T23:59:59Z", "invalid"), null);
   for (const [start, end, expected] of valid)
     t.assert.equal(elapsedMilliseconds(String(start), String(end)), expected);
   for (const stamp of invalid) {
