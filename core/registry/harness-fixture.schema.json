@@ -62,7 +62,8 @@
         "properties": {
           "provenance": {
             "enum": ["imported", "captured"]
-          }
+          },
+          "source": {}
         },
         "required": ["source"]
       }

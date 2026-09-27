@@ -9,7 +9,26 @@
           "const": 0
         },
         "stdout": {
-          "type": ["object", "array", "string", "number", "boolean", "null"]
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "array"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "stderr": {
           "type": "string"
@@ -25,7 +44,26 @@
           "const": 2
         },
         "stdout": {
-          "type": ["object", "array", "string", "number", "boolean", "null"]
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "array"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "stderr": {
           "type": "string",

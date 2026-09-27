@@ -1,0 +1,1 @@
+{"id":"example-session.ended","v":1,"type":"session.ended","ts":"2026-09-27T00:00:00Z","actor":"model","synthetic":true,"session":"example-session","parent":"session-start","duration_ms":1000}

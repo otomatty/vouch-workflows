@@ -1,0 +1,22 @@
+{
+  "harness": "codex",
+  "version": null,
+  "synthetic": false,
+  "provenance": "imported",
+  "source": {
+    "path": "docs/aidlc-v2-reference/tests/fixtures/codex-hook-payloads/payloads.json",
+    "commit": "a1aedb4",
+    "key": "stop"
+  },
+  "payload": {
+    "session_id": "019eb8c2-aa02-72e1-9ab4-53e67fca5d63",
+    "turn_id": "019eb8c2-bd47-7890-8e9a-a0a93f414c71",
+    "transcript_path": "/tmp/example-project/codex-home/sessions/2026/06/12/rollout-2026-06-12T08-17-05-019eb8c2-aa02-72e1-9ab4-53e67fca5d63.jsonl",
+    "cwd": "/tmp/example-project/e1-hooks",
+    "hook_event_name": "Stop",
+    "model": "openai.gpt-5.5",
+    "permission_mode": "default",
+    "stop_hook_active": false,
+    "last_assistant_message": "first answer"
+  }
+}

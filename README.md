@@ -2,7 +2,7 @@
 
 Claude Code と Codex 向けの開発ワークフロー。仕様書は [docs/README.md](docs/README.md) から参照できます。
 
-現在は環境構築まで完了しています。フック、Skill、エージェント、配布物はこれから実装します。
+レジストリ、入出力スキーマ、JSDoc の契約と検査を実装しています。フック、Skill、エージェント、配布物は未実装です。[契約と検査範囲](docs/development/contracts.md)に、実装済みの検査と後続作業を記録しています。
 
 ## 開発環境
 

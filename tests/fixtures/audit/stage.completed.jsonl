@@ -1,0 +1,1 @@
+{"id":"example-stage.completed","v":1,"type":"stage.completed","ts":"2026-09-27T00:00:00Z","actor":"model","synthetic":true,"intent":"example","stage":"build","parent":"stage-start","duration_ms":500,"loop_iterations":1,"tests":8}

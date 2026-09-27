@@ -20,7 +20,7 @@ Stryker 10 の `typed-rest-client` が固定する `qs` に npm audit の指摘�
 | `core/hooks/` | フックのエントリ |
 | `core/skills/`、`core/agents/` | Skill とエージェントの原本 |
 | `core/templates/ja/`、`core/templates/en/` | 日英の成果物テンプレート |
-| `core/registry/` | 正典となる JSON。現在は予算とそのスキーマ |
+| `core/registry/` | 監査・移行・品質層・図・強制ルール・既定値・予算と JSON Schema |
 | `harness/claude/`、`harness/codex/` | ハーネスごとの配布設定 |
 | `scripts/` | 開発用コマンド。配布物には含めない |
 | `tests/` | content / registry / unit / hooks / packaging / scenario / eval |
@@ -29,13 +29,13 @@ Stryker 10 の `typed-rest-client` が固定する `qs` に npm audit の指摘�
 
 ## 検査の範囲
 
-`npm run check` は Lint、型検査、構造テスト、予算のスキーマ・行数検査を実行します。依存検査は循環、実行時の npm 依存、フック同士の import、lib から外側への依存、ネットワーク、共通 I/O を経由しない fs import を拒否します。
+`npm run check` は Lint、型検査、構造テスト、各レジストリと入出力のスキーマ検査、予算検査を実行します。依存検査は循環、実行時の npm 依存、フック同士の import、lib から外側への依存、ネットワーク、共通 I/O を経由しない fs import を拒否します。
 
 テストには Node.js 組み込みの `node:test` を使います。`t.plan(n)` の計数対象となる `t.assert` は `node:assert/strict` のラッパーです。仕様書 §7 の例のように別途 import した `assert` を呼ぶだけでは `t.plan` に計数されないため、新しいテストでは `t.assert` を使います。
 
 テストは CPU 並列数で実行し、1 テストの上限を予算表から読みます。テスト用 preload は `fetch` を例外に差し替えます。`node:http` など別の通信手段まで遮断するサンドボックスではありません。
 
-unit のカバレッジ設定は行 95% / 分岐 95% / 関数 100%、hooks は行 90% / 分岐 85% です。実装がない階層は全体実行時にその旨を表示します。空の階層を個別指定すると失敗します。現在は製品コードのカバレッジやフック契約を検証済みとは扱いません。
+unit のカバレッジ設定は行 95% / 分岐 95% / 関数 100%、hooks は行 90% / 分岐 85% です。実装がない階層は全体実行時にその旨を表示します。空の階層を個別指定すると失敗します。現在の unit は JSDoc とスキーマの対応だけを検査し、実行時の lib 処理はありません。空のカバレッジレポートの100%を、製品コードやフックの検証済みという意味では扱いません。
 
 GitHub Actions は Ubuntu / Windows × Node.js 22.19.0 / 24.x で `npm ci`、doctor、check を実行します。検査コマンド全体の 90 秒予算は `scripts/check.mjs` が監視します。依存ダウンロードと runner 起動はこの計測に含めず、ジョブ全体のタイムアウトは 5 分です。
 
@@ -52,9 +52,9 @@ GitHub Actions は Ubuntu / Windows × Node.js 22.19.0 / 24.x で `npm ci`、doc
 
 ## 本体実装で追加するもの
 
-1. 監査イベント・移行・品質層・図・強制ルールのレジストリ、入出力スキーマ、JSDoc の契約。
+1. レジストリ、入出力スキーマ、JSDoc の契約は実装済みです。[契約の説明](contracts.md)と `core/registry/enforcement-map.json` に検査範囲を記載しています。
 2. `sandbox()`、`runHook()`、fake clock、golden 比較などのテスト用補助関数と、契約に対応する失敗テスト。
-3. Claude Code の実機イベント fixture の採取。記録済みの Codex fixture は元資料にあります。実機記録を手製のイベントで代用しません。
+3. Claude Code の実機イベント fixture と、版情報のある Codex fixture の採取。既存の Codex 9件は原本と一致する payload を保存していますが、版番号が未記録のため契約実行には未適格です。手製のスキーマ例は `synthetic: true` で分離しています。
 4. 共通 lib、フック、Skill、エージェント、日英テンプレート。
 5. ハーネスの manifest と `scripts/package.mjs`。その段階で `package`、`package:check` を追加し、`check` に配布物のバイト一致検査を組み込みます。
 6. シナリオ、フック子プロセスのカバレッジ収集、全ルールの強制テスト、夜間ミューテーション CI と失敗時の Issue 作成、手動評価スイート。

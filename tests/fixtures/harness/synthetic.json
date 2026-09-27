@@ -1,0 +1,93 @@
+[
+  {
+    "harness": "claude",
+    "version": null,
+    "synthetic": true,
+    "provenance": "synthetic",
+    "payload": {
+      "session_id": "schema-example",
+      "cwd": "/example",
+      "hook_event_name": "SessionStart",
+      "source": "startup"
+    }
+  },
+  {
+    "harness": "claude",
+    "version": null,
+    "synthetic": true,
+    "provenance": "synthetic",
+    "payload": {
+      "session_id": "schema-example",
+      "cwd": "/example",
+      "hook_event_name": "UserPromptSubmit",
+      "prompt": "A schema example"
+    }
+  },
+  {
+    "harness": "claude",
+    "version": null,
+    "synthetic": true,
+    "provenance": "synthetic",
+    "payload": {
+      "session_id": "schema-example",
+      "cwd": "/example",
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "/example/file"
+      }
+    }
+  },
+  {
+    "harness": "claude",
+    "version": null,
+    "synthetic": true,
+    "provenance": "synthetic",
+    "payload": {
+      "session_id": "schema-example",
+      "cwd": "/example",
+      "hook_event_name": "PostToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "/example/file"
+      },
+      "tool_response": "ok"
+    }
+  },
+  {
+    "harness": "claude",
+    "version": null,
+    "synthetic": true,
+    "provenance": "synthetic",
+    "payload": {
+      "session_id": "schema-example",
+      "cwd": "/example",
+      "hook_event_name": "PreCompact",
+      "trigger": "manual"
+    }
+  },
+  {
+    "harness": "claude",
+    "version": null,
+    "synthetic": true,
+    "provenance": "synthetic",
+    "payload": {
+      "session_id": "schema-example",
+      "cwd": "/example",
+      "hook_event_name": "SubagentStop",
+      "agent_id": "agent-example"
+    }
+  },
+  {
+    "harness": "claude",
+    "version": null,
+    "synthetic": true,
+    "provenance": "synthetic",
+    "payload": {
+      "session_id": "schema-example",
+      "cwd": "/example",
+      "hook_event_name": "Stop",
+      "stop_hook_active": false
+    }
+  }
+]

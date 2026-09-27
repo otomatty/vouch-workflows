@@ -83,7 +83,10 @@
       "allOf": [
         {
           "if": {
-            "required": ["tokens"]
+            "required": ["tokens"],
+            "properties": {
+              "tokens": {}
+            }
           },
           "then": {
             "required": ["harness"],
@@ -187,7 +190,10 @@
       "allOf": [
         {
           "if": {
-            "required": ["tokens"]
+            "required": ["tokens"],
+            "properties": {
+              "tokens": {}
+            }
           },
           "then": {
             "required": ["harness"],
@@ -302,7 +308,10 @@
       "allOf": [
         {
           "if": {
-            "required": ["tokens"]
+            "required": ["tokens"],
+            "properties": {
+              "tokens": {}
+            }
           },
           "then": {
             "required": ["harness"],
@@ -393,7 +402,10 @@
       "allOf": [
         {
           "if": {
-            "required": ["tokens"]
+            "required": ["tokens"],
+            "properties": {
+              "tokens": {}
+            }
           },
           "then": {
             "required": ["harness"],
@@ -502,7 +514,10 @@
       "allOf": [
         {
           "if": {
-            "required": ["tokens"]
+            "required": ["tokens"],
+            "properties": {
+              "tokens": {}
+            }
           },
           "then": {
             "required": ["harness"],
@@ -523,7 +538,11 @@
             "required": ["stage"]
           },
           "then": {
-            "required": ["loop_iterations", "tests"]
+            "required": ["loop_iterations", "tests"],
+            "properties": {
+              "loop_iterations": {},
+              "tests": {}
+            }
           }
         }
       ]
@@ -609,7 +628,10 @@
       "allOf": [
         {
           "if": {
-            "required": ["tokens"]
+            "required": ["tokens"],
+            "properties": {
+              "tokens": {}
+            }
           },
           "then": {
             "required": ["harness"],
@@ -724,7 +746,10 @@
       "allOf": [
         {
           "if": {
-            "required": ["tokens"]
+            "required": ["tokens"],
+            "properties": {
+              "tokens": {}
+            }
           },
           "then": {
             "required": ["harness"],
@@ -822,7 +847,10 @@
       "allOf": [
         {
           "if": {
-            "required": ["tokens"]
+            "required": ["tokens"],
+            "properties": {
+              "tokens": {}
+            }
           },
           "then": {
             "required": ["harness"],
@@ -843,7 +871,10 @@
             "required": ["checkpoint"]
           },
           "then": {
-            "required": ["unit"]
+            "required": ["unit"],
+            "properties": {
+              "unit": {}
+            }
           }
         },
         {
@@ -856,7 +887,10 @@
             "required": ["checkpoint"]
           },
           "then": {
-            "required": ["section"]
+            "required": ["section"],
+            "properties": {
+              "section": {}
+            }
           }
         }
       ]
@@ -942,7 +976,10 @@
       "allOf": [
         {
           "if": {
-            "required": ["tokens"]
+            "required": ["tokens"],
+            "properties": {
+              "tokens": {}
+            }
           },
           "then": {
             "required": ["harness"],
@@ -1046,7 +1083,10 @@
       "allOf": [
         {
           "if": {
-            "required": ["tokens"]
+            "required": ["tokens"],
+            "properties": {
+              "tokens": {}
+            }
           },
           "then": {
             "required": ["harness"],
@@ -1155,7 +1195,10 @@
       "allOf": [
         {
           "if": {
-            "required": ["tokens"]
+            "required": ["tokens"],
+            "properties": {
+              "tokens": {}
+            }
           },
           "then": {
             "required": ["harness"],
@@ -1271,7 +1314,10 @@
       "allOf": [
         {
           "if": {
-            "required": ["tokens"]
+            "required": ["tokens"],
+            "properties": {
+              "tokens": {}
+            }
           },
           "then": {
             "required": ["harness"],
@@ -1292,7 +1338,10 @@
             "required": ["blocking"]
           },
           "then": {
-            "required": ["default"]
+            "required": ["default"],
+            "properties": {
+              "default": {}
+            }
           }
         }
       ]
@@ -1394,7 +1443,10 @@
       "allOf": [
         {
           "if": {
-            "required": ["tokens"]
+            "required": ["tokens"],
+            "properties": {
+              "tokens": {}
+            }
           },
           "then": {
             "required": ["harness"],
@@ -1504,7 +1556,10 @@
       "allOf": [
         {
           "if": {
-            "required": ["tokens"]
+            "required": ["tokens"],
+            "properties": {
+              "tokens": {}
+            }
           },
           "then": {
             "required": ["harness"],
@@ -1599,7 +1654,10 @@
       "allOf": [
         {
           "if": {
-            "required": ["tokens"]
+            "required": ["tokens"],
+            "properties": {
+              "tokens": {}
+            }
           },
           "then": {
             "required": ["harness"],
@@ -1704,7 +1762,10 @@
       "allOf": [
         {
           "if": {
-            "required": ["tokens"]
+            "required": ["tokens"],
+            "properties": {
+              "tokens": {}
+            }
           },
           "then": {
             "required": ["harness"],
@@ -1818,7 +1879,10 @@
       "allOf": [
         {
           "if": {
-            "required": ["tokens"]
+            "required": ["tokens"],
+            "properties": {
+              "tokens": {}
+            }
           },
           "then": {
             "required": ["harness"],
@@ -1929,7 +1993,10 @@
       "allOf": [
         {
           "if": {
-            "required": ["tokens"]
+            "required": ["tokens"],
+            "properties": {
+              "tokens": {}
+            }
           },
           "then": {
             "required": ["harness"],
@@ -2033,7 +2100,10 @@
       "allOf": [
         {
           "if": {
-            "required": ["tokens"]
+            "required": ["tokens"],
+            "properties": {
+              "tokens": {}
+            }
           },
           "then": {
             "required": ["harness"],
@@ -2160,7 +2230,10 @@
       "allOf": [
         {
           "if": {
-            "required": ["tokens"]
+            "required": ["tokens"],
+            "properties": {
+              "tokens": {}
+            }
           },
           "then": {
             "required": ["harness"],
@@ -2254,7 +2327,10 @@
       "allOf": [
         {
           "if": {
-            "required": ["tokens"]
+            "required": ["tokens"],
+            "properties": {
+              "tokens": {}
+            }
           },
           "then": {
             "required": ["harness"],
@@ -2345,7 +2421,10 @@
       "allOf": [
         {
           "if": {
-            "required": ["tokens"]
+            "required": ["tokens"],
+            "properties": {
+              "tokens": {}
+            }
           },
           "then": {
             "required": ["harness"],
@@ -2436,7 +2515,10 @@
       "allOf": [
         {
           "if": {
-            "required": ["tokens"]
+            "required": ["tokens"],
+            "properties": {
+              "tokens": {}
+            }
           },
           "then": {
             "required": ["harness"],
@@ -2527,7 +2609,10 @@
       "allOf": [
         {
           "if": {
-            "required": ["tokens"]
+            "required": ["tokens"],
+            "properties": {
+              "tokens": {}
+            }
           },
           "then": {
             "required": ["harness"],
@@ -2627,7 +2712,10 @@
       "allOf": [
         {
           "if": {
-            "required": ["tokens"]
+            "required": ["tokens"],
+            "properties": {
+              "tokens": {}
+            }
           },
           "then": {
             "required": ["harness"],
@@ -2722,7 +2810,10 @@
       "allOf": [
         {
           "if": {
-            "required": ["tokens"]
+            "required": ["tokens"],
+            "properties": {
+              "tokens": {}
+            }
           },
           "then": {
             "required": ["harness"],
@@ -2817,7 +2908,10 @@
       "allOf": [
         {
           "if": {
-            "required": ["tokens"]
+            "required": ["tokens"],
+            "properties": {
+              "tokens": {}
+            }
           },
           "then": {
             "required": ["harness"],
@@ -2930,7 +3024,10 @@
       "allOf": [
         {
           "if": {
-            "required": ["tokens"]
+            "required": ["tokens"],
+            "properties": {
+              "tokens": {}
+            }
           },
           "then": {
             "required": ["harness"],

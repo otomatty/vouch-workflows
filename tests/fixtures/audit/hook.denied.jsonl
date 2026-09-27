@@ -1,0 +1,1 @@
+{"id":"example-hook.denied","v":1,"type":"hook.denied","ts":"2026-09-27T00:00:00Z","actor":"hook","synthetic":true,"check":"citation","result":"fail","duration_ms":1,"reason":"REF-EMPTY: missing sources"}

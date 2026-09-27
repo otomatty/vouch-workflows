@@ -1,0 +1,1 @@
+{"id":"example-gate.rejected","v":1,"type":"gate.rejected","ts":"2026-09-27T00:00:00Z","actor":"human","synthetic":true,"intent":"example","source":"pr","parent":"gate-open","wait_ms":500,"reason":"Please revise"}

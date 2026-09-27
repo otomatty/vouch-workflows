@@ -87,7 +87,8 @@ test("audit metadata agrees with wire fields and reciprocal pairs", (t) => {
     t.assert.equal(
       entry.measures.every((/** @type {string} */ measure) => {
         let property = wire;
-        for (const key of measure.split(".")) property = property?.properties?.[key];
+        for (const key of measure.split("."))
+          property = property?.properties?.[key];
         return property !== undefined;
       }),
       true,

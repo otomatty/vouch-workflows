@@ -1,0 +1,1 @@
+{"id":"example-hook.check","v":1,"type":"hook.check","ts":"2026-09-27T00:00:00Z","actor":"hook","synthetic":true,"check":"citation","result":"pass","duration_ms":1,"missing":0,"stale":0}

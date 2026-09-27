@@ -20,5 +20,5 @@ for (const task of ["lint", "typecheck", "test"]) {
   }
 }
 console.log(
-  `Environment checks passed in ${((performance.now() - start) / 1000).toFixed(1)}s.`,
+  `Implemented checks passed in ${((performance.now() - start) / 1000).toFixed(1)}s.`,
 );

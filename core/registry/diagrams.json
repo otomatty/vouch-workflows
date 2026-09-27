@@ -1,0 +1,107 @@
+{
+  "version": 1,
+  "source": "docs/spec/vouch-open-questions.html#q4",
+  "mermaid": [
+    "flowchart",
+    "sequenceDiagram",
+    "classDiagram",
+    "erDiagram",
+    "stateDiagram-v2"
+  ],
+  "diff": {
+    "added": {
+      "color": "green",
+      "classDef": "classDef added fill:#DFF2E7,stroke:#1F7A4D;"
+    },
+    "changed": {
+      "color": "orange",
+      "classDef": "classDef changed fill:#FFF0DB,stroke:#B86500;"
+    },
+    "removed": {
+      "color": "red",
+      "classDef": "classDef removed fill:#FBE3E1,stroke:#B42318,text-decoration:line-through;"
+    }
+  },
+  "artifacts": {
+    "knowledge": [
+      {
+        "id": "components",
+        "kind": "flowchart",
+        "when": "always",
+        "count": 1
+      },
+      {
+        "id": "data",
+        "kind": "erDiagram",
+        "when": "database",
+        "count": 1
+      }
+    ],
+    "intent": [
+      {
+        "id": "user-flow",
+        "kind": "flowchart",
+        "when": "always",
+        "count": 1
+      },
+      {
+        "id": "impact",
+        "kind": "flowchart",
+        "when": "brownfield",
+        "count": 1
+      }
+    ],
+    "design": [
+      {
+        "id": "components-diff",
+        "kind": "flowchart",
+        "when": "always",
+        "count": 1
+      },
+      {
+        "id": "sequence",
+        "kind": "sequenceDiagram",
+        "when": "always",
+        "count": 1
+      },
+      {
+        "id": "data-diff",
+        "kind": "erDiagram",
+        "when": "schema-change",
+        "count": 1
+      },
+      {
+        "id": "lifecycle",
+        "kind": "stateDiagram-v2",
+        "when": "lifecycle-change",
+        "count": 1
+      },
+      {
+        "id": "contract",
+        "kind": "classDiagram",
+        "when": "public-api-change",
+        "count": 1
+      }
+    ],
+    "review": [
+      {
+        "id": "main-flow",
+        "kind": "sequenceDiagram",
+        "when": "always",
+        "count": 1
+      },
+      {
+        "id": "before-after",
+        "kind": "screenshot",
+        "when": "ui-change",
+        "count": 2
+      },
+      {
+        "id": "design-diff",
+        "kind": "design-reference",
+        "when": "design-change",
+        "count": 1
+      }
+    ]
+  }
+}

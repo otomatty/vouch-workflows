@@ -95,7 +95,10 @@
         "required": ["hook_event_name"]
       },
       "then": {
-        "required": ["source"]
+        "required": ["source"],
+        "properties": {
+          "source": {}
+        }
       }
     },
     {
@@ -108,7 +111,10 @@
         "required": ["hook_event_name"]
       },
       "then": {
-        "required": ["prompt"]
+        "required": ["prompt"],
+        "properties": {
+          "prompt": {}
+        }
       }
     },
     {
@@ -121,7 +127,11 @@
         "required": ["hook_event_name"]
       },
       "then": {
-        "required": ["tool_name", "tool_input"]
+        "required": ["tool_name", "tool_input"],
+        "properties": {
+          "tool_name": {},
+          "tool_input": {}
+        }
       }
     },
     {
@@ -134,7 +144,12 @@
         "required": ["hook_event_name"]
       },
       "then": {
-        "required": ["tool_name", "tool_input", "tool_response"]
+        "required": ["tool_name", "tool_input", "tool_response"],
+        "properties": {
+          "tool_name": {},
+          "tool_input": {},
+          "tool_response": {}
+        }
       }
     },
     {
@@ -147,7 +162,10 @@
         "required": ["hook_event_name"]
       },
       "then": {
-        "required": ["trigger"]
+        "required": ["trigger"],
+        "properties": {
+          "trigger": {}
+        }
       }
     },
     {
@@ -160,7 +178,10 @@
         "required": ["hook_event_name"]
       },
       "then": {
-        "required": ["agent_id"]
+        "required": ["agent_id"],
+        "properties": {
+          "agent_id": {}
+        }
       }
     },
     {
@@ -173,7 +194,10 @@
         "required": ["hook_event_name"]
       },
       "then": {
-        "required": ["stop_hook_active"]
+        "required": ["stop_hook_active"],
+        "properties": {
+          "stop_hook_active": {}
+        }
       }
     }
   ]

@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "stages": ["intent", "design", "build", "verify"],
+  "agents": ["builder", "reviewer", "explorer"],
+  "defaults": {
+    "language": "ja",
+    "checkpoints": "topic",
+    "verification_environment": "local",
+    "auto_merge": false
+  },
+  "languages": ["ja", "en"],
+  "checkpoint_modes": ["topic", "unit", "section"],
+  "topic_checkpoints": [
+    {
+      "id": "acceptance",
+      "when": "always"
+    },
+    {
+      "id": "scope",
+      "when": "always"
+    },
+    {
+      "id": "units",
+      "when": "always"
+    },
+    {
+      "id": "design",
+      "when": "design-required"
+    }
+  ],
+  "high_risk_adds": "unit",
+  "verification": {
+    "local": "Playwright",
+    "services": "compose",
+    "ci": "demo.sh"
+  }
+}

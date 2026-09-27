@@ -1,0 +1,1 @@
+{"id":"example-question.answered","v":1,"type":"question.answered","ts":"2026-09-27T00:00:00Z","actor":"human","synthetic":true,"intent":"example","question":"Q-1","choice":"B","parent":"question-start","wait_ms":500}

@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "source": "docs/spec/vouch-open-questions.html#q3",
+  "dependency_audit": ["L", "M", "H"],
+  "sabotage": {
+    "L": 0,
+    "M": 1,
+    "H": 3
+  },
+  "layers": [
+    {
+      "id": "correctness",
+      "label": "正しさ",
+      "tiers": {
+        "L": "required",
+        "M": "required",
+        "H": "required"
+      },
+      "evidence_by": ["hook:dod"]
+    },
+    {
+      "id": "contract",
+      "label": "契約の整合",
+      "tiers": {
+        "L": "required",
+        "M": "required",
+        "H": "required"
+      },
+      "evidence_by": ["hook:contract"]
+    },
+    {
+      "id": "maintainability",
+      "label": "保守性",
+      "tiers": {
+        "L": "required",
+        "M": "required",
+        "H": "required"
+      },
+      "evidence_by": ["hook", "reviewer"]
+    },
+    {
+      "id": "rationale",
+      "label": "判断の質と根拠",
+      "tiers": {
+        "L": "required",
+        "M": "required",
+        "H": "required"
+      },
+      "evidence_by": ["hook:citation", "reviewer"]
+    },
+    {
+      "id": "testing",
+      "label": "テスト自体の品質",
+      "tiers": {
+        "L": "not-applicable",
+        "M": "required",
+        "H": "required"
+      },
+      "evidence_by": ["reviewer"]
+    },
+    {
+      "id": "requirements",
+      "label": "要件の妥当性・ユースケース網羅",
+      "tiers": {
+        "L": "optional",
+        "M": "required",
+        "H": "required"
+      },
+      "evidence_by": ["intent", "human"]
+    },
+    {
+      "id": "design",
+      "label": "設計の質",
+      "tiers": {
+        "L": "optional",
+        "M": "required",
+        "H": "required"
+      },
+      "evidence_by": ["hook:dependencies", "reviewer"]
+    },
+    {
+      "id": "root_cause",
+      "label": "根本解決",
+      "tiers": {
+        "L": "optional",
+        "M": "required",
+        "H": "required"
+      },
+      "evidence_by": ["reviewer"]
+    },
+    {
+      "id": "security",
+      "label": "セキュリティ",
+      "tiers": {
+        "L": "not-applicable",
+        "M": "optional",
+        "H": "required"
+      },
+      "evidence_by": ["design", "reviewer"]
+    },
+    {
+      "id": "nonfunctional",
+      "label": "非機能",
+      "tiers": {
+        "L": "not-applicable",
+        "M": "optional",
+        "H": "required"
+      },
+      "evidence_by": ["builder"]
+    },
+    {
+      "id": "exploration",
+      "label": "実使用の探索的検証",
+      "tiers": {
+        "L": "not-applicable",
+        "M": "optional",
+        "H": "required"
+      },
+      "evidence_by": ["reviewer"]
+    }
+  ]
+}

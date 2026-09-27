@@ -1,0 +1,1 @@
+{"id":"example-gate.approved","v":1,"type":"gate.approved","ts":"2026-09-27T00:00:00Z","actor":"human","synthetic":true,"intent":"example","source":"intent","parent":"gate-open","wait_ms":500}

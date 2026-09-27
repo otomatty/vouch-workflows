@@ -1,0 +1,1 @@
+{"id":"example-review.completed","v":1,"type":"review.completed","ts":"2026-09-27T00:00:00Z","actor":"reviewer","synthetic":true,"intent":"example","iteration":1,"harness":"codex","findings":0,"sabotage":{"tried":1,"caught":1},"parent":"review-start","duration_ms":500}

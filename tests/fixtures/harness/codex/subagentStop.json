@@ -1,0 +1,25 @@
+{
+  "harness": "codex",
+  "version": null,
+  "synthetic": false,
+  "provenance": "imported",
+  "source": {
+    "path": "docs/aidlc-v2-reference/tests/fixtures/codex-hook-payloads/payloads.json",
+    "commit": "a1aedb4",
+    "key": "subagentStop"
+  },
+  "payload": {
+    "session_id": "019eb8cb-fcad-7ea1-b41c-95cb69ebe020",
+    "turn_id": "019eb8cc-33ca-7863-b868-e4fed8133f87",
+    "transcript_path": "/tmp/example-project/codex-home/sessions/2026/06/12/rollout-2026-06-12T08-27-16-019eb8cb-fcad-7ea1-b41c-95cb69ebe020.jsonl",
+    "agent_transcript_path": "/tmp/example-project/codex-home/sessions/2026/06/12/rollout-2026-06-12T08-27-30-019eb8cc-3360-7e41-888a-8b8f284064d1.jsonl",
+    "cwd": "/tmp/example-project/e1-hooks",
+    "hook_event_name": "SubagentStop",
+    "model": "openai.gpt-5.5",
+    "permission_mode": "bypassPermissions",
+    "stop_hook_active": false,
+    "agent_id": "019eb8cc-3360-7e41-888a-8b8f284064d1",
+    "agent_type": "default",
+    "last_assistant_message": "aidlc-architect-agent: A simple CLI todo app is best served by a small modular architecture with a thin command layer, focused domain logic, and simple file-backed persistence."
+  }
+}

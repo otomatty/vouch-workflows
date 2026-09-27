@@ -1,0 +1,810 @@
+{
+  "version": 1,
+  "rules": {
+    "R-STR-1": {
+      "rule_id": "STR-1",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "1フック1ファイル。ファイル名は vouch-<verb>-<object>.mjs（例 vouch-check-citation.mjs、vouch-record-event.mjs）。lib/ 以外のサブディレクトリを作らない",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "pending",
+          "claim": "STR-1 の全要件に対する検査は未完了。構造テスト"
+        }
+      ]
+    },
+    "R-STR-2": {
+      "rule_id": "STR-2",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "依存の向き：hooks → lib のみ。lib → node: 組み込みと registry/*.json のみ。hooks 同士、lib → hooks、実行時 → tests、実行時 → npm、循環はすべて禁止",
+      "mechanisms": ["lint"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": ".dependency-cruiser.cjs",
+          "claim": "循環、lib境界、フック間依存、実行時npm依存を拒否する。"
+        }
+      ]
+    },
+    "R-STR-3": {
+      "rule_id": "STR-3",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "core/ にハーネス固有の設定・Skillディレクトリを書かない。{{HARNESS_DIR}} トークンを使う",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "pending",
+          "claim": "STR-3 の全要件に対する検査は未完了。構造テスト（grep）"
+        }
+      ]
+    },
+    "R-STR-4": {
+      "rule_id": "STR-4",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "dist/ は生成物。core/ と harness/ から package.mjs でバイト一致で再生成できる",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "pending",
+          "claim": "STR-4 の全要件に対する検査は未完了。package.mjs --check"
+        }
+      ]
+    },
+    "R-STR-5": {
+      "rule_id": "STR-5",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "数値・一覧の正典は registry/*.json。Markdown や Skill に書かれた数（イベント数、ステージ数、予算）はレジストリと一致する",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "pending",
+          "claim": "STR-5 の全要件に対する検査は未完了。構造テスト（v2 の t68 と同じ方式）"
+        }
+      ]
+    },
+    "R-STR-6": {
+      "rule_id": "STR-6",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "scripts/package.mjs はコピー・トークン置換・Markdown → TOML 変換だけを行う。条件分岐で内容を変えない（内容の差はすべて harness/<name>/ のファイルで表現する）",
+      "mechanisms": ["test", "reviewer"],
+      "checks": [
+        {
+          "status": "pending",
+          "claim": "STR-6 の全要件に対する検査は未完了。構造テスト（package.mjs の import と行数）＋ reviewer"
+        }
+      ]
+    },
+    "R-HOOK-1": {
+      "rule_id": "HOOK-1",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "依存ゼロ。import は node: 接頭辞つきの組み込みか ./lib/ だけ。package.json に dependencies を持たない",
+      "mechanisms": ["lint", "test"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": "tests/content/environment.test.mjs",
+          "claim": "実行時dependencies不在とESM宣言を検査する。"
+        }
+      ]
+    },
+    "R-HOOK-2": {
+      "rule_id": "HOOK-2",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "決して例外で落ちない。エントリは run(main)（lib/io.mjs）だけで、main の例外は捕捉して stderr に ID つきで出し、終了コード 0 で抜ける。ハーネスを壊す終了コードは出さない",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "pending",
+          "claim": "HOOK-2 の全要件に対する検査は未完了。契約テスト（不正な stdin で終了コード 0）＋ 構造テスト（エントリ形式）"
+        }
+      ]
+    },
+    "R-HOOK-3": {
+      "rule_id": "HOOK-3",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "終了コードの契約：0 ＝ 許可 / 何もしない、2 ＝ 遮断（理由は stderr、ハーネスがモデルに渡す）。それ以外は使わない",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "pending",
+          "claim": "HOOK-3 の全要件に対する検査は未完了。契約テスト"
+        }
+      ]
+    },
+    "R-HOOK-4": {
+      "rule_id": "HOOK-4",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "stdout は JSON か空。人が読む文は stderr。console.* をフックと lib で直接呼ばない（lib/io.mjs の respond() / warn() だけ）",
+      "mechanisms": ["lint"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": "biome.json",
+          "claim": "io.mjs以外のconsoleを拒否する。stdoutの実行結果は未検査。"
+        },
+        {
+          "status": "pending",
+          "claim": "HOOK-4 の全要件に対する検査は未完了。Biome noConsole（lib/io.mjs のみ除外）"
+        }
+      ]
+    },
+    "R-HOOK-5": {
+      "rule_id": "HOOK-5",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "判断しない・外に出ない。node:http、node:https、node:net、node:dns、fetch、WebSocket を使わない。モデルや外部 API を呼ばない",
+      "mechanisms": ["lint"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": "biome.json",
+          "claim": "fetch/WebSocketを拒否する。判断をしないことはコードレビューが必要。"
+        },
+        {
+          "status": "implemented",
+          "path": ".dependency-cruiser.cjs",
+          "claim": "ネットワーク組み込みimportを拒否する。"
+        },
+        {
+          "status": "pending",
+          "claim": "HOOK-5 の全要件に対する検査は未完了。Biome noRestrictedImports ＋ noRestrictedGlobals（fetch, WebSocket）"
+        }
+      ]
+    },
+    "R-HOOK-6": {
+      "rule_id": "HOOK-6",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "ファイル I/O は lib/fs.mjs だけが node:fs を import する。監査ログは lib/audit.mjs の appendEvent() だけが開く（append-only、1行1イベント、書き込みは原子的）",
+      "mechanisms": ["lint", "test"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": ".dependency-cruiser.cjs",
+          "claim": "fs importをlib/fs.mjsに限定する。追記専用・原子性は未検査。"
+        },
+        {
+          "status": "pending",
+          "claim": "HOOK-6 の全要件に対する検査は未完了。Biome noRestrictedImports（node:fs を lib/fs.mjs 以外で禁止）＋ 契約テスト"
+        }
+      ]
+    },
+    "R-HOOK-7": {
+      "rule_id": "HOOK-7",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "process.env は lib/env.mjs だけが読む。process.exit は lib/io.mjs だけが呼ぶ",
+      "mechanisms": ["lint", "test"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": "biome.json",
+          "claim": "process.envの参照をenv.mjsに限定する。process.exitの直接使用検査は未実装。"
+        },
+        {
+          "status": "pending",
+          "claim": "HOOK-7 の全要件に対する検査は未完了。Biome noProcessEnv（env.mjs のみ除外）＋ 構造テスト（process.exit の grep）"
+        }
+      ]
+    },
+    "R-HOOK-8": {
+      "rule_id": "HOOK-8",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "時刻と ID は lib/clock.mjs の now() / newId() だけ。Date.now()、new Date()、Math.random()、crypto.randomUUID() を他で呼ばない",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "pending",
+          "claim": "HOOK-8 の全要件に対する検査は未完了。構造テスト（grep）"
+        }
+      ]
+    },
+    "R-HOOK-9": {
+      "rule_id": "HOOK-9",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "冪等。同じ入力で2回実行しても監査ログに同じイベントが2行入らない（イベント ID は入力とセッションから決定的に導出する）",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "pending",
+          "claim": "HOOK-9 の全要件に対する検査は未完了。契約テスト（2回実行して行数を比較）"
+        }
+      ]
+    },
+    "R-HOOK-10": {
+      "rule_id": "HOOK-10",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "emit するイベント type は文字列リテラルで書き、registry/audit-events.json に存在する。動的に組み立てない",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "pending",
+          "claim": "HOOK-10 の全要件に対する検査は未完了。構造テスト（appendEvent( の引数を静的に抽出して台帳と照合）"
+        }
+      ]
+    },
+    "R-HOOK-11": {
+      "rule_id": "HOOK-11",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "型は JSDoc で完全に付け、tsc --checkJs --strict --noEmit が通る。any と @ts-ignore を使わない",
+      "mechanisms": ["lint", "test"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": "tsconfig.json",
+          "claim": "JSDocをcheckJs/strict/noEmitで検査する。型契約の拒否例も追加した。@ts-ignoreの全件走査は未実装。"
+        },
+        {
+          "status": "pending",
+          "claim": "HOOK-11 の全要件に対する検査は未完了。tsc ＋ Biome noExplicitAny（JSDoc）＋ 構造テスト（@ts-ignore の grep）"
+        }
+      ]
+    },
+    "R-HOOK-12": {
+      "rule_id": "HOOK-12",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "行数予算：フック1本 ≤ 150 行、フック合計 ≤ 1,500 行、lib 合計 ≤ 3,000 行、lib 1ファイル ≤ 300 行（空行・コメント込み）",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": "tests/content/budgets.test.mjs",
+          "claim": "フック・libの1ファイルと合計行数を予算表で検査する。"
+        }
+      ]
+    },
+    "R-HOOK-13": {
+      "rule_id": "HOOK-13",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "時間予算：記録系フック p95 < 200 ms、検査系 p95 < 2 s（DoD 実行は rules.md のコマンドに従うため対象外）。予算は契約テストが計測する",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "pending",
+          "claim": "HOOK-13 の全要件に対する検査は未完了。契約テスト"
+        }
+      ]
+    },
+    "R-HOOK-14": {
+      "rule_id": "HOOK-14",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "入力の検証：ハーネスのイベント JSON は lib/io.mjs のスキーマで検証し、未知のフィールドは無視、必須欠落は「何もしない」で抜ける。入力を信用してパスを組み立てない（パストラバーサル禁止：解決後のパスが project root 配下であることを検査）",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": "tests/registry/input-output.test.mjs",
+          "claim": "入力のJSON構造を検査する。no-op・サイズ制限・パス包含・未知フィールド無視の実行保証は未実装。"
+        },
+        {
+          "status": "pending",
+          "claim": "HOOK-14 の全要件に対する検査は未完了。契約テスト（不正入力、../ を含むパス）"
+        }
+      ]
+    },
+    "R-REG-1": {
+      "rule_id": "REG-1",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "audit-events.json は JSON Schema（draft 2020-12）を持ち、各イベントに fields（必須 / 任意）、measures、pairs_with（開始 ↔ 完了）を定義する。台帳自体もスキーマで検証する",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": "tests/registry/audit.test.mjs",
+          "claim": "台帳と監査レコードの2020-12スキーマ、必須・任意・計測・対の整合を検査する。"
+        }
+      ]
+    },
+    "R-REG-2": {
+      "rule_id": "REG-2",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "台帳のすべてのイベントに、tests/fixtures/audit/<type>.jsonl の fixture と、それを emit する契約テストがある。台帳に載っているのに誰も emit しないイベントは削除する",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": "tests/registry/audit.test.mjs",
+          "claim": "27種に synthetic なスキーマ例があることを検査する。エミッタの存在・実行は検査しない。"
+        },
+        {
+          "status": "pending",
+          "claim": "全27種の emit 契約テストと、台帳×fixture×子プロセステストの照合をフック実装後に追加する。"
+        }
+      ]
+    },
+    "R-REG-3": {
+      "rule_id": "REG-3",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "audit-migration.json は v2 台帳の全 91 名をキーに持つ（v2 の audit-format.md を fixture として保存し、比較する）。値は Vouch 名か legacy",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": "tests/registry/migration.test.mjs",
+          "claim": "原本の91名とキーが完全一致し、値が新台帳またはlegacyであることを検査する。"
+        }
+      ]
+    },
+    "R-REG-4": {
+      "rule_id": "REG-4",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "enforcement-map.json：Skill / AGENTS.md / テンプレートの中で MUST、NEVER、必ず、禁止 を含む行は [R-xxx] タグを持ち、map に hook | lint | test | reviewer | human のどれかで登録されている。登録のない強制語は落ちる",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": "tests/content/contracts.test.mjs",
+          "claim": "製品Markdownの強制語を登録済み R タグと照合する。対象文書はまだ未実装。"
+        },
+        {
+          "status": "pending",
+          "claim": "REG-4 の全要件に対する検査は未完了。content テスト"
+        }
+      ]
+    },
+    "R-REG-5": {
+      "rule_id": "REG-5",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "budgets.json が唯一の予算表。CI の予算検査はここだけを読む",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": "tests/registry/budgets.test.mjs",
+          "claim": "予算スキーマを検査する。既存の行数・トークン予算検査も参照する。"
+        },
+        {
+          "status": "pending",
+          "claim": "REG-5 の全要件に対する検査は未完了。CI 予算"
+        }
+      ]
+    },
+    "R-DOC-1": {
+      "rule_id": "DOC-1",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "SKILL.md の frontmatter はスキーマに従う（name、description、user-invocable、reads：常時読み込むか）。エージェントの frontmatter も同様（name、inputs、tools、disallowed）",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": "tests/content/contracts.test.mjs",
+          "claim": "Skill/agent frontmatterのスキーマと受理・拒否例を検査する。実文書の解析・照合は未実装。"
+        },
+        {
+          "status": "pending",
+          "claim": "DOC-1 の全要件に対する検査は未完了。content テスト（ajv）"
+        }
+      ]
+    },
+    "R-DOC-2": {
+      "rule_id": "DOC-2",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "行数予算：オーケストレータ ≤ 150 行、各ステージ Skill ≤ 200 行、AGENTS.md ≤ 60 行、エージェント ≤ 80 行。常時読み込み合計（AGENTS.md ＋ オーケストレータ ＋ rules テンプレート）≤ 8,000 トークン（推定：バイト数 ÷ 3 で保守的に見積もる）",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": "tests/content/budgets.test.mjs",
+          "claim": "存在する文書の行数と常時読み込み予算を検査する。"
+        }
+      ]
+    },
+    "R-DOC-3": {
+      "rule_id": "DOC-3",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "Skill が指示するコマンドは許可リストから：node {{HARNESS_DIR}}/hooks/...、git ...、rules.md の DoD コマンド。bun、npx、curl を書かない",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "pending",
+          "claim": "DOC-3 の全要件に対する検査は未完了。content テスト（コードフェンス内の grep）"
+        }
+      ]
+    },
+    "R-DOC-4": {
+      "rule_id": "DOC-4",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "ja / en テンプレートは同じ節 ID を同じ順序で持つ（<!-- sec:claims --> のようなマーカー）。片方だけの節を作らない",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "pending",
+          "claim": "DOC-4 の全要件に対する検査は未完了。content テスト"
+        }
+      ]
+    },
+    "R-DOC-5": {
+      "rule_id": "DOC-5",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "Markdown の体裁：見出しは1段ずつ、コードフェンスに言語、行末空白なし、1行の長さは制限しない（日本語のため）",
+      "mechanisms": ["lint"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": ".markdownlint-cli2.jsonc",
+          "claim": "Markdownの見出し・コードフェンス・空白を検査する。"
+        }
+      ]
+    },
+    "R-DOC-6": {
+      "rule_id": "DOC-6",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "相対リンクと {{HARNESS_DIR}} を含むパスは、置換後に dist/ で実在する",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "pending",
+          "claim": "DOC-6 の全要件に対する検査は未完了。packaging テスト"
+        }
+      ]
+    },
+    "R-DOC-7": {
+      "rule_id": "DOC-7",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "テンプレートに必須の図（registry/diagrams.json）の Mermaid プレースホルダがあり、種類は安定5種のどれか",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "pending",
+          "claim": "DOC-7 の全要件に対する検査は未完了。content テスト"
+        }
+      ]
+    },
+    "R-DOC-8": {
+      "rule_id": "DOC-8",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "Skill は「何を・いつ・完了条件」を書く。手順を逐一書かない。判断の指示には根拠（レジストリか決定記録の節）を添える",
+      "mechanisms": ["reviewer"],
+      "checks": [
+        {
+          "status": "pending",
+          "claim": "DOC-8 の全要件に対する検査は未完了。reviewer"
+        }
+      ]
+    },
+    "R-DIST-1": {
+      "rule_id": "DIST-1",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "dist/ は package.mjs の出力とバイト一致",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "pending",
+          "claim": "DIST-1 の全要件に対する検査は未完了。package.mjs --check"
+        }
+      ]
+    },
+    "R-DIST-2": {
+      "rule_id": "DIST-2",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "dist/ にテスト、fixture、golden、devDependency 由来のファイルを含まない",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "pending",
+          "claim": "DIST-2 の全要件に対する検査は未完了。packaging テスト"
+        }
+      ]
+    },
+    "R-DIST-3": {
+      "rule_id": "DIST-3",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "Claude の settings.json と Codex の hooks.json が登録するフックは実在し、登録されていないフックは存在しない（両方向）",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "pending",
+          "claim": "DIST-3 の全要件に対する検査は未完了。packaging テスト"
+        }
+      ]
+    },
+    "R-DIST-4": {
+      "rule_id": "DIST-4",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "Codex の TOML エージェントは Markdown エージェントから生成し、往復（TOML → Markdown）で元に戻る",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "pending",
+          "claim": "DIST-4 の全要件に対する検査は未完了。packaging テスト"
+        }
+      ]
+    },
+    "R-DIST-5": {
+      "rule_id": "DIST-5",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "配布物を空のプロジェクトにコピーし、node {{HARNESS_DIR}}/hooks/vouch-doctor.mjs が exit 0 で通る（node と git 以外を要求しない）",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "pending",
+          "claim": "DIST-5 の全要件に対する検査は未完了。scenario テスト"
+        }
+      ]
+    },
+    "R-DEP-1": {
+      "rule_id": "DEP-1",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "package.json に dependencies がない。engines.node を宣言する",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": "tests/content/environment.test.mjs",
+          "claim": "dependencies不在とNode.js下限を検査する。"
+        }
+      ]
+    },
+    "R-DEP-2": {
+      "rule_id": "DEP-2",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "devDependencies は完全固定（^ / ~ なし）。package-lock.json をコミットし、CI は npm ci",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": "tests/content/environment.test.mjs",
+          "claim": "完全固定のdevDependenciesとlockfileの一致を検査する。"
+        }
+      ]
+    },
+    "R-DEP-3": {
+      "rule_id": "DEP-3",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "使われない lib、export、devDependency を残さない",
+      "mechanisms": ["lint"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": "knip.json",
+          "claim": "未使用のファイル・export・依存を検査する。"
+        }
+      ]
+    },
+    "R-DEP-4": {
+      "rule_id": "DEP-4",
+      "source": "docs/spec/vouch-implementation-rules.html#s4",
+      "requirement": "CI は node 22 と 24 の両方で走る",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": ".github/workflows/ci.yml",
+          "claim": "Node 22.19.0/24.xでCIを実行する。"
+        }
+      ]
+    },
+    "R-TEST-1": {
+      "rule_id": "TEST-1",
+      "source": "docs/spec/vouch-implementation-rules.html#s5",
+      "requirement": "ランナーは node --test、アサーションは node:assert/strict のみ。ファイル名は *.test.mjs。配置は対象と鏡写し（core/hooks/lib/audit.mjs ↔ tests/unit/lib/audit.test.mjs）",
+      "mechanisms": ["lint", "test"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": "tests/content/environment.test.mjs",
+          "claim": "libとunit、フックとprocess契約テストの対応するファイル名を検査する。"
+        },
+        {
+          "status": "pending",
+          "claim": "TEST-1 の全要件に対する検査は未完了。構造テスト（鏡写しの存在確認）＋ Biome noRestrictedImports（jest / vitest / bun:test）"
+        }
+      ]
+    },
+    "R-TEST-2": {
+      "rule_id": "TEST-2",
+      "source": "docs/spec/vouch-implementation-rules.html#s5",
+      "requirement": "すべてのテストは t.plan(n) でアサーション数を宣言する。アサーションのないテスト、計画と実数が違うテストは失敗する",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": "scripts/test.mjs",
+          "claim": "node:testがt.planの実際の件数を検査する。plan宣言漏れの構造検査は未実装。"
+        },
+        {
+          "status": "pending",
+          "claim": "TEST-2 の全要件に対する検査は未完了。node:test の plan ＋ 構造テスト（test( ブロックに t.plan があるか）"
+        }
+      ]
+    },
+    "R-TEST-3": {
+      "rule_id": "TEST-3",
+      "source": "docs/spec/vouch-implementation-rules.html#s5",
+      "requirement": "フックの契約テストはフックを import しない。helpers/runHook() で子プロセスとして起動する。lib のテストは子プロセスを起動しない",
+      "mechanisms": ["lint", "test"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": ".dependency-cruiser.cjs",
+          "claim": "hooksテストからフックimport、unitからchild_processを拒否する。runHook使用検査は未実装。"
+        },
+        {
+          "status": "pending",
+          "claim": "TEST-3 の全要件に対する検査は未完了。dependency-cruiser（tests/hooks → core/hooks/*.mjs の import 禁止）＋ 構造テスト（tests/unit に child_process 禁止）"
+        }
+      ]
+    },
+    "R-TEST-4": {
+      "rule_id": "TEST-4",
+      "source": "docs/spec/vouch-implementation-rules.html#s5",
+      "requirement": "隔離：各テストは helpers/sandbox() で mkdtemp の作業ディレクトリと git リポジトリを作り、そこにだけ書く。テスト間で状態を共有しない。--test-concurrency を CPU 数にしても通る",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": "scripts/test.mjs",
+          "claim": "CPU数の並列でテストを実行する。sandboxと書込み隔離検査は未実装。"
+        },
+        {
+          "status": "pending",
+          "claim": "TEST-4 の全要件に対する検査は未完了。CI が並列で実行 ＋ 構造テスト（process.chdir、リポジトリ直下への書き込み禁止）"
+        }
+      ]
+    },
+    "R-TEST-5": {
+      "rule_id": "TEST-5",
+      "source": "docs/spec/vouch-implementation-rules.html#s5",
+      "requirement": "決定性：時刻と ID は helpers/fakeClock() で固定する。setTimeout による待機、Date.now()、Math.random() をテストに書かない。ネットワークは helpers/ が fetch を例外に差し替える",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": "tests/helpers/no-network.mjs",
+          "claim": "fetchを例外に差し替える。fakeClockと禁止APIの走査は未実装。"
+        },
+        {
+          "status": "pending",
+          "claim": "TEST-5 の全要件に対する検査は未完了。構造テスト（grep）＋ helper"
+        }
+      ]
+    },
+    "R-TEST-6": {
+      "rule_id": "TEST-6",
+      "source": "docs/spec/vouch-implementation-rules.html#s5",
+      "requirement": "golden：events.jsonl と描画済みテンプレートは tests/golden/ と全文比較する。更新は UPDATE_GOLDEN=1 でのみ行い、PR の Brief に差分の理由を書く。インラインスナップショットは使わない",
+      "mechanisms": ["test", "reviewer"],
+      "checks": [
+        {
+          "status": "pending",
+          "claim": "TEST-6 の全要件に対する検査は未完了。helper ＋ reviewer（golden 差分の理由）"
+        }
+      ]
+    },
+    "R-TEST-7": {
+      "rule_id": "TEST-7",
+      "source": "docs/spec/vouch-implementation-rules.html#s5",
+      "requirement": "fixture のハーネスイベント JSON は実機から記録し、harness と version を持つ。手で作ったイベントは synthetic: true を付ける。実機 fixture が1つもないイベント種別は契約テストで使えない",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": "tests/registry/input-output.test.mjs",
+          "claim": "採取元とsyntheticを区別し、Codex原本との一致、版不明・手製記録が契約実行に未適格なことを検査する。"
+        },
+        {
+          "status": "pending",
+          "claim": "Claude Codeの全対象イベントと、Codexの版付きイベントを採取する。現Codex9件は実機由来だがversion未記録。実機記録のない型をrunHookで使わせない照合を追加する。"
+        }
+      ]
+    },
+    "R-TEST-8": {
+      "rule_id": "TEST-8",
+      "source": "docs/spec/vouch-implementation-rules.html#s5",
+      "requirement": "カバレッジ閾値：lib は行 95% / 分岐 95% / 関数 100%、フックは行 90% / 分岐 85%。閾値未満は CI が落ちる。除外コメント（/* node:coverage ignore */）は使わない",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": "scripts/test.mjs",
+          "claim": "unit/hooks階層のカバレッジ閾値を設定。実行時コードとフック子プロセス集計、除外コメント検査は未実装。"
+        },
+        {
+          "status": "pending",
+          "claim": "TEST-8 の全要件に対する検査は未完了。node --test --experimental-test-coverage --test-coverage-lines=... ＋ 構造テスト（除外コメントの grep）"
+        }
+      ]
+    },
+    "R-TEST-9": {
+      "rule_id": "TEST-9",
+      "source": "docs/spec/vouch-implementation-rules.html#s5",
+      "requirement": "ミューテーション：hooks/lib/ のスコア ≥ 80%（夜間）。下回ったら Issue を自動で開く。lib を変更する PR は、生き残った変異が増えていないことを Brief に書く",
+      "mechanisms": ["test", "reviewer"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": "stryker.config.mjs",
+          "claim": "ミューテーションの対象と閾値を設定。夜間CIとIssue作成は未実装。"
+        },
+        {
+          "status": "pending",
+          "claim": "TEST-9 の全要件に対する検査は未完了。Stryker（夜間）＋ reviewer"
+        }
+      ]
+    },
+    "R-TEST-10": {
+      "rule_id": "TEST-10",
+      "source": "docs/spec/vouch-implementation-rules.html#s5",
+      "requirement": "契約 → テスト → 実装：バグ修正は再現テストが先に落ちるコミットを含む。新機能は lib の型（JSDoc typedef）とフックの入出力スキーマを先にコミットし、tsc が通ってからテストを書く",
+      "mechanisms": ["reviewer", "hook"],
+      "checks": [
+        {
+          "status": "pending",
+          "claim": "TEST-10 の全要件に対する検査は未完了。reviewer（git log のコミット順）＋ このリポジトリ自身の Vouch フック"
+        }
+      ]
+    },
+    "R-TEST-11": {
+      "rule_id": "TEST-11",
+      "source": "docs/spec/vouch-implementation-rules.html#s5",
+      "requirement": "1テスト1主張。テスト名は英語の文で「対象 ＋ 条件 → 期待」（例 appendEvent rejects a type missing from the registry）。日本語はコメントに",
+      "mechanisms": ["reviewer"],
+      "checks": [
+        {
+          "status": "pending",
+          "claim": "TEST-11 の全要件に対する検査は未完了。reviewer"
+        }
+      ]
+    },
+    "R-TEST-12": {
+      "rule_id": "TEST-12",
+      "source": "docs/spec/vouch-implementation-rules.html#s5",
+      "requirement": "時間：1テスト ≤ 5 s（--test-timeout=5000）、CI の全体 ≤ 90 s（夜間を除く）。再試行（--test-retries や CI の retry）は禁止。不安定なテストは同じ PR で直すか削除する",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": "scripts/test.mjs",
+          "claim": "各テスト5秒の予算と並列実行。再試行設定の検査は未実装。"
+        },
+        {
+          "status": "implemented",
+          "path": "scripts/check.mjs",
+          "claim": "checkの90秒予算を監視する。"
+        },
+        {
+          "status": "pending",
+          "claim": "TEST-12 の全要件に対する検査は未完了。CI 設定 ＋ 構造テスト（CI 設定の grep）"
+        }
+      ]
+    },
+    "R-TEST-13": {
+      "rule_id": "TEST-13",
+      "source": "docs/spec/vouch-implementation-rules.html#s5",
+      "requirement": "テストは core/skills/ を実行時に読まない（content テストを除く）。必要な内容は fixture にコピーする。テストが他のテストの出力に依存しない",
+      "mechanisms": ["lint", "test"],
+      "checks": [
+        {
+          "status": "implemented",
+          "path": ".dependency-cruiser.cjs",
+          "claim": "content以外からskillsへのimportを拒否する。動的読込とテスト間依存は未検査。"
+        },
+        {
+          "status": "pending",
+          "claim": "TEST-13 の全要件に対する検査は未完了。dependency-cruiser ＋ 構造テスト"
+        }
+      ]
+    },
+    "R-TEST-14": {
+      "rule_id": "TEST-14",
+      "source": "docs/spec/vouch-implementation-rules.html#s5",
+      "requirement": "不正入力の網羅：契約テストの「不正入力」ケースは、空、非 JSON、必須欠落、型違い、../ を含むパス、巨大入力（1 MB）の6種を必ず含む",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "pending",
+          "claim": "TEST-14 の全要件に対する検査は未完了。構造テスト（ケース名の grep）"
+        }
+      ]
+    },
+    "R-TEST-15": {
+      "rule_id": "TEST-15",
+      "source": "docs/spec/vouch-implementation-rules.html#s5",
+      "requirement": "scenario テストの golden 差分は、必ず監査イベントの差分として読める形で出す（行番号ではなく type と fields の差）。helper が JSONL を比較する",
+      "mechanisms": ["test"],
+      "checks": [
+        {
+          "status": "pending",
+          "claim": "TEST-15 の全要件に対する検査は未完了。helper"
+        }
+      ]
+    }
+  }
+}

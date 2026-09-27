@@ -1,0 +1,270 @@
+{
+  "version": 1,
+  "source": "docs/spec/vouch-open-questions.html#q1",
+  "common": {
+    "required": ["id", "v", "type", "ts", "actor"],
+    "optional": [
+      "intent",
+      "stage",
+      "unit",
+      "session",
+      "parent",
+      "duration_ms",
+      "wait_ms",
+      "harness",
+      "tokens",
+      "synthetic"
+    ]
+  },
+  "events": {
+    "intent.created": {
+      "fields": {
+        "required": ["intent", "risk"],
+        "optional": []
+      },
+      "measures": [],
+      "pairs_with": ["intent.completed"]
+    },
+    "intent.approved": {
+      "fields": {
+        "required": ["intent", "source", "parent", "wait_ms"],
+        "optional": []
+      },
+      "measures": ["wait_ms"],
+      "pairs_with": ["gate.opened"]
+    },
+    "intent.completed": {
+      "fields": {
+        "required": [
+          "intent",
+          "parent",
+          "duration_ms",
+          "ai_work_ms",
+          "human_wait_ms",
+          "human_review_ms"
+        ],
+        "optional": []
+      },
+      "measures": [
+        "duration_ms",
+        "ai_work_ms",
+        "human_wait_ms",
+        "human_review_ms"
+      ],
+      "pairs_with": ["intent.created"]
+    },
+    "stage.started": {
+      "fields": {
+        "required": ["intent", "stage"],
+        "optional": []
+      },
+      "measures": [],
+      "pairs_with": ["stage.completed"]
+    },
+    "stage.completed": {
+      "fields": {
+        "required": ["intent", "stage", "parent", "duration_ms"],
+        "optional": ["loop_iterations", "tests"]
+      },
+      "measures": ["duration_ms", "loop_iterations", "tests"],
+      "pairs_with": ["stage.started"]
+    },
+    "unit.started": {
+      "fields": {
+        "required": ["intent", "unit", "risk"],
+        "optional": []
+      },
+      "measures": [],
+      "pairs_with": ["unit.completed"]
+    },
+    "unit.completed": {
+      "fields": {
+        "required": [
+          "intent",
+          "unit",
+          "risk",
+          "parent",
+          "duration_ms",
+          "files_changed",
+          "lines_changed"
+        ],
+        "optional": []
+      },
+      "measures": ["duration_ms", "files_changed", "lines_changed"],
+      "pairs_with": ["unit.started"]
+    },
+    "checkpoint.confirmed": {
+      "fields": {
+        "required": ["intent", "checkpoint"],
+        "optional": ["unit", "section"]
+      },
+      "measures": [],
+      "pairs_with": []
+    },
+    "gate.opened": {
+      "fields": {
+        "required": ["intent", "source"],
+        "optional": []
+      },
+      "measures": [],
+      "pairs_with": ["gate.approved", "gate.rejected", "intent.approved"]
+    },
+    "gate.approved": {
+      "fields": {
+        "required": ["intent", "source", "parent", "wait_ms"],
+        "optional": []
+      },
+      "measures": ["wait_ms"],
+      "pairs_with": ["gate.opened"]
+    },
+    "gate.rejected": {
+      "fields": {
+        "required": ["intent", "source", "parent", "wait_ms", "reason"],
+        "optional": []
+      },
+      "measures": ["wait_ms"],
+      "pairs_with": ["gate.opened"]
+    },
+    "question.asked": {
+      "fields": {
+        "required": ["intent", "question", "blocking", "options"],
+        "optional": ["default"]
+      },
+      "measures": ["options"],
+      "pairs_with": ["question.answered", "question.defaulted"]
+    },
+    "question.answered": {
+      "fields": {
+        "required": ["intent", "question", "choice", "parent", "wait_ms"],
+        "optional": []
+      },
+      "measures": ["wait_ms"],
+      "pairs_with": ["question.asked"]
+    },
+    "question.defaulted": {
+      "fields": {
+        "required": ["intent", "question", "choice", "parent", "wait_ms"],
+        "optional": []
+      },
+      "measures": ["wait_ms"],
+      "pairs_with": ["question.asked"]
+    },
+    "aside.asked": {
+      "fields": {
+        "required": ["intent", "question"],
+        "optional": []
+      },
+      "measures": [],
+      "pairs_with": ["aside.answered"]
+    },
+    "aside.answered": {
+      "fields": {
+        "required": ["intent", "question", "parent", "duration_ms"],
+        "optional": []
+      },
+      "measures": ["duration_ms"],
+      "pairs_with": ["aside.asked"]
+    },
+    "hook.check": {
+      "fields": {
+        "required": ["check", "result", "duration_ms"],
+        "optional": ["missing", "stale"]
+      },
+      "measures": ["duration_ms", "missing", "stale"],
+      "pairs_with": []
+    },
+    "hook.denied": {
+      "fields": {
+        "required": ["check", "result", "reason", "duration_ms"],
+        "optional": []
+      },
+      "measures": ["duration_ms"],
+      "pairs_with": []
+    },
+    "review.requested": {
+      "fields": {
+        "required": ["intent", "iteration", "harness"],
+        "optional": []
+      },
+      "measures": [],
+      "pairs_with": ["review.completed"]
+    },
+    "review.completed": {
+      "fields": {
+        "required": [
+          "intent",
+          "iteration",
+          "harness",
+          "findings",
+          "sabotage",
+          "parent",
+          "duration_ms"
+        ],
+        "optional": []
+      },
+      "measures": [
+        "duration_ms",
+        "findings",
+        "sabotage.tried",
+        "sabotage.caught"
+      ],
+      "pairs_with": ["review.requested"]
+    },
+    "knowledge.refreshed": {
+      "fields": {
+        "required": ["scope", "duration_ms"],
+        "optional": []
+      },
+      "measures": ["duration_ms"],
+      "pairs_with": []
+    },
+    "session.started": {
+      "fields": {
+        "required": ["session"],
+        "optional": []
+      },
+      "measures": [],
+      "pairs_with": ["session.ended"]
+    },
+    "session.resumed": {
+      "fields": {
+        "required": ["session", "duration_ms"],
+        "optional": []
+      },
+      "measures": ["duration_ms"],
+      "pairs_with": ["session.ended"]
+    },
+    "session.compacted": {
+      "fields": {
+        "required": ["session"],
+        "optional": []
+      },
+      "measures": [],
+      "pairs_with": []
+    },
+    "session.ended": {
+      "fields": {
+        "required": ["session", "parent", "duration_ms"],
+        "optional": []
+      },
+      "measures": ["duration_ms"],
+      "pairs_with": ["session.started", "session.resumed"]
+    },
+    "learn.recorded": {
+      "fields": {
+        "required": ["intent", "rules_added"],
+        "optional": []
+      },
+      "measures": ["rules_added"],
+      "pairs_with": []
+    },
+    "migration.completed": {
+      "fields": {
+        "required": ["files_migrated"],
+        "optional": []
+      },
+      "measures": ["files_migrated"],
+      "pairs_with": []
+    }
+  }
+}
