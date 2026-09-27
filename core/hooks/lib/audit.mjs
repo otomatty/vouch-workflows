@@ -52,9 +52,20 @@ export async function findEvent(store, id) {
  * @returns {import('./runtime-contracts.mjs').AuditStore & {find:(id:string) => Promise<import('./contracts.mjs').AuditEvent|undefined>}}
  */
 export function createAuditStore(files, path) {
+  /** @type {{text:string|null,events:Map<string,import('./contracts.mjs').AuditEvent>}|undefined} */
+  let snapshot;
+  /** @param {string|null} text */
+  function validated(text) {
+    // Always compare the freshly read bytes, including the read under the lock.
+    if (snapshot?.text === text) return snapshot.events;
+    const events = records(text);
+    snapshot = { text, events };
+    return events;
+  }
   return {
     async find(id) {
-      return records(await files.readText(path)).get(id);
+      // A caller must never receive a mutable reference into the validated snapshot.
+      return structuredClone(validated(await files.readText(path)).get(id));
     },
     async append(events) {
       const batch = structuredClone(events);
@@ -62,21 +73,19 @@ export function createAuditStore(files, path) {
         throw new Error("AUDIT-SCHEMA: invalid event");
       if (batch.length === 0) return "duplicate";
       const changed = await files.updateText(path, (before) => {
-        const known = new Map(
-          [...records(before)].map(([id, event]) => [id, canonical(event)]),
-        );
+        // Keep speculative batch entries out of the validated snapshot.
+        const known = new Map(validated(before));
         let appended = "";
         for (const event of batch) {
-          const content = canonical(event);
           const existing = known.get(event.id);
           if (existing !== undefined) {
-            if (existing !== content)
+            if (canonical(existing) !== canonical(event))
               throw new Error(
                 "AUDIT-CONFLICT: same ID with different contents",
               );
             continue;
           }
-          known.set(event.id, content);
+          known.set(event.id, event);
           appended += `${JSON.stringify(event)}\n`;
         }
         return appended ? (before ?? "") + appended : null;

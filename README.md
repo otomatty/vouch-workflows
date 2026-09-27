@@ -39,3 +39,5 @@ Windows で既存の npm 起動スクリプトが `MODULE_NOT_FOUND` になる�
 | `npm run mutate` | lib のミューテーション検査。スコアは未測定 |
 
 環境の検証範囲と後続作業は [開発環境の説明](docs/development/setup.md) を参照してください。
+
+監査ログ検証の補助測定は `node scripts/benchmark-audit.mjs` で実行できます。synthetic なログの検索・追記だけを測定します。プロセス起動を含む時間予算の合否は `test:hooks` で検査します。[性能改善の記録](docs/development/audit-performance.md)に両者を分けて記載しています。

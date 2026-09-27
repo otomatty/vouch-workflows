@@ -213,7 +213,7 @@
         {
           "status": "implemented",
           "path": "tests/unit/lib/audit.test.mjs",
-          "claim": "共通 AuditStore の既存行保存・全バッチ検証・重複排除を検査する。"
+          "claim": "共通 AuditStore の既存行保存・全バッチ検証・重複排除を検査する。取得値の変更、同じ長さの外部更新、破損・削除・拒否したバッチで検証済み全文の再利用が誤判定を起こさないことも検査する。"
         },
         {
           "status": "implemented",
@@ -348,7 +348,7 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "現在の PC で記録 p95 200ms が未達。空の Node プロセス20回の p95 も256ms。環境と実装の改善後に再検証する。検査系と他フックも未検証。"
+          "claim": "現在の PC で記録 p95 200ms が未達。監査処理の重複削減後も Node 22 / 24 で308.5 / 284.5ms。メモリ内の補助測定の改善を、この時間予算の充足に数えない。検査系と他フックも未検証。"
         },
         {
           "status": "implemented",
@@ -398,7 +398,7 @@
         {
           "status": "implemented",
           "path": "tests/unit/lib/validation.test.mjs",
-          "claim": "実行時の依存ゼロ検証器と Ajv の受理・拒否を比較し、未対応スキーマ構文を拒否する。"
+          "claim": "実行時の依存ゼロ検証器と Ajv の受理・拒否を比較し、未対応スキーマ構文を拒否する。type による候補除外も、フィールド順・未知や欠落した type・legacy を含めて照合する。"
         }
       ]
     },

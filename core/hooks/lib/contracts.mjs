@@ -62,7 +62,7 @@
 /** @typedef {IntentCreated|IntentApproved|IntentCompleted|StageStarted|StageCompleted|UnitStarted|UnitCompleted|CheckpointConfirmed|GateOpened|GateApproved|GateRejected|QuestionAsked|QuestionAnswered|QuestionDefaulted|AsideAsked|AsideAnswered|HookCheck|HookDenied|ReviewRequested|ReviewCompleted|KnowledgeRefreshed|SessionStarted|SessionResumed|SessionCompacted|SessionEnded|LearnRecorded|MigrationCompleted|LegacyEvent} AuditEvent */
 /**
  * find returns a detached record. Mutating it cannot alter future reads or writes.
- * Stores reread the file on every operation. Validation may reuse only an exactly
+ * Each lookup and valid nonempty append rereads the file. Validation may reuse only an exactly
  * equal previously validated text snapshot, including the read under the write lock.
  * @typedef {{append:(events:AuditEvent[]) => Promise<'appended'|'duplicate'>,find?:(id:string) => Promise<AuditEvent|undefined>}} AuditStore
  */

@@ -106,6 +106,16 @@ function typed(type, value) {
 
 /** @param {Schema} schema @param {unknown} value @returns {boolean} */
 function matches(schema, value) {
+  // Reject the other audit variants before walking shared fields. The matching
+  // variant still receives every check below; nonliteral legacy types do too.
+  if (
+    object(value) &&
+    Object.hasOwn(value, "type") &&
+    schema.properties?.type &&
+    Object.hasOwn(schema.properties.type, "const") &&
+    value.type !== schema.properties.type.const
+  )
+    return false;
   if (schema.$ref && !matches(auditSchema, value)) return false;
   if (
     schema.type &&
