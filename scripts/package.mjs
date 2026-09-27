@@ -92,7 +92,16 @@ for (const name of manifests) {
     for (const file of files(from)) {
       const target = resolve(to, relative(from, file));
       if (expected.has(target)) throw new Error(`PACKAGE-DUPLICATE: ${target}`);
-      expected.set(target, readFileSync(file));
+      let bytes = readFileSync(file);
+      if (file.endsWith(".md")) {
+        let text = bytes.toString("utf8");
+        for (const [token, value] of Object.entries(manifest.tokens ?? {}))
+          text = text.replaceAll(token, value);
+        if (/\{\{[A-Z_]+\}\}/.test(text))
+          throw new Error(`PACKAGE-TOKEN: ${file}`);
+        bytes = Buffer.from(text);
+      }
+      expected.set(target, bytes);
     }
   }
 }

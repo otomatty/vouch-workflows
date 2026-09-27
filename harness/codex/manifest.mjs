@@ -1,6 +1,8 @@
 /** @satisfies {import('../../scripts/package.mjs').PackageManifest} */
 export default {
+  tokens: { "{{HARNESS_DIR}}": ".codex" },
   files: [
+    { from: "core/skills", to: ".agents/skills" },
     {
       from: "harness/codex/installation.json",
       to: ".codex/registry/installation.json",

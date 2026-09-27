@@ -45,6 +45,11 @@
         {
           "status": "pending",
           "claim": "STR-3 の全要件に対する検査は未完了。構造テスト（grep）"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/skills.test.mjs",
+          "claim": "実在する Skill と診断説明にハーネス固有パスがないことを検査する。"
         }
       ]
     },
@@ -72,6 +77,11 @@
           "status": "implemented",
           "path": "tests/packaging/extras.test.mjs",
           "claim": "余分なファイルと不正引数があるとき、生成・検査が既存出力を変更せず失敗することを独立したケースで確認する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/skills.test.mjs",
+          "claim": "Skill の正典を content テストからだけ読み、宣言された HARNESS_DIR 置換後の全バイトを両配布と比較する。"
         }
       ]
     },
@@ -111,6 +121,11 @@
           "status": "implemented",
           "path": "tests/content/budgets.test.mjs",
           "claim": "package.mjs の150行予算を検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/tokens.test.mjs",
+          "claim": "手製の最小パッケージで Markdown だけのトークン置換、JSON のバイト保存、未知トークン時の書き込み前失敗を検査する。"
         }
       ]
     },
@@ -388,7 +403,7 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "doctor 実装後の記録 p95 は Windows Node 22 / 24 で522.0 / 317.7ms。200ms予算は未達。Linux Node 22 は135.8msで成功したが、Windows の充足に数えない。検査系と他フックも未検証。"
+          "claim": "Doctor Skill 追加後の Windows Node 22 / 24 の記録 p95 は223.6 / 214.6msで、200ms予算は未達。前回の Linux Node 22 は135.8msだが、今回は性能を再計測していない。検査系と他フックも未検証。"
         },
         {
           "status": "implemented",
@@ -516,7 +531,7 @@
         {
           "status": "implemented",
           "path": "tests/content/contracts.test.mjs",
-          "claim": "製品Markdownの強制語を登録済み R タグと照合する。対象文書はまだ未実装。"
+          "claim": "製品 Markdown の強制語を登録済み R タグと照合する。doctor Skill の実文書も対象に含める。"
         },
         {
           "status": "pending",
@@ -554,7 +569,12 @@
         },
         {
           "status": "pending",
-          "claim": "DOC-1 の全要件に対する検査は未完了。content テスト（ajv）"
+          "claim": "他の Skill・エージェントは未実装で、全配布文書の frontmatter 検査は未完了。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/skills.test.mjs",
+          "claim": "実在する vouch Skill の flat scalar frontmatter を解析し、重複キー・未対応構文の拒否と既存 Ajv スキーマとの一致を検査する。"
         }
       ]
     },
@@ -579,7 +599,12 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "DOC-3 の全要件に対する検査は未完了。content テスト（コードフェンス内の grep）"
+          "claim": "git / rules.md の DoD コマンドを使う後続 Skill の許可コマンド検査は未実装。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/skills.test.mjs",
+          "claim": "今回の doctor Skill が指示する shell フェンス内のコマンドを、登録済み Node 手動入口と照合する。git / DoD コマンドを指示する Skill は未実装。"
         }
       ]
     },
@@ -616,7 +641,12 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "DOC-6 の全要件に対する検査は未完了。packaging テスト"
+          "claim": "他の Skill・テンプレート・AGENTS.md のリンク検査は文書の実装後に追加する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/skills.test.mjs",
+          "claim": "Skill 配布の正確なファイル集合、両ハーネスでの同内容、相対リンクと配布ルート基準パスの実在を検査する。"
         }
       ]
     },
@@ -640,7 +670,12 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "DOC-8 の全要件に対する検査は未完了。reviewer"
+          "claim": "実ハーネスでの Skill 発見・選択・返答評価と、後続ワークフローの指示のレビューは未実施。"
+        },
+        {
+          "status": "implemented",
+          "path": "docs/development/doctor-skill.md",
+          "claim": "doctor の対象・完了条件・根拠と、Node 未導入、import 失敗、検査不合格、矛盾する出力を区別する指示を自己レビューした。モデルの選択・返答評価は未実施。"
         }
       ]
     },
@@ -668,6 +703,16 @@
           "status": "implemented",
           "path": "tests/packaging/extras.test.mjs",
           "claim": "余分なファイルと不正引数があるとき、生成・検査が既存出力を変更せず失敗することを独立したケースで確認する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/skills.test.mjs",
+          "claim": "Skill の正典を content テストからだけ読み、宣言された HARNESS_DIR 置換後の全バイトを両配布と比較する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/tokens.test.mjs",
+          "claim": "手製の最小パッケージで Markdown だけのトークン置換、JSON のバイト保存、未知トークン時の書き込み前失敗を検査する。"
         }
       ]
     },
@@ -690,6 +735,11 @@
           "status": "implemented",
           "path": "tests/packaging/codex.test.mjs",
           "claim": "Codex 配布のファイル集合・バイト一致、POSIX / Windows の登録と製品フックの双方向一致、サンドボックス設定を検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/skills.test.mjs",
+          "claim": "Skill 配布の正確なファイル集合、両ハーネスでの同内容、相対リンクと配布ルート基準パスの実在を検査する。"
         }
       ]
     },
@@ -738,6 +788,11 @@
           "status": "implemented",
           "path": "tests/scenario/doctor.test.mjs",
           "claim": "両配布を Git 未初期化の空プロジェクトへコピーし、生成物だけで doctor が終了0、JSON報告、無書き込みとなることを確認。サブディレクトリから実行し、VOUCH_* の偽設定を診断先に使わない。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/scenario/doctor-skill.test.mjs",
+          "claim": "空の配布先で Skill の説明から読み取ったコマンドを実行し、成功と必要ファイル欠損の診断・無書き込みを検査する。"
         }
       ]
     },
@@ -1033,7 +1088,7 @@
         },
         {
           "status": "pending",
-          "claim": "doctor 実装後の性能ケースは Windows Node 22 / 24 で6.75 / 4.60秒。Node 22 は1ケース5秒も未達。配布検査は独立したケースに分けて制限内となった。リモート CI での全予算充足は未検証。"
+          "claim": "Doctor Skill 追加後の Windows Node 22 / 24 の性能ケースは4.12 / 4.13秒で制限内。前回 Node 22 の6.75秒超過は履歴として doctor.md に残す。リモート CI での全予算充足は未検証。"
         },
         {
           "status": "implemented",
@@ -1056,6 +1111,11 @@
         {
           "status": "pending",
           "claim": "TEST-13 の全要件に対する検査は未完了。dependency-cruiser ＋ 構造テスト"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/skills.test.mjs",
+          "claim": "core/skills の直接参照は content テスト内だけ。packaging / scenario は生成した Skill を読む。"
         }
       ]
     },
