@@ -109,4 +109,4 @@ FS-ESCAPE の原因は推定です。`createFileStore` は root を `realpathSyn
 
 ## 残件
 
-Windows の記録性能とテスト時間の予算は [Issue #2](https://github.com/otomatty/vouch-workflows/issues/2) で扱います。今回の Windows ジョブは hooks の階層に到達しておらず、Windows の CI での記録 p95 はまだ得られていません。FS-ESCAPE はパスの包含判定の不具合で、性能とは別に扱います。lockfile の修正はこれらを解消しません。
+Windows の記録性能とテスト時間の予算は [Issue #2](https://github.com/otomatty/vouch-workflows/issues/2) で扱います。今回の Windows ジョブは hooks の階層に到達しておらず、Windows の CI での記録 p95 はまだ得られていません。FS-ESCAPE はパスの包含判定の不具合として、性能とは別に [Issue #18](https://github.com/otomatty/vouch-workflows/issues/18) で扱います。lockfile の修正はこれらを解消しません。
