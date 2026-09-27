@@ -39,7 +39,7 @@ Node.js 22 の `--test-timeout` は分離したテストファイル全体にも
 
 unit のカバレッジ設定は行 95% / 分岐 95% / 関数 100%、hooks は行 90% / 分岐 85% です。unit は共通 lib、hooks は共通 io の driver とセッション開始フックを検査します。製品フックの子プロセスのカバレッジを集計し、全エントリのソースがレポートにあることも検査します。空の階層を個別指定すると失敗します。packaging は両ハーネスの配布のバイト一致・登録整合・変更検出、scenario は配布先での SessionStart 記録と重複防止を検査します。ワークフロー全体のシナリオは未実装です。
 
-GitHub Actions は Ubuntu / Windows × Node.js 22.19.0 / 24.x で `npm ci`、doctor、check を実行します。bddb412 の初回 CI は lockfile の不整合で4ジョブとも `npm ci` に失敗しました。各ジョブの Node.js / npm の版と原因は[lockfile の生成](lockfile.md)に記録しています。検査コマンド全体の 90 秒予算は `scripts/check.mjs` が監視します。依存ダウンロードと runner 起動はこの計測に含めず、ジョブ全体のタイムアウトは 5 分です。
+GitHub Actions は Ubuntu / Windows × Node.js 22.19.0 / 24.x で `npm ci`、doctor、check を実行します。bddb412 の初回 CI は lockfile の不整合で4ジョブとも `npm ci` に失敗しました。lockfile を修正した 32c1824 では4ジョブとも check まで到達し、Ubuntu は成功、Windows は既存のテスト時間超過と FS-ESCAPE で失敗しました。各ジョブの Node.js / npm の版、原因、結果は[lockfile の生成](lockfile.md)に記録しています。検査コマンド全体の 90 秒予算は `scripts/check.mjs` が監視します。依存ダウンロードと runner 起動はこの計測に含めず、ジョブ全体のタイムアウトは 5 分です。
 
 ## この PC の npm 起動問題
 
