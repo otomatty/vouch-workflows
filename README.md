@@ -2,7 +2,7 @@
 
 Claude Code と Codex 向けの開発ワークフロー。仕様書は [docs/README.md](docs/README.md) から参照できます。
 
-レジストリ、入出力スキーマ、JSDoc の契約と検査を実装しています。フック、Skill、エージェント、配布物は未実装です。[契約と検査範囲](docs/development/contracts.md)に、実装済みの検査と後続作業を記録しています。
+レジストリ、入出力スキーマ、JSDoc の契約と、共通ランタイム（入力検査・ファイル操作・監査記録）を実装しています。製品フック、Skill、エージェント、配布物は未実装です。[レジストリ契約](docs/development/contracts.md)と[共通ランタイムの検査範囲](docs/development/runtime.md)に、実装済みの検査と後続作業を記録しています。
 
 ## 開発環境
 
@@ -35,7 +35,7 @@ Windows で既存の npm 起動スクリプトが `MODULE_NOT_FOUND` になる�
 | `npm run typecheck` | `.mjs` の JSDoc を TypeScript 6 で検査 |
 | `npm test` | 実装済みのテスト階層を実行 |
 | `npm run test:unit` | lib の単体テスト。未実装なら失敗 |
-| `npm run test:hooks` | フックの契約テスト。未実装なら失敗 |
-| `npm run mutate` | lib のミューテーション検査。lib と単体テストの実装後に使用 |
+| `npm run test:hooks` | 子プロセステスト。現在は共通 io のテスト用 driver が対象 |
+| `npm run mutate` | lib のミューテーション検査。スコアは未測定 |
 
 環境の検証範囲と後続作業は [開発環境の説明](docs/development/setup.md) を参照してください。

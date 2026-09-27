@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | `clock.mjs` | `now()`, `newId(session, identity)` | UTC 時刻、セッションと入力識別子の決定的 ID |
 | `env.mjs` | `readContext(env?)` | 明示された `VOUCH_PROJECT_ROOT` と `VOUCH_HARNESS` を読む。未設定や不正値は拒否 |
-| `validation.mjs` | `parseInput(text)`, `isAuditEvent(value)`, `isHookResult(value)` | 既存 JSON Schema の利用部分を依存ゼロで評価。未知のスキーマ構文はエラー |
+| `validation.mjs` | `parseInput(text)`, `isAuditEvent(value)`, `isHookResult(value)`, `assertSupportedSchema(schema)` | 既存 JSON Schema の利用部分を依存ゼロで評価。ロード時に対応語彙を確認し、未知の構文はエラー |
 | `fs.mjs` | `createFileStore(root)` | root 内の読み込み・原子的な更新。シンボリックリンク・junction・複数リンクのファイルを拒否 |
 | `audit.mjs` | `createAuditStore(files, path)` | `append(events)` でスキーマ検証、既存行保存、ID 重複排除。破損・ID衝突は書かずに拒否 |
 | `io.mjs` | `run(main, options?)` | stdin のサイズ・JSON・スキーマ・パスを検査し main を呼ぶ。例外は ID 付き stderr と終了0、遮断は理由付き終了2 |
@@ -19,7 +19,7 @@
 
 監査先は `RuntimeOptions.audit` で明示します。入力のパスやイベントの intent 名から書き込み先を作りません。events を返す main に監査先がなければエラーにし、記録に成功したように見せません。
 
-ファイル更新は隣接するロックディレクトリ内に一時ファイルを作り、書き込みと sync の後で rename します。監査では既存のバイト列をそのまま先頭に残します。既存 ID の同一レコードは省略し、内容の異なるレコード、末尾改行の欠落、不正 JSON、既存の重複 ID は拒否します。バッチ全体を検証してから一度だけ置換するため、途中のレコードだけが残ることはありません。
+ファイル更新は隣接するロックディレクトリ内に一時ファイルを作り、書き込みと sync の後で rename します。監査では既存のバイト列をそのまま先頭に残します。不正 UTF-8 は置換文字で読み進めず拒否します。既存 ID の同一レコードは省略し、内容の異なるレコード、末尾改行の欠落、不正 JSON、既存の重複 ID は拒否します。バッチ全体を検証してから一度だけ置換するため、途中のレコードだけが残ることはありません。
 
 ロックを取れない呼び出しは `FS-BUSY` で終了し、他の書き手のロックを削除しません。クラッシュで残ったロックを時刻から推測して自動削除する処理はありません。複数プロセスからの再試行・運用復旧はフック導入時の残件です。
 
@@ -38,3 +38,21 @@
 2026-09-27、Claude Code `2.1.280` の `--print` と専用 settings で `UserPromptSubmit` を記録しました。記録フックの exit 2 で、モデルに送信する前に処理を止めています。CLI が出力した原文と版番号を保存し、他イベントの実機記録へ流用しません。
 
 採取方法は [Claude Code hooks reference](https://code.claude.com/docs/en/hooks#userpromptsubmit) の stdin と exit 2 に従います。Codex `0.153.4` の版は確認しましたが、新たな実機 payload は採取していません。[Codex のフック](https://learn.chatgpt.com/docs/hooks#review-and-trust-hooks)には定義ごとの信頼確認があるため、既存9件の版番号をこの版で埋めません。
+
+## 実装と検証の記録
+
+契約のコミットは `31f8dc7`、実装前テストは `3c9683c` です。実装前の unit は、6モジュールの `ERR_MODULE_NOT_FOUND` で失敗することを確認しました。その後に共通処理を実装しました。
+
+2026-09-27、Windows / Node.js 24.13.0 の `npm run check` が38.4秒で成功しました。content 9件、registry 28件、unit 26件、transport 4件の計67件です。lib のカバレッジは行99.79%・分岐98.28%・関数100%で、95/95/100の基準を満たします。
+
+Node.js 22.19.0 でも同じ `npm run check` が29.2秒で成功し、67件と同じカバレッジ基準を満たしました。どちらも Lint・型検査を含みます。製品フックのカバレッジは未測定です。
+
+原仕様、`docs/aidlc-v2-reference/`、既存の Codex payload は変更していません。採取原文との JSON 値の一致と、手製の変種に synthetic が必要なことを検査します。ミューテーションスコアと Linux での実行結果は未測定です。
+
+## 後続の実装
+
+製品フックへの `run(main)` の接続、ハーネスごとの登録・出力アダプタ、全27イベントの発火、承認の真正性、監査の親子関係・計測、成果物からの状態導出、p95時間予算が残っています。Skill・エージェント・テンプレート・配布・移行処理・シナリオも未実装です。`enforcement-map.json` は共通処理の検査を implemented として追加し、製品全体の検査は pending に残しています。
+
+次は製品フック1本に対象を絞り、対象イベントの版付き実機 fixture、入力識別子、監査先と失敗時の挙動を契約化してから、子プロセステストと実装を追加します。実機に含まれる `prompt_id` は現行スキーマ外なので、使用する emitter で契約に昇格させます。同じ文面の別操作とリプレイを区別し、同じ ID で再生成した時刻だけが変わって衝突することを防ぐ必要があります。
+
+`cwd` と `tool_input.file_path` は共通 io で検査します。その他のツール固有パス、シェルコマンド内のパス、プロジェクト外に置かれる transcript は、この段階では読み書きせず、対象のフックで別途契約を定義します。

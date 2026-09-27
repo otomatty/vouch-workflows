@@ -1,7 +1,13 @@
+import { Readable } from "node:stream";
 import { test } from "node:test";
 import { run } from "../../../core/hooks/lib/io.mjs";
 import { readJson } from "../../helpers/registry.mjs";
-import { fakeClock, memoryFiles, promptFor } from "../../helpers/runtime.mjs";
+import {
+  fakeClock,
+  memoryFiles,
+  promptFor,
+  sandbox,
+} from "../../helpers/runtime.mjs";
 
 /** @param {string|Uint8Array} text */
 function ports(text) {
@@ -53,6 +59,91 @@ test("io validates input before main, and reports deny with exit 2", async (t) =
   );
   t.assert.equal(denied.output.stderr, "approval required\n");
   t.assert.equal(denied.output.code, 2);
+});
+
+test("io checks tool paths, preserves tool fields, and handles non-Error failures", async (t) => {
+  const base = promptFor(process.cwd()).payload;
+  const cases = [
+    { file_path: "safe.txt", future: "kept" },
+    { file_path: 7 },
+    { command: "pwd" },
+  ];
+  t.plan(5);
+  for (const tool_input of cases) {
+    const port = ports(
+      JSON.stringify({
+        ...base,
+        hook_event_name: "PreToolUse",
+        tool_name: "Write",
+        tool_input,
+      }),
+    );
+    await run(async (input) => {
+      t.assert.deepEqual("tool_input" in input && input.tool_input, tool_input);
+      return { decision: "allow", events: [] };
+    }, port.options);
+    t.assert.equal(
+      port.output.stderr.includes("HOOK-14"),
+      typeof tool_input.file_path === "number",
+    );
+  }
+});
+
+test("io contains stream failures and primitive exceptions", async (t) => {
+  const raw = JSON.stringify(promptFor(process.cwd()).payload);
+  const primitive = ports(raw);
+  const broken = ports(raw);
+  const closed = ports(raw);
+  t.plan(4);
+  await run(async () => Promise.reject("primitive failure"), primitive.options);
+  t.assert.match(primitive.output.stderr, /HOOK-2: primitive failure/);
+  broken.options.stdin = (async function* () {
+    yield "";
+    throw new Error("input failure");
+  })();
+  await run(async () => ({ decision: "allow" }), broken.options);
+  t.assert.match(broken.output.stderr, /input failure/);
+  closed.options.stderr.write = () => {
+    throw new Error("closed");
+  };
+  await run(
+    async () => ({ decision: "deny", reason: "blocked" }),
+    closed.options,
+  );
+  t.assert.equal(closed.output.code, 0);
+  t.assert.equal(closed.output.stdout, "");
+});
+
+test("io defaults use trusted environment, stdin, stderr and process exit status", async (t) => {
+  const box = await sandbox(t, { git: false });
+  const saved = Object.getOwnPropertyDescriptor(process, "stdin");
+  const oldCode = process.exitCode;
+  const oldRoot = process.env.VOUCH_PROJECT_ROOT,
+    oldHarness = process.env.VOUCH_HARNESS;
+  t.after(() => {
+    if (saved) Object.defineProperty(process, "stdin", saved);
+    process.exitCode = oldCode;
+    if (oldRoot === undefined) delete process.env.VOUCH_PROJECT_ROOT;
+    else process.env.VOUCH_PROJECT_ROOT = oldRoot;
+    if (oldHarness === undefined) delete process.env.VOUCH_HARNESS;
+    else process.env.VOUCH_HARNESS = oldHarness;
+  });
+  process.env.VOUCH_PROJECT_ROOT = box.root;
+  process.env.VOUCH_HARNESS = "claude";
+  Object.defineProperty(process, "stdin", {
+    configurable: true,
+    value: Readable.from([
+      Buffer.from(JSON.stringify(promptFor(box.root).payload)),
+    ]),
+  });
+  let called = false;
+  await run(async () => {
+    called = true;
+    return { decision: "allow" };
+  });
+  t.plan(2);
+  t.assert.equal(called, true);
+  t.assert.equal(process.exitCode, 0);
 });
 
 test("io fails open without invoking main for malformed and oversized input", async (t) => {
@@ -117,7 +208,7 @@ test("io catches path, handler, response, missing audit and persistence failures
   }, path.options);
   t.assert.match(path.output.stderr, /FS-ESCAPE/);
   const failed = ports(payload);
-  await run(cases[2].main, {
+  await run(/** @type {NonNullable<typeof cases[2]>} */ (cases[2]).main, {
     ...failed.options,
     audit: {
       append: async () => {
@@ -129,7 +220,7 @@ test("io catches path, handler, response, missing audit and persistence failures
   t.assert.equal(failed.output.code, 0);
   const success = ports(payload);
   const events = [];
-  await run(cases[2].main, {
+  await run(/** @type {NonNullable<typeof cases[2]>} */ (cases[2]).main, {
     ...success.options,
     audit: {
       append: async (values) => {

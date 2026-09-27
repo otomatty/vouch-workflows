@@ -10,15 +10,15 @@ test("transport driver emits only empty stdout and exit 0 or reasoned exit 2", a
   const box = await sandbox(t);
   const fixture = promptFor(box.root);
   t.plan(9);
-  for (const [mode, code, message] of [
+  for (const [mode, code, message] of /** @type {const} */ ([
     ["allow", 0, ""],
     ["deny", 2, "approval required"],
     ["throw", 0, "HOOK-2"],
-  ]) {
+  ])) {
     const result = runHook(mode, fixture, { root: box.root });
     t.assert.equal(result.exitCode, code);
     t.assert.equal(result.stdout, "");
-    t.assert.ok(result.stderr.includes(String(message)));
+    t.assert.equal(result.stderr.includes(message), true);
   }
 });
 
@@ -61,12 +61,30 @@ test("transport replay writes an event only once", async (t) => {
 
 test("transport helper requires a matching versioned capture", (t) => {
   const fixture = capturedPrompt();
-  t.plan(1);
+  t.plan(3);
   t.assert.throws(
     () =>
       runHook(
         "allow",
         { ...fixture, harness: "codex" },
+        { root: process.cwd() },
+      ),
+    /TEST-7/,
+  );
+  t.assert.throws(
+    () =>
+      runHook(
+        "allow",
+        { ...fixture, payload: { ...fixture.payload, cwd: "modified" } },
+        { root: process.cwd() },
+      ),
+    /TEST-7/,
+  );
+  t.assert.throws(
+    () =>
+      runHook(
+        "allow",
+        { ...promptFor(process.cwd()), version: "invented" },
         { root: process.cwd() },
       ),
     /TEST-7/,

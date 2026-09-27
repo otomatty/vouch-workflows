@@ -95,7 +95,12 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "HOOK-2 の全要件に対する検査は未完了。契約テスト（不正な stdin で終了コード 0）＋ 構造テスト（エントリ形式）"
+          "claim": "HOOK-2: 製品フック導入後の全エントリに対する検査は未実装。共通処理とテスト用 driver の検証だけでは充足しない。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/io.test.mjs",
+          "claim": "共通 io の driver で例外時0を確認。製品エントリの形式と例外境界は後続。"
         }
       ]
     },
@@ -107,7 +112,12 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "HOOK-3 の全要件に対する検査は未完了。契約テスト"
+          "claim": "HOOK-3: 製品フック導入後の全エントリに対する検査は未実装。共通処理とテスト用 driver の検証だけでは充足しない。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/io.test.mjs",
+          "claim": "共通 io の driver で許可0・理由付き遮断2を観測する。"
         }
       ]
     },
@@ -120,11 +130,16 @@
         {
           "status": "implemented",
           "path": "biome.json",
-          "claim": "io.mjs以外のconsoleを拒否する。stdoutの実行結果は未検査。"
+          "claim": "io.mjs以外のconsoleを拒否する。製品フック全体のstdoutは導入後に検査する。"
         },
         {
           "status": "pending",
           "claim": "HOOK-4 の全要件に対する検査は未完了。Biome noConsole（lib/io.mjs のみ除外）"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/io.test.mjs",
+          "claim": "共通 io の driver の stdout が空であることを検査する。"
         }
       ]
     },
@@ -163,7 +178,17 @@
         },
         {
           "status": "pending",
-          "claim": "HOOK-6 の全要件に対する検査は未完了。Biome noRestrictedImports（node:fs を lib/fs.mjs 以外で禁止）＋ 契約テスト"
+          "claim": "HOOK-6: 製品フック導入後の全エントリに対する検査は未実装。共通処理とテスト用 driver の検証だけでは充足しない。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/unit/lib/fs.test.mjs",
+          "claim": "共通 FileStore の包含・リンク拒否・原子的置換・失敗時の原本維持を検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/unit/lib/audit.test.mjs",
+          "claim": "共通 AuditStore の既存行保存・全バッチ検証・重複排除を検査する。"
         }
       ]
     },
@@ -181,6 +206,11 @@
         {
           "status": "pending",
           "claim": "HOOK-7 の全要件に対する検査は未完了。Biome noProcessEnv（env.mjs のみ除外）＋ 構造テスト（process.exit の grep）"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/unit/lib/env.test.mjs",
+          "claim": "環境からの trusted root と harness の検査。全製品コードの境界強制は後続。"
         }
       ]
     },
@@ -193,6 +223,11 @@
         {
           "status": "pending",
           "claim": "HOOK-8 の全要件に対する検査は未完了。構造テスト（grep）"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/unit/lib/clock.test.mjs",
+          "claim": "共通 clock の UTC 時刻とセッション・入力識別子に基づく決定的 ID を検査する。"
         }
       ]
     },
@@ -204,7 +239,12 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "HOOK-9 の全要件に対する検査は未完了。契約テスト（2回実行して行数を比較）"
+          "claim": "HOOK-9: 製品フック導入後の全エントリに対する検査は未実装。共通処理とテスト用 driver の検証だけでは充足しない。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/io.test.mjs",
+          "claim": "固定イベントを返す共通 io driver の再実行で audit が増えないことを確認する。製品 emitter の再実行は未検証。"
         }
       ]
     },
@@ -275,7 +315,12 @@
         },
         {
           "status": "pending",
-          "claim": "HOOK-14 の全要件に対する検査は未完了。契約テスト（不正入力、../ を含むパス）"
+          "claim": "HOOK-14: 製品フック導入後の全エントリに対する検査は未実装。共通処理とテスト用 driver の検証だけでは充足しない。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/unit/lib/io.test.mjs",
+          "claim": "共通 io の不正入力・例外・tool_input.file_path の検査呼び出しを確認する。"
         }
       ]
     },
@@ -289,6 +334,11 @@
           "status": "implemented",
           "path": "tests/registry/audit.test.mjs",
           "claim": "台帳と監査レコードの2020-12スキーマ、必須・任意・計測・対の整合を検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/unit/lib/validation.test.mjs",
+          "claim": "実行時の依存ゼロ検証器と Ajv の受理・拒否を比較し、未対応スキーマ構文を拒否する。"
         }
       ]
     },
@@ -681,7 +731,12 @@
         },
         {
           "status": "pending",
-          "claim": "Claude Codeの全対象イベントと、Codexの版付きイベントを採取する。現Codex9件は実機由来だがversion未記録。実機記録のない型をrunHookで使わせない照合を追加する。"
+          "claim": "TEST-7: Claude の他イベントと Codex の版付き実機 fixture は未採取。既存 Codex 9件の version:null は維持する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/registry/captured-fixture.test.mjs",
+          "claim": "Claude Code 2.1.280 の UserPromptSubmit 1件の版・出所・原文との一致を検査する。他イベントと版付き Codex は未採取。"
         }
       ]
     },
@@ -790,7 +845,12 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "TEST-14 の全要件に対する検査は未完了。構造テスト（ケース名の grep）"
+          "claim": "TEST-14: 製品フック導入後の全エントリに対する検査は未実装。共通処理とテスト用 driver の検証だけでは充足しない。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/io.test.mjs",
+          "claim": "共通 io driver に空・非JSON・必須欠落・型不正・境界外cwd・1MiBを入力し、mainの副作用が起きないことを確認する。"
         }
       ]
     },

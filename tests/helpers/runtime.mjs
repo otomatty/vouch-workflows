@@ -3,7 +3,8 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { performance } from "node:perf_hooks";
-import { isContractFixture, readJson } from "./registry.mjs";
+import { isDeepStrictEqual } from "node:util";
+import { isContractFixture, readJson, validator } from "./registry.mjs";
 
 /** @param {string} [instant] @returns {import('../../core/hooks/lib/runtime-contracts.mjs').Clock} */
 export function fakeClock(instant = "2026-09-27T00:00:00.000Z") {
@@ -93,6 +94,14 @@ export function runHook(mode, fixture, options) {
     reference.payload.hook_event_name !== fixture.payload.hook_event_name
   )
     throw new Error("TEST-7: no versioned capture for this harness event");
+  if (
+    !validator("harness-fixture")(fixture) ||
+    fixture.version !== reference.version ||
+    (!fixture.synthetic && !isDeepStrictEqual(fixture, reference))
+  )
+    throw new Error(
+      "TEST-7: changed payload must be marked synthetic with matching capture version",
+    );
   const started = performance.now();
   const result = spawnSync(
     process.execPath,

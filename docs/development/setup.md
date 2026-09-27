@@ -35,7 +35,7 @@ Stryker 10 の `typed-rest-client` が固定する `qs` に npm audit の指摘�
 
 テストは CPU 並列数で実行し、1 テストの上限を予算表から読みます。テスト用 preload は `fetch` を例外に差し替えます。`node:http` など別の通信手段まで遮断するサンドボックスではありません。
 
-unit のカバレッジ設定は行 95% / 分岐 95% / 関数 100%、hooks は行 90% / 分岐 85% です。実装がない階層は全体実行時にその旨を表示します。空の階層を個別指定すると失敗します。現在の unit は JSDoc とスキーマの対応だけを検査し、実行時の lib 処理はありません。空のカバレッジレポートの100%を、製品コードやフックの検証済みという意味では扱いません。
+unit のカバレッジ設定は行 95% / 分岐 95% / 関数 100%、hooks は行 90% / 分岐 85% です。unit は共通 lib の実装を検査します。現在の hooks は共通 io のテスト用 driver が対象で、製品フックのカバレッジは未測定と表示します。空の階層を個別指定すると失敗します。packaging・scenario は未実装です。
 
 GitHub Actions は Ubuntu / Windows × Node.js 22.19.0 / 24.x で `npm ci`、doctor、check を実行します。検査コマンド全体の 90 秒予算は `scripts/check.mjs` が監視します。依存ダウンロードと runner 起動はこの計測に含めず、ジョブ全体のタイムアウトは 5 分です。
 
@@ -53,13 +53,13 @@ GitHub Actions は Ubuntu / Windows × Node.js 22.19.0 / 24.x で `npm ci`、doc
 ## 本体実装で追加するもの
 
 1. レジストリ、入出力スキーマ、JSDoc の契約は実装済みです。[契約の説明](contracts.md)と `core/registry/enforcement-map.json` に検査範囲を記載しています。
-2. `sandbox()`、`runHook()`、fake clock、golden 比較などのテスト用補助関数と、契約に対応する失敗テスト。
-3. Claude Code の実機イベント fixture と、版情報のある Codex fixture の採取。既存の Codex 9件は原本と一致する payload を保存していますが、版番号が未記録のため契約実行には未適格です。手製のスキーマ例は `synthetic: true` で分離しています。
-4. 共通 lib、フック、Skill、エージェント、日英テンプレート。
+2. `sandbox()`、`runHook()`、fake clock と共通 lib は実装済みです。[共通ランタイム](runtime.md)を参照してください。golden 比較は後続です。
+3. Claude Code 2.1.280 の `UserPromptSubmit` を採取済みです。他イベントと版情報のある Codex fixture は未採取です。既存の Codex 9件は原本と一致しますが、版番号が未記録のため契約実行には未適格です。手製の変種は `synthetic: true` で分離しています。
+4. 製品フック、Skill、エージェント、日英テンプレート。
 5. ハーネスの manifest と `scripts/package.mjs`。その段階で `package`、`package:check` を追加し、`check` に配布物のバイト一致検査を組み込みます。
 6. シナリオ、フック子プロセスのカバレッジ収集、全ルールの強制テスト、夜間ミューテーション CI と失敗時の Issue 作成、手動評価スイート。
 
-Stryker の設定と `mutate` コマンドは用意しています。対象の lib がないため、ミューテーションスコアはまだ測定していません。配布物とモデル評価のコマンドも本体実装に合わせて追加します。
+Stryker の設定と `mutate` コマンドは用意しています。ミューテーションスコアはまだ測定していません。配布物とモデル評価のコマンドも本体実装に合わせて追加します。
 
 Git リポジトリは `main` ブランチで初期化しています。
 

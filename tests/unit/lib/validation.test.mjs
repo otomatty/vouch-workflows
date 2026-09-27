@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 import {
+  assertSupportedSchema,
   isAuditEvent,
   isHookResult,
   parseInput,
@@ -24,6 +25,63 @@ test("input validation matches Ajv and drops unknown top level fields", (t) => {
   t.assert.equal(parseInput("not json"), null);
   t.assert.equal(parseInput("{}"), null);
   t.assert.equal(parseInput(JSON.stringify({ ...fixture, prompt: 3 })), null);
+});
+
+test("unsupported schema vocabulary and references fail closed before evaluation", (t) => {
+  t.plan(4);
+  t.assert.throws(
+    () => assertSupportedSchema(/** @type {never} */ ({ maxLength: 1 })),
+    /REG-1: unsupported/,
+  );
+  t.assert.throws(
+    () => assertSupportedSchema({ $ref: "https://invalid.example/schema" }),
+    /REG-1: unsupported/,
+  );
+  t.assert.throws(
+    () => assertSupportedSchema({ type: "invented" }),
+    /REG-1: unsupported/,
+  );
+  t.assert.doesNotThrow(() =>
+    assertSupportedSchema({ type: ["string", "boolean"] }),
+  );
+});
+
+test("all synthetic input shapes and required-field mutations agree with Ajv", (t) => {
+  const validate = validator("hook-input");
+  const fixtures = readJson("tests/fixtures/harness/synthetic.json");
+  const cases = fixtures.flatMap(
+    (
+      /** @type {import('../../../core/hooks/lib/contracts.mjs').HarnessFixture} */ fixture,
+    ) => [
+      fixture.payload,
+      ...Object.keys(fixture.payload).map((key) =>
+        Object.fromEntries(
+          Object.entries(fixture.payload).filter(([field]) => field !== key),
+        ),
+      ),
+    ],
+  );
+  cases.push(
+    {
+      session_id: "s",
+      cwd: "r",
+      hook_event_name: "UserPromptSubmit",
+      prompt: "💡",
+    },
+    {
+      session_id: "s",
+      cwd: "r",
+      hook_event_name: "Stop",
+      stop_hook_active: "false",
+    },
+  );
+  t.plan(cases.length);
+  for (const value of cases)
+    t.assert.equal(
+      parseInput(JSON.stringify(value)) !== null,
+      validate(value),
+      JSON.stringify(value),
+    );
 });
 
 test("audit validation agrees with Ajv for fixtures and field mutations", (t) => {

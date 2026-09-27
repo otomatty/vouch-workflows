@@ -29,7 +29,11 @@ test("audit rejects conflicting IDs without writing any part of a batch", async 
   const before = await files.readText("audit");
   t.plan(3);
   t.assert.equal(
-    await audit.append([Object.fromEntries(Object.entries(sample).reverse())]),
+    await audit.append([
+      /** @type {typeof sample} */ (
+        Object.fromEntries(Object.entries(sample).reverse())
+      ),
+    ]),
     "duplicate",
   );
   await t.assert.rejects(

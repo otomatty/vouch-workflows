@@ -32,7 +32,14 @@ for (const suite of suites) {
     `--test-concurrency=${availableParallelism()}`,
     "--import=./tests/helpers/no-network.mjs",
   ];
-  if (suite === "unit" || suite === "hooks") {
+  const productHooks = readdirSync("core/hooks").some((name) =>
+    name.endsWith(".mjs"),
+  );
+  if (suite === "hooks" && !productHooks)
+    console.log(
+      "Transport tests only; product hook coverage is not measured yet.",
+    );
+  if (suite === "unit" || (suite === "hooks" && productHooks)) {
     const coverage =
       suite === "unit" ? budgets.coverage.lib : budgets.coverage.hooks;
     flags.push(

@@ -63,7 +63,7 @@
 
 /**
  * Raw harness payload after structural validation. Unknown fields are accepted by
- * the schema and ignored by the future adapter. `cwd` is untrusted input.
+ * the schema and discarded by parseInput. `cwd` is untrusted input.
  * @typedef {object} HookInputBase
  * @property {string} session_id
  * @property {string} cwd
@@ -80,8 +80,8 @@
 
 /**
  * Complete audit records, not raw stdin or a harness-specific stdout response.
- * `deny` requires a nonempty reason. io.run will append validated records and
- * serialize the response; that implementation and its process tests are pending.
+ * `deny` requires a nonempty reason. io.run appends validated records, then reports
+ * denial on stderr with exit 2. Harness-specific stdout adapters are separate.
  * @typedef {{decision:'allow',reason?:string,events?:AuditEvent[]}|{decision:'deny',reason:string,events?:AuditEvent[]}} HookResult
  * @typedef {{exitCode:0,stdout:JsonValue,stderr:string}|{exitCode:2,stdout:JsonValue,stderr:string}} HookProcessResult
  */
