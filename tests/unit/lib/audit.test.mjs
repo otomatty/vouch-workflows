@@ -197,3 +197,24 @@ test("a validated log never hides later corruption or deletion", async (t) => {
   t.assert.equal(await audit.append([sample]), "appended");
   t.assert.equal(await files.readText("audit"), text);
 });
+
+test("a rejected batch cannot leak uncommitted rows into a validated snapshot", async (t) => {
+  const sample = event();
+  const text = `${JSON.stringify(sample)}\n`;
+  const files = memoryFiles({ audit: text });
+  const audit = createAuditStore(files, "audit");
+  await audit.find(sample.id);
+  const next = { ...sample, id: "not-yet-persisted" };
+  t.plan(5);
+  await t.assert.rejects(
+    audit.append([next, { ...sample, duration_ms: 999 }]),
+    /AUDIT-CONFLICT/,
+  );
+  t.assert.equal(await audit.find(next.id), undefined);
+  t.assert.equal(await files.readText("audit"), text);
+  t.assert.equal(await audit.append([next]), "appended");
+  t.assert.equal(
+    await files.readText("audit"),
+    `${text}${JSON.stringify(next)}\n`,
+  );
+});
