@@ -15,12 +15,7 @@ test("input validation matches Ajv and drops unknown top level fields", (t) => {
   const valid = { ...fixture, future: "ignored" };
   const parsed = parseInput(JSON.stringify(valid));
   t.plan(5);
-  t.assert.deepEqual(
-    parsed,
-    Object.fromEntries(
-      Object.entries(fixture).filter(([key]) => key !== "prompt_id"),
-    ),
-  );
+  t.assert.deepEqual(parsed, fixture);
   t.assert.equal(validator("hook-input")(valid), true);
   t.assert.equal(parseInput("not json"), null);
   t.assert.equal(parseInput("{}"), null);

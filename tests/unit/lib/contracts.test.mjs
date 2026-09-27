@@ -96,3 +96,41 @@ test("JSDoc rejects impossible decision and audit discriminants", (t) => {
     "HOOK-11",
   );
 });
+
+test("typed approval evidence binds complete metadata to its harness", (t) => {
+  /** @type {import('../../../core/hooks/lib/contracts.mjs').IntentApprovalEvidence} */
+  const evidence = {
+    harness: "claude",
+    session: "synthetic-session",
+    revision: { path: "intent.md", sha256: "a".repeat(64) },
+    submission: {
+      hook_event_name: "UserPromptSubmit",
+      field: "prompt_id",
+      id: "synthetic-prompt",
+      prompt_sha256: "b".repeat(64),
+    },
+  };
+  /** @type {import('../../../core/hooks/lib/contracts.mjs').IntentApprovalEvidence} */
+  // @ts-expect-error Codex evidence cannot use the Claude input identity field.
+  const mismatched = { ...evidence, harness: "codex" };
+  /** @type {import('../../../core/hooks/lib/contracts.mjs').IntentApproved} */
+  // @ts-expect-error Revision requires submission, session and harness together.
+  const incomplete = {
+    id: "synthetic-event",
+    v: 1,
+    ts: "2026-09-27T00:00:00Z",
+    actor: "human",
+    type: "intent.approved",
+    intent: "synthetic",
+    source: "intent",
+    parent: "synthetic-gate",
+    wait_ms: 0,
+    revision: evidence.revision,
+    synthetic: true,
+  };
+  const validate = validator("audit-event");
+  t.plan(3);
+  t.assert.equal(validate({ ...incomplete, ...evidence }), true);
+  t.assert.equal(validate({ ...incomplete, ...mismatched }), false);
+  t.assert.equal(validate(incomplete), false);
+});
