@@ -145,3 +145,55 @@ test("audit snapshots a validated batch before an asynchronous file update", asy
     original,
   );
 });
+
+test("mutating a lookup result cannot poison later reads or duplicate detection", async (t) => {
+  const sample = event();
+  sample.harness = "claude";
+  sample.tokens = { in: 1, out: 2 };
+  const text = `${JSON.stringify(sample)}\n`;
+  const files = memoryFiles({ audit: text });
+  const audit = createAuditStore(files, "audit");
+  const found = await audit.find(sample.id);
+  if (!found?.tokens) throw new Error("expected the complete record");
+  found.actor = "model";
+  found.tokens.in = 999;
+  t.plan(3);
+  t.assert.deepEqual(await audit.find(sample.id), sample);
+  t.assert.equal(await audit.append([sample]), "duplicate");
+  t.assert.equal(await files.readText("audit"), text);
+});
+
+test("audit rereads same-length external changes before lookup and locked append", async (t) => {
+  const sample = event();
+  const original = `${JSON.stringify(sample)}\n`;
+  const external = { ...sample, ts: sample.ts.replace(/^\d{4}/, "2099") };
+  const changed = `${JSON.stringify(external)}\n`;
+  const files = memoryFiles({ audit: original });
+  const audit = createAuditStore(files, "audit");
+  await audit.find(sample.id);
+  files.data.set("audit", changed);
+  t.plan(5);
+  t.assert.equal(changed.length, original.length);
+  t.assert.deepEqual(await audit.find(sample.id), external);
+  files.data.set("audit", original);
+  await t.assert.rejects(audit.append([external]), /AUDIT-CONFLICT/);
+  t.assert.equal(await files.readText("audit"), original);
+  t.assert.deepEqual(await audit.find(sample.id), sample);
+});
+
+test("a validated log never hides later corruption or deletion", async (t) => {
+  const sample = event();
+  const text = `${JSON.stringify(sample)}\n`;
+  const files = memoryFiles({ audit: text });
+  const audit = createAuditStore(files, "audit");
+  await audit.find(sample.id);
+  files.data.set("audit", `${text}broken\n`);
+  t.plan(6);
+  await t.assert.rejects(audit.append([sample]), /AUDIT-CORRUPT/);
+  await t.assert.rejects(audit.find(sample.id), /AUDIT-CORRUPT/);
+  t.assert.equal(await files.readText("audit"), `${text}broken\n`);
+  files.data.delete("audit");
+  t.assert.equal(await audit.find(sample.id), undefined);
+  t.assert.equal(await audit.append([sample]), "appended");
+  t.assert.equal(await files.readText("audit"), text);
+});

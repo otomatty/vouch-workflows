@@ -146,3 +146,25 @@ test("result validation rejects malformed responses before writing events", (t) 
       `HOOK-3: parity ${JSON.stringify(value)}`,
     );
 });
+
+test("early event-type rejection preserves Ajv decisions regardless of field order", (t) => {
+  const validate = validator("audit-event");
+  const fixtures = readdirSync("tests/fixtures/audit").map((file) =>
+    JSON.parse(readFileSync(`tests/fixtures/audit/${file}`, "utf8")),
+  );
+  const cases = fixtures.flatMap((event) => {
+    const { type, ...fields } = event;
+    return [
+      { ...fields, type },
+      { type, ...fields },
+      fields,
+      { ...fields, type: "unknown" },
+      { ...fields, type: null },
+      { ...fields, type: { const: type } },
+      { ...fields, type, actor: "unknown" },
+    ];
+  });
+  t.plan(cases.length);
+  for (const value of cases)
+    t.assert.equal(isAuditEvent(value), validate(value), JSON.stringify(value));
+});
