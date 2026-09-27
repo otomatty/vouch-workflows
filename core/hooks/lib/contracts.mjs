@@ -106,6 +106,7 @@
  * @property {string} projectRoot Trusted root; resolved paths still need containment checks.
  * @property {Harness} harness Selected by installation, not payload claims.
  * @property {string} [intent] Explicit installed scope, never derived from stdin.
+ * @property {(path:string) => Promise<string|null>} [readText] io supplies contained UTF-8 artifact reads.
  * @property {AuditStore} [audit] io supplies the configured intent store. Session recording requires find().
  * @property {string} generation Knowledge generation to compare with citations.
  * @property {() => string} now UTC time supplied by clock.mjs.

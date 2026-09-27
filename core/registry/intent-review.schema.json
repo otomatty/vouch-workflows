@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vouch.dev/schemas/intent-review.json",
+  "type": "object",
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "open": {
+      "const": "vouch review"
+    },
+    "approvePrefix": {
+      "const": "vouch approve "
+    },
+    "gatePattern": {
+      "const": "^evt_[a-f0-9]{64}(?![\\s\\S])"
+    }
+  },
+  "required": ["version", "open", "approvePrefix", "gatePattern"],
+  "additionalProperties": false
+}

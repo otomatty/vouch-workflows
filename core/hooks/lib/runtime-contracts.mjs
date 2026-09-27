@@ -57,3 +57,9 @@ export {};
  * @typedef {(value:ApprovalComparisonInput)=>ApprovalComparison} CompareIntentApprovalEvidence
  * @typedef {(start:string,end:string)=>number|null} ElapsedMilliseconds
  */
+
+/**
+ * Explicit operator inputs only. No inference of consent from ordinary text.
+ * @typedef {{kind:'open'}|{kind:'approve',gate:string}|{kind:'invalid'}|null} IntentReviewCommand
+ * @typedef {(prompt:string)=>IntentReviewCommand} ParseIntentReviewCommand
+ */
