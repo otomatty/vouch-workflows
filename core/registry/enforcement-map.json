@@ -52,6 +52,11 @@
         {
           "status": "pending",
           "claim": "STR-4 の全要件に対する検査は未完了。package.mjs --check"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/check.test.mjs",
+          "claim": "Claude 配布の再生成・バイト一致と、欠落・編集・余分なファイルの読み取り専用検出を確認する。Codex は未実装。"
         }
       ]
     },
@@ -76,6 +81,16 @@
         {
           "status": "pending",
           "claim": "STR-6 の全要件に対する検査は未完了。構造テスト（package.mjs の import と行数）＋ reviewer"
+        },
+        {
+          "status": "implemented",
+          "path": "scripts/package.mjs",
+          "claim": "manifest の対応表によるバイトコピーだけを実装。ハーネス別の内容分岐はない。TOML・トークン変換は後続。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/budgets.test.mjs",
+          "claim": "package.mjs の150行予算を検査する。"
         }
       ]
     },
@@ -100,7 +115,7 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "HOOK-2: セッション開始以外の製品フックとハーネスへの実登録は未検証。現在の1本の成功を製品全体の充足に数えない。"
+          "claim": "HOOK-2: 他の製品フックと Codex 登録は未検証。Claude SessionStart の実登録では正常記録のみ観測済みで、実機異常系の全保証は未検証。"
         },
         {
           "status": "implemented",
@@ -127,7 +142,7 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "HOOK-3: セッション開始以外の製品フックとハーネスへの実登録は未検証。現在の1本の成功を製品全体の充足に数えない。"
+          "claim": "HOOK-3: 他の製品フックと Codex 登録は未検証。Claude SessionStart の実登録では正常記録のみ観測済みで、実機異常系の全保証は未検証。"
         },
         {
           "status": "implemented",
@@ -203,7 +218,7 @@
         },
         {
           "status": "pending",
-          "claim": "HOOK-6: セッション開始以外の製品フックとハーネスへの実登録は未検証。現在の1本の成功を製品全体の充足に数えない。"
+          "claim": "HOOK-6: 他の製品フックと Codex 登録は未検証。Claude SessionStart の実登録では正常記録のみ観測済みで、実機異常系の全保証は未検証。"
         },
         {
           "status": "implemented",
@@ -279,7 +294,7 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "HOOK-9: セッション開始以外の製品フックとハーネスへの実登録は未検証。現在の1本の成功を製品全体の充足に数えない。"
+          "claim": "HOOK-9: 他の製品フックと Codex 登録は未検証。Claude SessionStart の実登録では正常記録のみ観測済みで、実機異常系の全保証は未検証。"
         },
         {
           "status": "implemented",
@@ -348,12 +363,17 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "現在の PC で記録 p95 200ms が未達。監査処理の重複削減後も Node 22 / 24 で308.5 / 284.5ms。メモリ内の補助測定の改善を、この時間予算の充足に数えない。検査系と他フックも未検証。"
+          "claim": "Windows で記録 p95 200ms が未達。Claude 配布実装時の最終測定は Node 22 / 24 で234.2 / 235.1ms。Linux の成功や補助測定を全環境の充足に数えない。検査系と他フックも未検証。"
         },
         {
           "status": "implemented",
           "path": "tests/hooks/vouch-record-session-start.test.mjs",
           "claim": "20回の子プロセス起動を含む記録 p95 を計測する。200ms の閾値は維持。現在の PC では未達でテストは失敗する。"
+        },
+        {
+          "status": "implemented",
+          "path": "docs/development/claude-distribution.md",
+          "claim": "同じ20回のフック検査は Linux / Node 22.20.0 で p95 132.9ms を記録。Windows 未達と区別し、全環境での充足とはしない。"
         }
       ]
     },
@@ -370,7 +390,7 @@
         },
         {
           "status": "pending",
-          "claim": "HOOK-14: セッション開始以外の製品フックとハーネスへの実登録は未検証。現在の1本の成功を製品全体の充足に数えない。"
+          "claim": "HOOK-14: 他の製品フックと Codex 登録は未検証。Claude SessionStart の実登録では正常記録のみ観測済みで、実機異常系の全保証は未検証。"
         },
         {
           "status": "implemented",
@@ -421,6 +441,11 @@
           "status": "implemented",
           "path": "tests/hooks/vouch-record-session-start.test.mjs",
           "claim": "session.started の製品 emit を完全スキーマと golden で検証する。残り26種は未実装。"
+        },
+        {
+          "status": "implemented",
+          "path": "docs/development/claude-distribution.md",
+          "claim": "隔離した Claude Code 2.1.280 から配布の SessionStart 登録を起動し、session.started の実記録を観測した。"
         }
       ]
     },
@@ -583,6 +608,11 @@
         {
           "status": "pending",
           "claim": "DIST-1 の全要件に対する検査は未完了。package.mjs --check"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/check.test.mjs",
+          "claim": "Claude 配布の再生成・バイト一致と、欠落・編集・余分なファイルの読み取り専用検出を確認する。Codex は未実装。"
         }
       ]
     },
@@ -595,6 +625,11 @@
         {
           "status": "pending",
           "claim": "DIST-2 の全要件に対する検査は未完了。packaging テスト"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/claude.test.mjs",
+          "claim": "Claude 配布の正確なファイル集合と、登録・製品フックの両方向一致を検査する。Codex は未実装。"
         }
       ]
     },
@@ -607,6 +642,11 @@
         {
           "status": "pending",
           "claim": "DIST-3 の全要件に対する検査は未完了。packaging テスト"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/claude.test.mjs",
+          "claim": "Claude 配布の正確なファイル集合と、登録・製品フックの両方向一致を検査する。Codex は未実装。"
         }
       ]
     },
@@ -901,7 +941,7 @@
         },
         {
           "status": "pending",
-          "claim": "現在の PC では記録性能テストが5秒を超える。再試行設定の構造検査も未実装。"
+          "claim": "以前の Windows 測定では記録性能テストが5秒を超過。Claude 配布時の最終測定は Node 22 / 24 で4.26 / 4.14秒。再試行設定の構造検査とリモート CI での予算充足は未検証。"
         },
         {
           "status": "implemented",
@@ -935,7 +975,7 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "TEST-14: セッション開始以外の製品フックとハーネスへの実登録は未検証。現在の1本の成功を製品全体の充足に数えない。"
+          "claim": "TEST-14: 他の製品フックと Codex 登録は未検証。Claude SessionStart の実登録では正常記録のみ観測済みで、実機異常系の全保証は未検証。"
         },
         {
           "status": "implemented",
@@ -946,6 +986,11 @@
           "status": "implemented",
           "path": "tests/hooks/vouch-record-session-start.test.mjs",
           "claim": "セッション開始フックに空・非JSON・必須欠落・型不正・境界外cwd・1MiBを入力する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/scenario/claude-distribution.test.mjs",
+          "claim": "Claude 配布を空の一時プロジェクトへコピーし、版付き実機 fixture に基づく synthetic startup の記録と再実行を検査する。全ワークフローのシナリオは後続。"
         }
       ]
     },

@@ -2,7 +2,7 @@
 
 Claude Code と Codex 向けの開発ワークフロー。仕様書は [docs/README.md](docs/README.md) から参照できます。
 
-レジストリ、入出力スキーマ、JSDoc の契約、共通ランタイムと、Claude のセッション開始を記録する最初の製品フックを実装しています。フックの自動登録、Skill、エージェント、配布物は未実装です。[レジストリ契約](docs/development/contracts.md)、[共通ランタイム](docs/development/runtime.md)、[セッション開始の検証記録](docs/development/session-start.md)に、実装済みの検査と後続作業を記載しています。現在の PC では記録系の p95 時間予算を満たさず、`check` は性能検査で失敗します。
+レジストリ、入出力スキーマ、JSDoc の契約、共通ランタイムと、Claude のセッション開始を記録する最初の製品フックを実装しています。Claude 向けの登録設定と配布生成も実装しました。Codex 向けの登録・配布、残りのフック、Skill、エージェントは未実装です。[レジストリ契約](docs/development/contracts.md)、[共通ランタイム](docs/development/runtime.md)、[セッション開始の検証記録](docs/development/session-start.md)、[Claude 配布の契約](docs/development/claude-distribution.md)に範囲を記載しています。現在の Windows PC では記録系の p95 時間予算を満たさず、`check` は性能検査で失敗します。
 
 ## 開発環境
 
@@ -29,13 +29,15 @@ Windows で既存の npm 起動スクリプトが `MODULE_NOT_FOUND` になる�
 | コマンド | 内容 |
 | --- | --- |
 | `npm run doctor` | Node.js、Git、固定バージョンの依存の導入状況 |
-| `npm run check` | Lint → 型検査 → テスト。CI と共通の入口 |
+| `npm run check` | Lint → 型検査 → テスト → 配布生成・バイト一致。CI と共通の入口 |
 | `npm run lint` | Biome、markdownlint、dependency-cruiser、knip |
 | `npm run format` | JS / JSON の整形と安全な自動修正 |
 | `npm run typecheck` | `.mjs` の JSDoc を TypeScript 6 で検査 |
 | `npm test` | 実装済みのテスト階層を実行 |
 | `npm run test:unit` | lib の単体テスト。未実装なら失敗 |
 | `npm run test:hooks` | 共通 io とセッション開始フックの子プロセステスト・カバレッジ・時間予算 |
+| `npm run package` | `dist/claude/` に現在の Claude 配布を生成 |
+| `npm run package:check` | 既存の配布のファイル集合とバイト一致を読み取り専用で検査 |
 | `npm run mutate` | lib のミューテーション検査。スコアは未測定 |
 
 環境の検証範囲と後続作業は [開発環境の説明](docs/development/setup.md) を参照してください。

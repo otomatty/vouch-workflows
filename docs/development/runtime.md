@@ -55,4 +55,8 @@ Node.js 22.19.0 でも同じ `npm run check` が29.2秒で成功し、67件と�
 
 次は性能基準を満たす実行条件と実装を確認したうえで、ハーネスへの登録を進めます。後続の UserPromptSubmit emitter で使う `prompt_id` は現行スキーマ外なので、その契約で定義します。同じ文面の別操作とリプレイを区別する必要があります。
 
+## Claude 配布での更新
+
+[Claude 配布](claude-distribution.md)で SessionStart の登録を追加しました。`readContext()` は `VOUCH_PROJECT_ROOT` が未設定かつ `VOUCH_HARNESS=claude` の場合だけ、Claude が渡す `CLAUDE_PROJECT_DIR` を採用します。空文字や相対パスの明示設定、Codex への補完は拒否します。stdin から信頼するルートや intent を推測する契約には変更していません。
+
 `cwd` と `tool_input.file_path` は共通 io で検査します。その他のツール固有パス、シェルコマンド内のパス、プロジェクト外に置かれる transcript は、この段階では読み書きせず、対象のフックで別途契約を定義します。

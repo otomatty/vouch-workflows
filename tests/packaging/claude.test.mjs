@@ -4,6 +4,7 @@ import { packageRun, tree } from "../helpers/packaging.mjs";
 import { sandbox } from "../helpers/runtime.mjs";
 
 test("Claude distribution reproduces exact source bytes and registers every product hook", async (t) => {
+  t.plan(11);
   const box = await sandbox(t);
   const first = packageRun(["--out", box.path("first")]);
   t.assert.equal(first.status, 0, first.stderr);
@@ -61,5 +62,4 @@ test("Claude distribution reproduces exact source bytes and registers every prod
     entries,
     "DIST-3: registrations and product entries agree both ways",
   );
-  t.plan(11);
 });

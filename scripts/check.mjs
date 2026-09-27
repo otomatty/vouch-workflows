@@ -5,7 +5,7 @@ import budgets from "../core/registry/budgets.json" with { type: "json" };
 const npm = process.env.npm_execpath;
 if (!npm) throw new Error("Run this check with npm run check.");
 const start = performance.now();
-for (const task of ["lint", "typecheck", "test"]) {
+for (const task of ["lint", "typecheck", "test", "package", "package:check"]) {
   const remaining = budgets.timing.checkTimeoutMs - (performance.now() - start);
   if (remaining <= 0)
     throw new Error("TEST-12: check exceeded its time budget.");

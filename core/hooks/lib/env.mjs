@@ -8,8 +8,10 @@ import { newId, now } from "./clock.mjs";
  * @returns {import('./contracts.mjs').HookContext}
  */
 export function readContext(env = process.env) {
-  const root = env.VOUCH_PROJECT_ROOT;
   const harness = env.VOUCH_HARNESS;
+  const root =
+    env.VOUCH_PROJECT_ROOT ??
+    (harness === "claude" ? env.CLAUDE_PROJECT_DIR : undefined);
   if (
     !root ||
     !isAbsolute(root) ||
