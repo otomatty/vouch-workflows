@@ -2,6 +2,16 @@ import { resolve } from "node:path";
 import { test } from "node:test";
 import { readContext } from "../../../core/hooks/lib/env.mjs";
 
+test("context reads optional intent scope only from installed environment", (t) => {
+  const base = { VOUCH_PROJECT_ROOT: resolve("."), VOUCH_HARNESS: "claude" };
+  t.plan(2);
+  t.assert.equal(
+    readContext({ ...base, VOUCH_INTENT: "scope" }).intent,
+    "scope",
+  );
+  t.assert.equal(readContext({ ...base, VOUCH_INTENT: "" }).intent, undefined);
+});
+
 test("context requires trusted root and a supported installed harness", (t) => {
   t.plan(5);
   for (const source of [

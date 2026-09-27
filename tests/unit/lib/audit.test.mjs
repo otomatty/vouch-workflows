@@ -1,5 +1,8 @@
 import { test } from "node:test";
-import { createAuditStore } from "../../../core/hooks/lib/audit.mjs";
+import {
+  createAuditStore,
+  createIntentAuditStore,
+} from "../../../core/hooks/lib/audit.mjs";
 import { readJson } from "../../helpers/registry.mjs";
 import { memoryFiles } from "../../helpers/runtime.mjs";
 
@@ -7,6 +10,36 @@ import { memoryFiles } from "../../helpers/runtime.mjs";
 function event() {
   return readJson("tests/fixtures/audit/hook.check.jsonl");
 }
+
+test("audit lookup validates the whole log before returning an event", async (t) => {
+  const sample = event();
+  const files = memoryFiles({ audit: JSON.stringify(sample) + "\n" });
+  const audit = createAuditStore(files, "audit");
+  t.plan(5);
+  t.assert.deepEqual(await audit.find?.(sample.id), sample);
+  t.assert.equal(await audit.find?.("absent"), undefined);
+  files.data.set("audit", JSON.stringify(sample) + "\ninvalid\n");
+  await t.assert.rejects(audit.find(sample.id), /AUDIT-CORRUPT/);
+  files.data.set(
+    "audit",
+    `${JSON.stringify(sample)}\n${JSON.stringify(sample)}\n`,
+  );
+  await t.assert.rejects(audit.find(sample.id), /AUDIT-CORRUPT/);
+  files.data.delete("audit");
+  t.assert.equal(await audit.find?.("absent"), undefined);
+});
+
+test("intent audit scope rejects paths and uses only the configured intent", async (t) => {
+  const files = memoryFiles();
+  t.plan(7);
+  for (const scope of ["", "../x", "a/b", "A", "a".repeat(129), "name:stream"])
+    t.assert.throws(() => createIntentAuditStore(files, scope), /AUDIT-SCOPE/);
+  await createIntentAuditStore(files, "intent-1").append([event()]);
+  t.assert.deepEqual(
+    [...files.data.keys()],
+    ["vouch/intents/intent-1/audit/events.jsonl"],
+  );
+});
 
 test("audit appends complete JSONL while preserving existing bytes and deduplicating", async (t) => {
   const first = { ...event(), id: "first" };

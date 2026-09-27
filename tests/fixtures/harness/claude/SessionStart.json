@@ -1,0 +1,18 @@
+{
+  "harness": "claude",
+  "version": "2.1.280",
+  "synthetic": false,
+  "provenance": "captured",
+  "source": {
+    "path": "tests/fixtures/captures/claude-2.1.280-session-start.jsonl",
+    "commit": "c94f10f",
+    "key": "SessionStart"
+  },
+  "payload": {
+    "session_id": "cc5da0e4-67b5-4d1a-9ed8-8e648f1ad13d",
+    "transcript_path": "C:\\Users\\saedg\\apps\\vouch-workflows\\reports\\session-capture\\config\\projects\\C--Users-saedg-apps-vouch-workflows-reports-session-capture\\cc5da0e4-67b5-4d1a-9ed8-8e648f1ad13d.jsonl",
+    "cwd": "C:\\Users\\saedg\\apps\\vouch-workflows\\reports\\session-capture",
+    "hook_event_name": "SessionStart",
+    "source": "startup"
+  }
+}

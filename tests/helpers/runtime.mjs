@@ -3,6 +3,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { performance } from "node:perf_hooks";
+import { pathToFileURL } from "node:url";
 import { isDeepStrictEqual } from "node:util";
 import { isContractFixture, readJson, validator } from "./registry.mjs";
 
@@ -69,6 +70,22 @@ export function capturedPrompt() {
   return readJson("tests/fixtures/harness/claude/UserPromptSubmit.json");
 }
 
+/** @returns {import('../../core/hooks/lib/contracts.mjs').HarnessFixture} */
+export function capturedSession() {
+  return readJson("tests/fixtures/harness/claude/SessionStart.json");
+}
+
+/** @param {string} root @returns {import('../../core/hooks/lib/contracts.mjs').HarnessFixture} */
+export function sessionFor(root) {
+  const capture = capturedSession();
+  return {
+    ...capture,
+    synthetic: true,
+    provenance: "synthetic",
+    payload: { ...capture.payload, cwd: root },
+  };
+}
+
 /** @param {string} root @returns {import('../../core/hooks/lib/contracts.mjs').HarnessFixture} */
 export function promptFor(root) {
   const capture = capturedPrompt();
@@ -81,13 +98,16 @@ export function promptFor(root) {
 }
 
 /**
- * Transport driver only; no product emitter coverage is claimed.
+ * Product entries and the separate transport driver share the same observation boundary.
  * @param {string} mode
  * @param {import('../../core/hooks/lib/contracts.mjs').HarnessFixture} fixture
- * @param {{root:string,raw?:string}} options
+ * @param {{root:string,raw?:string,intent?:string,instant?:string,coverage?:boolean}} options
  */
 export function runHook(mode, fixture, options) {
-  const reference = capturedPrompt();
+  const reference =
+    fixture.payload.hook_event_name === "SessionStart"
+      ? capturedSession()
+      : capturedPrompt();
   if (
     !isContractFixture(reference) ||
     reference.harness !== fixture.harness ||
@@ -103,21 +123,32 @@ export function runHook(mode, fixture, options) {
       "TEST-7: changed payload must be marked synthetic with matching capture version",
     );
   const started = performance.now();
+  const product = mode === "vouch-record-session-start";
+  const env = {
+    ...process.env,
+    VOUCH_PROJECT_ROOT: options.root,
+    VOUCH_HARNESS: fixture.harness,
+    VOUCH_GENERATION: "test",
+    VOUCH_INTENT: options.intent ?? "",
+    VOUCH_TEST_TIME: options.instant ?? fakeClock().now(),
+  };
+  if (options.coverage === false) delete env.NODE_V8_COVERAGE;
   const result = spawnSync(
     process.execPath,
-    [resolve("tests/fixtures/runtime/driver.mjs"), mode],
+    product
+      ? [
+          "--disable-warning=ExperimentalWarning",
+          `--import=${pathToFileURL(resolve("tests/helpers/fixed-clock.mjs")).href}`,
+          resolve("core/hooks/vouch-record-session-start.mjs"),
+        ]
+      : [resolve("tests/fixtures/runtime/driver.mjs"), mode],
     {
       cwd: options.root,
       input: options.raw ?? JSON.stringify(fixture.payload),
       encoding: "utf8",
       windowsHide: true,
       timeout: 4000,
-      env: {
-        ...process.env,
-        VOUCH_PROJECT_ROOT: options.root,
-        VOUCH_HARNESS: fixture.harness,
-        VOUCH_GENERATION: "test",
-      },
+      env,
     },
   );
   if (result.error) throw result.error;

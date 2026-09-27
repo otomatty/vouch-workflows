@@ -40,6 +40,24 @@ function ports(text) {
   return { output, options };
 }
 
+test("io shares the configured intent store between the handler and event persistence", async (t) => {
+  const port = ports(JSON.stringify(promptFor(process.cwd()).payload));
+  const sample = readJson("tests/fixtures/audit/hook.check.jsonl");
+  t.plan(3);
+  await run(
+    async (_input, ctx) => {
+      t.assert.equal(await ctx.audit?.find?.(sample.id), undefined);
+      return { decision: "allow", events: [sample] };
+    },
+    { ...port.options, context: { ...port.options.context, intent: "scope" } },
+  );
+  t.assert.equal(port.output.stderr, "");
+  t.assert.equal(
+    port.options.files.data.get("vouch/intents/scope/audit/events.jsonl"),
+    JSON.stringify(sample) + "\n",
+  );
+});
+
 test("io validates input before main, and reports deny with exit 2", async (t) => {
   const input = promptFor(process.cwd()).payload;
   const allowed = ports(
