@@ -1,5 +1,6 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
+import runtime from "../../core/registry/runtime.json" with { type: "json" };
 import { packageRun, tree } from "../helpers/packaging.mjs";
 import { sandbox } from "../helpers/runtime.mjs";
 
@@ -15,6 +16,14 @@ test("Claude distribution reproduces exact source bytes and registers every prod
     ...Object.entries(tree("core/hooks")).map(([path, bytes]) => [
       `.claude/hooks/${path}`,
       bytes,
+    ]),
+    ...["installation.json", "registration.json"].map((name) => [
+      ".claude/registry/" + name,
+      readFileSync(
+        name === "installation.json"
+          ? "harness/claude/installation.json"
+          : "harness/claude/settings.json",
+      ).toString("base64"),
     ]),
     ...Object.entries(tree("core/registry")).map(([path, bytes]) => [
       `.claude/registry/${path}`,
@@ -54,9 +63,7 @@ test("Claude distribution reproduces exact source bytes and registers every prod
       hook.args[0]?.split("/").at(-1),
     )
     .sort();
-  const entries = readdirSync("core/hooks")
-    .filter((name) => name.endsWith(".mjs"))
-    .sort();
+  const entries = [...runtime.hooks].sort();
   t.assert.deepEqual(
     registered,
     entries,

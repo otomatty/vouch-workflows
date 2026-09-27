@@ -1,5 +1,6 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
+import runtime from "../../core/registry/runtime.json" with { type: "json" };
 import { packageRun, tree } from "../helpers/packaging.mjs";
 import { sandbox } from "../helpers/runtime.mjs";
 
@@ -12,6 +13,14 @@ test("Codex distribution reproduces exact source bytes and registers every produ
     ...Object.entries(tree("core/hooks")).map(([path, bytes]) => [
       `.codex/hooks/${path}`,
       bytes,
+    ]),
+    ...["installation.json", "registration.json"].map((name) => [
+      ".codex/registry/" + name,
+      readFileSync(
+        name === "installation.json"
+          ? "harness/codex/installation.json"
+          : "harness/codex/hooks.json",
+      ).toString("base64"),
     ]),
     ...Object.entries(tree("core/registry")).map(([path, bytes]) => [
       `.codex/registry/${path}`,
@@ -41,9 +50,7 @@ test("Codex distribution reproduces exact source bytes and registers every produ
     "commandWindows",
     "type",
   ]);
-  const entries = readdirSync("core/hooks")
-    .filter((name) => name.endsWith(".mjs"))
-    .sort();
+  const entries = [...runtime.hooks].sort();
   t.assert.deepEqual(
     [
       command.type,

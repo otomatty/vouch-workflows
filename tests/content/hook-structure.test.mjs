@@ -4,6 +4,7 @@ import ts from "typescript";
 import events from "../../core/registry/audit-events.json" with {
   type: "json",
 };
+import runtime from "../../core/registry/runtime.json" with { type: "json" };
 
 test("product hooks have a single run(main) entry and registered literal event types", (t) => {
   const entries = readdirSync("core/hooks", { withFileTypes: true });
@@ -22,7 +23,14 @@ test("product hooks have a single run(main) entry and registered literal event t
     "STR-1",
   );
   for (const { name } of hooks) {
-    t.assert.match(name, /^vouch-[a-z]+-[a-z]+(?:-[a-z]+)*\.mjs$/, "STR-1");
+    const command = runtime.commands.includes(name);
+    t.assert.match(
+      name,
+      command
+        ? /^vouch-[a-z-]+\.mjs$/
+        : /^vouch-[a-z]+-[a-z]+(?:-[a-z]+)*\.mjs$/,
+      "STR-1; DIST-5 command",
+    );
     const source = ts.createSourceFile(
       name,
       readFileSync(`core/hooks/${name}`, "utf8"),
@@ -36,7 +44,7 @@ test("product hooks have a single run(main) entry and registered literal event t
     );
     t.assert.deepEqual(
       effects.map((node) => node.getText(source)),
-      ["run(main);"],
+      [command ? "runDoctor(main, import.meta.url);" : "run(main);"],
       "HOOK-2",
     );
     /** @type {string[]} */ const types = [];
