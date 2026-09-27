@@ -53,6 +53,7 @@ test("both harnesses ship equivalent Skills with resolving references and doctor
       names.sort(),
       [
         `${prefix}vouch/SKILL.md`,
+        `${prefix}vouch-intent/SKILL.md`,
         `${prefix}vouch/references/doctor.md`,
         `${prefix}vouch/references/status.md`,
       ].sort(),

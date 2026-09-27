@@ -41,7 +41,11 @@ test("shared project documents resolve references and keep user rules uninitiali
         "AGENTS.md",
         ...(harness === "claude" ? ["CLAUDE.md"] : []),
         `.${harness}/templates/ja/rules.md`,
+        `.${harness}/templates/ja/intent.md`,
+        `.${harness}/templates/ja/decisions.md`,
         `.${harness}/templates/en/rules.md`,
+        `.${harness}/templates/en/intent.md`,
+        `.${harness}/templates/en/decisions.md`,
       ].sort(),
     );
     t.assert.equal(
