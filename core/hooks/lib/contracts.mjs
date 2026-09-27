@@ -60,7 +60,12 @@
 /** @typedef {AuditCommon & {type:'migration.completed',files_migrated:number}} MigrationCompleted */
 /** @typedef {AuditCommon & {type:`legacy.${string}`,original_type:string,raw:string,source_path:string}} LegacyEvent */
 /** @typedef {IntentCreated|IntentApproved|IntentCompleted|StageStarted|StageCompleted|UnitStarted|UnitCompleted|CheckpointConfirmed|GateOpened|GateApproved|GateRejected|QuestionAsked|QuestionAnswered|QuestionDefaulted|AsideAsked|AsideAnswered|HookCheck|HookDenied|ReviewRequested|ReviewCompleted|KnowledgeRefreshed|SessionStarted|SessionResumed|SessionCompacted|SessionEnded|LearnRecorded|MigrationCompleted|LegacyEvent} AuditEvent */
-/** @typedef {{append:(events:AuditEvent[]) => Promise<'appended'|'duplicate'>,find?:(id:string) => Promise<AuditEvent|undefined>}} AuditStore */
+/**
+ * find returns a detached record. Mutating it cannot alter future reads or writes.
+ * Stores reread the file on every operation. Validation may reuse only an exactly
+ * equal previously validated text snapshot, including the read under the write lock.
+ * @typedef {{append:(events:AuditEvent[]) => Promise<'appended'|'duplicate'>,find?:(id:string) => Promise<AuditEvent|undefined>}} AuditStore
+ */
 
 /**
  * Raw harness payload after structural validation. Unknown fields are accepted by
