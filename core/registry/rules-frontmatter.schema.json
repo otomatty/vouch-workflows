@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vouch.dev/schemas/rules-frontmatter.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["language", "checkpoints"],
+  "properties": {
+    "language": {
+      "$ref": "https://vouch.dev/schemas/workflow.json#/properties/languages/items"
+    },
+    "checkpoints": {
+      "$ref": "https://vouch.dev/schemas/workflow.json#/properties/checkpoint_modes/items"
+    }
+  }
+}

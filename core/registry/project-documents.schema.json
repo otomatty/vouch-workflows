@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vouch.dev/schemas/project-documents.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "artifacts",
+    "decisions",
+    "audit",
+    "rules_sections",
+    "policy_rules"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "artifacts": {
+      "type": "object",
+      "required": ["intent", "design", "build", "verify"],
+      "additionalProperties": false,
+      "properties": {
+        "intent": {
+          "const": "intent.md"
+        },
+        "design": {
+          "const": "design.md"
+        },
+        "build": {
+          "const": "build-log.md"
+        },
+        "verify": {
+          "const": "review.md"
+        }
+      }
+    },
+    "decisions": {
+      "const": "decisions.md"
+    },
+    "audit": {
+      "const": "audit/events.jsonl"
+    },
+    "rules_sections": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z-]*$"
+      }
+    },
+    "policy_rules": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^R-PROJECT-[0-9]+$"
+      }
+    }
+  }
+}
