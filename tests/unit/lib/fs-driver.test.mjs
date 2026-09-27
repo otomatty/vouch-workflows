@@ -1,5 +1,7 @@
 import { createHook } from "node:async_hooks";
+import native from "node:fs";
 import * as fs from "node:fs/promises";
+import { syncBuiltinESMExports } from "node:module";
 import { test } from "node:test";
 import { createFileStore } from "../../../core/hooks/lib/fs.mjs";
 import { sandbox } from "../../helpers/runtime.mjs";
@@ -37,7 +39,7 @@ for (const failure of ["write", "sync", "close"]) {
     const box = await sandbox(t, { git: false });
     await box.write("audit", "original");
     const error = new Error(`injected ${failure} failure`);
-    const steps = [];
+    /** @type {string[]} */ const steps = [];
     const files = await createFileStore(box.root, {
       ...fs,
       async open(path, flags, mode) {
@@ -114,4 +116,97 @@ test("file store rechecks a target linked after temporary contents were flushed"
   t.assert.equal(await outside.read("protected"), "outside");
   t.assert.equal(await box.read("audit"), "outside");
   t.assert.deepEqual(await fs.readdir(box.root), ["audit"]);
+});
+
+test("native driver flushes and closes the same descriptor before completing replacement", async (t) => {
+  const box = await sandbox(t, { git: false });
+  const files = await createFileStore(box.root);
+  const originalSync = native.fsyncSync;
+  const originalClose = native.closeSync;
+  /** @type {{step:string,descriptor:number}[]} */ const calls = [];
+  native.fsyncSync = (descriptor) => {
+    calls.push({ step: "sync", descriptor });
+    originalSync(descriptor);
+  };
+  native.closeSync = (descriptor) => {
+    calls.push({ step: "close", descriptor });
+    originalClose(descriptor);
+  };
+  syncBuiltinESMExports();
+  try {
+    await files.writeText("audit", "durable");
+  } finally {
+    native.fsyncSync = originalSync;
+    native.closeSync = originalClose;
+    syncBuiltinESMExports();
+  }
+  t.plan(3);
+  t.assert.deepEqual(
+    calls.map((call) => call.step),
+    ["sync", "close"],
+  );
+  t.assert.equal(calls[0]?.descriptor, calls[1]?.descriptor);
+  t.assert.equal(await box.read("audit"), "durable");
+});
+
+test("file store retains a UTF-8 BOM as content through reading and rewriting", async (t) => {
+  const box = await sandbox(t, { git: false });
+  const text = "\uFEFF日本語\n";
+  await box.write("audit", text);
+  const files = await createFileStore(box.root);
+  t.plan(3);
+  t.assert.equal(await files.readText("audit"), text);
+  t.assert.equal(
+    await files.updateText("audit", (before) => `${before}next`),
+    true,
+  );
+  t.assert.deepEqual(
+    await fs.readFile(box.path("audit")),
+    Buffer.from(`${text}next`),
+  );
+});
+
+test("file store rejects reserved device names without rejecting their harmless suffixes", async (t) => {
+  const box = await sandbox(t, { git: false });
+  const files = await createFileStore(box.root);
+  const forbidden = ["COM1", "com9.dat", "LPT1", "lpt9.dat"];
+  const allowed = ["recon.txt", "preCOM1.txt", "adapter-lpt9.dat"];
+  t.plan(forbidden.length + allowed.length);
+  for (const name of forbidden)
+    await t.assert.rejects(files.resolvePath(name), /FS-PATH/);
+  for (const name of allowed)
+    t.assert.equal(await files.resolvePath(name), box.path(name));
+});
+
+test("file store does not swallow a non-Error port failure carrying an ENOENT property", async (t) => {
+  const box = await sandbox(t, { git: false });
+  const cause = { code: "ENOENT", reason: "not a filesystem Error" };
+  const files = await createFileStore(box.root, {
+    ...fs,
+    lstat() {
+      throw cause;
+    },
+  });
+  t.plan(1);
+  await t.assert.rejects(files.readText("missing"), (error) => error === cause);
+});
+
+test("native cleanup propagates errors other than a missing temporary file", async (t) => {
+  const box = await sandbox(t, { git: false });
+  const files = await createFileStore(box.root);
+  const error = Object.assign(new Error("cleanup denied"), { code: "EACCES" });
+  const originalUnlink = native.unlinkSync;
+  native.unlinkSync = (path) => {
+    if (path === box.path("audit.vouch-lock/next")) throw error;
+    originalUnlink(path);
+  };
+  syncBuiltinESMExports();
+  t.plan(2);
+  try {
+    await t.assert.rejects(files.writeText("audit", "replaced"), error);
+  } finally {
+    native.unlinkSync = originalUnlink;
+    syncBuiltinESMExports();
+  }
+  t.assert.equal(await box.read("audit"), "replaced");
 });
