@@ -1,3 +1,6 @@
+/** Distribution data; replacements apply only to Markdown, without harness branches.
+ * @typedef {{files:{from:string,to:string}[],tokens?:Record<string,string>}} PackageManifest
+ */
 import {
   existsSync,
   lstatSync,
@@ -78,7 +81,7 @@ if (manifests.length === 0) throw new Error("PACKAGE-MISSING: no manifests");
 for (const name of manifests) {
   const manifestPath = resolve(source, "harness", name, "manifest.mjs");
   unlinked(manifestPath);
-  /** @type {{default:{files:{from:string,to:string}[]}}} */
+  /** @type {{default:PackageManifest}} */
   const { default: manifest } = await import(pathToFileURL(manifestPath).href);
   for (const mapping of manifest.files) {
     if (!/^(core|harness)\//.test(mapping.from))

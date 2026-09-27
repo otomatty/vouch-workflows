@@ -1,4 +1,4 @@
-/** @satisfies {{files:{from:string,to:string}[]}} */
+/** @satisfies {import('../../scripts/package.mjs').PackageManifest} */
 export default {
   files: [
     {
