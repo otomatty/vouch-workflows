@@ -1,15 +1,19 @@
 ---
 name: vouch
-description: "Show Vouch intent status, checkpoints and unanswered decisions from artifacts, or diagnose an installation with doctor. Use for Vouch status and setup requests."
+description: "Draft a Vouch Intent plan, show intent status and unanswered decisions from artifacts, or diagnose an installation with doctor. Use for Vouch planning, status and setup requests."
 user-invocable: true
 reads: always
 ---
 
 # Vouch
 
-Vouch の配布先を診断する。現在対応している操作は doctor と読み取り専用 status である。
-引数なしではこの対応範囲を案内する。ask / report / migrate とステージ進行は未実装と伝え、完了したように扱わない。
+Vouch の配布先を診断する。現在対応している操作は doctor、読み取り専用 status、Intent の下書き作成である。
+引数なしではこの対応範囲を案内する。ask / report / migrate と承認後のステージ進行は未実装と伝え、完了したように扱わない。
 Claude では `/vouch doctor` または `/vouch status`、Codex では `$vouch doctor` または `$vouch status` を指定できる。
+
+## Intent
+
+新しい要望の計画・指定した Intent の下書き修正は [Intent Skill](../vouch-intent/SKILL.md) を読む。Claude では `/vouch-intent`、Codex では `$vouch-intent` でも指定できる。現在は承認・Build 開始を行わない。
 
 ## Status
 

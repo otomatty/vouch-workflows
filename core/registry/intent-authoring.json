@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "skill": "vouch-intent",
+  "draft_frontmatter": {
+    "status": "draft"
+  },
+  "intent_sections": [
+    "summary",
+    "acceptance",
+    "scope",
+    "analysis",
+    "plan",
+    "verification",
+    "diagrams",
+    "checkpoints",
+    "references"
+  ],
+  "decisions_sections": ["questions", "decisions", "assumptions", "references"],
+  "question_fields": [
+    "situation",
+    "options",
+    "recommendation",
+    "default",
+    "impact",
+    "answer"
+  ],
+  "option_fields": ["option", "benefits", "drawbacks", "basis"],
+  "decision_fields": ["id", "actor", "words", "source", "scope", "question"],
+  "unit_guideline": 5,
+  "question_options": {
+    "min": 2,
+    "max": 4
+  }
+}

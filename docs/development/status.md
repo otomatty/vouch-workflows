@@ -72,3 +72,5 @@ Linux / Node.js 22.20.0 は既存 Docker イメージでネットワークなし
 実ハーネスでの Skill 発見・選択・status の返答の評価は未実施です。6ケースを隔離した配布先で実行し、ハーネス・モデル版、引用根拠、前後のファイル差分を残す作業が必要です。doctor の成功だけで Skill の受理や動作を検証済みとは扱いません。
 
 次の実装は Intent Skill と日英の intent.md / decisions.md テンプレートです。契約・先行テストから進め、承認が未実装の間に Skill の文言だけで承認済みへ進めない境界を定めます。引数なしの再開、ask / report / migrate、他のステージ Skill・エージェント、残り26種類のイベント記録と各検査フック、statusline、ミューテーション CI は未実装です。Windows の性能未達も残っています。
+
+後続の Intent 下書き Skill と日英 intent / decisions テンプレートを追加しました。現在の範囲は [Intent 下書き](intent.md) を参照してください。上の検証値は status 追加時点の記録です。

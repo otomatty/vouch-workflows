@@ -97,6 +97,11 @@
           "status": "implemented",
           "path": "tests/packaging/missing.test.mjs",
           "claim": "欠損したファイルを検査が補完せず検出し、明示的な再生成で元の全ファイルを復元することを確認する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/intent.test.mjs",
+          "claim": "追加した intent / decisions の4テンプレートを原本・両配布・新規 golden と全文比較する。既存 golden は変更しない。"
         }
       ]
     },
@@ -119,6 +124,11 @@
           "status": "implemented",
           "path": "tests/content/project-documents.test.mjs",
           "claim": "AGENTS のステージと規則タグ、rules の言語・確認点・節 ID を正典レジストリと照合する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/intent.test.mjs",
+          "claim": "Intent 下書きの frontmatter、日英の節・質問カード・判断記録の欄と on-demand Skill を正典に照合する。モデルが適切に記入したことの証明ではない。"
         }
       ]
     },
@@ -423,7 +433,7 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "Status・共通文書追加後の Windows Node 22 / 24 の記録 p95 は846.4 / 229.0msで、200ms予算は未達。Node 22 の性能ケースは9.19秒で5秒予算も超過した。今回 Linux の性能は再計測していない。検査系と他フックも未検証。"
+          "claim": "Intent 下書き追加後の Windows Node 22 / 24 の記録 p95 は225.4 / 299.1msで、200ms予算は未達。Node 24 の性能ケースは5.65秒で5秒予算も超過した。今回 Linux の性能は再計測していない。検査系と他フックも未検証。"
         },
         {
           "status": "implemented",
@@ -605,6 +615,11 @@
           "status": "implemented",
           "path": "tests/content/project-documents.test.mjs",
           "claim": "rules の実テンプレートの frontmatter を既存 workflow の選択肢を参照するスキーマで検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/intent.test.mjs",
+          "claim": "Intent 下書きの frontmatter、日英の節・質問カード・判断記録の欄と on-demand Skill を正典に照合する。モデルが適切に記入したことの証明ではない。"
         }
       ]
     },
@@ -652,6 +667,11 @@
           "status": "implemented",
           "path": "tests/content/project-documents.test.mjs",
           "claim": "ja/en rules の節 ID・順序が project-documents.json と一致することを検査する。Intent / Design / Build / Review テンプレートは未実装。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/intent.test.mjs",
+          "claim": "Intent 下書きの frontmatter、日英の節・質問カード・判断記録の欄と on-demand Skill を正典に照合する。モデルが適切に記入したことの証明ではない。"
         }
       ]
     },
@@ -687,6 +707,11 @@
           "status": "implemented",
           "path": "tests/packaging/project-documents.test.mjs",
           "claim": "共通文書の正確な配布集合、リンクの解決、Claude の @AGENTS.md、利用者 rules の自動作成がないことを検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/project-documents.test.mjs",
+          "claim": "Intent と decisions の日英テンプレートを含む文書の全ファイル集合と参照を検査し、利用者の vouch/ 成果物を生成しないことを確認する。"
         }
       ]
     },
@@ -699,6 +724,11 @@
         {
           "status": "pending",
           "claim": "DOC-7 の全要件に対する検査は未完了。content テスト"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/intent.test.mjs",
+          "claim": "Intent テンプレートの日英両方に、必須ユーザーフローと brownfield 影響範囲の Mermaid 記入枠が台帳どおりの種類・条件・数であることを検査する。内容や描画結果の評価は別途。"
         }
       ]
     },
@@ -721,6 +751,11 @@
           "status": "implemented",
           "path": "docs/development/status.md",
           "claim": "status の対象選択・観測範囲・矛盾・未回答と既定適用の区別・読み取り専用の完了条件を契約と自己レビューで確認した。モデル評価は未実施。"
+        },
+        {
+          "status": "implemented",
+          "path": "docs/development/intent.md",
+          "claim": "Intent 下書きの対象・判断根拠・完了条件と承認未実装の境界を契約化し、契約→テスト→実装の順で自己レビューする。実モデル評価は未実施。"
         }
       ]
     },
@@ -773,6 +808,11 @@
           "status": "implemented",
           "path": "tests/packaging/missing.test.mjs",
           "claim": "欠損したファイルを検査が補完せず検出し、明示的な再生成で元の全ファイルを復元することを確認する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/intent.test.mjs",
+          "claim": "追加した intent / decisions の4テンプレートを原本・両配布・新規 golden と全文比較する。既存 golden は変更しない。"
         }
       ]
     },
@@ -805,6 +845,11 @@
           "status": "implemented",
           "path": "tests/packaging/project-documents.test.mjs",
           "claim": "共通文書の正確な配布集合、リンクの解決、Claude の @AGENTS.md、利用者 rules の自動作成がないことを検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/project-documents.test.mjs",
+          "claim": "Intent と decisions の日英テンプレートを含む文書の全ファイル集合と参照を検査し、利用者の vouch/ 成果物を生成しないことを確認する。"
         }
       ]
     },
@@ -857,7 +902,12 @@
         {
           "status": "implemented",
           "path": "tests/scenario/doctor-skill.test.mjs",
-          "claim": "空の配布先で Skill の説明から読み取ったコマンドを実行し、成功と必要ファイル欠損の診断・無書き込みを検査する。"
+          "claim": "Claude の配布済み Skill の Node コマンドを実行し、成功・欠損診断・ファイル不変を確認する。モデルの Skill 発見・返答は未評価。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/scenario/doctor-skill-codex.test.mjs",
+          "claim": "Codex も独立したファイルで同じ6アサーションを検査する。各ケース5秒・ファイル5秒の制限を維持する。"
         }
       ]
     },
@@ -1037,6 +1087,11 @@
           "status": "implemented",
           "path": "tests/content/project-documents.test.mjs",
           "claim": "AGENTS と rules の原本を content 内だけで読み、配布との全文一致と新しい日英 rules golden を検査する。既存 golden は保持する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/intent.test.mjs",
+          "claim": "追加した intent / decisions の4テンプレートを原本・両配布・新規 golden と全文比較する。既存 golden は変更しない。"
         }
       ]
     },
@@ -1079,6 +1134,11 @@
           "status": "implemented",
           "path": "tests/content/status-eval.test.mjs",
           "claim": "手製の status 評価素材を synthetic・not-run として検査する。ハーネス実機イベントやモデル評価の実績には数えない。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/intent-eval.test.mjs",
+          "claim": "Intent の手製評価入力6件を synthetic:true / execution:not-run として構造検査する。モデル評価や実機フック発火の実績ではない。"
         }
       ]
     },
@@ -1130,6 +1190,11 @@
         {
           "status": "pending",
           "claim": "TEST-10 の全要件に対する検査は未完了。reviewer（git log のコミット順）＋ このリポジトリ自身の Vouch フック"
+        },
+        {
+          "status": "implemented",
+          "path": "docs/development/intent.md",
+          "claim": "Intent 下書きの対象・判断根拠・完了条件と承認未実装の境界を契約化し、契約→テスト→実装の順で自己レビューする。実モデル評価は未実施。"
         }
       ]
     },
@@ -1163,12 +1228,17 @@
         },
         {
           "status": "pending",
-          "claim": "Status・共通文書追加後の Windows Node 22 / 24 の性能ケースは9.19 / 4.42秒。Node 22 は5秒予算も未達。初回 Node 22 の配布検査の5秒超過は、正常・編集・欠損を独立ケースに分けて解消した。閾値は変更していない。リモート CI での全予算充足は未検証。"
+          "claim": "Intent 下書き追加後の Windows Node 22 / 24 の性能ケースは4.30 / 5.65秒で、Node 24 は5秒予算も未達。初回 Node 22 の doctor Skill scenario のファイル5秒超過は、同じ6アサーションを保ってハーネス別ファイルに分けて解消した。予算と再試行なしの条件は変更していない。リモート CI の全予算充足は未検証。"
         },
         {
           "status": "implemented",
           "path": "tests/helpers/hook-test.mjs",
           "claim": "hooks の各ケースに timeout 5000 と同期処理の経過時間検査を適用する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/status-eval.test.mjs",
+          "claim": "評価素材6件の同じ監査スキーマをテスト内で一度だけコンパイルする。Linux で観測した重複コンパイルによる時間切れに対処し、ケース・アサーション・入力・時間予算を維持する。"
         }
       ]
     },
@@ -1341,7 +1411,7 @@
         },
         {
           "status": "pending",
-          "claim": "判断依頼 Skill と既定適用イベントの実記録、status の解釈のモデル評価は未実装。"
+          "claim": "Intent 内の判断依頼カードの下書きは対応済み。質問・既定適用イベントの実記録、作成内容と status の解釈のモデル評価は未実装・未実施。"
         }
       ]
     },
