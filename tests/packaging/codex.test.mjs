@@ -34,7 +34,10 @@ test("Codex distribution reproduces exact source bytes and registers every produ
   t.assert.deepEqual(
     Object.fromEntries(
       Object.entries(tree(box.path("dist/codex"))).filter(
-        ([path]) => !path.startsWith(".agents/skills/"),
+        ([path]) =>
+          !path.startsWith(".agents/skills/") &&
+          !path.startsWith(".codex/templates/") &&
+          !["AGENTS.md", "CLAUDE.md"].includes(path),
       ),
     ),
     expected,

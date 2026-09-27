@@ -37,7 +37,10 @@ test("Claude distribution reproduces exact source bytes and registers every prod
   t.assert.deepEqual(
     Object.fromEntries(
       Object.entries(files).filter(
-        ([path]) => !path.startsWith(".claude/skills/"),
+        ([path]) =>
+          !path.startsWith(".claude/skills/") &&
+          !path.startsWith(".claude/templates/") &&
+          !["AGENTS.md", "CLAUDE.md"].includes(path),
       ),
     ),
     expected,

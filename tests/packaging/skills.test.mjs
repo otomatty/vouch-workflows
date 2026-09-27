@@ -51,7 +51,11 @@ test("both harnesses ship equivalent Skills with resolving references and doctor
   for (const { harness, root, prefix, names, documents } of installations) {
     t.assert.deepEqual(
       names.sort(),
-      [`${prefix}vouch/SKILL.md`, `${prefix}vouch/references/doctor.md`].sort(),
+      [
+        `${prefix}vouch/SKILL.md`,
+        `${prefix}vouch/references/doctor.md`,
+        `${prefix}vouch/references/status.md`,
+      ].sort(),
     );
     texts[harness] = [];
     for (const { text, targets } of documents) {

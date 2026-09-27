@@ -203,15 +203,18 @@ test("enforcement inventory covers all specification rule IDs with honest eviden
     ),
   ];
   const map = readJson("core/registry/enforcement-map.json");
-  t.plan(ids.length + 2);
+  const project = readJson("core/registry/project-documents.json");
+  const tags = [...ids.map((id) => `R-${id}`), ...project.policy_rules];
+  t.plan(tags.length + 2);
   t.assert.equal(ids.length, 57, "REG-4: source inventory");
   t.assert.deepEqual(
     Object.keys(map.rules).sort(),
-    ids.map((id) => `R-${id}`).sort(),
+    [...tags].sort(),
     "REG-4: complete rule inventory",
   );
-  for (const id of ids) {
-    const row = map.rules[`R-${id}`];
+  for (const tag of tags) {
+    const id = tag.replace(/^R-/, "");
+    const row = map.rules[tag];
     t.assert.equal(
       row.rule_id === id &&
         row.checks.every(

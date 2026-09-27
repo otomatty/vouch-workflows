@@ -18,6 +18,8 @@ for (const harness of /** @type {const} */ (["claude", "codex"])) {
     t.assert.equal(
       Object.keys(before).every(
         (name) =>
+          name === "AGENTS.md" ||
+          (harness === "claude" && name === "CLAUDE.md") ||
           name.startsWith(`.${harness}/`) ||
           (harness === "codex" && name.startsWith(".agents/skills/")),
       ),
