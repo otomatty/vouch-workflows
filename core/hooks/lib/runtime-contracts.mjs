@@ -37,3 +37,23 @@ export {};
  * @property {{write:(text:string)=>unknown}} [stdout]
  * @property {(code:0|2)=>void} [finish]
  */
+
+/**
+ * Pure evidence comparison, never an authorization decision or event producer.
+ * Caller supplies the separately observed, validated input and installed scope.
+ * A match also occurs for synthetic data; provenance and consent need future hooks.
+ * @typedef {{status:'draft'|'approved',revision:import('./contracts.mjs').IntentRevision}} IntentSnapshot
+ * @typedef {(text:string)=>IntentSnapshot|null} SnapshotIntent
+ * @typedef {(input:import('./contracts.mjs').HookInput,harness:import('./contracts.mjs').Harness)=>import('./contracts.mjs').Submission|null} IdentifySubmission
+ * @typedef {object} ApprovalComparisonInput
+ * @property {unknown} gate
+ * @property {unknown} approval
+ * @property {import('./contracts.mjs').HookInput} input
+ * @property {import('./contracts.mjs').Harness} harness
+ * @property {string} intent
+ * @property {string} text
+ * @typedef {'invalid-record'|'missing-evidence'|'scope'|'parent'|'revision'|'submission'|'wait'} ApprovalMismatch
+ * @typedef {{matches:true}|{matches:false,reason:ApprovalMismatch}} ApprovalComparison
+ * @typedef {(value:ApprovalComparisonInput)=>ApprovalComparison} CompareIntentApprovalEvidence
+ * @typedef {(start:string,end:string)=>number|null} ElapsedMilliseconds
+ */

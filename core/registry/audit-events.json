@@ -28,7 +28,7 @@
     "intent.approved": {
       "fields": {
         "required": ["intent", "source", "parent", "wait_ms"],
-        "optional": []
+        "optional": ["revision", "submission"]
       },
       "measures": ["wait_ms"],
       "pairs_with": ["gate.opened"]
@@ -104,7 +104,7 @@
     "gate.opened": {
       "fields": {
         "required": ["intent", "source"],
-        "optional": []
+        "optional": ["revision"]
       },
       "measures": [],
       "pairs_with": ["gate.approved", "gate.rejected", "intent.approved"]

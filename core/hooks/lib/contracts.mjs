@@ -31,15 +31,22 @@
  */
 
 /** @typedef {AuditBase & ({harness:'claude',tokens?:Tokens}|{harness?:Harness,tokens?:never})} AuditCommon */
+/**
+ * Optional on historical audit records, mandatory for evidence comparison.
+ * Digests and IDs bind data; they do not prove human consent or trusted provenance.
+ * @typedef {{path:'intent.md',sha256:string}} IntentRevision
+ * @typedef {{hook_event_name:'UserPromptSubmit',field:'prompt_id'|'turn_id',id:string,prompt_sha256:string}} Submission
+ * @typedef {({harness:'claude',submission:Submission & {field:'prompt_id'}}|{harness:'codex',submission:Submission & {field:'turn_id'}}) & {session:string,revision:IntentRevision}} IntentApprovalEvidence
+ */
 /** @typedef {AuditCommon & {type:'intent.created',intent:string,risk:Risk}} IntentCreated */
-/** @typedef {AuditCommon & {type:'intent.approved',intent:string,actor:'human',source:'intent',parent:string,wait_ms:number}} IntentApproved */
+/** @typedef {AuditCommon & {type:'intent.approved',intent:string,actor:'human',source:'intent',parent:string,wait_ms:number} & ({revision?:never,submission?:never}|IntentApprovalEvidence)} IntentApproved */
 /** @typedef {AuditCommon & {type:'intent.completed',intent:string,parent:string,duration_ms:number,ai_work_ms:number,human_wait_ms:number,human_review_ms:number}} IntentCompleted */
 /** @typedef {AuditCommon & {type:'stage.started',intent:string,stage:Stage}} StageStarted */
 /** @typedef {AuditCommon & {type:'stage.completed',intent:string,parent:string,duration_ms:number} & ({stage:'build',loop_iterations:number,tests:number}|{stage:Exclude<Stage,'build'>,loop_iterations?:number,tests?:number})} StageCompleted */
 /** @typedef {AuditCommon & {type:'unit.started',intent:string,unit:string,risk:Risk}} UnitStarted */
 /** @typedef {AuditCommon & {type:'unit.completed',intent:string,unit:string,risk:Risk,parent:string,duration_ms:number,files_changed:number,lines_changed:number}} UnitCompleted */
 /** @typedef {AuditCommon & {type:'checkpoint.confirmed',intent:string,actor:'human'} & ({checkpoint:'acceptance'|'scope'|'units'|'design',section?:string}|{checkpoint:'unit',unit:string}|{checkpoint:'section',section:string})} CheckpointConfirmed */
-/** @typedef {AuditCommon & {type:'gate.opened',intent:string,source:'intent'|'pr'}} GateOpened */
+/** @typedef {AuditCommon & {type:'gate.opened',intent:string,source:'intent'|'pr'} & ({revision?:never}|{revision:IntentRevision,source:'intent',actor:'hook',harness:Harness,session:string})} GateOpened */
 /** @typedef {AuditCommon & {type:'gate.approved',intent:string,actor:'human',source:'intent'|'pr',parent:string,wait_ms:number}} GateApproved */
 /** @typedef {AuditCommon & {type:'gate.rejected',intent:string,actor:'human',source:'intent'|'pr',parent:string,wait_ms:number,reason:string}} GateRejected */
 /** @typedef {AuditCommon & {type:'question.asked',intent:string,question:string,options:number} & ({blocking:false,default:string}|{blocking:true,default?:string})} QuestionAsked */
@@ -76,6 +83,7 @@
  * @property {string} [transcript_path]
  * @property {string} [model]
  * @property {string} [permission_mode]
+ * @property {string} [prompt_id] Claude UserPromptSubmit identity, preserved from captured input.
  * @property {string} [turn_id]
  * @property {string} [tool_use_id]
  * @property {string} [agent_type]

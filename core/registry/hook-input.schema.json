@@ -80,6 +80,10 @@
     },
     "last_assistant_message": {
       "type": "string"
+    },
+    "prompt_id": {
+      "type": "string",
+      "minLength": 1
     }
   },
   "required": ["session_id", "cwd", "hook_event_name"],
