@@ -2,7 +2,7 @@ import { findEvent } from "./lib/audit.mjs";
 import { run } from "./lib/io.mjs";
 
 /**
- * Record an observed Claude startup in the explicitly configured intent.
+ * Record an observed Claude or Codex startup in the explicitly configured intent.
  * No state inference, approval, resumption or token estimation.
  * @type {import('./lib/contracts.mjs').HookMain}
  */

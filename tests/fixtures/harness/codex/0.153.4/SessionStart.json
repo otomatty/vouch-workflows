@@ -1,0 +1,20 @@
+{
+  "harness": "codex",
+  "version": "0.153.4",
+  "synthetic": false,
+  "provenance": "captured",
+  "source": {
+    "path": "tests/fixtures/captures/codex-0.153.4.jsonl",
+    "commit": "99230c6",
+    "key": "SessionStart"
+  },
+  "payload": {
+    "session_id": "01a0e28a-7b10-7fa2-addc-f1d72607eba1",
+    "transcript_path": "C:\\Users\\saedg\\apps\\vouch-workflows\\reports\\codex-legacy\\home\\sessions\\2026\\09\\27\\rollout-2026-09-27T20-05-21-01a0e28a-7b10-7fa2-addc-f1d72607eba1.jsonl",
+    "cwd": "C:\\Users\\saedg\\apps\\vouch-workflows\\reports\\codex-legacy\\project space",
+    "hook_event_name": "SessionStart",
+    "model": "gpt-6-astra",
+    "permission_mode": "default",
+    "source": "startup"
+  }
+}

@@ -36,3 +36,7 @@ claude.exe --init-only --restricted --strict-mcp-config --settings C:/Users/saed
 ```
 
 設定 JSON・作業用ログ・CLI の設定保存先は `reports/` にあり、配布・コミットの対象外です。製品フックのテストで cwd・session_id・source 等を変えた入力は synthetic とします。Codex の版不明の記録をこの採取によって適格にすることはありません。
+
+## Codex 0.153.4
+
+SessionStart / UserPromptSubmit を各1件、2026-09-27 に対話 CLI から採取しました。原文は `codex-0.153.4.jsonl`、包装は `../harness/codex/0.153.4/` です。採取時 HEAD は `99230c6`。手順・隔離条件・非対話経路で未確認の点は [Codex 配布契約](../../../docs/development/codex-distribution.md)に記録しています。包装の payload は原文と同値です。旧 Codex fixture の version: null は保持します。
