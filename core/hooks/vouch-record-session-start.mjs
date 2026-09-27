@@ -8,7 +8,6 @@ import { run } from "./lib/io.mjs";
  */
 export async function main(input, ctx) {
   if (
-    ctx.harness !== "claude" ||
     input.hook_event_name !== "SessionStart" ||
     input.source !== "startup" ||
     !ctx.intent

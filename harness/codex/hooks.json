@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "VOUCH_HARNESS=codex node \"${VOUCH_PROJECT_ROOT:?VOUCH_PROJECT_ROOT required}/.codex/hooks/vouch-record-session-start.mjs\"",
+            "commandWindows": "$env:VOUCH_HARNESS = 'codex'; & node \"$env:VOUCH_PROJECT_ROOT/.codex/hooks/vouch-record-session-start.mjs\"; exit $LASTEXITCODE"
+          }
+        ]
+      }
+    ]
+  }
+}

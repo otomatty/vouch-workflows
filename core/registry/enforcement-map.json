@@ -56,7 +56,12 @@
         {
           "status": "implemented",
           "path": "tests/packaging/check.test.mjs",
-          "claim": "Claude 配布の再生成・バイト一致と、欠落・編集・余分なファイルの読み取り専用検出を確認する。Codex は未実装。"
+          "claim": "両配布の再生成・バイト一致と、Claude の欠落・編集および出力全体の余分なファイルの読み取り専用検出を確認する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/codex.test.mjs",
+          "claim": "Codex 配布のファイル集合・バイト一致、POSIX / Windows の登録と製品フックの双方向一致、サンドボックス設定を検査する。"
         }
       ]
     },
@@ -115,7 +120,7 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "HOOK-2: 他の製品フックと Codex 登録は未検証。Claude SessionStart の実登録では正常記録のみ観測済みで、実機異常系の全保証は未検証。"
+          "claim": "HOOK-2: 他の製品フックは未検証。Claude / Codex SessionStart の実登録では正常記録のみ観測済みで、実機異常系の全保証は未検証。"
         },
         {
           "status": "implemented",
@@ -142,7 +147,7 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "HOOK-3: 他の製品フックと Codex 登録は未検証。Claude SessionStart の実登録では正常記録のみ観測済みで、実機異常系の全保証は未検証。"
+          "claim": "HOOK-3: 他の製品フックは未検証。Claude / Codex SessionStart の実登録では正常記録のみ観測済みで、実機異常系の全保証は未検証。"
         },
         {
           "status": "implemented",
@@ -218,7 +223,7 @@
         },
         {
           "status": "pending",
-          "claim": "HOOK-6: 他の製品フックと Codex 登録は未検証。Claude SessionStart の実登録では正常記録のみ観測済みで、実機異常系の全保証は未検証。"
+          "claim": "HOOK-6: 他の製品フックは未検証。Claude / Codex SessionStart の実登録では正常記録のみ観測済みで、実機異常系の全保証は未検証。"
         },
         {
           "status": "implemented",
@@ -294,7 +299,7 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "HOOK-9: 他の製品フックと Codex 登録は未検証。Claude SessionStart の実登録では正常記録のみ観測済みで、実機異常系の全保証は未検証。"
+          "claim": "HOOK-9: 他の製品フックは未検証。Claude / Codex SessionStart の実登録では正常記録のみ観測済みで、実機異常系の全保証は未検証。"
         },
         {
           "status": "implemented",
@@ -363,7 +368,7 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "Windows で記録 p95 200ms が未達。Claude 配布実装時の最終測定は Node 22 / 24 で234.2 / 235.1ms。Linux の成功や補助測定を全環境の充足に数えない。検査系と他フックも未検証。"
+          "claim": "Codex 配布時の記録 p95 は Windows Node 22 / 24 で230.0 / 225.7ms、Linux Node 22 で228.1ms。200ms予算は未達。過去の Linux 成功や補助測定を今回の充足に数えない。検査系と他フックも未検証。"
         },
         {
           "status": "implemented",
@@ -390,7 +395,7 @@
         },
         {
           "status": "pending",
-          "claim": "HOOK-14: 他の製品フックと Codex 登録は未検証。Claude SessionStart の実登録では正常記録のみ観測済みで、実機異常系の全保証は未検証。"
+          "claim": "HOOK-14: 他の製品フックは未検証。Claude / Codex SessionStart の実登録では正常記録のみ観測済みで、実機異常系の全保証は未検証。"
         },
         {
           "status": "implemented",
@@ -401,6 +406,11 @@
           "status": "implemented",
           "path": "tests/hooks/vouch-record-session-start.test.mjs",
           "claim": "セッション開始フックで不正入力6種、stdin の intent 無視、設定 scope とリンクを検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/registry/codex-capture.test.mjs",
+          "claim": "Codex 0.153.4 の SessionStart / UserPromptSubmit の版・採取時 HEAD・原文との一致を検証。旧版不明9件は別に保持する。"
         }
       ]
     },
@@ -446,6 +456,16 @@
           "status": "implemented",
           "path": "docs/development/claude-distribution.md",
           "claim": "隔離した Claude Code 2.1.280 から配布の SessionStart 登録を起動し、session.started の実記録を観測した。"
+        },
+        {
+          "status": "implemented",
+          "path": "docs/development/codex-distribution.md",
+          "claim": "Codex 0.153.4 の隔離した対話 CLI で、生成した project SessionStart 設定から harness:codex の session.started を観測した。非対話経路は未確認。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/codex-session-start.test.mjs",
+          "claim": "版付き Codex 入力からの synthetic startup と新しい golden を全文比較。再送時刻・ハーネスごとの ID・no-op・偽装された fixture 表示を検査する。"
         }
       ]
     },
@@ -612,7 +632,12 @@
         {
           "status": "implemented",
           "path": "tests/packaging/check.test.mjs",
-          "claim": "Claude 配布の再生成・バイト一致と、欠落・編集・余分なファイルの読み取り専用検出を確認する。Codex は未実装。"
+          "claim": "両配布の再生成・バイト一致と、Claude の欠落・編集および出力全体の余分なファイルの読み取り専用検出を確認する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/codex.test.mjs",
+          "claim": "Codex 配布のファイル集合・バイト一致、POSIX / Windows の登録と製品フックの双方向一致、サンドボックス設定を検査する。"
         }
       ]
     },
@@ -629,7 +654,12 @@
         {
           "status": "implemented",
           "path": "tests/packaging/claude.test.mjs",
-          "claim": "Claude 配布の正確なファイル集合と、登録・製品フックの両方向一致を検査する。Codex は未実装。"
+          "claim": "Claude 配布の正確なファイル集合と、登録・製品フックの両方向一致を検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/codex.test.mjs",
+          "claim": "Codex 配布のファイル集合・バイト一致、POSIX / Windows の登録と製品フックの双方向一致、サンドボックス設定を検査する。"
         }
       ]
     },
@@ -640,13 +670,14 @@
       "mechanisms": ["test"],
       "checks": [
         {
-          "status": "pending",
-          "claim": "DIST-3 の全要件に対する検査は未完了。packaging テスト"
+          "status": "implemented",
+          "path": "tests/packaging/claude.test.mjs",
+          "claim": "Claude 配布の正確なファイル集合と、登録・製品フックの両方向一致を検査する。"
         },
         {
           "status": "implemented",
-          "path": "tests/packaging/claude.test.mjs",
-          "claim": "Claude 配布の正確なファイル集合と、登録・製品フックの両方向一致を検査する。Codex は未実装。"
+          "path": "tests/packaging/codex.test.mjs",
+          "claim": "Codex 配布のファイル集合・バイト一致、POSIX / Windows の登録と製品フックの双方向一致、サンドボックス設定を検査する。"
         }
       ]
     },
@@ -830,6 +861,11 @@
           "status": "implemented",
           "path": "tests/hooks/vouch-record-session-start.test.mjs",
           "claim": "セッション開始の JSONL を golden と全文比較する。更新は UPDATE_GOLDEN=1 の明示時だけ。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/codex-session-start.test.mjs",
+          "claim": "版付き Codex 入力からの synthetic startup と新しい golden を全文比較。再送時刻・ハーネスごとの ID・no-op・偽装された fixture 表示を検査する。"
         }
       ]
     },
@@ -846,17 +882,27 @@
         },
         {
           "status": "pending",
-          "claim": "Claude は UserPromptSubmit と SessionStart startup を採取済み。他イベントと Codex の版付き実機 fixture は未採取。既存 Codex 9件の version:null を維持する。"
+          "claim": "Claude 2.1.280 / Codex 0.153.4 の UserPromptSubmit と SessionStart startup を採取済み。他イベントの版付き実機 fixture は未採取。既存 Codex 9件の version:null を維持する。"
         },
         {
           "status": "implemented",
           "path": "tests/registry/captured-fixture.test.mjs",
-          "claim": "Claude Code 2.1.280 の UserPromptSubmit 1件の版・出所・原文との一致を検査する。他イベントと版付き Codex は未採取。"
+          "claim": "Claude Code 2.1.280 の UserPromptSubmit 1件の版・出所・原文との一致を検査する。他の Claude イベントは未採取。"
         },
         {
           "status": "implemented",
           "path": "tests/registry/session-start.test.mjs",
           "claim": "Claude Code 2.1.280 の SessionStart startup の採取原文・版・来歴を照合する。変種は synthetic とし、Codex の版不明9件は保持する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/registry/codex-capture.test.mjs",
+          "claim": "Codex 0.153.4 の SessionStart / UserPromptSubmit の版・採取時 HEAD・原文との一致を検証。旧版不明9件は別に保持する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/codex-session-start.test.mjs",
+          "claim": "版付き Codex 入力からの synthetic startup と新しい golden を全文比較。再送時刻・ハーネスごとの ID・no-op・偽装された fixture 表示を検査する。"
         }
       ]
     },
@@ -975,7 +1021,7 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "TEST-14: 他の製品フックと Codex 登録は未検証。Claude SessionStart の実登録では正常記録のみ観測済みで、実機異常系の全保証は未検証。"
+          "claim": "TEST-14: 他の製品フックは未検証。Claude / Codex SessionStart の実登録では正常記録のみ観測済みで、実機異常系の全保証は未検証。"
         },
         {
           "status": "implemented",
@@ -1003,6 +1049,11 @@
         {
           "status": "pending",
           "claim": "TEST-15 の全要件に対する検査は未完了。helper"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/scenario/codex-distribution.test.mjs",
+          "claim": "生成した Codex の登録コマンドを実シェルで実行し、記号・空白・日本語を含む root のサブディレクトリから synthetic startup と再送を検査する。Codex CLI 起動自体は別途実機検証。"
         }
       ]
     }

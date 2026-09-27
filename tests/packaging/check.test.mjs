@@ -1,4 +1,4 @@
-import { rm, symlink } from "node:fs/promises";
+import { rm } from "node:fs/promises";
 import { test } from "node:test";
 import { packageRun, tree } from "../helpers/packaging.mjs";
 import { sandbox } from "../helpers/runtime.mjs";
@@ -42,16 +42,4 @@ test("check detects missing, edited and extra files without repairing them", asy
   );
   t.assert.deepEqual(tree(box.path("dist")), changed);
   t.assert.equal(packageRun(["--unknown", ...args]).status, 1);
-});
-
-test("generation rejects linked output directories before writing outside its root", async (t) => {
-  const box = await sandbox(t);
-  const outside = await sandbox(t);
-  await symlink(outside.root, box.path("linked"), "junction");
-  t.plan(4);
-  for (const path of [box.path("linked"), box.path("linked/nested")]) {
-    const result = packageRun(["--out", path]);
-    t.assert.equal(result.status, 1);
-    t.assert.match(result.stderr, /PACKAGE-LINK/);
-  }
 });

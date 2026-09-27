@@ -1,5 +1,7 @@
 # セッション開始の監査記録
 
+現在は [Codex への拡張と検証](codex-distribution.md)まで実装済みです。以下の導入時の結果・残件は当時の記録です。
+
 ## 契約
 
 `vouch-record-session-start.mjs` は Claude Code の `SessionStart(source: startup)` を受け、明示的に選んだ Intent に `session.started` を記録します。決定記録 §11 の監査記録を実装する最初の製品フックです。状態の復元、要約、承認の判定は含みません。

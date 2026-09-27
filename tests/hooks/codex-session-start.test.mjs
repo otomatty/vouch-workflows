@@ -76,11 +76,11 @@ test("Codex unscoped startup and resume do not create audit state", async (t) =>
   const fixture = sessionFor(box.root, "codex");
   t.plan(3);
   const unscoped = runHook(hook, fixture, { root: box.root });
-  const resume = runHook(
-    hook,
-    { ...fixture, payload: { ...fixture.payload, source: "resume" } },
-    { root: box.root, intent },
-  );
+  const resumed = {
+    ...fixture,
+    payload: { ...fixture.payload, source: "resume" },
+  };
+  const resume = runHook(hook, resumed, { root: box.root, intent });
   t.assert.deepEqual(
     [unscoped.exitCode, unscoped.stdout, unscoped.stderr],
     [0, "", ""],
