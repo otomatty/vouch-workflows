@@ -43,7 +43,7 @@ node scripts/check-codex-review.mjs C:/Users/saedg/.bun/bin/codex.exe
 
 ## 残る検証
 
-今回確認したのはWindowsの対話CLIと明示した2操作です。LinuxでのCodex CLI、非対話経路、他のCLI版、異常系全般を対応済みとは扱いません。真正性保証・監査への書き込み保護・状態更新の阻止は未実装です。Windowsの記録性能3件も従来どおり未達で、実機確認の成功によって時間予算を合格にしません。
+今回確認したのはWindowsの対話CLIと明示した2操作です。LinuxでのCodex CLI、非対話経路、他のCLI版、異常系全般を対応済みとは扱いません。その後、Linux の Codex 0.153.4 の exec・対話 CLI で、配布登録の終了0/2の伝播と異常系の一部を確認しました（[版付き fixture と伝播の検証](harness-fixtures.md)）。Windows の非対話経路と他の版は引き続き未確認です。真正性保証・監査への書き込み保護・状態更新の阻止は未実装です。Windowsの記録性能3件も従来どおり未達で、実機確認の成功によって時間予算を合格にしません。
 
 登録と終了2の意味は[Codexのフック文書](https://learn.chatgpt.com/docs/hooks)を参照しました。実際に記録されプロバイダーへ進まなかったことは、上記の実機観測を根拠にしています。
 
