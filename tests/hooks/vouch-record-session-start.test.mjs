@@ -199,7 +199,7 @@ test("invalid scope and linked audit directories cannot write outside the intent
 test("recording startup stays below the p95 budget over twenty process executions", async (t) => {
   const box = await sandbox(t);
   const fixture = sessionFor(box.root);
-  const times = [];
+  /** @type {number[]} */ const times = [];
   t.plan(budgets.timing.samples * 2 + 1);
   for (let i = 0; i < budgets.timing.samples; i++) {
     const result = runHook(
@@ -214,6 +214,8 @@ test("recording startup stays below the p95 budget over twenty process execution
     t.assert.equal(result.stderr, "");
     times.push(result.durationMs);
   }
+  // Raw samples in execution order, so a cold or contended tail is visible in CI logs.
+  t.diagnostic(`record samples ${times.map((ms) => ms.toFixed(1)).join(" ")}`);
   times.sort((a, b) => a - b);
   const p95 = times[Math.ceil(times.length * 0.95) - 1];
   t.diagnostic(`record p95 ${p95?.toFixed(1)} ms (${times.length} executions)`);

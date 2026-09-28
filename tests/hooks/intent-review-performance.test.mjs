@@ -9,7 +9,7 @@ for (const operation of ["open", "approve"])
     box.submit("vouch review");
     const [gate] = await box.rows();
     if (!gate) throw Error("gate");
-    const times = [];
+    /** @type {number[]} */ const times = [];
     t.plan(budgets.timing.samples * 2 + 1);
     for (let index = 0; index < budgets.timing.samples; index++) {
       const fixture = box.fixture(
@@ -30,6 +30,10 @@ for (const operation of ["open", "approve"])
       );
       times.push(result.durationMs);
     }
+    // Raw samples in execution order, so a cold or contended tail is visible in CI logs.
+    t.diagnostic(
+      `${operation} record samples ${times.map((ms) => ms.toFixed(1)).join(" ")}`,
+    );
     times.sort((a, b) => a - b);
     const p95 = times[Math.ceil(times.length * 0.95) - 1];
     t.diagnostic(
