@@ -4,8 +4,8 @@ import { tmpdir } from "node:os";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { performance } from "node:perf_hooks";
 import { pathToFileURL } from "node:url";
-import { isDeepStrictEqual } from "node:util";
-import { isContractFixture, readJson, validator } from "./registry.mjs";
+import { contractReference, deriveFixture } from "./fixtures.mjs";
+import { readJson, validator } from "./registry.mjs";
 
 // Filesystem-only tests do not compile schemas. Preparation precedes hook timing.
 /** @type {ReturnType<typeof validator>|undefined} */
@@ -89,24 +89,12 @@ function capturedSession(harness = "claude") {
 
 /** @param {string} root @param {'claude'|'codex'} [harness] @returns {import('../../core/hooks/lib/contracts.mjs').HarnessFixture} */
 export function sessionFor(root, harness = "claude") {
-  const capture = capturedSession(harness);
-  return {
-    ...capture,
-    synthetic: true,
-    provenance: "synthetic",
-    payload: { ...capture.payload, cwd: root },
-  };
+  return deriveFixture(capturedSession(harness), { cwd: root });
 }
 
 /** @param {string} root @returns {import('../../core/hooks/lib/contracts.mjs').HarnessFixture} */
 export function promptFor(root) {
-  const capture = capturedPrompt();
-  return {
-    ...capture,
-    synthetic: true,
-    provenance: "synthetic",
-    payload: { ...capture.payload, cwd: root },
-  };
+  return deriveFixture(capturedPrompt(), { cwd: root });
 }
 
 /**
@@ -116,22 +104,10 @@ export function promptFor(root) {
  * @param {{root:string,raw?:string,intent?:string,instant?:string,coverage?:boolean,configuredHarness?:'claude'|'codex',moduleLog?:string}} options
  */
 export function runHook(mode, fixture, options) {
-  const reference =
-    fixture.payload.hook_event_name === "SessionStart"
-      ? capturedSession(fixture.harness)
-      : capturedPrompt(fixture.harness);
-  if (
-    !isContractFixture(reference) ||
-    reference.harness !== fixture.harness ||
-    reference.payload.hook_event_name !== fixture.payload.hook_event_name
-  )
-    throw new Error("TEST-7: no versioned capture for this harness event");
+  // Throws TEST-7 unless an inventoried capture of this kind and version exists.
+  contractReference(fixture);
   validateFixture ??= validator("harness-fixture");
-  if (
-    !validateFixture(fixture) ||
-    fixture.version !== reference.version ||
-    (!fixture.synthetic && !isDeepStrictEqual(fixture, reference))
-  )
+  if (!validateFixture(fixture))
     throw new Error(
       "TEST-7: changed payload must be marked synthetic with matching capture version",
     );

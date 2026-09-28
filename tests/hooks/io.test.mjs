@@ -95,12 +95,17 @@ test("transport helper requires a matching versioned capture", (t) => {
 
 test("transport helper runs inventoried tool kinds and refuses uncaptured ones", async (t) => {
   const box = await sandbox(t);
-  const edit = deriveFixture(
-    readJson(
-      "tests/fixtures/harness/claude/2.1.283/linux/print/PreToolUse.Edit.json",
-    ),
-    { cwd: box.root },
+  const capture = readJson(
+    "tests/fixtures/harness/claude/2.1.283/linux/print/PreToolUse.Edit.json",
   );
+  // Both the cwd and the edited path move into the sandbox; io rejects paths outside it.
+  const edit = deriveFixture(capture, {
+    cwd: box.root,
+    tool_input: {
+      ...capture.payload.tool_input,
+      file_path: box.path("intent.md"),
+    },
+  });
   const plan = {
     ...readJson("tests/fixtures/harness/codex/postToolUse_updatePlan.json"),
     synthetic: true,
