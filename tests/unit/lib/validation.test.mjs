@@ -41,6 +41,38 @@ test("unsupported schema vocabulary and references fail closed before evaluation
   );
 });
 
+test("unsupported schema vocabulary is rejected at every nested position", (t) => {
+  const unsupported = /** @type {never} */ ({ maxLength: 1 });
+  /** @type {import('../../../core/hooks/lib/validation.mjs').Schema[]} */
+  const nested = [
+    { properties: { first: {}, second: unsupported } },
+    { oneOf: [{}, unsupported] },
+    { allOf: [{}, unsupported] },
+    { items: unsupported },
+    { if: unsupported },
+    // Parsed like the registries; a `then` literal would read as a thenable.
+    JSON.parse('{"then":{"maxLength":1}}'),
+    { else: unsupported },
+    { type: ["string", /** @type {never} */ ("invented")] },
+    { properties: { deep: { oneOf: [{ items: { else: unsupported } }] } } },
+  ];
+  t.plan(nested.length + 1);
+  for (const schema of nested)
+    t.assert.throws(
+      () => assertSupportedSchema(schema),
+      /REG-1: unsupported/,
+      JSON.stringify(schema),
+    );
+  t.assert.doesNotThrow(() =>
+    assertSupportedSchema({
+      type: "object",
+      properties: { a: { type: "array", items: { type: "integer" } } },
+      oneOf: [{ required: ["a"] }],
+      allOf: [JSON.parse('{"if":{},"then":{},"else":{}}')],
+    }),
+  );
+});
+
 test("all synthetic input shapes and required-field mutations agree with Ajv", (t) => {
   const validate = validator("hook-input");
   const fixtures = readJson("tests/fixtures/harness/synthetic.json");
