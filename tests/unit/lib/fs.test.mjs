@@ -83,6 +83,36 @@ test("file store maps every root and input spelling of an aliased directory to t
   t.assert.equal(await box.read("nested/file"), "through alias");
 });
 
+test("file store classifies lexically contained paths without an alias lookup and the parent as an escape", async (t) => {
+  const box = await sandbox(t, { git: false });
+  const base = realpathSync.native(box.root);
+  let lookups = 0;
+  const files = await createFileStore(base, {
+    ...fs,
+    realpath: /** @type {typeof fs.realpath} */ (
+      /** @type {unknown} */ (
+        async (/** @type {string} */ path) => {
+          lookups++;
+          return fs.realpath(path);
+        }
+      )
+    ),
+  });
+  const nested = join(base, "nested", "file");
+  /** @type {[string, string][]} */
+  const contained = [
+    [".", base],
+    ["nested/file", nested],
+    [base, base],
+    [nested, nested],
+  ];
+  t.plan(contained.length + 2);
+  for (const [input, expected] of contained)
+    t.assert.equal(await files.resolvePath(input), expected);
+  t.assert.equal(lookups, 1, "only the root itself is canonicalized");
+  await t.assert.rejects(files.resolvePath(".."), /FS-ESCAPE/);
+});
+
 test("file store keeps rejecting escapes, links and ambiguous names reached through a root alias", async (t) => {
   const box = await sandbox(t, { git: false });
   const other = await sandbox(t, { git: false });

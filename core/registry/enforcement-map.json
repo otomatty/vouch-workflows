@@ -342,7 +342,7 @@
         {
           "status": "implemented",
           "path": "tests/unit/lib/fs.test.mjs",
-          "claim": "共通 FileStore の包含・リンク拒否・原子的置換・失敗時の原本維持を検査する。root と入力の別名（記号リンク・junction）の4通りを実体の root に対応付け、別名経由でも root 外・root 内のリンク・root 自身へのリンク・予約名・ADS を拒否することも検査する。Windows の 8.3 短縮名・subst は CI の一時ディレクトリでのみ観測する。"
+          "claim": "共通 FileStore の包含・リンク拒否・原子的置換・失敗時の原本維持を検査する。root と入力の別名（記号リンク・junction）の4通りを実体の root に対応付け、別名経由でも root 外・root 内のリンク・root 自身へのリンク・予約名・ADS を拒否し、字句上 root 配下のパスでは realpath を追加しないことも検査する。Windows の 8.3 短縮名・subst は CI の一時ディレクトリでのみ観測する。"
         },
         {
           "status": "implemented",
