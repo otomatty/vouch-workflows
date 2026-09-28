@@ -507,7 +507,7 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "CI の hooks 階層（CPU 数並列）では、Windows の記録 p95 200ms 未満が安定しない。fd7e8c5 以降の合格は、Ubuntu が CI 16件中15件・Benchmark 24回中24回、Windows Node 22 が CI 8件中2件・Benchmark 12回中3回、Windows Node 24 が CI 8件中5件・Benchmark 12回中8回。失敗は20回中2回以上の200ms超え。フック単体の費用は下がったが、全環境での充足とはしない。詳細は hook-startup.md。"
+          "claim": "CPU 数 − 1 個の合成負荷の下での予算テスト（b420323 以降）は、CI で Windows 8件中7件・Ubuntu 8件中6件、Benchmark で既定の temp の Windows 12回中9回・Ubuntu 12回中12回、RUNNER_TEMP では Windows・Ubuntu とも12回中12回合格。失敗は runner の一時的な遅れで20回中数回が大きく遅れたもの。全環境での安定した充足とはしない。詳細は hook-startup.md。"
         },
         {
           "status": "implemented",

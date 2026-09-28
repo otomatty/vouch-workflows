@@ -175,3 +175,18 @@ Issue #2 の条件（閾値、20回、CPU 並列、起動込み、fsync を変�
 - packaging：`scripts/lib/test-phases.mjs` の `testPhases` を検査します。hooks の予算テストだけを並列1の最後の段階に分けること、他の階層と予算テストのない hooks は1段階のままであることを確かめます。
 - content：HOOK-13 の閾値を参照する hooks のテストが `*-performance.test.mjs` だけであることを検査します。予算テストが `cpuLoad` を使い、計測の後に負荷を止めることも検査します。
 - CI：Windows / Ubuntu × Node 22.19.0 / 24.x で、変更後の予算テストの生の値を記録します。
+
+### 変更後の結果
+
+b420323・8b0097c の CI と Benchmark の値です（ms）。値は [hook-startup-samples.md](hook-startup-samples.md) にあります。
+
+| 実行 | Windows | Ubuntu |
+| --- | --- | --- |
+| CI 4回（予算テストの合格） | 8件中7件。失敗は Node 24 の1件で、レビュー開始が5秒の打ち切り（5031.8ms）、セッション開始 205.0 | 8件中6件。失敗はレビュー開始 212.0（Node 22）と 238.2（Node 24） |
+| Benchmark、既定の temp（2回×3回） | 12回中9回。失敗はセッション開始 237.4、承認 215.6、サンプルを出す前の打ち切り1回 | 12回中12回（最大 79.4） |
+| Benchmark、`RUNNER_TEMP`（2回×3回） | 12回中12回（最大 170.6） | 12回中12回（最大 79.8） |
+
+- Windows の予算テストの p95 は多くが 130〜176ms、中央値は約 99〜138ms になりました。変更前の hooks 階層では、Node 22 のレビュー開始の中央値が 150〜170ms でした。
+- 1ケースの時間は、Windows で 2.2〜3.7秒、Ubuntu で 1.2〜2.2秒です。負荷の準備は、Windows で 285〜650ms、Ubuntu で 144〜292ms かかります。check 全体は、Windows で 36〜57秒、Ubuntu で 20〜25秒です。
+- 失敗は、どれも20回のうち数回だけが大きく遅れたものです。Ubuntu の失敗したジョブでは、多くの値が 35〜50ms で、一部が 100〜578ms でした。同じ Benchmark の runner では、Ubuntu の720回に200ms以上はありませんでした。Windows の既定の temp では、C: の fsync の遅れが加わります。
+- 8b0097c の Windows のジョブでは、同じ時間帯に packaging・scenario の PowerShell の起動も5秒の打ち切りに達しました。これも runner の遅れです。
