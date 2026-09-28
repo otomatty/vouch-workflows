@@ -89,3 +89,9 @@ export {};
  * @property {(path:string,options:{force:true}) => unknown} rm
  * @property {(path:string) => unknown} rmdir
  */
+
+/**
+ * Synchronous descriptor ports for the hook's own stdin and stderr; EAGAIN is retried.
+ * @typedef {(descriptor:number,buffer:Uint8Array,offset:number,length:number,position:null) => number} DescriptorRead
+ * @typedef {(descriptor:number,buffer:Uint8Array,offset:number,length:number) => number} DescriptorWrite
+ */
