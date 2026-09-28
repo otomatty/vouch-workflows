@@ -5,7 +5,9 @@
  * @typedef {{now:() => string,newId:(session:string,identity:string) => string}} Clock
  * @typedef {(before:string|null) => string|null} TextUpdate
  * @typedef {object} FileStore
- * @property {(path:string) => Promise<string>} resolvePath Reject escapes, links and nonregular files.
+ * @property {(path:string) => Promise<string>} resolvePath Return the canonical-root target. An absolute
+ * spelling through an alias of the root directory maps to it; escapes, links below the root and
+ * nonregular files are rejected.
  * @property {(path:string) => Promise<string|null>} readText Return null only for a missing file.
  * @property {(path:string,update:TextUpdate) => Promise<boolean>} updateText Serialize with a lock; replace atomically.
  * @property {(path:string,text:string) => Promise<boolean>} writeText Write through updateText.
