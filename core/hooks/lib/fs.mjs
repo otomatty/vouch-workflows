@@ -1,5 +1,7 @@
-import * as fs from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+
+// The builtin object avoids the ESM facade, which evaluates fs.promises and the stream getters.
+const fs = process.getBuiltinModule("node:fs");
 
 /** Direct I/O in the isolated hook process; every FileStore boundary still awaits.
  * @type {import('./runtime-contracts.mjs').FileOperations} */
@@ -34,8 +36,62 @@ function hasCode(error, code) {
   return error instanceof Error && "code" in error && error.code === code;
 }
 
+const pause = new Int32Array(new SharedArrayBuffer(4));
+
 /**
- * Serialized, atomic replacement within a trusted root. Existing links are refused.
+ * Retry a synchronous descriptor call that a nonblocking descriptor refused for now.
+ * @template T @param {() => T} call @returns {T}
+ */
+function retrying(call) {
+  for (;;) {
+    try {
+      return call();
+    } catch (error) {
+      if (!hasCode(error, "EAGAIN")) throw error;
+      Atomics.wait(pause, 0, 0, 5);
+    }
+  }
+}
+
+/**
+ * Chunks of a descriptor until end of input, read synchronously without stream modules.
+ * The caller owns the size limit and stops iterating once it is exceeded.
+ * @param {number} descriptor
+ * @param {import('./runtime-contracts.mjs').DescriptorRead} [read]
+ * @returns {Generator<Uint8Array>}
+ */
+export function* readDescriptor(descriptor, read = fs.readSync) {
+  const buffer = Buffer.alloc(64 * 1024);
+  for (;;) {
+    const size = retrying(() =>
+      read(descriptor, buffer, 0, buffer.length, null),
+    );
+    if (size === 0) return;
+    yield Buffer.from(buffer.subarray(0, size));
+  }
+}
+
+/**
+ * A synchronous writer for a diagnostic descriptor that completes partial writes.
+ * @param {number} descriptor
+ * @param {import('./runtime-contracts.mjs').DescriptorWrite} [write]
+ * @returns {{write:(text:string) => void}}
+ */
+export function descriptorWriter(descriptor, write = fs.writeSync) {
+  return {
+    write(text) {
+      const bytes = Buffer.from(text, "utf8");
+      for (let offset = 0; offset < bytes.length; )
+        offset += retrying(() =>
+          write(descriptor, bytes, offset, bytes.length - offset),
+        );
+    },
+  };
+}
+
+/**
+ * Serialized, atomic replacement within a trusted root. Existing links below it are refused,
+ * while another absolute spelling of the root directory itself maps to its canonical path.
  * The optional native operations port permits deterministic disk-failure tests.
  * @param {string} root
  * @param {import('./runtime-contracts.mjs').FileOperations} [operations]
@@ -46,6 +102,29 @@ export async function createFileStore(root, operations = native) {
   if (!(await operations.stat(base)).isDirectory())
     throw new Error("FS-ROOT: directory required");
 
+  /**
+   * An absolute path may reach the root through another spelling (8.3, junction, subst, link).
+   * The shallowest ancestor that is the root wins, so links inside the root stay below it.
+   * @param {string} absolute
+   */
+  async function belowRootAlias(absolute) {
+    /** @type {string[]} */ const ancestors = [];
+    for (let path = absolute; ; path = dirname(path)) {
+      ancestors.unshift(path);
+      if (dirname(path) === path) break;
+    }
+    for (const ancestor of ancestors) {
+      try {
+        if (relative(base, await operations.realpath(ancestor)) === "")
+          return relative(ancestor, absolute);
+      } catch (error) {
+        if (hasCode(error, "ENOENT") || hasCode(error, "ENOTDIR")) break;
+        throw error;
+      }
+    }
+    throw new Error("FS-ESCAPE: outside project root");
+  }
+
   /** @param {string} path */
   async function resolvePath(path) {
     // Reject ADS and ambiguous Win32 names on every host, while allowing a drive prefix.
@@ -55,10 +134,13 @@ export async function createFileStore(root, operations = native) {
       path.replace(/^[A-Za-z]:[\\/]/, "").includes(":")
     )
       throw new Error("FS-PATH: invalid path");
-    const target = resolve(base, path.replaceAll("\\", "/"));
-    const local = relative(base, target);
-    if (local === ".." || local.startsWith(`..${sep}`) || isAbsolute(local))
-      throw new Error("FS-ESCAPE: outside project root");
+    const lexical = resolve(base, path.replaceAll("\\", "/"));
+    const inside = relative(base, lexical);
+    const local =
+      inside === ".." || inside.startsWith(`..${sep}`) || isAbsolute(inside)
+        ? await belowRootAlias(lexical)
+        : inside;
+    const target = join(base, local);
     let current = base;
     for (const part of local.split(sep).filter(Boolean)) {
       if (

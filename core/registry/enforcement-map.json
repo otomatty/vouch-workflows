@@ -309,6 +309,11 @@
           "claim": "ネットワーク組み込みimportを拒否する。"
         },
         {
+          "status": "implemented",
+          "path": "tests/content/hook-structure.test.mjs",
+          "claim": "依存検査の対象外になる process.getBuiltinModule の呼び出しを、lib/fs.mjs の \"node:fs\" だけに制限する。"
+        },
+        {
           "status": "pending",
           "claim": "HOOK-5 の全要件に対する検査は未完了。Biome noRestrictedImports ＋ noRestrictedGlobals（fetch, WebSocket）"
         }
@@ -336,13 +341,18 @@
           "claim": "版付きfixtureから明示的にsyntheticとした日本語sessionをrunHookで2回記録し、日本語・空白・引用符を含むrootでの正常終了、追記内容、ロック解放を確認する。CLIの実機採取ではない。"
         },
         {
+          "status": "implemented",
+          "path": "tests/content/hook-structure.test.mjs",
+          "claim": "依存検査の対象外になる process.getBuiltinModule の呼び出しを、lib/fs.mjs の \"node:fs\" だけに制限する。"
+        },
+        {
           "status": "pending",
           "claim": "HOOK-6: 他の製品フックは未検証。Claude / Codex SessionStart の実登録では正常記録のみ観測済みで、実機異常系の全保証は未検証。"
         },
         {
           "status": "implemented",
           "path": "tests/unit/lib/fs.test.mjs",
-          "claim": "共通 FileStore の包含・リンク拒否・原子的置換・失敗時の原本維持を検査する。"
+          "claim": "共通 FileStore の包含・リンク拒否・原子的置換・失敗時の原本維持を検査する。root と入力の別名（記号リンク・junction）の4通りを実体の root に対応付け、別名経由でも root 外・root 内のリンク・root 自身へのリンク・予約名・ADS を拒否し、字句上 root 配下のパスでは realpath を追加しないことも検査する。Windows の 8.3 短縮名・subst は CI の一時ディレクトリでのみ観測する。"
         },
         {
           "status": "implemented",
@@ -497,12 +507,12 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "Windowsの同期ファイル操作への変更後もp95 200ms未満は未達。Node 24はレビュー開始304.0ms・承認278.1ms・セッション開始275.1ms、Node 22は412.6ms・412.0ms・461.9ms。Linux Node 22.20.0でも今回の全体検査では承認307.1msで未達。単独交互比較は変更前146.4ms・変更後102.9msだが、全体検査の失敗を置き換えない。詳細は file-store-performance.md。"
+          "claim": "CPU 数 − 1 個の合成負荷の下での予算テスト（b420323 以降）は、CI で Windows 20件中18件・Ubuntu 20件中18件合格。Windows の temp を RUNNER_TEMP にした 35dc338 では Windows 8件中7件・Ubuntu 8件中8件。失敗は runner の一時的な遅れで20回中数回が200msを超えたもの。全環境での安定した充足とはしない。詳細は hook-startup.md。"
         },
         {
           "status": "implemented",
-          "path": "tests/hooks/vouch-record-session-start.test.mjs",
-          "claim": "20回の子プロセス起動を含む記録 p95 を計測する。200ms の閾値は維持。現在の PC では未達でテストは失敗する。"
+          "path": "tests/hooks/session-start-performance.test.mjs",
+          "claim": "セッション開始の記録を、CPU 数 − 1 個の背景プロセスが no-op フックを起動し続ける合成負荷の下で20回計測し、起動込みの p95 200ms 未満を要求する。閾値は維持。"
         },
         {
           "status": "implemented",
@@ -517,12 +527,32 @@
         {
           "status": "implemented",
           "path": "tests/hooks/intent-review-performance.test.mjs",
-          "claim": "レビュー開始と承認記録を各20回計測し、既存のp95 200ms未満を要求する。Windowsでは未達で、合格扱いにしない。"
+          "claim": "レビュー開始と承認記録を、CPU 数 − 1 個の背景プロセスによる合成負荷の下で各20回計測し、既存の p95 200ms 未満を要求する。Windows の CI での安定した充足は未確認で、合格扱いにしない。"
         },
         {
           "status": "implemented",
           "path": "docs/development/intent-review.md",
           "claim": "Linux / Node 22.20.0 のレビュー開始と承認の各20回でp95 129.7ms / 114.5msを観測し予算内。Windowsの未達を解消したとは扱わない。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/startup-modules.test.mjs",
+          "claim": "no-op・遮断・セッション開始・レビュー開始・承認の実プロセスが、stream・internal/fs/promises・net・crypto の組み込みモジュールを読み込まないことを検査する。起動費用の削減を固定するが、p95 の充足は示さない。"
+        },
+        {
+          "status": "implemented",
+          "path": "scripts/benchmark-suite.mjs",
+          "claim": "hooks 階層で予算テストと同時に走る処理（git init、配布生成、カバレッジ付きフック）と、FileStore と同じ大きさの fsync / fdatasync を保存先ごとに測る補助測定。HOOK-13 の合否は判定しない。"
+        },
+        {
+          "status": "implemented",
+          "path": "scripts/lib/test-phases.mjs",
+          "claim": "hooks 階層の予算テスト（*-performance.test.mjs）を、他のテストの CPU 数並列の段階から分け、最後に1ファイルずつ実行する。負荷は各予算テストが tests/helpers/cpu-load.mjs で自ら起動し、計測後に止める。"
+        },
+        {
+          "status": "implemented",
+          "path": ".github/workflows/ci.yml",
+          "claim": "Windows の CI ジョブで TMP・TEMP を RUNNER_TEMP（作業ボリューム）に向ける。npm の各段階より前に設定することを tests/content/environment.test.mjs が検査する。"
         }
       ]
     },
@@ -544,7 +574,12 @@
         {
           "status": "implemented",
           "path": "tests/unit/lib/io.test.mjs",
-          "claim": "共通 io の不正入力・例外・tool_input.file_path の検査呼び出しを確認する。"
+          "claim": "共通 io の不正入力・例外・tool_input.file_path の検査呼び出しを確認する。root の別名で綴った cwd・file_path で main が呼ばれることも確認する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/scenario/claude-root-alias.test.mjs",
+          "claim": "配布した Claude SessionStart を別名の root・cwd と、実体の root・別名の cwd で実行し、golden と一致する1件の記録を確認する。手製の synthetic 入力で、実機の別名環境での採取ではない。"
         },
         {
           "status": "implemented",
@@ -1055,7 +1090,7 @@
         {
           "status": "implemented",
           "path": "tests/content/environment.test.mjs",
-          "claim": "完全固定のdevDependenciesとlockfileの一致を検査する。"
+          "claim": "完全固定のdevDependenciesとlockfileの一致、lockfileの依存の解決・到達、lockfileを書き換えるnpmの版を検査する。"
         }
       ]
     },
@@ -1160,7 +1195,7 @@
         {
           "status": "implemented",
           "path": "scripts/test.mjs",
-          "claim": "CPU数の並列でテストを実行する。sandboxと書込み隔離検査は未実装。"
+          "claim": "予算テスト以外を CPU 数の並列で実行する。HOOK-13 の予算テストは合成負荷の下で最後に1ファイルずつ実行する。sandboxと書込み隔離検査は未実装。"
         },
         {
           "status": "pending",
@@ -1376,7 +1411,7 @@
         {
           "status": "implemented",
           "path": "scripts/test.mjs",
-          "claim": "CPU数で並列実行する。Node 22 のファイル単位タイムアウトと hooks の各ケース5秒は分けて扱う。"
+          "claim": "予算テスト以外を CPU 数で並列実行し、HOOK-13 の予算テストは合成負荷の下で最後に1ファイルずつ実行する。Node 22 のファイル単位タイムアウトと hooks の各ケース5秒は分けて扱う。"
         },
         {
           "status": "implemented",
@@ -1385,7 +1420,7 @@
         },
         {
           "status": "pending",
-          "claim": "Windows Node 22 / 24の全体検査は212件完走、209件成功・性能3件失敗。キャンセルはないが記録性能ケースは5秒を超える場合があり、時間予算は未達。詳細は file-store-performance.md。"
+          "claim": "CI の check 全体は Windows 27〜55秒・Ubuntu 13〜23秒で90秒以内。Windows の runner が遅い時は、記録性能のケースが5秒を超える（25f12fa の Benchmark で11.8秒）。詳細は hook-startup.md。"
         },
         {
           "status": "implemented",

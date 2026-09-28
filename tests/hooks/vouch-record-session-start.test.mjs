@@ -1,5 +1,4 @@
 import { symlink } from "node:fs/promises";
-import budgets from "../../core/registry/budgets.json" with { type: "json" };
 import { assertGolden } from "../helpers/golden.mjs";
 import { hookTest as test } from "../helpers/hook-test.mjs";
 import { validator } from "../helpers/registry.mjs";
@@ -194,32 +193,4 @@ test("invalid scope and linked audit directories cannot write outside the intent
   t.assert.match(linked.stderr, /FS-LINK/);
   t.assert.equal(linked.exitCode, 0);
   await t.assert.rejects(outside.read("events.jsonl"), { code: "ENOENT" });
-});
-
-test("recording startup stays below the p95 budget over twenty process executions", async (t) => {
-  const box = await sandbox(t);
-  const fixture = sessionFor(box.root);
-  const times = [];
-  t.plan(budgets.timing.samples * 2 + 1);
-  for (let i = 0; i < budgets.timing.samples; i++) {
-    const result = runHook(
-      hook,
-      {
-        ...fixture,
-        payload: { ...fixture.payload, session_id: `timing-${i}` },
-      },
-      { root: box.root, intent, coverage: false },
-    );
-    t.assert.equal(result.exitCode, 0);
-    t.assert.equal(result.stderr, "");
-    times.push(result.durationMs);
-  }
-  times.sort((a, b) => a - b);
-  const p95 = times[Math.ceil(times.length * 0.95) - 1];
-  t.diagnostic(`record p95 ${p95?.toFixed(1)} ms (${times.length} executions)`);
-  t.assert.equal(
-    typeof p95 === "number" && p95 < budgets.timing.recordP95Ms,
-    true,
-    `HOOK-13: ${p95} < ${budgets.timing.recordP95Ms}`,
-  );
 });

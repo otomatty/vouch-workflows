@@ -113,7 +113,7 @@ export function promptFor(root) {
  * Product entries and the separate transport driver share the same observation boundary.
  * @param {string} mode
  * @param {import('../../core/hooks/lib/contracts.mjs').HarnessFixture} fixture
- * @param {{root:string,raw?:string,intent?:string,instant?:string,coverage?:boolean,configuredHarness?:'claude'|'codex'}} options
+ * @param {{root:string,raw?:string,intent?:string,instant?:string,coverage?:boolean,configuredHarness?:'claude'|'codex',moduleLog?:string}} options
  */
 export function runHook(mode, fixture, options) {
   const reference =
@@ -146,12 +146,18 @@ export function runHook(mode, fixture, options) {
     VOUCH_TEST_TIME: options.instant ?? fakeClock().now(),
   };
   if (options.coverage === false) delete env.NODE_V8_COVERAGE;
+  if (options.moduleLog) env.VOUCH_TEST_MODULE_LOG = options.moduleLog;
   const result = spawnSync(
     process.execPath,
     product
       ? [
           "--disable-warning=ExperimentalWarning",
           `--import=${pathToFileURL(resolve("tests/helpers/fixed-clock.mjs")).href}`,
+          ...(options.moduleLog
+            ? [
+                `--import=${pathToFileURL(resolve("tests/helpers/module-probe.mjs")).href}`,
+              ]
+            : []),
           resolve(`core/hooks/${mode}.mjs`),
         ]
       : [resolve("tests/fixtures/runtime/driver.mjs"), mode],

@@ -2,6 +2,7 @@ import { createHook } from "node:async_hooks";
 import native from "node:fs";
 import * as fs from "node:fs/promises";
 import { syncBuiltinESMExports } from "node:module";
+import { join } from "node:path";
 import { test } from "node:test";
 import { createFileStore } from "../../../core/hooks/lib/fs.mjs";
 import { sandbox } from "../../helpers/runtime.mjs";
@@ -169,13 +170,15 @@ test("file store retains a UTF-8 BOM as content through reading and rewriting", 
 test("file store rejects reserved device names without rejecting their harmless suffixes", async (t) => {
   const box = await sandbox(t, { git: false });
   const files = await createFileStore(box.root);
+  // Resolved paths are spelled from the canonical root, which the temp directory may alias.
+  const base = native.realpathSync.native(box.root);
   const forbidden = ["COM1", "com9.dat", "LPT1", "lpt9.dat"];
   const allowed = ["recon.txt", "preCOM1.txt", "adapter-lpt9.dat"];
   t.plan(forbidden.length + allowed.length);
   for (const name of forbidden)
     await t.assert.rejects(files.resolvePath(name), /FS-PATH/);
   for (const name of allowed)
-    t.assert.equal(await files.resolvePath(name), box.path(name));
+    t.assert.equal(await files.resolvePath(name), join(base, name));
 });
 
 test("file store does not swallow a non-Error port failure carrying an ENOENT property", async (t) => {
@@ -194,10 +197,15 @@ test("file store does not swallow a non-Error port failure carrying an ENOENT pr
 test("native cleanup propagates errors other than a missing temporary file", async (t) => {
   const box = await sandbox(t, { git: false });
   const files = await createFileStore(box.root);
+  const next = join(
+    native.realpathSync.native(box.root),
+    "audit.vouch-lock",
+    "next",
+  );
   const error = Object.assign(new Error("cleanup denied"), { code: "EACCES" });
   const originalUnlink = native.unlinkSync;
   native.unlinkSync = (path) => {
-    if (path === box.path("audit.vouch-lock/next")) throw error;
+    if (path === next) throw error;
     originalUnlink(path);
   };
   syncBuiltinESMExports();

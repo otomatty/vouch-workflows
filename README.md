@@ -22,6 +22,8 @@ Windows で既存の npm 起動スクリプトが `MODULE_NOT_FOUND` になる�
 .\scripts\npm.ps1 run check
 ```
 
+lockfile を書き換えるときは npm 11.5.0〜11.6.2 を使いません。版と手順は [lockfile の生成](docs/development/lockfile.md) を参照してください。
+
 依存パッケージはすべて開発用です。利用者に配るコードは Node.js 組み込みモジュールだけで動く `.mjs` とし、ビルドを挟みません。
 
 ## コマンド
@@ -46,7 +48,7 @@ Windows で既存の npm 起動スクリプトが `MODULE_NOT_FOUND` になる�
 
 配布先では `node .claude/hooks/vouch-doctor.mjs` または `node .codex/hooks/vouch-doctor.mjs` で Node / Git、必要ファイル、登録設定を診断できます。開発用の `npm run doctor` とは別のコマンドです。詳細と確認範囲は [doctor](docs/development/doctor.md)を参照してください。
 
-プロセス起動の補助測定は `node scripts/benchmark-hook.mjs` です。6条件を交互に20回測り、p50 / p95 と生データを JSON で出力します。予算の合否は従来どおり `test:hooks` が判定します。
+プロセス起動の補助測定は `node scripts/benchmark-hook.mjs` です。7条件（レビュー開始を含む）を交互に20回測り、p50 / p95 と生データを JSON で出力します。`--load` を付けると、CPU 数より1少ない数の背景プロセスが no-op フックを起動し続ける中で測ります。PowerShell / sh の起動は `node scripts/benchmark-shell.mjs` で環境変数とコマンドごとに比べます。GitHub Actions の Benchmark ワークフローは、これらを Windows / Ubuntu × Node.js 22.19.0 / 24.x で実行し、生データを artifact に残します。予算の合否は従来どおり `test:hooks` などのテストが判定します。
 
 配布先の Skill は Claude で `/vouch doctor`・`/vouch status`、Codex で `$vouch doctor`・`$vouch status` と指定します。引数なしでは対応範囲を案内します。他の操作は未実装です。[Skill の契約と検証範囲](docs/development/doctor-skill.md)を参照してください。
 

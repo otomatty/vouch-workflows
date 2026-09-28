@@ -6,7 +6,9 @@
     "scripts/*.mjs",
     "tests/**/*.test.mjs",
     "tests/helpers/no-network.mjs",
-    "tests/helpers/fixed-clock.mjs"
+    "tests/helpers/fixed-clock.mjs",
+    "tests/helpers/module-probe.mjs",
+    "tests/helpers/load-worker.mjs"
   ],
   "project": [
     "core/**/*.mjs",

@@ -9,11 +9,11 @@
 | `clock.mjs` | `now()`, `newId(session, identity)` | UTC 時刻、セッションと入力識別子の決定的 ID |
 | `env.mjs` | `readContext(env?)` | 明示された root・harness と任意の `VOUCH_INTENT` を読む。root・harness の未設定や不正値は拒否 |
 | `validation.mjs` | `parseInput(text)`, `isAuditEvent(value)`, `isHookResult(value)`, `assertSupportedSchema(schema)` | 既存 JSON Schema の利用部分を依存ゼロで評価。ロード時に対応語彙を確認し、未知の構文はエラー |
-| `fs.mjs` | `createFileStore(root)` | root 内の読み込み・原子的な更新。シンボリックリンク・junction・複数リンクのファイルを拒否 |
+| `fs.mjs` | `createFileStore(root)` | root 内の読み込み・原子的な更新。root を指す別名の絶対パスは実体の root に対応付け、root の中のシンボリックリンク・junction・複数リンクのファイルを拒否 |
 | `audit.mjs` | `createAuditStore(files, path)`, `createIntentAuditStore(files, intent)`, `findEvent(store, id)` | `find(id)` は全ログ検証後に検索。`append(events)` はバッチをコピー・検証し、既存行保存と重複排除。破損・ID衝突は書かずに拒否 |
 | `io.mjs` | `run(main, options?)` | stdin のサイズ・JSON・スキーマ・パスを検査し main を呼ぶ。例外は ID 付き stderr と終了0、遮断は理由付き終了2 |
 
-`run()` は不正入力なら main を呼びません。未知のトップレベル入力フィールドを取り除き、`tool_input` のキーは各ツールの入力として保持します。1 MiB 以上は拒否します。パスの字句上の `../` だけでは判定せず、解決先と実在する祖先を検査します。
+フックの stdin・stderr と組み込みモジュールの読込は [記録フックの起動費用](hook-startup.md)で定めます。`run()` は不正入力なら main を呼びません。未知のトップレベル入力フィールドを取り除き、`tool_input` のキーは各ツールの入力として保持します。1 MiB 以上は拒否します。パスの字句上の `../` だけでは判定せず、解決先と実在する祖先を検査します。root と同じディレクトリを指す別の綴り（8.3 短縮名・junction・subst・記号リンク）の扱いは [root の別名と包含判定](root-alias.md)で定めます。
 
 `HookMain` の返値は内部用です。正常時の stdout は空、遮断理由は stderr に出します。内部のイベントや `decision: allow` をハーネス向け JSON として直接出力しません。再開要約などのハーネス固有 JSON は後続のアダプタで定義します。
 

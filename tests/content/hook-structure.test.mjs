@@ -97,3 +97,54 @@ test("runtime source keeps clock and exit access within their boundaries without
     );
   }
 });
+
+test("runtime source loads a builtin outside import only for fs and never uses stdio streams", (t) => {
+  const files = readdirSync("core/hooks", {
+    recursive: true,
+    withFileTypes: true,
+  })
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".mjs"))
+    .map((entry) =>
+      `${entry.parentPath}/${entry.name}`
+        .replaceAll("\\", "/")
+        .replace(/^.*?core\/hooks\//, ""),
+    )
+    .sort();
+  /** @type {string[]} */ const calls = [];
+  /** @type {string[]} */ const stdio = [];
+  for (const file of files) {
+    const source = readFileSync(`core/hooks/${file}`, "utf8");
+    // Dependency-cruiser cannot see these loads, so HOOK-5 and HOOK-6 rely on this list.
+    for (const match of source.matchAll(/getBuiltinModule\(([^)]*)\)/g))
+      calls.push(`${file} ${match[1]}`);
+    if (/process\.std(?:in|err)\b/.test(source)) stdio.push(file);
+  }
+  t.plan(2);
+  t.assert.deepEqual(calls, ['lib/fs.mjs "node:fs"'], "HOOK-5; HOOK-6");
+  t.assert.deepEqual(stdio, [], "HOOK-13: descriptor stdio");
+});
+
+test("HOOK-13 budgets are measured only in performance files under the synthetic CPU load", (t) => {
+  const files = readdirSync("tests/hooks")
+    .filter((name) => name.endsWith(".test.mjs"))
+    .sort();
+  const source = (/** @type {string} */ name) =>
+    readFileSync(`tests/hooks/${name}`, "utf8");
+  const performance = files.filter((name) =>
+    name.endsWith("-performance.test.mjs"),
+  );
+  t.plan(1 + performance.length * 2);
+  t.assert.deepEqual(
+    files.filter((name) => source(name).includes("recordP95Ms")),
+    performance,
+    "HOOK-13: budget files",
+  );
+  for (const name of performance) {
+    t.assert.match(source(name), /= await cpuLoad\(t\);/, `${name}: load`);
+    t.assert.match(
+      source(name),
+      /\} finally \{\s*await load\.stop\(\);\s*\}/,
+      `${name}: load stops after measuring`,
+    );
+  }
+});

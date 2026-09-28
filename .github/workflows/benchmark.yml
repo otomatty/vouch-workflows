@@ -1,0 +1,57 @@
+name: Benchmark
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/benchmark.yml
+      - scripts/benchmark-*.mjs
+      - core/hooks/**
+permissions:
+  contents: read
+concurrency:
+  group: benchmark-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  benchmark:
+    # Diagnostic only: raw samples for the runner, never a budget gate.
+    name: Node ${{ matrix.node }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22.19.0, 24.x]
+        os: [ubuntu-latest, windows-latest]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - run: node scripts/benchmark-hook.mjs | tee benchmark-hook.json
+      - run: node scripts/benchmark-hook.mjs --load | tee benchmark-hook-load.json
+      - run: node scripts/benchmark-hook.mjs --profile | tee benchmark-hook-profile.json
+      - run: node scripts/benchmark-audit.mjs | tee benchmark-audit.json
+      - run: node scripts/benchmark-shell.mjs | tee benchmark-shell.json
+      - run: |
+          npm ci
+          node scripts/benchmark-suite.mjs | tee benchmark-suite.json
+      # The real CPU-parallel hooks suite for the budget tests' raw samples, alternating the
+      # default temp directory with RUNNER_TEMP on the job's work volume.
+      - run: |
+          for round in 1 2 3; do
+            node scripts/test.mjs hooks > "hooks-$round.log" 2>&1 || true
+            grep -E "record (samples|p95)|load .* ready|^not ok|✖ |^ +error:" "hooks-$round.log" | sed "s/^/round $round: /" | tee -a benchmark-hooks-suite.txt || true
+            TMP="$RUNNER_TEMP" TEMP="$RUNNER_TEMP" TMPDIR="$RUNNER_TEMP" node scripts/test.mjs hooks > "hooks-$round-runner-temp.log" 2>&1 || true
+            grep -E "record (samples|p95)|load .* ready|^not ok|✖ |^ +error:" "hooks-$round-runner-temp.log" | sed "s/^/round $round runner-temp: /" | tee -a benchmark-hooks-suite.txt || true
+          done
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-${{ matrix.os }}-node-${{ matrix.node }}
+          path: |
+            benchmark-*.json
+            benchmark-hooks-suite.txt
+            hooks-*.log

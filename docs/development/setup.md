@@ -2,7 +2,7 @@
 
 ## 採用した構成
 
-実装ルール §3 に合わせ、npm、Biome 2、TypeScript 6、dependency-cruiser、markdownlint-cli2、knip 6、Ajv、StrykerJS を使用します。バージョンは `package.json` で完全固定し、推移依存は `package-lock.json` に記録します。導入は `npm ci` で再現します。
+実装ルール §3 に合わせ、npm、Biome 2、TypeScript 6、dependency-cruiser、markdownlint-cli2、knip 6、Ajv、StrykerJS を使用します。バージョンは `package.json` で完全固定し、推移依存は `package-lock.json` に記録します。導入は `npm ci` で再現します。lockfile を書き換える npm の版と手順は[lockfile の生成](lockfile.md)に記載します。npm 11.5.0〜11.6.2 では lockfile を書き換えません。
 
 `.npmrc` は `engine-strict=true` と `save-exact=true` を設定しています。開発用の最小バージョンは Node.js 22.19.0、ローカルの基準は 24.13.0 です。22.19.0 はテスト機能と開発依存の要件を満たす共通の下限です。
 
@@ -33,13 +33,13 @@ Stryker 10 の `typed-rest-client` が固定する `qs` に npm audit の指摘�
 
 テストには Node.js 組み込みの `node:test` を使います。`t.plan(n)` の計数対象となる `t.assert` は `node:assert/strict` のラッパーです。仕様書 §7 の例のように別途 import した `assert` を呼ぶだけでは `t.plan` に計数されないため、新しいテストでは `t.assert` を使います。
 
-テストは CPU 並列数で実行し、1 テストの上限を予算表から読みます。テスト用 preload は `fetch` を例外に差し替えます。`node:http` など別の通信手段まで遮断するサンドボックスではありません。
+テストは CPU 並列数で実行し、1 テストの上限を予算表から読みます。`npm test` は失敗した階層があっても残りの階層を実行し、最後に失敗した階層名を表示して終了コード1で終わります。前の階層の失敗で後の階層の結果が得られなくなることを避けるためで、失敗を成功扱いにする変更ではありません。テスト用 preload は `fetch` を例外に差し替えます。`node:http` など別の通信手段まで遮断するサンドボックスではありません。
 
 Node.js 22 の `--test-timeout` は分離したテストファイル全体にも適用されます。複数ケースのある hooks では、ファイルの上限を check と同じ90秒、各ケースを `hookTest()` の `timeout: 5000` と経過時間検査で5秒に制限します。同期の子プロセス待ちでタイマーが遅れても成功扱いにしません。時間予算そのものは変更していません。
 
 unit のカバレッジ設定は行 95% / 分岐 95% / 関数 100%、hooks は行 90% / 分岐 85% です。unit は共通 lib、hooks は共通 io の driver とセッション開始フックを検査します。製品フックの子プロセスのカバレッジを集計し、全エントリのソースがレポートにあることも検査します。空の階層を個別指定すると失敗します。packaging は両ハーネスの配布のバイト一致・登録整合・変更検出、scenario は配布先での SessionStart 記録と重複防止を検査します。ワークフロー全体のシナリオは未実装です。
 
-GitHub Actions は Ubuntu / Windows × Node.js 22.19.0 / 24.x で `npm ci`、doctor、check を実行します。検査コマンド全体の 90 秒予算は `scripts/check.mjs` が監視します。依存ダウンロードと runner 起動はこの計測に含めず、ジョブ全体のタイムアウトは 5 分です。
+GitHub Actions は Ubuntu / Windows × Node.js 22.19.0 / 24.x で `npm ci`、doctor、check を実行します。bddb412 の初回 CI は lockfile の不整合で4ジョブとも `npm ci` に失敗しました。lockfile を修正した 32c1824 では4ジョブとも check まで到達し、Ubuntu は成功、Windows は既存のテスト時間超過と FS-ESCAPE で失敗しました。各ジョブの Node.js / npm の版、原因、結果は[lockfile の生成](lockfile.md)に記録しています。Windows の FS-ESCAPE は、runner の一時ディレクトリの 8.3 短縮名が原因でした。356f38a で修正し、4ジョブとも scenario と unit が成功しています（[root の別名と包含判定](root-alias.md)）。検査コマンド全体の 90 秒予算は `scripts/check.mjs` が監視します。依存ダウンロードと runner 起動はこの計測に含めず、ジョブ全体のタイムアウトは 5 分です。
 
 ## この PC の npm 起動問題
 

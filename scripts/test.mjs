@@ -3,6 +3,7 @@ import { readdirSync } from "node:fs";
 import { availableParallelism } from "node:os";
 import { resolve } from "node:path";
 import budgets from "../core/registry/budgets.json" with { type: "json" };
+import { testPhases } from "./lib/test-phases.mjs";
 
 /** @param {string} directory */
 function files(directory) {
@@ -19,6 +20,8 @@ if (selected && !["unit", "hooks"].includes(selected)) {
 const suites = selected
   ? [selected]
   : ["content", "registry", "packaging", "scenario", "unit", "hooks"];
+// A failing suite must not hide the results of later suites; the run still fails.
+/** @type {string[]} */ const failed = [];
 for (const suite of suites) {
   const tests = files(`tests/${suite}`);
   if (tests.length === 0) {
@@ -26,13 +29,6 @@ for (const suite of suites) {
     console.log(`No ${suite} tests yet.`);
     continue;
   }
-  const flags = [
-    "--test",
-    // Node 22 times out the whole file; hookTest enforces five seconds per case.
-    `--test-timeout=${suite === "hooks" ? budgets.timing.checkTimeoutMs : budgets.timing.testTimeoutMs}`,
-    `--test-concurrency=${availableParallelism()}`,
-    "--import=./tests/helpers/no-network.mjs",
-  ];
   const productHooks = readdirSync("core/hooks").filter((name) =>
     name.endsWith(".mjs"),
   );
@@ -40,36 +36,56 @@ for (const suite of suites) {
     console.log(
       "Transport tests only; product hook coverage is not measured yet.",
     );
-  if (suite === "unit" || (suite === "hooks" && productHooks.length > 0)) {
-    const coverage =
-      suite === "unit" ? budgets.coverage.lib : budgets.coverage.hooks;
-    flags.push(
-      "--experimental-test-coverage",
-      `--test-coverage-include=${suite === "unit" ? "core/hooks/lib/**/*.mjs" : "core/hooks/*.mjs"}`,
-      `--test-coverage-lines=${coverage.lines}`,
-      `--test-coverage-branches=${coverage.branches}`,
-    );
-    if (suite === "unit")
-      flags.push(`--test-coverage-functions=${budgets.coverage.lib.functions}`);
-  }
-  const result = spawnSync(process.execPath, [...flags, ...tests], {
-    encoding: "utf8",
-    maxBuffer: 8 * 1024 * 1024,
-    windowsHide: true,
-  });
-  process.stdout.write(result.stdout ?? "");
-  process.stderr.write(result.stderr ?? "");
-  if (result.error) throw result.error;
-  if (suite === "hooks") {
-    for (const name of productHooks) {
-      const measured = result.stdout
-        .split("\n")
-        .some(
-          (line) => line.includes(name) && /\|\s*\d+(?:\.\d+)?\s*\|/.test(line),
+  // HOOK-13 budget files run last and alone, under the load they start themselves.
+  for (const phase of testPhases(suite, tests, availableParallelism())) {
+    const flags = [
+      "--test",
+      // Node 22 times out the whole file; hookTest enforces five seconds per case.
+      `--test-timeout=${suite === "hooks" ? budgets.timing.checkTimeoutMs : budgets.timing.testTimeoutMs}`,
+      `--test-concurrency=${phase.concurrency}`,
+      "--import=./tests/helpers/no-network.mjs",
+    ];
+    const measured =
+      !phase.budget &&
+      (suite === "unit" || (suite === "hooks" && productHooks.length > 0));
+    if (measured) {
+      const coverage =
+        suite === "unit" ? budgets.coverage.lib : budgets.coverage.hooks;
+      flags.push(
+        "--experimental-test-coverage",
+        `--test-coverage-include=${suite === "unit" ? "core/hooks/lib/**/*.mjs" : "core/hooks/*.mjs"}`,
+        `--test-coverage-lines=${coverage.lines}`,
+        `--test-coverage-branches=${coverage.branches}`,
+      );
+      if (suite === "unit")
+        flags.push(
+          `--test-coverage-functions=${budgets.coverage.lib.functions}`,
         );
-      if (!measured)
-        throw new Error(`TEST-8: no child process coverage for ${name}`);
     }
+    const result = spawnSync(process.execPath, [...flags, ...phase.files], {
+      encoding: "utf8",
+      maxBuffer: 8 * 1024 * 1024,
+      windowsHide: true,
+    });
+    process.stdout.write(result.stdout ?? "");
+    process.stderr.write(result.stderr ?? "");
+    if (result.error) throw result.error;
+    if (suite === "hooks" && measured) {
+      for (const name of productHooks) {
+        const covered = result.stdout
+          .split("\n")
+          .some(
+            (line) =>
+              line.includes(name) && /\|\s*\d+(?:\.\d+)?\s*\|/.test(line),
+          );
+        if (!covered)
+          throw new Error(`TEST-8: no child process coverage for ${name}`);
+      }
+    }
+    if (result.status !== 0 && !failed.includes(suite)) failed.push(suite);
   }
-  if (result.status !== 0) process.exit(result.status ?? 1);
+}
+if (failed.length > 0) {
+  console.error(`Failed test suites: ${failed.join(", ")}`);
+  process.exit(1);
 }

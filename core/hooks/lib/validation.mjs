@@ -53,7 +53,13 @@ const keywords = new Set([
   "else",
 ]);
 
-/** @param {Schema} schema @returns {void} Reject unsupported vocabulary before evaluation. */
+const types = new Set(["object", "array", "integer", "string", "boolean"]);
+
+/**
+ * Reject unsupported vocabulary before evaluation. Every hook start walks the whole
+ * registries, so the walk allocates no per-node arrays (see docs/development/hook-startup.md).
+ * @param {Schema} schema @returns {void}
+ */
 export function assertSupportedSchema(schema) {
   for (const key of Object.keys(schema)) {
     if (!keywords.has(key))
@@ -63,22 +69,22 @@ export function assertSupportedSchema(schema) {
     throw new Error("REG-1: unsupported reference");
   if (
     schema.type &&
-    (Array.isArray(schema.type) ? schema.type : [schema.type]).some(
-      (type) =>
-        !["object", "array", "integer", "string", "boolean"].includes(type),
-    )
+    !(Array.isArray(schema.type)
+      ? schema.type.every((type) => types.has(type))
+      : types.has(schema.type))
   )
     throw new Error("REG-1: unsupported schema type");
-  const children = [
-    ...Object.values(schema.properties ?? {}),
-    ...(schema.oneOf ?? []),
-    ...(schema.allOf ?? []),
-    schema.items,
-    schema.if,
-    schema.then,
-    schema.else,
-  ];
-  for (const child of children) if (child) assertSupportedSchema(child);
+  if (schema.properties)
+    for (const key of Object.keys(schema.properties))
+      assertSupportedSchema(/** @type {Schema} */ (schema.properties[key]));
+  if (schema.oneOf)
+    for (const child of schema.oneOf) assertSupportedSchema(child);
+  if (schema.allOf)
+    for (const child of schema.allOf) assertSupportedSchema(child);
+  if (schema.items) assertSupportedSchema(schema.items);
+  if (schema.if) assertSupportedSchema(schema.if);
+  if (schema.then) assertSupportedSchema(schema.then);
+  if (schema.else) assertSupportedSchema(schema.else);
 }
 
 /** @param {unknown} value @returns {value is Record<string,unknown>} */
@@ -104,7 +110,18 @@ function typed(type, value) {
   }
 }
 
-/** @param {Schema} schema @param {unknown} value @returns {boolean} */
+/** @param {string} value Code points, as minLength counts them, without an array copy. */
+function codePoints(value) {
+  let length = 0;
+  for (const _ of value) length++;
+  return length;
+}
+
+/**
+ * Hooks validate the input and every audit line on each run, so the walk avoids
+ * per-node arrays; the checks and their order are unchanged.
+ * @param {Schema} schema @param {unknown} value @returns {boolean}
+ */
 function matches(schema, value) {
   // Reject the other audit variants before walking shared fields. The matching
   // variant still receives every check below; nonliteral legacy types do too.
@@ -127,7 +144,7 @@ function matches(schema, value) {
   if (Object.hasOwn(schema, "const") && value !== schema.const) return false;
   if (schema.enum && !schema.enum.includes(value)) return false;
   if (typeof value === "string") {
-    if (schema.minLength !== undefined && [...value].length < schema.minLength)
+    if (schema.minLength !== undefined && codePoints(value) < schema.minLength)
       return false;
     if (schema.pattern && !new RegExp(schema.pattern, "u").test(value))
       return false;
@@ -141,11 +158,12 @@ function matches(schema, value) {
   if (object(value)) {
     if (schema.required?.some((key) => !Object.hasOwn(value, key)))
       return false;
-    for (const [key, field] of Object.entries(value)) {
-      const property = Object.hasOwn(schema.properties ?? {}, key)
-        ? schema.properties?.[key]
-        : undefined;
-      if (property && !matches(property, field)) return false;
+    for (const key of Object.keys(value)) {
+      const property =
+        schema.properties && Object.hasOwn(schema.properties, key)
+          ? schema.properties[key]
+          : undefined;
+      if (property && !matches(property, value[key])) return false;
       if (!property && schema.additionalProperties === false) return false;
     }
   }
@@ -155,11 +173,11 @@ function matches(schema, value) {
     !value.every((item) => matches(/** @type {Schema} */ (schema.items), item))
   )
     return false;
-  if (
-    schema.oneOf &&
-    schema.oneOf.filter((child) => matches(child, value)).length !== 1
-  )
-    return false;
+  if (schema.oneOf) {
+    let matched = 0;
+    for (const child of schema.oneOf) if (matches(child, value)) matched++;
+    if (matched !== 1) return false;
+  }
   if (schema.allOf && !schema.allOf.every((child) => matches(child, value)))
     return false;
   if (schema.if) {

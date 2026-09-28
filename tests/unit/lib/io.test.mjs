@@ -1,3 +1,5 @@
+import { symlink } from "node:fs/promises";
+import { join } from "node:path";
 import { Readable } from "node:stream";
 import { test } from "node:test";
 import { run } from "../../../core/hooks/lib/io.mjs";
@@ -132,14 +134,13 @@ test("io contains stream failures and primitive exceptions", async (t) => {
   t.assert.equal(closed.output.stdout, "");
 });
 
-test("io defaults use trusted environment, stdin, stderr and process exit status", async (t) => {
+// Descriptor 0 is the test runner's open pipe here; hooks tests cover the real stdin default.
+test("io defaults use trusted environment, descriptor stderr and process exit status", async (t) => {
   const box = await sandbox(t, { git: false });
-  const saved = Object.getOwnPropertyDescriptor(process, "stdin");
   const oldCode = process.exitCode;
   const oldRoot = process.env.VOUCH_PROJECT_ROOT,
     oldHarness = process.env.VOUCH_HARNESS;
   t.after(() => {
-    if (saved) Object.defineProperty(process, "stdin", saved);
     process.exitCode = oldCode;
     if (oldRoot === undefined) delete process.env.VOUCH_PROJECT_ROOT;
     else process.env.VOUCH_PROJECT_ROOT = oldRoot;
@@ -148,20 +149,56 @@ test("io defaults use trusted environment, stdin, stderr and process exit status
   });
   process.env.VOUCH_PROJECT_ROOT = box.root;
   process.env.VOUCH_HARNESS = "claude";
-  Object.defineProperty(process, "stdin", {
-    configurable: true,
-    value: Readable.from([
-      Buffer.from(JSON.stringify(promptFor(box.root).payload)),
-    ]),
-  });
   let called = false;
-  await run(async () => {
-    called = true;
-    return { decision: "allow" };
-  });
+  await run(
+    async () => {
+      called = true;
+      return { decision: "allow" };
+    },
+    {
+      stdin: Readable.from([
+        Buffer.from(JSON.stringify(promptFor(box.root).payload)),
+      ]),
+    },
+  );
   t.plan(2);
   t.assert.equal(called, true);
   t.assert.equal(process.exitCode, 0);
+});
+
+test("io invokes main for cwd and file_path spelled through an alias of the configured root", async (t) => {
+  const box = await sandbox(t, { git: false });
+  const other = await sandbox(t, { git: false });
+  const alias = other.path("alias");
+  await symlink(box.root, alias, "junction");
+  const base = promptFor(alias).payload;
+  const cases = [
+    { root: alias, cwd: alias, file: join(alias, "src", "file.txt") },
+    { root: box.root, cwd: join(alias, "nested"), file: join(alias, "file") },
+  ];
+  t.plan(cases.length * 2);
+  for (const { root, cwd, file } of cases) {
+    const port = ports(
+      JSON.stringify({
+        ...base,
+        cwd,
+        hook_event_name: "PreToolUse",
+        tool_name: "Write",
+        tool_input: { file_path: file },
+      }),
+    );
+    let called = false;
+    const { files: _memory, ...options } = port.options;
+    await run(
+      async () => {
+        called = true;
+        return { decision: "allow" };
+      },
+      { ...options, context: { ...options.context, projectRoot: root } },
+    );
+    t.assert.equal(called, true, port.output.stderr);
+    t.assert.deepEqual(port.output, { stdout: "", stderr: "", code: 0 });
+  }
 });
 
 test("io fails open without invoking main for malformed and oversized input", async (t) => {

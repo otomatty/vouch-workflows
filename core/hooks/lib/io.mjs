@@ -1,6 +1,6 @@
 import { createIntentAuditStore } from "./audit.mjs";
 import { readContext, readDoctorContext } from "./env.mjs";
-import { createFileStore } from "./fs.mjs";
+import { createFileStore, descriptorWriter, readDescriptor } from "./fs.mjs";
 import { isHookResult, parseInput } from "./validation.mjs";
 
 /**
@@ -11,7 +11,8 @@ import { isHookResult, parseInput } from "./validation.mjs";
  * @returns {Promise<void>}
  */
 export async function run(main, options = {}) {
-  const stderr = options.stderr ?? process.stderr;
+  // Hook stdio stays on descriptors 0 and 2; the stdio stream getters would load stream modules.
+  const stderr = options.stderr ?? descriptorWriter(2);
   const finish =
     options.finish ??
     ((code) => {
@@ -21,7 +22,7 @@ export async function run(main, options = {}) {
   try {
     const chunks = [];
     let size = 0;
-    for await (const chunk of options.stdin ?? process.stdin) {
+    for await (const chunk of options.stdin ?? readDescriptor(0)) {
       const bytes = Buffer.from(chunk);
       size += bytes.length;
       if (size >= 1024 * 1024)

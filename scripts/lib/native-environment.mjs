@@ -64,7 +64,8 @@ export function probeNode(env) {
           "-NoProfile",
           "-NonInteractive",
           "-Command",
-          "& node --version; exit $LASTEXITCODE",
+          // Resolving an application never needs modules; a miss must not scan them.
+          "$PSModuleAutoLoadingPreference = 'None'; & node --version; exit $LASTEXITCODE",
         ]
       : ["-c", "node --version"],
     { env, encoding: "utf8", windowsHide: true, timeout: 4000 },

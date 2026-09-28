@@ -1,12 +1,11 @@
-import { createHash } from "node:crypto";
-import { elapsedMilliseconds } from "./clock.mjs";
+import { elapsedMilliseconds, sha256Hex } from "./clock.mjs";
 import { isAuditEvent } from "./validation.mjs";
 
 /** @param {string} text @returns {string|null} */
 function digest(text) {
   const bytes = Buffer.from(text, "utf8");
   if (bytes.toString("utf8") !== text) return null;
-  return createHash("sha256").update(bytes).digest("hex");
+  return sha256Hex(bytes);
 }
 
 /** @type {import('./runtime-contracts.mjs').SnapshotIntent} */
