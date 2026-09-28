@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { hookTest as test } from "../helpers/hook-test.mjs";
+import { intent, reviewBox } from "../helpers/intent-review.mjs";
 import {
   promptFor,
   runHook,
@@ -67,7 +68,7 @@ test("no-op and digest-free denials read stdin and report without stream, fs pro
   }
 });
 
-test("recording a startup loads neither fs promises nor network modules", async (t) => {
+test("recording a startup loads no stream, fs promises, network or crypto modules", async (t) => {
   const box = await sandbox(t);
   const moduleLog = box.path("modules.json");
   const result = runHook("vouch-record-session-start", sessionFor(box.root), {
@@ -85,5 +86,32 @@ test("recording a startup loads neither fs promises nor network modules", async 
     2,
     "one recorded event",
   );
-  t.assert.deepEqual(await loaded(moduleLog, [promises, net]), []);
+  t.assert.deepEqual(
+    await loaded(moduleLog, [stream, promises, net, crypto]),
+    [],
+  );
+});
+
+test("recording a review and its approval with digests loads no stream, fs promises, network or crypto modules", async (t) => {
+  const box = await reviewBox(t);
+  const openLog = box.path("modules-open.json");
+  const open = runHook(
+    "vouch-record-intent-review",
+    box.fixture("vouch review", "modules-open"),
+    { root: box.root, intent, coverage: false, moduleLog: openLog },
+  );
+  const [gate] = await box.rows();
+  if (!gate) throw Error("gate");
+  const approveLog = box.path("modules-approve.json");
+  const approve = runHook(
+    "vouch-record-intent-review",
+    box.fixture(`vouch approve ${gate.id}`, "modules-approve"),
+    { root: box.root, intent, coverage: false, moduleLog: approveLog },
+  );
+  t.plan(5);
+  t.assert.match(open.stderr, /VOUCH-REVIEW-RECORDED/);
+  t.assert.match(approve.stderr, /VOUCH-APPROVAL-RECORDED/);
+  t.assert.equal((await box.rows()).length, 2, "gate and approval recorded");
+  for (const log of [openLog, approveLog])
+    t.assert.deepEqual(await loaded(log, [stream, promises, net, crypto]), []);
 });

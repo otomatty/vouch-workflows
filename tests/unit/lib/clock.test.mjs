@@ -1,8 +1,10 @@
+import { createHash, randomBytes } from "node:crypto";
 import { test } from "node:test";
 import {
   elapsedMilliseconds,
   newId,
   now,
+  sha256Hex,
 } from "../../../core/hooks/lib/clock.mjs";
 
 test("clock reports UTC using the supplied test clock", (t) => {
@@ -16,6 +18,53 @@ test("event identity is stable and separates sessions and ambiguous components",
   t.assert.notEqual(newId("session", "input"), newId("other", "input"));
   t.assert.notEqual(newId("a:b", "c"), newId("a", "b:c"));
   t.assert.match(newId("session", "input"), /^evt_[a-f0-9]{64}$/);
+});
+
+test("event identity is the SHA-256 of the JSON pair", (t) => {
+  t.plan(1);
+  t.assert.equal(
+    newId("session", "input"),
+    `evt_${createHash("sha256").update('["session","input"]').digest("hex")}`,
+  );
+});
+
+test("sha256Hex matches the FIPS 180-4 examples", (t) => {
+  const examples = [
+    ["", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"],
+    ["abc", "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"],
+    [
+      "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq",
+      "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1",
+    ],
+  ];
+  t.plan(examples.length);
+  for (const [text, digest] of examples)
+    t.assert.equal(sha256Hex(Buffer.from(String(text), "utf8")), digest);
+});
+
+test("sha256Hex equals node:crypto across block boundaries and large inputs", (t) => {
+  const sizes = [
+    ...Array.from({ length: 301 }, (_, size) => size),
+    511,
+    512,
+    513,
+    1000,
+    4095,
+    4096,
+    65535,
+    65536,
+    100000,
+    1024 * 1024,
+  ];
+  t.plan(sizes.length);
+  for (const size of sizes) {
+    const bytes = randomBytes(size);
+    t.assert.equal(
+      sha256Hex(bytes),
+      createHash("sha256").update(bytes).digest("hex"),
+      `${size} bytes`,
+    );
+  }
 });
 
 test("elapsed UTC milliseconds validate calendar dates and time ordering", (t) => {
