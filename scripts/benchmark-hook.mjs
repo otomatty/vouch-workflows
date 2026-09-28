@@ -1,5 +1,6 @@
 import { spawn, spawnSync } from "node:child_process";
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -102,7 +103,8 @@ function owned(root) {
 if (process.argv[2] === "--load-worker") {
   const root = process.argv[3] ?? "";
   if (!owned(root)) throw new Error("Unsafe benchmark load root");
-  for (let i = 0; ; i++) {
+  // Stop between executions, so no orphaned hook keeps the root busy on Windows.
+  for (let i = 0; !existsSync(join(root, "stop")); i++) {
     const { args, env, input } = execution(root, "load", i);
     spawnSync(process.execPath, args, {
       cwd: root,
@@ -213,7 +215,7 @@ try {
     ),
   );
 } finally {
-  for (const worker of workers) worker.kill();
+  writeFileSync(join(root, "stop"), "");
   await Promise.all(
     workers.map((worker) =>
       worker.exitCode === null && worker.signalCode === null

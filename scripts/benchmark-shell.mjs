@@ -69,7 +69,7 @@ try {
           windows
             ? ["-NoProfile", "-NonInteractive", "-Command", text]
             : ["-c", text],
-          { env, encoding: "utf8", windowsHide: true, timeout: 20000 },
+          { env, encoding: "utf8", windowsHide: true, timeout: 10000 },
         );
         samples.push({
           environment,
