@@ -24,6 +24,12 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
           cache: npm
+      # HOOK-13: temporary files on the work volume, not the OS disk (docs/development/hook-startup.md).
+      - if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          echo "TMP=$RUNNER_TEMP" >> "$GITHUB_ENV"
+          echo "TEMP=$RUNNER_TEMP" >> "$GITHUB_ENV"
       - run: npm ci
       - run: npm run doctor
       - run: npm run check

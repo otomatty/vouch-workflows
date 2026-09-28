@@ -548,6 +548,11 @@
           "status": "implemented",
           "path": "scripts/lib/test-phases.mjs",
           "claim": "hooks 階層の予算テスト（*-performance.test.mjs）を、他のテストの CPU 数並列の段階から分け、最後に1ファイルずつ実行する。負荷は各予算テストが tests/helpers/cpu-load.mjs で自ら起動し、計測後に止める。"
+        },
+        {
+          "status": "implemented",
+          "path": ".github/workflows/ci.yml",
+          "claim": "Windows の CI ジョブで TMP・TEMP を RUNNER_TEMP（作業ボリューム）に向ける。npm の各段階より前に設定することを tests/content/environment.test.mjs が検査する。"
         }
       ]
     },
