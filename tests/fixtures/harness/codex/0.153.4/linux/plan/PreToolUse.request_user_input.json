@@ -1,0 +1,41 @@
+{
+  "harness": "codex",
+  "version": "0.153.4",
+  "synthetic": false,
+  "provenance": "captured",
+  "source": {
+    "path": "tests/fixtures/captures/codex-0.153.4-linux-plan.jsonl",
+    "commit": "8c975f3",
+    "key": "PreToolUse.request_user_input#1"
+  },
+  "payload": {
+    "session_id": "01a0e853-8061-7ba0-bbe2-ccb08e17547a",
+    "turn_id": "01a0e853-94b2-7bc3-be97-d47d7e3ebb94",
+    "transcript_path": "/home/user/vouch-workflows/reports/capture/codex-plan/home/sessions/2026/09/28/rollout-2026-09-28T14-03-01-01a0e853-8061-7ba0-bbe2-ccb08e17547a.jsonl",
+    "cwd": "/home/user/vouch-workflows/reports/capture/codex-plan/project",
+    "hook_event_name": "PreToolUse",
+    "model": "gpt-6-astra",
+    "permission_mode": "bypassPermissions",
+    "tool_name": "request_user_input",
+    "tool_input": {
+      "questions": [
+        {
+          "id": "capture_option",
+          "header": "Capture",
+          "question": "Which capture option applies?",
+          "options": [
+            {
+              "label": "Option A (Recommended)",
+              "description": "Fixture answer A"
+            },
+            {
+              "label": "Option B",
+              "description": "Fixture answer B"
+            }
+          ]
+        }
+      ]
+    },
+    "tool_use_id": "call_vouch_capture_0"
+  }
+}

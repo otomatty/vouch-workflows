@@ -1,0 +1,20 @@
+{
+  "harness": "codex",
+  "version": "0.153.4",
+  "synthetic": false,
+  "provenance": "captured",
+  "source": {
+    "path": "tests/fixtures/captures/codex-0.153.4-linux-tty.jsonl",
+    "commit": "8c975f3",
+    "key": "PreCompact#1"
+  },
+  "payload": {
+    "session_id": "01a0e853-64ba-7120-9310-3fc3dea0f432",
+    "turn_id": "01a0e853-78f2-7632-ae61-f22d86da183c",
+    "transcript_path": "/home/user/vouch-workflows/reports/capture/codex-tty/home/sessions/2026/09/28/rollout-2026-09-28T14-02-54-01a0e853-64ba-7120-9310-3fc3dea0f432.jsonl",
+    "cwd": "/home/user/vouch-workflows/reports/capture/codex-tty/project",
+    "hook_event_name": "PreCompact",
+    "model": "gpt-6-astra",
+    "trigger": "manual"
+  }
+}

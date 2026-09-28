@@ -1,0 +1,22 @@
+{
+  "harness": "claude",
+  "version": "2.1.283",
+  "synthetic": false,
+  "provenance": "captured",
+  "source": {
+    "path": "tests/fixtures/captures/claude-2.1.283-linux-print.jsonl",
+    "commit": "8c975f3",
+    "key": "SessionStart#2"
+  },
+  "payload": {
+    "session_id": "50d14cd6-cdbc-46cd-bac0-5d43b5a525b0",
+    "transcript_path": "/home/user/vouch-workflows/reports/capture2/claude-print/config/projects/-home-user-vouch-workflows-reports-capture2-claude-print-project/50d14cd6-cdbc-46cd-bac0-5d43b5a525b0.jsonl",
+    "cwd": "/home/user/vouch-workflows/reports/capture2/claude-print/project",
+    "hook_event_name": "SessionStart",
+    "source": "resume",
+    "seconds_since_last_response": 1,
+    "context_tokens": 120,
+    "prompt_cache_likely_expired": false,
+    "estimated_cache_write_usd": 0.0008
+  }
+}

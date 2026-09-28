@@ -1,0 +1,505 @@
+{
+  "version": 1,
+  "source": "docs/development/harness-fixtures.md",
+  "purposes": {
+    "session-record": {
+      "summary": "セッションの開始・再開・圧縮を記録し、再開用の要約を渡す",
+      "source": "docs/spec/vouch-decision-record.html#s11"
+    },
+    "review-record": {
+      "summary": "明示入力から gate.opened / intent.approved を記録する",
+      "source": "docs/development/intent-review.md"
+    },
+    "artifact-guard": {
+      "summary": "approved への無断変更、監査ログの手編集、テストの削除・改変を遮る",
+      "source": "docs/spec/vouch-decision-record.html#s11"
+    },
+    "command-guard": {
+      "summary": "main への push と、契約 → テスト → 実装の順序に反するコミットを遮る",
+      "source": "docs/spec/vouch-decision-record.html#s11"
+    },
+    "artifact-check": {
+      "summary": "成果物の参照元と判断依頼の欄を書き込み後に検査する",
+      "source": "docs/spec/vouch-decision-record.html#s11"
+    },
+    "command-record": {
+      "summary": "DoD コマンドの実行結果を記録する",
+      "source": "docs/spec/vouch-decision-record.html#s11"
+    },
+    "question-record": {
+      "summary": "構造化質問の形式を検査し、質問と回答を記録する",
+      "source": "docs/spec/vouch-decision-record.html#s10"
+    },
+    "agent-record": {
+      "summary": "reviewer と脇質問のエージェントの依頼と完了を記録する",
+      "source": "core/registry/audit-events.json"
+    },
+    "turn-end": {
+      "summary": "ターン終了時に検査・記録する",
+      "source": "docs/spec/vouch-decision-record.html#s15"
+    }
+  },
+  "captures": {
+    "tests/fixtures/captures/claude-2.1.280.jsonl": {
+      "harness": "claude",
+      "version": "2.1.280",
+      "platform": "win32",
+      "interactive": false,
+      "invocation": "claude --print --restricted --settings（記録用フックが UserPromptSubmit を終了2で止める）",
+      "date": "2026-09-27",
+      "commit": "d4d5a02",
+      "script": "tests/fixtures/captures/record.mjs",
+      "record": "tests/fixtures/captures/README.md#userpromptsubmit"
+    },
+    "tests/fixtures/captures/claude-2.1.280-session-start.jsonl": {
+      "harness": "claude",
+      "version": "2.1.280",
+      "platform": "win32",
+      "interactive": false,
+      "invocation": "claude --init-only --restricted --settings",
+      "date": "2026-09-27",
+      "commit": "c94f10f",
+      "script": "tests/fixtures/captures/record.mjs",
+      "record": "tests/fixtures/captures/README.md#sessionstart"
+    },
+    "tests/fixtures/captures/claude-2.1.280-write.jsonl": {
+      "harness": "claude",
+      "version": "2.1.280",
+      "platform": "win32",
+      "interactive": false,
+      "invocation": "claude --print --restricted --tools Write（ループバックの固定応答）",
+      "date": "2026-09-27",
+      "commit": "eb5bbc5",
+      "script": "tests/fixtures/captures/tool-capture/claude.mjs",
+      "record": "tests/fixtures/captures/tool-capture.md"
+    },
+    "tests/fixtures/captures/codex-0.153.4.jsonl": {
+      "harness": "codex",
+      "version": "0.153.4",
+      "platform": "win32",
+      "interactive": true,
+      "invocation": "codex --no-alt-screen -C <project>（対話 CLI）",
+      "date": "2026-09-27",
+      "commit": "99230c6",
+      "script": "tests/fixtures/captures/record.mjs",
+      "record": "docs/development/codex-distribution.md#実機採取"
+    },
+    "tests/fixtures/captures/claude-2.1.283-linux-print.jsonl": {
+      "harness": "claude",
+      "version": "2.1.283",
+      "platform": "linux",
+      "interactive": false,
+      "invocation": "claude --print --model vouch-capture-model --restricted --tools Write,Edit,Bash,Agent、続けて --resume と /compact（ループバックの固定応答）",
+      "date": "2026-09-28",
+      "commit": "8c975f3",
+      "script": "tests/fixtures/captures/linux/claude.mjs",
+      "record": "tests/fixtures/captures/linux/README.md#claude-code"
+    },
+    "tests/fixtures/captures/claude-2.1.283-linux-tty.jsonl": {
+      "harness": "claude",
+      "version": "2.1.283",
+      "platform": "linux",
+      "interactive": true,
+      "invocation": "script(1) の疑似端末で claude --model vouch-capture-model --restricted --tools AskUserQuestion（ループバックの固定応答、選択肢はキー入力）",
+      "date": "2026-09-28",
+      "commit": "8c975f3",
+      "script": "tests/fixtures/captures/linux/claude.mjs",
+      "record": "tests/fixtures/captures/linux/README.md#claude-code"
+    },
+    "tests/fixtures/captures/codex-0.153.4-linux-exec.jsonl": {
+      "harness": "codex",
+      "version": "0.153.4",
+      "platform": "linux",
+      "interactive": false,
+      "invocation": "codex exec -s workspace-write、続けて codex exec resume（ループバックの固定応答）",
+      "date": "2026-09-28",
+      "commit": "8c975f3",
+      "script": "tests/fixtures/captures/linux/codex.mjs",
+      "record": "tests/fixtures/captures/linux/README.md#codex"
+    },
+    "tests/fixtures/captures/codex-0.153.4-linux-tty.jsonl": {
+      "harness": "codex",
+      "version": "0.153.4",
+      "platform": "linux",
+      "interactive": true,
+      "invocation": "script(1) の疑似端末で codex --no-alt-screen -a never -s workspace-write、Stop の後に /compact",
+      "date": "2026-09-28",
+      "commit": "8c975f3",
+      "script": "tests/fixtures/captures/linux/codex.mjs",
+      "record": "tests/fixtures/captures/linux/README.md#codex"
+    },
+    "tests/fixtures/captures/codex-0.153.4-linux-plan.jsonl": {
+      "harness": "codex",
+      "version": "0.153.4",
+      "platform": "linux",
+      "interactive": true,
+      "invocation": "script(1) の疑似端末で codex --no-alt-screen -a never -s workspace-write、Shift+Tab で Plan モードにしてから入力",
+      "date": "2026-09-28",
+      "commit": "8c975f3",
+      "script": "tests/fixtures/captures/linux/codex.mjs",
+      "record": "tests/fixtures/captures/linux/README.md#codex"
+    }
+  },
+  "kinds": [
+    {
+      "harness": "claude",
+      "event": "SessionStart",
+      "tool": null,
+      "purposes": ["session-record"],
+      "fixtures": [
+        "tests/fixtures/harness/claude/SessionStart.json",
+        "tests/fixtures/harness/claude/2.1.283/linux/print/SessionStart.startup.json",
+        "tests/fixtures/harness/claude/2.1.283/linux/print/SessionStart.resume.json",
+        "tests/fixtures/harness/claude/2.1.283/linux/print/SessionStart.compact.json",
+        "tests/fixtures/harness/claude/2.1.283/linux/tty/SessionStart.startup.json"
+      ],
+      "constraints": []
+    },
+    {
+      "harness": "claude",
+      "event": "UserPromptSubmit",
+      "tool": null,
+      "purposes": ["review-record"],
+      "fixtures": [
+        "tests/fixtures/harness/claude/UserPromptSubmit.json",
+        "tests/fixtures/harness/claude/2.1.283/linux/print/UserPromptSubmit.json",
+        "tests/fixtures/harness/claude/2.1.283/linux/print/UserPromptSubmit.task-notification.json",
+        "tests/fixtures/harness/claude/2.1.283/linux/tty/UserPromptSubmit.json"
+      ],
+      "constraints": [
+        {
+          "type": "payload-limit",
+          "scope": "claude 2.1.283 linux print",
+          "note": "非同期 Agent の完了通知も、<task-notification> を本文とする UserPromptSubmit として届く。利用者の入力と同じイベントで区別されない。"
+        }
+      ]
+    },
+    {
+      "harness": "claude",
+      "event": "PreCompact",
+      "tool": null,
+      "purposes": ["session-record"],
+      "fixtures": [
+        "tests/fixtures/harness/claude/2.1.283/linux/print/PreCompact.manual.json"
+      ],
+      "constraints": []
+    },
+    {
+      "harness": "claude",
+      "event": "PreToolUse",
+      "tool": "Write",
+      "purposes": ["artifact-guard"],
+      "fixtures": [
+        "tests/fixtures/harness/claude/PreToolUse.json",
+        "tests/fixtures/harness/claude/2.1.283/linux/print/PreToolUse.Write.json"
+      ],
+      "constraints": []
+    },
+    {
+      "harness": "claude",
+      "event": "PreToolUse",
+      "tool": "Edit",
+      "purposes": ["artifact-guard"],
+      "fixtures": [
+        "tests/fixtures/harness/claude/2.1.283/linux/print/PreToolUse.Edit.json"
+      ],
+      "constraints": []
+    },
+    {
+      "harness": "claude",
+      "event": "PreToolUse",
+      "tool": "Bash",
+      "purposes": ["artifact-guard", "command-guard"],
+      "fixtures": [
+        "tests/fixtures/harness/claude/2.1.283/linux/print/PreToolUse.Bash.json"
+      ],
+      "constraints": []
+    },
+    {
+      "harness": "claude",
+      "event": "PreToolUse",
+      "tool": "AskUserQuestion",
+      "purposes": ["question-record"],
+      "fixtures": [
+        "tests/fixtures/harness/claude/2.1.283/linux/tty/PreToolUse.AskUserQuestion.json"
+      ],
+      "constraints": [
+        {
+          "type": "not-emitted",
+          "scope": "claude 2.1.283 linux --print --restricted",
+          "note": "--tools を指定しない --print --restricted の試行で、プロバイダーへ渡るツール一覧に AskUserQuestion は含まれなかった。対話 CLI でのみ採取した。"
+        }
+      ]
+    },
+    {
+      "harness": "claude",
+      "event": "PreToolUse",
+      "tool": "Agent",
+      "purposes": ["agent-record"],
+      "fixtures": [
+        "tests/fixtures/harness/claude/2.1.283/linux/print/PreToolUse.Agent.json"
+      ],
+      "constraints": []
+    },
+    {
+      "harness": "claude",
+      "event": "PostToolUse",
+      "tool": "Write",
+      "purposes": ["artifact-check"],
+      "fixtures": [
+        "tests/fixtures/harness/claude/PostToolUse.json",
+        "tests/fixtures/harness/claude/2.1.283/linux/print/PostToolUse.Write.json"
+      ],
+      "constraints": []
+    },
+    {
+      "harness": "claude",
+      "event": "PostToolUse",
+      "tool": "Edit",
+      "purposes": ["artifact-check"],
+      "fixtures": [
+        "tests/fixtures/harness/claude/2.1.283/linux/print/PostToolUse.Edit.json"
+      ],
+      "constraints": []
+    },
+    {
+      "harness": "claude",
+      "event": "PostToolUse",
+      "tool": "Bash",
+      "purposes": ["command-record"],
+      "fixtures": [
+        "tests/fixtures/harness/claude/2.1.283/linux/print/PostToolUse.Bash.json"
+      ],
+      "constraints": [
+        {
+          "type": "outside-contract",
+          "scope": "claude 2.1.283 linux print",
+          "note": "終了1のコマンドは PostToolUse ではなく PostToolUseFailure（error: Exit code 1）で届く。hook-input の7イベント外のため原文にだけ残し、包装しない。"
+        }
+      ]
+    },
+    {
+      "harness": "claude",
+      "event": "PostToolUse",
+      "tool": "AskUserQuestion",
+      "purposes": ["question-record"],
+      "fixtures": [
+        "tests/fixtures/harness/claude/2.1.283/linux/tty/PostToolUse.AskUserQuestion.json"
+      ],
+      "constraints": []
+    },
+    {
+      "harness": "claude",
+      "event": "PostToolUse",
+      "tool": "Agent",
+      "purposes": ["agent-record"],
+      "fixtures": [
+        "tests/fixtures/harness/claude/2.1.283/linux/print/PostToolUse.Agent.json"
+      ],
+      "constraints": [
+        {
+          "type": "payload-limit",
+          "scope": "claude 2.1.283 linux print",
+          "note": "Agent は非同期に起動し、tool_response は status: async_launched。結果は後の SubagentStop と task-notification の UserPromptSubmit で届く。"
+        }
+      ]
+    },
+    {
+      "harness": "claude",
+      "event": "SubagentStop",
+      "tool": null,
+      "purposes": ["agent-record"],
+      "fixtures": [
+        "tests/fixtures/harness/claude/2.1.283/linux/print/SubagentStop.json"
+      ],
+      "constraints": [
+        {
+          "type": "outside-contract",
+          "scope": "claude 2.1.283 linux print /compact",
+          "note": "/compact が生む SubagentStop は agent_type が空文字で、hook-input の minLength 1 を満たさない。原文にだけ残し、包装しない。"
+        }
+      ]
+    },
+    {
+      "harness": "claude",
+      "event": "Stop",
+      "tool": null,
+      "purposes": ["turn-end"],
+      "fixtures": [
+        "tests/fixtures/harness/claude/2.1.283/linux/print/Stop.json"
+      ],
+      "constraints": []
+    },
+    {
+      "harness": "codex",
+      "event": "SessionStart",
+      "tool": null,
+      "purposes": ["session-record"],
+      "fixtures": [
+        "tests/fixtures/harness/codex/0.153.4/SessionStart.json",
+        "tests/fixtures/harness/codex/0.153.4/linux/exec/SessionStart.startup.json",
+        "tests/fixtures/harness/codex/0.153.4/linux/exec/SessionStart.resume.json"
+      ],
+      "constraints": [
+        {
+          "type": "not-emitted",
+          "scope": "codex 0.153.4 linux interactive /compact",
+          "note": "/compact の後に出たのは PreCompact と PostCompact だけで、source: compact の SessionStart は出なかった。"
+        }
+      ]
+    },
+    {
+      "harness": "codex",
+      "event": "UserPromptSubmit",
+      "tool": null,
+      "purposes": ["review-record"],
+      "fixtures": [
+        "tests/fixtures/harness/codex/0.153.4/UserPromptSubmit.json",
+        "tests/fixtures/harness/codex/0.153.4/linux/exec/UserPromptSubmit.json"
+      ],
+      "constraints": []
+    },
+    {
+      "harness": "codex",
+      "event": "PreCompact",
+      "tool": null,
+      "purposes": ["session-record"],
+      "fixtures": [
+        "tests/fixtures/harness/codex/0.153.4/linux/tty/PreCompact.manual.json"
+      ],
+      "constraints": []
+    },
+    {
+      "harness": "codex",
+      "event": "PreToolUse",
+      "tool": "apply_patch",
+      "purposes": ["artifact-guard"],
+      "fixtures": [
+        "tests/fixtures/harness/codex/0.153.4/linux/exec/PreToolUse.apply_patch.json"
+      ],
+      "constraints": [
+        {
+          "type": "policy-denied",
+          "scope": "codex 0.153.4 win32 interactive",
+          "note": "Windows の試行では apply_patch が read-only サンドボックスで拒否され、raw は生じなかった（tool-capture.md）。"
+        }
+      ]
+    },
+    {
+      "harness": "codex",
+      "event": "PreToolUse",
+      "tool": "Bash",
+      "purposes": ["artifact-guard", "command-guard"],
+      "fixtures": [
+        "tests/fixtures/harness/codex/0.153.4/linux/exec/PreToolUse.Bash.json"
+      ],
+      "constraints": [
+        {
+          "type": "policy-denied",
+          "scope": "codex 0.153.4 win32 interactive",
+          "note": "Windows の試行では exec_command が policy で拒否され、raw は生じなかった（tool-capture.md）。"
+        }
+      ]
+    },
+    {
+      "harness": "codex",
+      "event": "PreToolUse",
+      "tool": "request_user_input",
+      "purposes": ["question-record"],
+      "fixtures": [
+        "tests/fixtures/harness/codex/0.153.4/linux/exec/PreToolUse.request_user_input.json",
+        "tests/fixtures/harness/codex/0.153.4/linux/plan/PreToolUse.request_user_input.json"
+      ],
+      "constraints": [
+        {
+          "type": "policy-denied",
+          "scope": "codex 0.153.4 linux Default モード（exec / 対話）",
+          "note": "PreToolUse の後に「request_user_input is unavailable in Default mode」で拒否され、質問は表示されない。"
+        }
+      ]
+    },
+    {
+      "harness": "codex",
+      "event": "PreToolUse",
+      "tool": "collaborationspawn_agent",
+      "purposes": ["agent-record"],
+      "fixtures": [
+        "tests/fixtures/harness/codex/0.153.4/linux/exec/PreToolUse.collaborationspawn_agent.json"
+      ],
+      "constraints": []
+    },
+    {
+      "harness": "codex",
+      "event": "PostToolUse",
+      "tool": "apply_patch",
+      "purposes": ["artifact-check"],
+      "fixtures": [
+        "tests/fixtures/harness/codex/0.153.4/linux/exec/PostToolUse.apply_patch.json"
+      ],
+      "constraints": []
+    },
+    {
+      "harness": "codex",
+      "event": "PostToolUse",
+      "tool": "Bash",
+      "purposes": ["command-record"],
+      "fixtures": [
+        "tests/fixtures/harness/codex/0.153.4/linux/exec/PostToolUse.Bash.json",
+        "tests/fixtures/harness/codex/0.153.4/linux/exec/PostToolUse.Bash.failed.json"
+      ],
+      "constraints": [
+        {
+          "type": "payload-limit",
+          "scope": "codex 0.153.4 linux exec",
+          "note": "終了1のコマンドも PostToolUse で届き、tool_response は空文字で終了コードを含まない。"
+        }
+      ]
+    },
+    {
+      "harness": "codex",
+      "event": "PostToolUse",
+      "tool": "request_user_input",
+      "purposes": ["question-record"],
+      "fixtures": [
+        "tests/fixtures/harness/codex/0.153.4/linux/plan/PostToolUse.request_user_input.json"
+      ],
+      "constraints": [
+        {
+          "type": "not-emitted",
+          "scope": "codex 0.153.4 linux Default モード（exec / 対話）",
+          "note": "Default モードでは拒否されるため PostToolUse は出ない。Plan モードの対話 CLI でのみ回答付きで採取した。"
+        }
+      ]
+    },
+    {
+      "harness": "codex",
+      "event": "PostToolUse",
+      "tool": "collaborationspawn_agent",
+      "purposes": ["agent-record"],
+      "fixtures": [
+        "tests/fixtures/harness/codex/0.153.4/linux/exec/PostToolUse.collaborationspawn_agent.json"
+      ],
+      "constraints": []
+    },
+    {
+      "harness": "codex",
+      "event": "SubagentStop",
+      "tool": null,
+      "purposes": ["agent-record"],
+      "fixtures": [
+        "tests/fixtures/harness/codex/0.153.4/linux/exec/SubagentStop.json"
+      ],
+      "constraints": []
+    },
+    {
+      "harness": "codex",
+      "event": "Stop",
+      "tool": null,
+      "purposes": ["turn-end"],
+      "fixtures": [
+        "tests/fixtures/harness/codex/0.153.4/linux/exec/Stop.json"
+      ],
+      "constraints": []
+    }
+  ]
+}
