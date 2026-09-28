@@ -1,0 +1,242 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vouch.dev/schemas/tests/harness-inventory.json",
+  "type": "object",
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "source": {
+      "type": "string",
+      "minLength": 1
+    },
+    "purposes": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "summary",
+          "source"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "captures": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "^tests/fixtures/captures/[^/]+\\.jsonl$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "harness": {
+            "enum": [
+              "claude",
+              "codex"
+            ]
+          },
+          "version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "platform": {
+            "enum": [
+              "linux",
+              "win32"
+            ]
+          },
+          "interactive": {
+            "type": "boolean"
+          },
+          "invocation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "commit": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{7,40}$"
+          },
+          "script": {
+            "type": "string",
+            "pattern": "^tests/fixtures/captures/.+\\.mjs$"
+          },
+          "record": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "harness",
+          "version",
+          "platform",
+          "interactive",
+          "invocation",
+          "date",
+          "commit",
+          "script",
+          "record"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "kinds": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "harness": {
+            "enum": [
+              "claude",
+              "codex"
+            ]
+          },
+          "event": {
+            "enum": [
+              "SessionStart",
+              "UserPromptSubmit",
+              "PreToolUse",
+              "PostToolUse",
+              "PreCompact",
+              "SubagentStop",
+              "Stop"
+            ]
+          },
+          "tool": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1
+          },
+          "purposes": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "fixtures": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^tests/fixtures/harness/.+\\.json$"
+            }
+          },
+          "constraints": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "enum": [
+                    "policy-denied",
+                    "not-emitted",
+                    "outside-contract",
+                    "payload-limit"
+                  ]
+                },
+                "scope": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "note": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "type",
+                "scope",
+                "note"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "harness",
+          "event",
+          "tool",
+          "purposes",
+          "fixtures",
+          "constraints"
+        ],
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "event": {
+                  "enum": [
+                    "PreToolUse",
+                    "PostToolUse"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "tool": {
+                  "type": "string"
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "tool": {
+                  "type": "null"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "fixtures": {
+                  "type": "array",
+                  "maxItems": 0
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "constraints": {
+                  "type": "array",
+                  "minItems": 1
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "required": [
+    "version",
+    "source",
+    "purposes",
+    "captures",
+    "kinds"
+  ],
+  "additionalProperties": false
+}
