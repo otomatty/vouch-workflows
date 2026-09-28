@@ -22,6 +22,8 @@ Windows で既存の npm 起動スクリプトが `MODULE_NOT_FOUND` になる�
 .\scripts\npm.ps1 run check
 ```
 
+lockfile を書き換えるときは npm 11.5.0〜11.6.2 を使いません。版と手順は [lockfile の生成](docs/development/lockfile.md) を参照してください。
+
 依存パッケージはすべて開発用です。利用者に配るコードは Node.js 組み込みモジュールだけで動く `.mjs` とし、ビルドを挟みません。
 
 ## コマンド

@@ -1055,7 +1055,7 @@
         {
           "status": "implemented",
           "path": "tests/content/environment.test.mjs",
-          "claim": "完全固定のdevDependenciesとlockfileの一致を検査する。"
+          "claim": "完全固定のdevDependenciesとlockfileの一致、lockfileの依存の解決・到達、lockfileを書き換えるnpmの版を検査する。"
         }
       ]
     },
