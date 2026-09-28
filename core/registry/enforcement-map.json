@@ -507,7 +507,7 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "CPU 数 − 1 個の合成負荷の下での予算テスト（b420323 以降）は、CI で Windows 8件中7件・Ubuntu 8件中6件、Benchmark で既定の temp の Windows 12回中9回・Ubuntu 12回中12回、RUNNER_TEMP では Windows・Ubuntu とも12回中12回合格。失敗は runner の一時的な遅れで20回中数回が大きく遅れたもの。全環境での安定した充足とはしない。詳細は hook-startup.md。"
+          "claim": "CPU 数 − 1 個の合成負荷の下での予算テスト（b420323 以降）は、CI で Windows 20件中18件・Ubuntu 20件中18件合格。Windows の temp を RUNNER_TEMP にした 35dc338 では Windows 8件中7件・Ubuntu 8件中8件。失敗は runner の一時的な遅れで20回中数回が200msを超えたもの。全環境での安定した充足とはしない。詳細は hook-startup.md。"
         },
         {
           "status": "implemented",

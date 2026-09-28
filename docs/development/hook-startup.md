@@ -192,3 +192,23 @@ b420323・8b0097c の CI と Benchmark の値です（ms）。値は [hook-start
 - 1ケースの時間は、Windows で 2.2〜3.7秒、Ubuntu で 1.2〜2.2秒です。負荷の準備は、Windows で 285〜650ms、Ubuntu で 144〜292ms かかります。check 全体は、Windows で 36〜57秒、Ubuntu で 20〜25秒です。
 - 失敗は、どれも20回のうち数回だけが大きく遅れたものです。Ubuntu の失敗したジョブでは、多くの値が 35〜50ms で、一部が 100〜578ms でした。同じ Benchmark の runner では、Ubuntu の720回に200ms以上はありませんでした。Windows の既定の temp では、C: の fsync の遅れが加わります。
 - 8b0097c の Windows のジョブでは、同じ時間帯に packaging・scenario の PowerShell の起動も5秒の打ち切りに達しました。これも runner の遅れです。
+
+### Windows の temp を RUNNER_TEMP にした後
+
+35dc338 で、CI の Windows ジョブの `TMP`・`TEMP` を `RUNNER_TEMP` にしました。push・pull_request と `workflow_dispatch` 2回の、計4回の CI の結果です。直前の d41ec72（合成負荷あり、既定の temp）の CI 2回は、8件すべて合格でした。
+
+| 環境 | 予算テストの合格 | p95（開始・承認・セッション開始） |
+| --- | --- | --- |
+| Windows | 8件中7件 | 合格した7件は 92.5〜170.5ms |
+| Ubuntu | 8件中8件 | 41.5〜195.3ms |
+
+- 失敗は Windows Node 24 の1件です。承認の p95 が 221.6ms でした（297.4・221.6・200.9ms を含む）。同じジョブで、packaging の PowerShell による `node --version` も `probeNode` の 4000ms に達しました。どちらも runner の遅れによるものです。
+- check 全体は、Windows で 35.6〜48.0秒、Ubuntu で 14.9〜26.4秒でした。
+- Windows のログで、`npm ci`・doctor・check の環境が `TMP=D:\a\_temp` であり、sandbox が `D:\a\_temp\vouch-runtime-*` に作られることを確認しました。
+
+合成負荷ありの計測にしてから（b420323 以降）の予算テストの合格は、CI で Windows 20件中18件、Ubuntu 20件中18件です。`RUNNER_TEMP` にしてからは、Windows 8件中7件、Ubuntu 8件中8件です。残る失敗は、runner が一時的に遅れた時のものです。
+
+## 残る課題
+
+- runner の一時的な遅れで、20回のうち数回が200msを超えると失敗します。頻度は下がりましたが、なくなってはいません。これをさらに減らすには、有料の larger runner のような環境の変更が必要です。予算の判定を変える方法は、Issue #2 の条件で禁止されています。
+- packaging の `isolated shell resolves named node and reports its real version` は、PowerShell の最初の起動（通常2.0〜2.4秒）が遅れると、`probeNode` の 4000ms に達して失敗します。1ケース5秒（TEST-12）の中での打ち切りのため、HOOK-13 とは別の扱いが必要です。
