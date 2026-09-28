@@ -39,9 +39,20 @@ const preload = `--import=${new URL("../tests/helpers/fixed-clock.mjs", import.m
 const draft =
   "---\nstatus: draft\n---\n# Synthetic review\n\nAC-1: preserve evidence.\n";
 
+// Components loaded by a hook, each as an ESM eval compared with esm-empty.
+/** @type {Record<string,string>} */
+const components = {
+  "fs-facade": 'await import("node:fs");',
+  stdio: "process.stdin; process.stderr;",
+  crypto:
+    'process.getBuiltinModule("node:crypto").createHash("sha256").update("x").digest("hex");',
+  schemas: `await import(${JSON.stringify(new URL("../core/hooks/lib/validation.mjs", import.meta.url).href)});`,
+};
+
 /** @param {string} root @param {string} mode @param {number} i */
 function execution(root, mode, i) {
   const review = mode === "review";
+  const component = components[mode];
   const args =
     mode === "empty"
       ? ["-e", ""]
@@ -49,14 +60,16 @@ function execution(root, mode, i) {
         ? ["--input-type=module", "-e", ""]
         : mode === "preload-empty"
           ? [preload, "--input-type=module", "-e", ""]
-          : [
-              ...(mode === "record-clock" ? [preload] : []),
-              hook(
-                review
-                  ? "vouch-record-intent-review"
-                  : "vouch-record-session-start",
-              ),
-            ];
+          : component !== undefined
+            ? ["--input-type=module", "-e", component]
+            : [
+                ...(mode === "record-clock" ? [preload] : []),
+                hook(
+                  review
+                    ? "vouch-record-intent-review"
+                    : "vouch-record-session-start",
+                ),
+              ];
   /** @type {NodeJS.ProcessEnv} */ const env = {
     ...process.env,
     VOUCH_PROJECT_ROOT: root,
@@ -108,6 +121,7 @@ const modes = [
   "empty",
   "esm-empty",
   "preload-empty",
+  ...Object.keys(components),
   "noop",
   "record",
   "record-clock",

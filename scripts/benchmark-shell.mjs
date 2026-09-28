@@ -36,13 +36,21 @@ const environments = {
       }
     : {}),
 };
+// "missing" is the negative preflight: command lookup fails and may scan modules.
 const commands = windows
   ? {
       exit: "exit 0",
       node: "& node --version; exit $LASTEXITCODE",
       "node.exe": "& node.exe --version; exit $LASTEXITCODE",
+      missing: "& vouch-missing-command; exit $LASTEXITCODE",
+      "missing-noautoload":
+        "$PSModuleAutoLoadingPreference = 'None'; & vouch-missing-command; exit $LASTEXITCODE",
     }
-  : { exit: "exit 0", node: "node --version" };
+  : {
+      exit: "exit 0",
+      node: "node --version",
+      missing: "vouch-missing-command",
+    };
 const shell = windows
   ? resolve(
       process.env.SYSTEMROOT ?? "C:/Windows",
