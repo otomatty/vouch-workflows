@@ -32,11 +32,14 @@ jobs:
           node-version: ${{ matrix.node }}
       - run: node scripts/benchmark-hook.mjs | tee benchmark-hook.json
       - run: node scripts/benchmark-hook.mjs --load | tee benchmark-hook-load.json
+      - run: node scripts/benchmark-hook.mjs --profile | tee benchmark-hook-profile.json
       - run: node scripts/benchmark-audit.mjs | tee benchmark-audit.json
       - run: node scripts/benchmark-shell.mjs | tee benchmark-shell.json
-      # The real CPU-parallel hooks suite, three times, for the budget tests' raw samples.
       - run: |
           npm ci
+          node scripts/benchmark-suite.mjs | tee benchmark-suite.json
+      # The real CPU-parallel hooks suite, three times, for the budget tests' raw samples.
+      - run: |
           for round in 1 2 3; do
             node scripts/test.mjs hooks > "hooks-$round.log" 2>&1 || true
             grep -E "record (samples|p95)|^not ok|✖ " "hooks-$round.log" | sed "s/^/round $round: /" | tee -a benchmark-hooks-suite.txt || true

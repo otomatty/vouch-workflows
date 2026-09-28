@@ -3,6 +3,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
@@ -15,6 +16,7 @@ import budgets from "../core/registry/budgets.json" with { type: "json" };
 
 // Developer-only alternating measurements. The contract test remains the budget gate.
 // --load keeps CPU-count - 1 background workers spawning no-op hooks, like a parallel suite.
+// --profile samples each hook's main thread and reports its CPU time by category.
 /** @param {string} path @param {string} event */
 function captured(path, event) {
   const fixture = JSON.parse(
@@ -50,12 +52,22 @@ const components = {
   schemas: `await import(${JSON.stringify(new URL("../core/hooks/lib/validation.mjs", import.meta.url).href)});`,
 };
 
+const profile = process.argv.includes("--profile");
+
 /** @param {string} root @param {string} mode @param {number} i */
 function execution(root, mode, i) {
   const review = mode === "review";
   const component = components[mode];
-  const args =
-    mode === "empty"
+  const profiling = profile
+    ? [
+        "--cpu-prof",
+        "--cpu-prof-interval=100",
+        `--cpu-prof-dir=${join(root, "profiles", mode)}`,
+      ]
+    : [];
+  const args = [
+    ...profiling,
+    ...(mode === "empty"
       ? ["-e", ""]
       : mode === "esm-empty"
         ? ["--input-type=module", "-e", ""]
@@ -70,7 +82,8 @@ function execution(root, mode, i) {
                     ? "vouch-record-intent-review"
                     : "vouch-record-session-start",
                 ),
-              ];
+              ]),
+  ];
   /** @type {NodeJS.ProcessEnv} */ const env = {
     ...process.env,
     VOUCH_PROJECT_ROOT: root,
@@ -119,16 +132,60 @@ const load = process.argv.includes("--load");
 const root = mkdtempSync(join(tmpdir(), "vouch-benchmark-hook-"));
 mkdirSync(join(root, "vouch/intents/review"), { recursive: true });
 writeFileSync(join(root, "vouch/intents/review/intent.md"), draft);
-const modes = [
-  "empty",
-  "esm-empty",
-  "preload-empty",
-  ...Object.keys(components),
-  "noop",
-  "record",
-  "record-clock",
-  "review",
-];
+const modes = profile
+  ? ["esm-empty", "noop", "record", "record-clock", "review"]
+  : [
+      "empty",
+      "esm-empty",
+      "preload-empty",
+      ...Object.keys(components),
+      "noop",
+      "record",
+      "record-clock",
+      "review",
+    ];
+
+/** @param {{functionName:string,url:string}} frame */
+function category(frame) {
+  const { functionName: name, url } = frame;
+  if (url.includes("/core/hooks/lib/validation.mjs")) return "hook validation";
+  if (url.includes("/core/hooks/")) return "hook code";
+  if (url.startsWith("node:internal/modules/")) return "module loader";
+  if (url.startsWith("node:internal/bootstrap/")) return "builtin compile";
+  if (url.startsWith("node:")) return "node other";
+  if (!url) return name.startsWith("(") ? name : `native ${name}`;
+  return "other";
+}
+
+/**
+ * Main-thread CPU per execution by category; wall time minus this is process creation,
+ * work before the profiler starts, other threads and exit.
+ * @param {string} mode
+ */
+function profiled(mode) {
+  const directory = join(root, "profiles", mode);
+  const files = readdirSync(directory);
+  /** @type {Record<string,number>} */ const totals = {};
+  for (const file of files) {
+    /** @type {{nodes:{id:number,callFrame:{functionName:string,url:string}}[],samples:number[],timeDeltas:number[]}} */
+    const cpu = JSON.parse(readFileSync(join(directory, file), "utf8"));
+    const frames = new Map(cpu.nodes.map((node) => [node.id, node.callFrame]));
+    cpu.samples.forEach((id, index) => {
+      const frame = frames.get(id);
+      const key = frame ? category(frame) : "unknown";
+      totals[key] =
+        (totals[key] ?? 0) + (cpu.timeDeltas[index + 1] ?? 0) / 1000;
+    });
+  }
+  const perRun = Object.entries(totals)
+    .map(([name, ms]) => ({ name, ms: ms / files.length }))
+    .sort((a, b) => b.ms - a.ms);
+  return {
+    executions: files.length,
+    sampled_ms: perRun.reduce((sum, entry) => sum + entry.ms, 0),
+    categories: perRun.filter((entry) => entry.ms >= 0.05),
+  };
+}
 const workers = load
   ? Array.from({ length: Math.max(1, availableParallelism() - 1) }, () =>
       spawn(
@@ -194,8 +251,9 @@ try {
         synthetic: true,
         fixtureVersions: [startup.version, prompt.version],
         budgetGate: false,
-        scope:
-          "alternating complete process executions; no warm-up exclusion or startup subtraction",
+        scope: profile
+          ? "profiled executions; wall times include profiler overhead"
+          : "alternating complete process executions; no warm-up exclusion or startup subtraction",
         results: modes.map((mode) => {
           const values = samples
             .filter((sample) => sample.mode === mode)
@@ -206,6 +264,7 @@ try {
             samples: values.length,
             p50_ms: values[Math.ceil(values.length * 0.5) - 1],
             p95_ms: values[Math.ceil(values.length * 0.95) - 1],
+            ...(profile ? { profile: profiled(mode) } : {}),
           };
         }),
         samples,
