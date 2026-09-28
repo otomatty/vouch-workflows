@@ -42,10 +42,10 @@ HOOK-13 の p95 200ms 未満、20回の計測、CPU 数並列、起動込みの�
 2. フックの標準入力は、fs.mjs の `readDescriptor(0)` で fd 0 から同期に読みます。`EAGAIN` は短く待って再試行し、読み取り0バイトを入力の終わりとします。1 MiB 以上を拒否する判定は io.mjs に残します。
 3. 診断と遮断理由は、fs.mjs の `descriptorWriter(2)` で fd 2 へ同期に書きます。部分書込は残りを書き切り、`EAGAIN` は再試行します。その他の失敗は呼び出し側へ返します。
 4. `process.stdin`・`process.stderr` は、hook の既定の経路では参照しません。`RuntimeOptions.stdin`・`stderr` の注入はテスト用に残します。
-5. `node:crypto` は、`newId` と Intent・プロンプトのダイジェストを計算するときだけ読み込みます。
-6. `process.getBuiltinModule` を使えるのは、fs.mjs の `"node:fs"` と、clock.mjs・approval.mjs の `"node:crypto"` だけです。依存検査の対象外になる読込を構造テストで制限し、ネットワーク禁止（HOOK-5）とファイル境界（HOOK-6）を保ちます。
+5. SHA-256 は clock.mjs の `sha256Hex(bytes)`（FIPS 180-4 の JavaScript 実装）で計算し、`node:crypto` を読み込みません。`newId` と Intent・プロンプトのダイジェストの値は変わりません。
+6. `process.getBuiltinModule` を使えるのは、fs.mjs の `"node:fs"` だけです。依存検査の対象外になる読込を構造テストで制限し、ネットワーク禁止（HOOK-5）とファイル境界（HOOK-6）を保ちます。
 
-この結果、no-op と、ダイジェストを計算しない遮断では、stream・`internal/fs/promises`・net・crypto の組み込みモジュールを読み込みません。記録の経路では、`internal/fs/promises` と net を読み込みません（crypto とそれが使う stream は読み込みます）。
+この結果、no-op、遮断、記録のどの経路でも、stream・`internal/fs/promises`・net・crypto の組み込みモジュールを読み込みません。
 
 FileStore の原子的置換、fsync、パスとリンクの再検査、冪等性、既存の異常系の検査は変えません。
 
@@ -54,7 +54,16 @@ FileStore の原子的置換、fsync、パスとリンクの再検査、冪等�
 ## 検証方法
 
 - unit：`readDescriptor` が 64KiB を超える入力を全バイト読み、`EAGAIN` を再試行することを一時ファイルの fd で検査します。`descriptorWriter` が部分書込を書き切り、`EAGAIN` を再試行し、その他の失敗を返すことも検査します。unit のプロセスの fd 0 は読みません。
-- hooks：no-op・関係のないプロンプト・不正なレビューコマンド（遮断理由を書く）で、stream・`internal/fs/promises`・net・crypto を読み込まないことを検査します。セッション開始の記録では、`internal/fs/promises` と net を読み込まないことを検査します。実際の子プロセスを `runHook` で起動し、テスト用 preload が終了時の `process.moduleLoadList` を書き出します。
-- content：`process.getBuiltinModule` の呼び出しが上の3箇所だけであることを検査します。
+- unit：`sha256Hex` が FIPS 180-4 の例と一致し、0〜300バイト、ブロック境界の前後、1 MiB の乱数入力で `node:crypto` と一致することを検査します。
+- hooks：no-op・関係のないプロンプト・不正なレビューコマンド（遮断理由を書く）と、セッション開始・レビュー開始の記録で、stream・`internal/fs/promises`・net・crypto を読み込まないことを検査します。実際の子プロセスを `runHook` で起動し、テスト用 preload が終了時の `process.moduleLoadList` を書き出します。
+- content：`process.getBuiltinModule` の呼び出しが fs.mjs の `"node:fs"` だけであることを検査します。
 - packaging：`node` を解決できない負例が、`probeNode` の打ち切りより前に `NATIVE-NODE` で失敗することを検査します。
 - 既存の HOOK-13 の3ケースと全体検査を、Windows / Ubuntu × Node 22.19.0 / 24.x の CI とローカルで実行し、結果を区別して記録します。
+
+## SHA-256 の実装を持つ理由
+
+最初の変更（b15347b）の後、Windows の CI で残った超過はレビュー開始の記録でした。Node 24 は p95 203.0ms、Node 22 は 249.7ms です。性能テストの生データ（実行順の20回）を見ると、Windows では分布全体が高く、中央値が約160msでした。hooks 階層の開始直後で、4つのテストファイルが同時に子プロセスを起動する時間帯です。Ubuntu では中央値が約65msでしたが、fsync の待ちとみられる200〜400msの突出がまれに入りました。
+
+記録の経路では、`newId` のために `node:crypto` を読み込みます。これは crypto 本体と、Hash が使う stream 一式を読み込みます。Linux の Node 22.19.0 では、JavaScript の SHA-256 に置き換えると、セッション開始の p50 が 59.4ms から 47.3ms、レビュー開始が 62.5ms から 48.5ms になりました（各30回、交互）。フック1回の CPU 時間が減ると、同時に起動する他のテストとの取り合いも減ります。
+
+この SHA-256 は、署名・鍵・秘密情報を扱いません。公開データから、イベントの識別子と改ざん検出用の指紋を作るためだけに使います。定数時間性は必要ありません。値は `node:crypto` と完全に一致し、既存の golden のイベント ID も変わりません。`node:crypto` へ戻す場合は、clock.mjs の関数を1つ差し替えるだけです。
