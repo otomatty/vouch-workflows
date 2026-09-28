@@ -19,6 +19,8 @@ if (selected && !["unit", "hooks"].includes(selected)) {
 const suites = selected
   ? [selected]
   : ["content", "registry", "packaging", "scenario", "unit", "hooks"];
+// A failing suite must not hide the results of later suites; the run still fails.
+/** @type {string[]} */ const failed = [];
 for (const suite of suites) {
   const tests = files(`tests/${suite}`);
   if (tests.length === 0) {
@@ -71,5 +73,9 @@ for (const suite of suites) {
         throw new Error(`TEST-8: no child process coverage for ${name}`);
     }
   }
-  if (result.status !== 0) process.exit(result.status ?? 1);
+  if (result.status !== 0) failed.push(suite);
+}
+if (failed.length > 0) {
+  console.error(`Failed test suites: ${failed.join(", ")}`);
+  process.exit(1);
 }
