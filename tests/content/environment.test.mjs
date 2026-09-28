@@ -141,3 +141,21 @@ test("hook entries have matching process contract test files", (t) => {
     "TEST-3",
   );
 });
+
+test("Windows CI jobs keep temporary files on the runner work volume before any npm step", (t) => {
+  const ci = readFileSync(
+    new URL("../../.github/workflows/ci.yml", import.meta.url),
+    "utf8",
+  );
+  const steps = ci.split(/\n(?= {6}- )/);
+  const temp = steps.findIndex(
+    (step) =>
+      /if: runner\.os == 'Windows'/.test(step) &&
+      /echo "TMP=\$RUNNER_TEMP" >> "\$GITHUB_ENV"/.test(step) &&
+      /echo "TEMP=\$RUNNER_TEMP" >> "\$GITHUB_ENV"/.test(step),
+  );
+  const npm = steps.findIndex((step) => /run: npm /.test(step));
+  t.plan(2);
+  t.assert.notEqual(temp, -1, "HOOK-13: Windows temp on RUNNER_TEMP");
+  t.assert.equal(temp < npm, true, "HOOK-13: set before npm ci and check");
+});
