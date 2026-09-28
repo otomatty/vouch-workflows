@@ -38,11 +38,14 @@ jobs:
       - run: |
           npm ci
           node scripts/benchmark-suite.mjs | tee benchmark-suite.json
-      # The real CPU-parallel hooks suite, three times, for the budget tests' raw samples.
+      # The real CPU-parallel hooks suite for the budget tests' raw samples, alternating the
+      # default temp directory with RUNNER_TEMP on the job's work volume.
       - run: |
           for round in 1 2 3; do
             node scripts/test.mjs hooks > "hooks-$round.log" 2>&1 || true
             grep -E "record (samples|p95)|^not ok|✖ " "hooks-$round.log" | sed "s/^/round $round: /" | tee -a benchmark-hooks-suite.txt || true
+            TMP="$RUNNER_TEMP" TEMP="$RUNNER_TEMP" TMPDIR="$RUNNER_TEMP" node scripts/test.mjs hooks > "hooks-$round-runner-temp.log" 2>&1 || true
+            grep -E "record (samples|p95)|^not ok|✖ " "hooks-$round-runner-temp.log" | sed "s/^/round $round runner-temp: /" | tee -a benchmark-hooks-suite.txt || true
           done
       - if: always()
         uses: actions/upload-artifact@v4
