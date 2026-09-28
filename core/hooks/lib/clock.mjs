@@ -1,5 +1,3 @@
-import { createHash } from "node:crypto";
-
 /** @returns {string} UTC timestamp; callers inject this function through HookContext. */
 export function now() {
   return new Date().toISOString();
@@ -7,7 +5,10 @@ export function now() {
 
 /** @param {string} session @param {string} identity @returns {string} Stable replay identity. */
 export function newId(session, identity) {
-  return `evt_${createHash("sha256")
+  // Loaded only when an identity is computed; no-op hooks never load crypto.
+  return `evt_${process
+    .getBuiltinModule("node:crypto")
+    .createHash("sha256")
     .update(JSON.stringify([session, identity]))
     .digest("hex")}`;
 }

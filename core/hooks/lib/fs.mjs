@@ -1,5 +1,7 @@
-import * as fs from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+
+// The builtin object avoids the ESM facade, which evaluates fs.promises and the stream getters.
+const fs = process.getBuiltinModule("node:fs");
 
 /** Direct I/O in the isolated hook process; every FileStore boundary still awaits.
  * @type {import('./runtime-contracts.mjs').FileOperations} */
@@ -32,6 +34,59 @@ const native = {
 /** @param {unknown} error @param {string} code */
 function hasCode(error, code) {
   return error instanceof Error && "code" in error && error.code === code;
+}
+
+const pause = new Int32Array(new SharedArrayBuffer(4));
+
+/**
+ * Retry a synchronous descriptor call that a nonblocking descriptor refused for now.
+ * @template T @param {() => T} call @returns {T}
+ */
+function retrying(call) {
+  for (;;) {
+    try {
+      return call();
+    } catch (error) {
+      if (!hasCode(error, "EAGAIN")) throw error;
+      Atomics.wait(pause, 0, 0, 5);
+    }
+  }
+}
+
+/**
+ * Chunks of a descriptor until end of input, read synchronously without stream modules.
+ * The caller owns the size limit and stops iterating once it is exceeded.
+ * @param {number} descriptor
+ * @param {import('./runtime-contracts.mjs').DescriptorRead} [read]
+ * @returns {Generator<Uint8Array>}
+ */
+export function* readDescriptor(descriptor, read = fs.readSync) {
+  const buffer = Buffer.alloc(64 * 1024);
+  for (;;) {
+    const size = retrying(() =>
+      read(descriptor, buffer, 0, buffer.length, null),
+    );
+    if (size === 0) return;
+    yield Buffer.from(buffer.subarray(0, size));
+  }
+}
+
+/**
+ * A synchronous writer for a diagnostic descriptor that completes partial writes.
+ * @param {number} descriptor
+ * @param {import('./runtime-contracts.mjs').DescriptorWrite} [write]
+ * @returns {{write:(text:string) => void}}
+ */
+export function descriptorWriter(descriptor, write = fs.writeSync) {
+  return {
+    write(text) {
+      const bytes = Buffer.from(text, "utf8");
+      for (let offset = 0; offset < bytes.length; )
+        offset += retrying(() =>
+          write(descriptor, bytes, offset, bytes.length - offset),
+        );
+    },
+  };
 }
 
 /**

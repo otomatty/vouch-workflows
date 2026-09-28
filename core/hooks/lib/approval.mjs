@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { elapsedMilliseconds } from "./clock.mjs";
 import { isAuditEvent } from "./validation.mjs";
 
@@ -6,7 +5,12 @@ import { isAuditEvent } from "./validation.mjs";
 function digest(text) {
   const bytes = Buffer.from(text, "utf8");
   if (bytes.toString("utf8") !== text) return null;
-  return createHash("sha256").update(bytes).digest("hex");
+  // Loaded only for a digest, like clock.newId.
+  return process
+    .getBuiltinModule("node:crypto")
+    .createHash("sha256")
+    .update(bytes)
+    .digest("hex");
 }
 
 /** @type {import('./runtime-contracts.mjs').SnapshotIntent} */
