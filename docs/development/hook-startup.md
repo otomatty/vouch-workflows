@@ -169,11 +169,13 @@ Issue #2 の条件（閾値、20回、CPU 並列、起動込み、fsync を変�
 3. 各予算テストは、計測の間、`tests/helpers/cpu-load.mjs` で背景プロセスを CPU 数 − 1 個（最低1個）動かします。各プロセスは `runHook` で no-op のフック（Intent なしのセッション開始）を起動し続けます。すべてのプロセスが1回目のフックを終えてから計測を始め、計測の後に止めます。
 4. 20回、起動込みの外側の計測、p95 < 200ms、1ケース5秒、check 全体90秒は変えません。閾値の変更、起動時間の差し引き、成功回だけの採用、再試行、スキップはしません。fsync を含む製品の処理も変えません。背景プロセスの結果は判定に使いません。
 5. 予算テスト以外の hooks のテストは、これまでどおり CPU 数並列で実行します。sandbox による隔離（TEST-4）も変えません。
+6. CI の Windows ジョブでは、`TMP` と `TEMP` を `RUNNER_TEMP`（作業ボリュームの D:）に向けます（所有者の決定、2026-09-28）。既定の temp（C: の OS ディスク）では、FileStore の fsync が p50 約5ms で、裾も長いためです。製品、予算、計測方法は変えません。sandbox のパスに `RUNNER~1` の 8.3 名は入らなくなります。別名の包含（Issue #18）は、junction を明示的に作る検査で確認を続けます。
 
 検証方法は次のとおりです。
 
 - packaging：`scripts/lib/test-phases.mjs` の `testPhases` を検査します。hooks の予算テストだけを並列1の最後の段階に分けること、他の階層と予算テストのない hooks は1段階のままであることを確かめます。
 - content：HOOK-13 の閾値を参照する hooks のテストが `*-performance.test.mjs` だけであることを検査します。予算テストが `cpuLoad` を使い、計測の後に負荷を止めることも検査します。
+- content：`.github/workflows/ci.yml` が Windows のジョブだけで `TMP`・`TEMP` を `RUNNER_TEMP` にすることを検査します。
 - CI：Windows / Ubuntu × Node 22.19.0 / 24.x で、変更後の予算テストの生の値を記録します。
 
 ### 変更後の結果
