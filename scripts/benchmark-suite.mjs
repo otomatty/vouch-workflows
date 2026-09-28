@@ -1,9 +1,14 @@
 import { execFileSync, spawnSync } from "node:child_process";
 import {
+  closeSync,
+  fdatasyncSync,
+  fsyncSync,
   mkdirSync,
   mkdtempSync,
+  openSync,
   readdirSync,
   readFileSync,
+  renameSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -14,7 +19,30 @@ import budgets from "../core/registry/budgets.json" with { type: "json" };
 
 // Developer-only: the work that runs beside the HOOK-13 tests in the parallel hooks suite.
 // Alternating commands, then each hooks file alone with the suite's flags. Never a budget gate.
+// The flush kinds time a FileStore-sized durable replacement in the test temp directory and,
+// on GitHub runners, in RUNNER_TEMP, with fsync and with fdatasync.
 const root = mkdtempSync(join(tmpdir(), "vouch-benchmark-suite-"));
+const runnerTemp = process.env.RUNNER_TEMP;
+const runnerRoot = runnerTemp
+  ? mkdtempSync(join(runnerTemp, "vouch-benchmark-suite-"))
+  : undefined;
+const log =
+  `${JSON.stringify({ type: "gate.opened", note: "x".repeat(900) })}\n`.repeat(
+    20,
+  );
+
+/** @param {string} directory @param {string} name @param {(descriptor:number) => void} flush */
+function replace(directory, name, flush) {
+  const temporary = join(directory, `${name}.next`);
+  const descriptor = openSync(temporary, "wx", 0o600);
+  try {
+    writeFileSync(descriptor, log, "utf8");
+    flush(descriptor);
+  } finally {
+    closeSync(descriptor);
+  }
+  renameSync(temporary, join(directory, name));
+}
 const repository = resolve(".");
 const prompt = JSON.parse(
   readFileSync("tests/fixtures/harness/claude/UserPromptSubmit.json", "utf8"),
@@ -45,6 +73,15 @@ function command(kind, i) {
           ["init", "--quiet", "--initial-branch=main", "--template=", target],
           { windowsHide: true },
         );
+    case "fsync-tmp":
+      return () => replace(root, kind, fsyncSync);
+    case "fdatasync-tmp":
+      return () => replace(root, kind, fdatasyncSync);
+    case "fsync-runner-temp":
+      return () => replace(/** @type {string} */ (runnerRoot), kind, fsyncSync);
+    case "fdatasync-runner-temp":
+      return () =>
+        replace(/** @type {string} */ (runnerRoot), kind, fdatasyncSync);
     case "package":
       return () =>
         execFileSync(
@@ -99,6 +136,9 @@ const kinds = [
   "package",
   "hook",
   "hook-coverage",
+  "fsync-tmp",
+  "fdatasync-tmp",
+  ...(runnerRoot ? ["fsync-runner-temp", "fdatasync-runner-temp"] : []),
 ];
 /** @type {Record<string,number[]>} */
 const times = Object.fromEntries(kinds.map((kind) => [kind, []]));
@@ -140,6 +180,7 @@ try {
         node: process.version,
         platform: process.platform,
         cpus: availableParallelism(),
+        temp: { test: tmpdir(), runner: runnerTemp ?? null },
         budgetGate: false,
         scope:
           "alternating complete commands, then each hooks file alone with coverage",
@@ -152,13 +193,19 @@ try {
     ),
   );
 } finally {
-  const within = relative(resolve(tmpdir()), resolve(root));
-  if (
-    !within.startsWith("vouch-benchmark-suite-") ||
-    within.includes("..") ||
-    isAbsolute(within)
-  ) {
-    console.error("Unsafe benchmark cleanup path");
-    process.exitCode = 1;
-  } else rmSync(root, { recursive: true, force: true, maxRetries: 5 });
+  for (const [base, path] of [
+    [tmpdir(), root],
+    [runnerTemp, runnerRoot],
+  ]) {
+    if (!base || !path) continue;
+    const within = relative(resolve(base), resolve(path));
+    if (
+      !within.startsWith("vouch-benchmark-suite-") ||
+      within.includes("..") ||
+      isAbsolute(within)
+    ) {
+      console.error("Unsafe benchmark cleanup path");
+      process.exitCode = 1;
+    } else rmSync(path, { recursive: true, force: true, maxRetries: 5 });
+  }
 }
