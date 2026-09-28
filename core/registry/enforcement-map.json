@@ -309,6 +309,11 @@
           "claim": "ネットワーク組み込みimportを拒否する。"
         },
         {
+          "status": "implemented",
+          "path": "tests/content/hook-structure.test.mjs",
+          "claim": "依存検査の対象外になる process.getBuiltinModule の呼び出しを、lib/fs.mjs の \"node:fs\" だけに制限する。"
+        },
+        {
           "status": "pending",
           "claim": "HOOK-5 の全要件に対する検査は未完了。Biome noRestrictedImports ＋ noRestrictedGlobals（fetch, WebSocket）"
         }
@@ -334,6 +339,11 @@
           "status": "implemented",
           "path": "tests/hooks/fs-native-path.test.mjs",
           "claim": "版付きfixtureから明示的にsyntheticとした日本語sessionをrunHookで2回記録し、日本語・空白・引用符を含むrootでの正常終了、追記内容、ロック解放を確認する。CLIの実機採取ではない。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/hook-structure.test.mjs",
+          "claim": "依存検査の対象外になる process.getBuiltinModule の呼び出しを、lib/fs.mjs の \"node:fs\" だけに制限する。"
         },
         {
           "status": "pending",
@@ -497,7 +507,7 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "Windowsの同期ファイル操作への変更後もp95 200ms未満は未達。Node 24はレビュー開始304.0ms・承認278.1ms・セッション開始275.1ms、Node 22は412.6ms・412.0ms・461.9ms。Linux Node 22.20.0でも今回の全体検査では承認307.1msで未達。単独交互比較は変更前146.4ms・変更後102.9msだが、全体検査の失敗を置き換えない。詳細は file-store-performance.md。"
+          "claim": "CI の hooks 階層（CPU 数並列）では、Windows の記録 p95 200ms 未満が安定しない。fd7e8c5 以降の合格は、Ubuntu が CI 16件中15件・Benchmark 24回中24回、Windows Node 22 が CI 8件中2件・Benchmark 12回中3回、Windows Node 24 が CI 8件中5件・Benchmark 12回中8回。失敗は20回中2回以上の200ms超え。フック単体の費用は下がったが、全環境での充足とはしない。詳細は hook-startup.md。"
         },
         {
           "status": "implemented",
@@ -523,6 +533,16 @@
           "status": "implemented",
           "path": "docs/development/intent-review.md",
           "claim": "Linux / Node 22.20.0 のレビュー開始と承認の各20回でp95 129.7ms / 114.5msを観測し予算内。Windowsの未達を解消したとは扱わない。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/startup-modules.test.mjs",
+          "claim": "no-op・遮断・セッション開始・レビュー開始・承認の実プロセスが、stream・internal/fs/promises・net・crypto の組み込みモジュールを読み込まないことを検査する。起動費用の削減を固定するが、p95 の充足は示さない。"
+        },
+        {
+          "status": "implemented",
+          "path": "scripts/benchmark-suite.mjs",
+          "claim": "hooks 階層で予算テストと同時に走る処理（git init、配布生成、カバレッジ付きフック）と、FileStore と同じ大きさの fsync / fdatasync を保存先ごとに測る補助測定。HOOK-13 の合否は判定しない。"
         }
       ]
     },
@@ -1390,7 +1410,7 @@
         },
         {
           "status": "pending",
-          "claim": "Windows Node 22 / 24の全体検査は212件完走、209件成功・性能3件失敗。キャンセルはないが記録性能ケースは5秒を超える場合があり、時間予算は未達。詳細は file-store-performance.md。"
+          "claim": "CI の check 全体は Windows 27〜55秒・Ubuntu 13〜23秒で90秒以内。Windows の runner が遅い時は、記録性能のケースが5秒を超える（25f12fa の Benchmark で11.8秒）。詳細は hook-startup.md。"
         },
         {
           "status": "implemented",
