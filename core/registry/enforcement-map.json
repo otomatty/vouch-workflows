@@ -342,7 +342,7 @@
         {
           "status": "implemented",
           "path": "tests/unit/lib/fs.test.mjs",
-          "claim": "共通 FileStore の包含・リンク拒否・原子的置換・失敗時の原本維持を検査する。"
+          "claim": "共通 FileStore の包含・リンク拒否・原子的置換・失敗時の原本維持を検査する。root と入力の別名（記号リンク・junction）の4通りを実体の root に対応付け、別名経由でも root 外・root 内のリンク・root 自身へのリンク・予約名・ADS を拒否することも検査する。Windows の 8.3 短縮名・subst は CI の一時ディレクトリでのみ観測する。"
         },
         {
           "status": "implemented",
@@ -544,7 +544,12 @@
         {
           "status": "implemented",
           "path": "tests/unit/lib/io.test.mjs",
-          "claim": "共通 io の不正入力・例外・tool_input.file_path の検査呼び出しを確認する。"
+          "claim": "共通 io の不正入力・例外・tool_input.file_path の検査呼び出しを確認する。root の別名で綴った cwd・file_path で main が呼ばれることも確認する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/scenario/claude-root-alias.test.mjs",
+          "claim": "配布した Claude SessionStart を別名の root・cwd と、実体の root・別名の cwd で実行し、golden と一致する1件の記録を確認する。手製の synthetic 入力で、実機の別名環境での採取ではない。"
         },
         {
           "status": "implemented",

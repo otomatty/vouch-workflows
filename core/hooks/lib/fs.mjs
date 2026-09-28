@@ -35,7 +35,8 @@ function hasCode(error, code) {
 }
 
 /**
- * Serialized, atomic replacement within a trusted root. Existing links are refused.
+ * Serialized, atomic replacement within a trusted root. Existing links below it are refused,
+ * while another absolute spelling of the root directory itself maps to its canonical path.
  * The optional native operations port permits deterministic disk-failure tests.
  * @param {string} root
  * @param {import('./runtime-contracts.mjs').FileOperations} [operations]
@@ -46,6 +47,29 @@ export async function createFileStore(root, operations = native) {
   if (!(await operations.stat(base)).isDirectory())
     throw new Error("FS-ROOT: directory required");
 
+  /**
+   * An absolute path may reach the root through another spelling (8.3, junction, subst, link).
+   * The shallowest ancestor that is the root wins, so links inside the root stay below it.
+   * @param {string} absolute
+   */
+  async function belowRootAlias(absolute) {
+    /** @type {string[]} */ const ancestors = [];
+    for (let path = absolute; ; path = dirname(path)) {
+      ancestors.unshift(path);
+      if (dirname(path) === path) break;
+    }
+    for (const ancestor of ancestors) {
+      try {
+        if (relative(base, await operations.realpath(ancestor)) === "")
+          return relative(ancestor, absolute);
+      } catch (error) {
+        if (hasCode(error, "ENOENT") || hasCode(error, "ENOTDIR")) break;
+        throw error;
+      }
+    }
+    throw new Error("FS-ESCAPE: outside project root");
+  }
+
   /** @param {string} path */
   async function resolvePath(path) {
     // Reject ADS and ambiguous Win32 names on every host, while allowing a drive prefix.
@@ -55,10 +79,13 @@ export async function createFileStore(root, operations = native) {
       path.replace(/^[A-Za-z]:[\\/]/, "").includes(":")
     )
       throw new Error("FS-PATH: invalid path");
-    const target = resolve(base, path.replaceAll("\\", "/"));
-    const local = relative(base, target);
-    if (local === ".." || local.startsWith(`..${sep}`) || isAbsolute(local))
-      throw new Error("FS-ESCAPE: outside project root");
+    const lexical = resolve(base, path.replaceAll("\\", "/"));
+    const inside = relative(base, lexical);
+    const local =
+      inside === ".." || inside.startsWith(`..${sep}`) || isAbsolute(inside)
+        ? await belowRootAlias(lexical)
+        : inside;
+    const target = join(base, local);
     let current = base;
     for (const part of local.split(sep).filter(Boolean)) {
       if (
