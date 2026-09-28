@@ -45,4 +45,8 @@ root の外を指すパス（`FS-ESCAPE`）、root の中のリンクを経由�
 - unit：`run()` に別名の root を設定し、別名の `cwd`・`tool_input.file_path` で main が呼ばれることを検査します。
 - scenario：配布した Claude の SessionStart を、別名の `CLAUDE_PROJECT_DIR` と `cwd`、実体の root と別名の `cwd` で2回実行し、golden と一致する1件の記録になることを検査します。このテストは一時ディレクトリ・root・別名・`cwd` と、それぞれの `realpathSync.native` の結果を `t.diagnostic` で出力し、runner 上の綴りを記録します。
 
+既存の `tests/unit/lib/fs-driver.test.mjs` の2件は、`resolvePath` の返り値とロック内の一時ファイルのパスを sandbox の綴り（`box.path()`）と比べていました。返り値は変更前から base を起点とする実体側のパスです。一時ディレクトリが別名を含む環境では、今回の修正と関係なく失敗します（`TMPDIR` を記号リンク経由にした Linux で確認）。入力は sandbox の綴りのまま残し、期待値だけを base 起点に改めます。
+
+`npm test` は、失敗した階層の後も残りの階層を実行し、最後に失敗として終了します。Windows / Node 22.19.0 の CI では packaging の時間超過（#2）で scenario 以降が実行されていなかったため、この Issue の scenario の結果を #2 と分けて得るための変更です。
+
 先行テストは修正前にすべての OS で失敗し、Windows の CI では既存の scenario 4件と合わせて失敗することを確認します。packaging のテスト時間超過と記録 p95 は [Issue #2](https://github.com/otomatty/vouch-workflows/issues/2) の結果として区別し、この変更の合否に含めません。

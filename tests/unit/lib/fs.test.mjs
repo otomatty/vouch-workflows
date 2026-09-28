@@ -1,4 +1,6 @@
+import { realpathSync } from "node:fs";
 import * as fs from "node:fs/promises";
+import { join } from "node:path";
 import { test } from "node:test";
 import { createFileStore } from "../../../core/hooks/lib/fs.mjs";
 import { sandbox } from "../../helpers/runtime.mjs";
@@ -52,6 +54,93 @@ test("file store rejects escapes, links, directories and occupied locks", async 
   );
   t.assert.equal(await files.readText("locked"), null);
   await t.assert.rejects(createFileStore(box.path("original")), /FS-ROOT/);
+});
+
+test("file store maps every root and input spelling of an aliased directory to the canonical root", async (t) => {
+  const box = await sandbox(t, { git: false });
+  const other = await sandbox(t, { git: false });
+  // A junction on Windows and a symbolic link elsewhere, like 8.3, subst and linked temp paths.
+  const alias = other.path("alias");
+  await fs.symlink(box.root, alias, "junction");
+  const base = realpathSync.native(box.root);
+  const spellings = [box.root, alias];
+  t.plan(spellings.length ** 2 * 2 + 2);
+  for (const root of spellings) {
+    const files = await createFileStore(root);
+    for (const input of spellings) {
+      t.assert.equal(await files.resolvePath(input), base);
+      t.assert.equal(
+        await files.resolvePath(join(input, "nested", "file")),
+        join(base, "nested", "file"),
+      );
+    }
+  }
+  const files = await createFileStore(box.root);
+  t.assert.equal(
+    await files.writeText(join(alias, "nested", "file"), "through alias"),
+    true,
+  );
+  t.assert.equal(await box.read("nested/file"), "through alias");
+});
+
+test("file store keeps rejecting escapes, links and ambiguous names reached through a root alias", async (t) => {
+  const box = await sandbox(t, { git: false });
+  const other = await sandbox(t, { git: false });
+  await box.write("original", "kept");
+  await other.write("file.txt", "outside");
+  await fs.link(box.path("original"), box.path("hardlink"));
+  await fs.symlink(other.root, box.path("junction"), "junction");
+  await fs.symlink(box.root, box.path("self"), "junction");
+  await fs.symlink(other.root, other.path("elsewhere"), "junction");
+  const alias = other.path("alias");
+  await fs.symlink(box.root, alias, "junction");
+  const files = await createFileStore(alias);
+  /** @type {[string, RegExp][]} */
+  const rejected = [
+    [join(other.path("elsewhere"), "file"), /FS-ESCAPE/],
+    [join(alias, "..", "file.txt"), /FS-ESCAPE/],
+    [join(other.path("file.txt"), "child"), /FS-ESCAPE/],
+    [join(other.path("missing"), "child"), /FS-ESCAPE/],
+    [join(alias, "junction", "file"), /FS-LINK/],
+    [join(alias, "self", "file"), /FS-LINK/],
+    [join(box.root, "self", "file"), /FS-LINK/],
+    [join(alias, "hardlink"), /FS-LINK/],
+    [join(alias, "NUL.txt"), /FS-PATH/],
+    [join(alias, "trailing."), /FS-PATH/],
+    [`${join(alias, "file")}:stream`, /FS-PATH/],
+  ];
+  t.plan(rejected.length);
+  for (const [path, error] of rejected)
+    await t.assert.rejects(files.resolvePath(path), error);
+});
+
+test("file store propagates alias lookup failures other than a missing ancestor", async (t) => {
+  const box = await sandbox(t, { git: false });
+  const other = await sandbox(t, { git: false });
+  const denied = Object.assign(new Error("denied"), { code: "EACCES" });
+  const primitive = { code: "ENOENT" };
+  /** @param {unknown} failure */
+  const failing = (failure) =>
+    createFileStore(box.root, {
+      ...fs,
+      realpath: /** @type {typeof fs.realpath} */ (
+        /** @type {unknown} */ (
+          async (/** @type {string} */ path) => {
+            if (path === box.root) return fs.realpath(path);
+            throw failure;
+          }
+        )
+      ),
+    });
+  t.plan(2);
+  await t.assert.rejects(
+    (await failing(denied)).resolvePath(other.path("x")),
+    denied,
+  );
+  await t.assert.rejects(
+    (await failing(primitive)).resolvePath(other.path("x")),
+    (error) => error === primitive,
+  );
 });
 
 test("filesystem errors retain their cause and do not acquire or remove locks", async (t) => {

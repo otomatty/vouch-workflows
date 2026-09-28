@@ -1,3 +1,5 @@
+import { symlink } from "node:fs/promises";
+import { join } from "node:path";
 import { Readable } from "node:stream";
 import { test } from "node:test";
 import { run } from "../../../core/hooks/lib/io.mjs";
@@ -162,6 +164,41 @@ test("io defaults use trusted environment, stdin, stderr and process exit status
   t.plan(2);
   t.assert.equal(called, true);
   t.assert.equal(process.exitCode, 0);
+});
+
+test("io invokes main for cwd and file_path spelled through an alias of the configured root", async (t) => {
+  const box = await sandbox(t, { git: false });
+  const other = await sandbox(t, { git: false });
+  const alias = other.path("alias");
+  await symlink(box.root, alias, "junction");
+  const base = promptFor(alias).payload;
+  const cases = [
+    { root: alias, cwd: alias, file: join(alias, "src", "file.txt") },
+    { root: box.root, cwd: join(alias, "nested"), file: join(alias, "file") },
+  ];
+  t.plan(cases.length * 2);
+  for (const { root, cwd, file } of cases) {
+    const port = ports(
+      JSON.stringify({
+        ...base,
+        cwd,
+        hook_event_name: "PreToolUse",
+        tool_name: "Write",
+        tool_input: { file_path: file },
+      }),
+    );
+    let called = false;
+    const { files: _memory, ...options } = port.options;
+    await run(
+      async () => {
+        called = true;
+        return { decision: "allow" };
+      },
+      { ...options, context: { ...options.context, projectRoot: root } },
+    );
+    t.assert.equal(called, true, port.output.stderr);
+    t.assert.deepEqual(port.output, { stdout: "", stderr: "", code: 0 });
+  }
 });
 
 test("io fails open without invoking main for malformed and oversized input", async (t) => {
