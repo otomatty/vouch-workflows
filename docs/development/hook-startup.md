@@ -44,6 +44,7 @@ HOOK-13 の p95 200ms 未満、20回の計測、CPU 数並列、起動込みの�
 4. `process.stdin`・`process.stderr` は、hook の既定の経路では参照しません。`RuntimeOptions.stdin`・`stderr` の注入はテスト用に残します。
 5. SHA-256 は clock.mjs の `sha256Hex(bytes)`（FIPS 180-4 の JavaScript 実装）で計算し、`node:crypto` を読み込みません。`newId` と Intent・プロンプトのダイジェストの値は変わりません。
 6. `process.getBuiltinModule` を使えるのは、fs.mjs の `"node:fs"` だけです。依存検査の対象外になる読込を構造テストで制限し、ネットワーク禁止（HOOK-5）とファイル境界（HOOK-6）を保ちます。
+7. validation.mjs の `assertSupportedSchema` は、起動ごとに3つのスキーマ全体を検査し続けます。走査では節点ごとの配列を作りません。検査する位置（properties、oneOf、allOf、items、if、then、else）と拒否の条件は変えません。
 
 この結果、no-op、遮断、記録のどの経路でも、stream・`internal/fs/promises`・net・crypto の組み込みモジュールを読み込みません。
 
@@ -55,6 +56,7 @@ FileStore の原子的置換、fsync、パスとリンクの再検査、冪等�
 
 - unit：`readDescriptor` が 64KiB を超える入力を全バイト読み、`EAGAIN` を再試行することを一時ファイルの fd で検査します。`descriptorWriter` が部分書込を書き切り、`EAGAIN` を再試行し、その他の失敗を返すことも検査します。unit のプロセスの fd 0 は読みません。
 - unit：`sha256Hex` が FIPS 180-4 の例と一致し、0〜300バイト、ブロック境界の前後、1 MiB の乱数入力で `node:crypto` と一致することを検査します。
+- unit：`assertSupportedSchema` が、入れ子のすべての位置にある未対応の語彙と型を拒否することを検査します。
 - hooks：no-op・関係のないプロンプト・不正なレビューコマンド（遮断理由を書く）と、セッション開始・レビュー開始の記録で、stream・`internal/fs/promises`・net・crypto を読み込まないことを検査します。実際の子プロセスを `runHook` で起動し、テスト用 preload が終了時の `process.moduleLoadList` を書き出します。
 - content：`process.getBuiltinModule` の呼び出しが fs.mjs の `"node:fs"` だけであることを検査します。
 - packaging：`node` を解決できない負例が、`probeNode` の打ち切りより前に `NATIVE-NODE` で失敗することを検査します。
