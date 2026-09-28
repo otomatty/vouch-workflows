@@ -1,4 +1,6 @@
+import { deriveFixture } from "../helpers/fixtures.mjs";
 import { hookTest as test } from "../helpers/hook-test.mjs";
+import { readJson } from "../helpers/registry.mjs";
 import {
   capturedPrompt,
   promptFor,
@@ -86,6 +88,38 @@ test("transport helper requires a matching versioned capture", (t) => {
         "allow",
         { ...promptFor(process.cwd()), version: "invented" },
         { root: process.cwd() },
+      ),
+    /TEST-7/,
+  );
+});
+
+test("transport helper runs inventoried tool kinds and refuses uncaptured ones", async (t) => {
+  const box = await sandbox(t);
+  const edit = deriveFixture(
+    readJson(
+      "tests/fixtures/harness/claude/2.1.283/linux/print/PreToolUse.Edit.json",
+    ),
+    { cwd: box.root },
+  );
+  const plan = {
+    ...readJson("tests/fixtures/harness/codex/postToolUse_updatePlan.json"),
+    synthetic: true,
+    provenance: /** @type {const} */ ("synthetic"),
+    version: "0.153.4",
+  };
+  const result = runHook("allow", edit, { root: box.root });
+  t.plan(3);
+  t.assert.deepEqual(
+    [result.exitCode, result.stdout, result.stderr],
+    [0, "", ""],
+  );
+  t.assert.throws(() => runHook("allow", plan, { root: box.root }), /TEST-7/);
+  t.assert.throws(
+    () =>
+      runHook(
+        "allow",
+        readJson("tests/fixtures/harness/codex/postToolUse_bash.json"),
+        { root: box.root },
       ),
     /TEST-7/,
   );
