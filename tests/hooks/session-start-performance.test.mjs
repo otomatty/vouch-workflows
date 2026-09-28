@@ -10,6 +10,9 @@ test("recording startup stays below the p95 budget over twenty process execution
   t.plan(budgets.timing.samples * 2 + 1);
   // HOOK-13 condition: CPU count - 1 processes keep starting no-op hooks meanwhile.
   const load = await cpuLoad(t);
+  t.diagnostic(
+    `load ${load.workers} processes ready in ${load.readyMs.toFixed(0)} ms`,
+  );
   try {
     for (let i = 0; i < budgets.timing.samples; i++) {
       const result = runHook(

@@ -14,6 +14,9 @@ for (const operation of ["open", "approve"])
     t.plan(budgets.timing.samples * 2 + 1);
     // HOOK-13 condition: CPU count - 1 processes keep starting no-op hooks meanwhile.
     const load = await cpuLoad(t);
+    t.diagnostic(
+      `load ${load.workers} processes ready in ${load.readyMs.toFixed(0)} ms`,
+    );
     try {
       for (let index = 0; index < budgets.timing.samples; index++) {
         const fixture = box.fixture(

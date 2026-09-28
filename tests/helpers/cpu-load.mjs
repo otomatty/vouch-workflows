@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import { writeFile } from "node:fs/promises";
 import { availableParallelism } from "node:os";
 import { resolve } from "node:path";
+import { performance } from "node:perf_hooks";
 import { pathToFileURL } from "node:url";
 import { sandbox } from "./runtime.mjs";
 
@@ -10,9 +11,10 @@ import { sandbox } from "./runtime.mjs";
  * least one, keep starting no-op hooks through runHook. Resolves once each has finished one.
  * Callers stop it in `finally`, before the sandboxes of the test are removed.
  * @param {import('node:test').TestContext} t
- * @returns {Promise<{workers:number,stop:() => Promise<void>}>}
+ * @returns {Promise<{workers:number,readyMs:number,stop:() => Promise<void>}>}
  */
 export async function cpuLoad(t) {
+  const started = performance.now();
   const box = await sandbox(t);
   const signal = box.path("stop");
   const workers = Array.from(
@@ -55,5 +57,9 @@ export async function cpuLoad(t) {
     await stop();
     throw error;
   }
-  return { workers: workers.length, stop };
+  return {
+    workers: workers.length,
+    readyMs: performance.now() - started,
+    stop,
+  };
 }
