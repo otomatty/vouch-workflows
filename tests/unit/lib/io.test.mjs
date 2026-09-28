@@ -134,14 +134,13 @@ test("io contains stream failures and primitive exceptions", async (t) => {
   t.assert.equal(closed.output.stdout, "");
 });
 
-test("io defaults use trusted environment, stdin, stderr and process exit status", async (t) => {
+// Descriptor 0 is the test runner's open pipe here; hooks tests cover the real stdin default.
+test("io defaults use trusted environment, descriptor stderr and process exit status", async (t) => {
   const box = await sandbox(t, { git: false });
-  const saved = Object.getOwnPropertyDescriptor(process, "stdin");
   const oldCode = process.exitCode;
   const oldRoot = process.env.VOUCH_PROJECT_ROOT,
     oldHarness = process.env.VOUCH_HARNESS;
   t.after(() => {
-    if (saved) Object.defineProperty(process, "stdin", saved);
     process.exitCode = oldCode;
     if (oldRoot === undefined) delete process.env.VOUCH_PROJECT_ROOT;
     else process.env.VOUCH_PROJECT_ROOT = oldRoot;
@@ -150,17 +149,18 @@ test("io defaults use trusted environment, stdin, stderr and process exit status
   });
   process.env.VOUCH_PROJECT_ROOT = box.root;
   process.env.VOUCH_HARNESS = "claude";
-  Object.defineProperty(process, "stdin", {
-    configurable: true,
-    value: Readable.from([
-      Buffer.from(JSON.stringify(promptFor(box.root).payload)),
-    ]),
-  });
   let called = false;
-  await run(async () => {
-    called = true;
-    return { decision: "allow" };
-  });
+  await run(
+    async () => {
+      called = true;
+      return { decision: "allow" };
+    },
+    {
+      stdin: Readable.from([
+        Buffer.from(JSON.stringify(promptFor(box.root).payload)),
+      ]),
+    },
+  );
   t.plan(2);
   t.assert.equal(called, true);
   t.assert.equal(process.exitCode, 0);

@@ -97,3 +97,37 @@ test("runtime source keeps clock and exit access within their boundaries without
     );
   }
 });
+
+test("runtime source loads builtins outside import only for fs and digests and never uses stdio streams", (t) => {
+  const files = readdirSync("core/hooks", {
+    recursive: true,
+    withFileTypes: true,
+  })
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".mjs"))
+    .map((entry) =>
+      `${entry.parentPath}/${entry.name}`
+        .replaceAll("\\", "/")
+        .replace(/^.*?core\/hooks\//, ""),
+    )
+    .sort();
+  /** @type {string[]} */ const calls = [];
+  /** @type {string[]} */ const stdio = [];
+  for (const file of files) {
+    const source = readFileSync(`core/hooks/${file}`, "utf8");
+    // Dependency-cruiser cannot see these loads, so HOOK-5 and HOOK-6 rely on this list.
+    for (const match of source.matchAll(/getBuiltinModule\(([^)]*)\)/g))
+      calls.push(`${file} ${match[1]}`);
+    if (/process\.std(?:in|err)\b/.test(source)) stdio.push(file);
+  }
+  t.plan(2);
+  t.assert.deepEqual(
+    calls,
+    [
+      'lib/approval.mjs "node:crypto"',
+      'lib/clock.mjs "node:crypto"',
+      'lib/fs.mjs "node:fs"',
+    ],
+    "HOOK-5; HOOK-6",
+  );
+  t.assert.deepEqual(stdio, [], "HOOK-13: descriptor stdio");
+});

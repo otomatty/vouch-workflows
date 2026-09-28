@@ -1,3 +1,4 @@
+import { performance } from "node:perf_hooks";
 import { test } from "node:test";
 import {
   nativeEnvironment,
@@ -102,7 +103,7 @@ test("isolated shell resolves named node and reports its real version", async (t
   t.assert.match(probeNode(env), /^v\d+\.\d+\.\d+$/);
 });
 
-test("node preflight rejects a shell that cannot resolve node even when it exits zero", async (t) => {
+test("node preflight rejects a shell that cannot resolve node before the probe timeout", async (t) => {
   const box = await sandbox(t);
   const env = nativeEnvironment(process.env, {
     home: box.path("home"),
@@ -110,6 +111,10 @@ test("node preflight rejects a shell that cannot resolve node even when it exits
     intent: scope.intent,
   });
   env.PATH = box.root;
-  t.plan(1);
+  t.plan(2);
+  const started = performance.now();
   t.assert.throws(() => probeNode(env), /NATIVE-NODE/);
+  // A lookup that only ends at the 4 s spawn timeout is not a resolution failure.
+  const elapsed = performance.now() - started;
+  t.assert.equal(elapsed < 4000, true, `${elapsed.toFixed(1)} ms`);
 });

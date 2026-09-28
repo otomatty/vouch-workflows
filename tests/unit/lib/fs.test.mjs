@@ -1,8 +1,19 @@
-import { realpathSync } from "node:fs";
+import {
+  closeSync,
+  openSync,
+  readFileSync,
+  readSync,
+  realpathSync,
+  writeSync,
+} from "node:fs";
 import * as fs from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
-import { createFileStore } from "../../../core/hooks/lib/fs.mjs";
+import {
+  createFileStore,
+  descriptorWriter,
+  readDescriptor,
+} from "../../../core/hooks/lib/fs.mjs";
 import { sandbox } from "../../helpers/runtime.mjs";
 
 test("file store writes atomically inside a canonical root", async (t) => {
@@ -249,4 +260,64 @@ test("failed update preserves the original and releases only its own lock", asyn
     /invalid batch/,
   );
   t.assert.deepEqual(await fs.readdir(box.root), ["audit"]);
+});
+
+test("descriptor reader yields every byte until end of input and retries a refused read", async (t) => {
+  const box = await sandbox(t, { git: false });
+  const text = `${"日本語 input ".repeat(12000)}end`;
+  await box.write("input", text);
+  const refused = Object.assign(new Error("busy"), { code: "EAGAIN" });
+  let refusals = 0;
+  /** @type {import('../../../core/hooks/lib/runtime-contracts.mjs').DescriptorRead} */
+  const flaky = (...args) => {
+    if (refusals++ === 0) throw refused;
+    return readSync(...args);
+  };
+  t.plan(4);
+  for (const read of [undefined, flaky]) {
+    const descriptor = openSync(box.path("input"), "r");
+    try {
+      const chunks = [...readDescriptor(descriptor, read)];
+      t.assert.equal(Buffer.concat(chunks).toString("utf8"), text);
+      t.assert.equal(chunks.length > 1, true, "larger than one buffer");
+    } finally {
+      closeSync(descriptor);
+    }
+  }
+});
+
+test("descriptor writer completes partial writes, retries a refused write and propagates other errors", async (t) => {
+  const box = await sandbox(t, { git: false });
+  const text = "VOUCH-REVIEW-RECORDED: 日本語 reason\n";
+  const refused = Object.assign(new Error("busy"), { code: "EAGAIN" });
+  const closed = Object.assign(new Error("closed"), { code: "EPIPE" });
+  let calls = 0;
+  /** @type {import('../../../core/hooks/lib/runtime-contracts.mjs').DescriptorWrite} */
+  const partial = (descriptor, buffer, offset, length) => {
+    if (calls++ === 1) throw refused;
+    return writeSync(descriptor, buffer, offset, Math.min(length, 3));
+  };
+  t.plan(4);
+  /** @type {[string, import('../../../core/hooks/lib/runtime-contracts.mjs').DescriptorWrite|undefined][]} */
+  const writers = [
+    ["native", undefined],
+    ["partial", partial],
+  ];
+  for (const [name, write] of writers) {
+    const descriptor = openSync(box.path(`${name}.log`), "w");
+    try {
+      descriptorWriter(descriptor, write).write(text);
+    } finally {
+      closeSync(descriptor);
+    }
+    t.assert.equal(readFileSync(box.path(`${name}.log`), "utf8"), text);
+  }
+  t.assert.equal(calls > text.length / 3, true, "several partial writes");
+  t.assert.throws(
+    () =>
+      descriptorWriter(1, () => {
+        throw closed;
+      }).write("x"),
+    closed,
+  );
 });
