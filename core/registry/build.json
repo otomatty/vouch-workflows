@@ -16,7 +16,7 @@
     "section": "dod",
     "outputLines": 200,
     "redact": {
-      "names": "TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL|API_?KEY|PRIVATE_?KEY|ACCESS_?KEY",
+      "names": "TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL|API_?KEY|PRIVATE_?KEY|ACCESS_?KEY|(?:^|_)AUTH(?:_|$)",
       "minLength": 8,
       "mask": "[redacted]"
     }

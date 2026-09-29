@@ -125,7 +125,7 @@ push 先が保護対象でなく Intent を設定している時は、プロジ�
 
 ### 記録
 
-build-log.md（`vouch/intents/<intent>/build-log.md`）の末尾に、次の形の1件を FileStore のロック付きの置き換えで追記します。出力は末尾の200行（`build.json` の `dod.outputLines`）を残し、省いた行数を書きます。出力のうち、名前が `build.json` の `dod.redact.names`（大文字小文字を区別しない正規表現。TOKEN、SECRET、PASSWORD、API_KEY など）に一致する環境変数の値で `dod.redact.minLength`（8）文字以上のものを、長い順に `dod.redact.mask`（`[redacted]`）に置き換えてから書きます。build-log.md は `vouch/` の成果物としてコミットされるため、DoD のコマンドが環境変数の秘密を表示しても記録に残さないためです。
+build-log.md（`vouch/intents/<intent>/build-log.md`）の末尾に、次の形の1件を FileStore のロック付きの置き換えで追記します。出力は末尾の200行（`build.json` の `dod.outputLines`）を残し、省いた行数を書きます。出力のうち、名前が `build.json` の `dod.redact.names`（大文字小文字を区別しない正規表現。TOKEN、SECRET、PASSWORD、API_KEY など。AUTH は `_` か端で区切られた語だけで、`GIT_AUTHOR_NAME` は含まない）に一致する環境変数の値で `dod.redact.minLength`（8）文字以上のものを、長い順に `dod.redact.mask`（`[redacted]`）に置き換えてから書きます。build-log.md は `vouch/` の成果物としてコミットされるため、DoD のコマンドが環境変数の秘密を表示しても記録に残さないためです。
 
 ````markdown
 <!-- dod -->
@@ -232,13 +232,14 @@ P-7 は予算の超過に Opus 5.5 での失敗の実証を求めますが、今
 
 ### PR のレビューでの修正
 
-[otomatty/vouch-workflows#24](https://github.com/otomatty/vouch-workflows/pull/24) のレビューの5件を検証しました。3件は実在する誤りで、契約 `e1876cd`、先行テスト `2565e89`・`cd1a7e9`・`d66042c`、実装 `8f4651b` の順に直しました。
+[otomatty/vouch-workflows#24](https://github.com/otomatty/vouch-workflows/pull/24) の最初のレビューの5件と、修正後のレビューの1件を検証しました。3件は実在する誤りで、契約 `e1876cd`、先行テスト `2565e89`・`cd1a7e9`・`d66042c`、実装 `8f4651b` の順に直しました。
 
 | 指摘 | 判断と対応 |
 | --- | --- |
 | `git push origin other:topic` が送信元でなく HEAD の履歴を検査する | 誤り。refspec ごとの送信元の履歴を読むように直した。削除（`:<dst>`、`--delete`、`-d`）は読まず、`-` で始まる送信元は拒否する。`git log` の最後に `--` を付け、パスと同名の枝も枝として読む |
 | `git commit -am` が追跡外ファイルを追加とみなす | 誤り。`-a` だけでは追跡外ファイルを数えず、同じコマンドの前に add・rm・mv がある時だけ含める |
 | DoD の出力の秘密が build-log.md に残る | 対応。名前が `dod.redact.names` に一致する環境変数の値を置き換える。環境変数にない秘密は限界の表に記載した |
+| `DOCKER_AUTH_CONFIG`・`NPM_CONFIG__AUTH` が置き換えの名前に一致しない（2回目のレビュー） | 対応。区切られた `AUTH` を `dod.redact.names` に加えた（先行テスト `193c08b`）。単純な `AUTH` は `GIT_AUTHOR_NAME` にも一致するので使わない |
 | rules.md のコマンドを検証せずにシェルで実行する | 変えない。rules.md の DoD のコマンドを実行することが Issue #6 の要件で、package.json の scripts と同じくプロジェクト自身の設定を信頼する。DoD はモデルか人が明示的に起動する手動コマンドで、rules.md の変更は PR で人が見る |
 | DoD のコマンドに打ち切り時間がない（任意の指摘） | 変えない。正当に長いテストを不合格として記録しないため。打ち切りはハーネスのツールの上限に任せ、その場合は記録を書かず失敗として返る |
 
