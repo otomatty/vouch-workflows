@@ -82,6 +82,7 @@ const guarded = {
   platform: "linux",
   nodeVersion: "test",
   registration: "guarded",
+  exitCode: 0,
   observations,
   audit: [{ type: "session.started", harness: "claude" }],
   forged: false,
@@ -95,7 +96,7 @@ const control = {
     ...item,
     reason: null,
     changed: true,
-    expected: item.case !== "registration",
+    expected: !["link", "registration"].includes(item.case),
   })),
   forged: true,
 };
@@ -135,6 +136,7 @@ test("write-guard verification names each broken expectation", (t) => {
     [{ ...guarded, observations: observations.slice(1) }, ["GUARD-CASES"]],
     [control, []],
     [alter(control, "registration", { expected: false }), []],
+    [alter(control, "link", { expected: true }), []],
     [alter(control, "approve", { expected: false }), ["approve:GUARD-EFFECT"]],
     [
       alter(control, "audit-shell", { reason: "VOUCH-GUARD-AUDIT" }),
