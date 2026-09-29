@@ -759,3 +759,33 @@ test("a push checks the history of each source it sends, not only HEAD", async (
     /^VOUCH-GIT-UNVERIFIED: Bash git push origin \+-x:topic; the branch history/,
   );
 });
+
+test("a default push reads HEAD, a branch named like an option reads its history, and new or retyped tests keep their rules", async (t) => {
+  const wip = `\x1e${sha("7")}\x1fwip\0\nA\0src/draft.js\0`;
+  const push = (
+    /** @type {string} */ command,
+    /** @type {Record<string,string>} */ answers,
+  ) => guardGit(bash(command), context(), fakeGit(answers).execute);
+  const commit = (/** @type {string} */ entries) =>
+    guardGit(
+      bash("git commit -m 'refactor(U1): x'"),
+      context(),
+      fakeGit({ [status]: entries }).execute,
+    );
+  t.plan(4);
+  t.assert.match(
+    reason(await push("git push", { [log]: wip })),
+    /^VOUCH-COMMIT-TYPE: Bash git push \(7{12} wip\); /,
+  );
+  t.assert.match(
+    reason(await push("git push origin side-d", { [logOf("side-d")]: wip })),
+    /^VOUCH-COMMIT-TYPE: Bash git push \(7{12} wip\); /,
+  );
+  t.assert.deepEqual(await commit("A  tests/new.test.js\0"), {
+    decision: "allow",
+  });
+  t.assert.match(
+    reason(await commit("T  tests/a.test.js\0")),
+    /^VOUCH-COMMIT-TEST: Bash refactor\(U1\): x; /,
+  );
+});
