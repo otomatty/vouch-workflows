@@ -51,7 +51,9 @@
     "registry/session-start-hook.schema.json",
     "registry/skill-frontmatter.schema.json",
     "registry/workflow.json",
-    "registry/workflow.schema.json"
+    "registry/workflow.schema.json",
+    "registry/write-guard.json",
+    "registry/write-guard.schema.json"
   ],
   "gitTimeoutMs": 1500
 }

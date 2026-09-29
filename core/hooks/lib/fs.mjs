@@ -224,5 +224,8 @@ export async function createFileStore(root, operations = native) {
     readText,
     updateText,
     writeText: (path, text) => updateText(path, () => text),
+    locate: async () => {
+      throw new Error("FS-LOCATE: not implemented");
+    },
   };
 }

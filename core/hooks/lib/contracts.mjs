@@ -111,7 +111,8 @@
  * @property {string} generation Knowledge generation to compare with citations.
  * @property {() => string} now UTC time supplied by clock.mjs.
  * @property {(session:string,inputIdentity:string) => string} newId Deterministic event identity.
- * @typedef {HookContext & {readText:(path:string) => Promise<string|null>}} ReadyHookContext io validates FileStore before invoking main.
+ * @typedef {HookContext & {readText:(path:string) => Promise<string|null>,locate:(path:string,from?:string) => Promise<import('./runtime-contracts.mjs').PathLocation>}} ReadyHookContext
+ * io validates FileStore before invoking main. PreToolUse paths are classified by main through locate.
  * @typedef {(input:HookInput,ctx:ReadyHookContext) => HookResult|Promise<HookResult>} HookMain
  */
 

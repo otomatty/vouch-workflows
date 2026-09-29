@@ -60,3 +60,9 @@ Node.js 22.19.0 でも同じ `npm run check` が29.2秒で成功し、67件と�
 [Claude 配布](claude-distribution.md)で SessionStart の登録を追加しました。`readContext()` は `VOUCH_PROJECT_ROOT` が未設定かつ `VOUCH_HARNESS=claude` の場合だけ、Claude が渡す `CLAUDE_PROJECT_DIR` を採用します。空文字や相対パスの明示設定、Codex への補完は拒否します。stdin から信頼するルートや intent を推測する契約には変更していません。
 
 `cwd` と `tool_input.file_path` は共通 io で検査します。その他のツール固有パス、シェルコマンド内のパス、プロジェクト外に置かれる transcript は、この段階では読み書きせず、対象のフックで別途契約を定義します。
+
+## 書き込み保護での更新
+
+[書き込み保護](write-guard.md)の PreToolUse ガードのため、io.run の契約を次のとおり変えます。PreToolUse の時だけ、main の前の cwd と `tool_input.file_path` の包含検査を行いません。包含の失敗は fail-open の例外なので、root の外の別名やリンクを経由した書き込みがガードを素通りするためです。`file_path` が文字列でない入力は、従来どおり HOOK-14 として main を呼びません。他のイベントの検査は変えません。
+
+io.run は、検証済み FileStore の `locate(path, from)` を ReadyHookContext に渡します。locate はリンク・junction・root の別名を辿った実体の位置を返し、root の外・リンク・未作成のパスを例外にしません。読み書きの `resolvePath` は、従来どおりリンクと root の外を拒否します。

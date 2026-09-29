@@ -30,6 +30,9 @@ for (const count of [0, 2000]) {
       writeText: async () => {
         throw new Error("unexpected writeText");
       },
+      locate: async () => {
+        throw new Error("unexpected locate");
+      },
       updateText: async (_path, update) => {
         const after = update(content);
         if (after === null || after === content) return false;

@@ -1,0 +1,91 @@
+{
+  "$schema": "./write-guard.schema.json",
+  "version": 1,
+  "tools": {
+    "claude": { "Write": "write", "Edit": "edit", "Bash": "shell" },
+    "codex": { "apply_patch": "patch", "Bash": "shell" }
+  },
+  "intents": ["vouch", "intents"],
+  "audit": "audit",
+  "artifacts": ["intent.md", "design.md"],
+  "lockSuffix": ".vouch-lock",
+  "installation": ["hooks", "registry"],
+  "shell": {
+    "readers": [
+      "[",
+      "basename",
+      "cat",
+      "cd",
+      "cmp",
+      "cut",
+      "diff",
+      "dirname",
+      "echo",
+      "egrep",
+      "false",
+      "fgrep",
+      "file",
+      "find",
+      "git",
+      "grep",
+      "head",
+      "jq",
+      "ls",
+      "md5sum",
+      "nl",
+      "node",
+      "od",
+      "popd",
+      "printf",
+      "pushd",
+      "pwd",
+      "readlink",
+      "realpath",
+      "rg",
+      "sed",
+      "sha1sum",
+      "sha256sum",
+      "sort",
+      "stat",
+      "tail",
+      "test",
+      "tr",
+      "true",
+      "wc"
+    ],
+    "refused": {
+      "file": ["-C", "--compile"],
+      "find": [
+        "-delete",
+        "-exec",
+        "-execdir",
+        "-fls",
+        "-fprint",
+        "-fprint0",
+        "-fprintf",
+        "-ok",
+        "-okdir"
+      ],
+      "git": ["--ext-diff", "--open-files-in-pager", "--output", "-O"],
+      "rg": ["--pre"],
+      "sort": ["-o", "--output"]
+    },
+    "git": {
+      "globals": ["-C", "--no-pager", "-P"],
+      "commands": [
+        "add",
+        "blame",
+        "cat-file",
+        "commit",
+        "diff",
+        "grep",
+        "log",
+        "ls-files",
+        "rev-parse",
+        "show",
+        "status"
+      ]
+    },
+    "removers": ["cp", "mv", "rm", "rmdir", "rsync", "unlink"]
+  }
+}
