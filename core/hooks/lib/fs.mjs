@@ -255,7 +255,7 @@ export async function createFileStore(root, operations = native) {
   /** Classification only: links are followed, never refused. See FileStore.locate.
    * @param {string} path @param {string} [from] */
   async function locate(path, from = base) {
-    const lexical = resolve(base, from, path.replaceAll("\\", "/"));
+    const lexical = resolve(base, from, path);
     if (lexical.includes("\0")) return located(lexical, "missing");
     /** @type {string[]} */ const rest = [];
     let existing = lexical;

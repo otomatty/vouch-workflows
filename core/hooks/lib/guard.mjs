@@ -48,6 +48,9 @@ const reasons = {
 const order = Object.keys(reasons);
 /** @param {string} path */
 const split = (path) => path.replaceAll("\\", "/").split("/");
+/** A backslash as a separator, then as the platform reads it. @param {string} path */
+const readings = (path) =>
+  path.includes("\\") ? [path.replaceAll("\\", "/"), path] : [path];
 
 /** @param {import('./contracts.mjs').ReadyHookContext} ctx @param {string} entry
  * @returns {Promise<import('./runtime-contracts.mjs').GuardScope>} */
@@ -95,6 +98,11 @@ export async function guardWrites(input, ctx, entry) {
 
   /** @param {string} spelled @param {(current:string|null) => boolean} approves */
   async function target(spelled, approves) {
+    for (const reading of readings(spelled)) await place(reading, approves);
+  }
+
+  /** @param {string} spelled @param {(current:string|null) => boolean} approves */
+  async function place(spelled, approves) {
     const at = await ctx.locate(spelled, input.cwd);
     const shown = at.inside ?? spelled;
     if (at.kind === "unresolved" || at.links > 1) found.push(["link", shown]);
@@ -133,10 +141,33 @@ export async function guardWrites(input, ctx, entry) {
   } else if (kind === "patch") {
     for (const operation of parsePatch(subject)) {
       const adds = approvedLines(operation.added.join("\n"));
-      await target(operation.path, () => adds);
-      if (operation.to !== null) await target(operation.to, () => adds);
+      // Hunks are not replayed: moved `---` lines can bring any approved line into the frontmatter.
+      await target(
+        operation.path,
+        (current) =>
+          adds || (operation.kind === "update" && approvedLines(current ?? "")),
+      );
+      if (operation.to !== null) {
+        const moved = adds || (await approvedSource(operation.path));
+        await target(operation.to, () => moved);
+      }
     }
   } else await inspectShell(subject);
+
+  /** A move source with an approved line anywhere, or one that cannot be read. @param {string} path */
+  async function approvedSource(path) {
+    const at = await ctx.locate(path, input.cwd);
+    if (at.kind === "missing") return false;
+    if (at.kind !== "file" || at.inside === null) return true;
+    try {
+      // A file that vanished since it was located reads as null and throws here.
+      return approvedLines(
+        /** @type {string} */ (await ctx.readText(at.inside)),
+      );
+    } catch {
+      return true;
+    }
+  }
 
   /** @param {string} text */
   async function inspectShell(text) {
@@ -145,6 +176,7 @@ export async function guardWrites(input, ctx, entry) {
     const seen = new Map();
     /** @type {[Reason,string][]} */ const named = [];
     /** @type {Set<string>} */ const doctor = new Set();
+    const doctored = (/** @type {string} */ word) => doctor.has(word);
     /** @type {(string|null)[]} */ const stack = [];
     /** @type {string|null} */ let cwd = input.cwd;
     let reading = !parsed.dynamic;
@@ -155,6 +187,7 @@ export async function guardWrites(input, ctx, entry) {
       const [program = "", ...args] = programOf(command);
       const remover =
         guard.shell.removers.includes(program) ||
+        (program === "git" && !readsOnly(command, doctored)) ||
         (program === "find" &&
           args.some((arg) => guard.shell.refused.find.includes(arg)));
       for (const word of command.words)
@@ -176,7 +209,7 @@ export async function guardWrites(input, ctx, entry) {
         )
           doctor.add(/** @type {string} */ (entry));
       }
-      if (!readsOnly(command, (word) => doctor.has(word))) reading = false;
+      if (!readsOnly(command, doctored)) reading = false;
       if (program === "cd" || program === "pushd" || program === "popd") {
         const [dir] = args;
         const fixed = dir !== undefined && !/[$~*?[`]|^-$/.test(dir);
@@ -206,7 +239,9 @@ export async function guardWrites(input, ctx, entry) {
     const words = expandBraces(spelled);
     if (!words) return [["expansion", spelled, false]];
     /** @type {[Reason,string,boolean][]} */ const result = [];
-    for (const word of words) result.push(...(await named(word, cwd, seen)));
+    for (const word of words)
+      for (const reading of readings(word))
+        result.push(...(await named(reading, cwd, seen)));
     return result;
   }
 
