@@ -1,5 +1,9 @@
 import { test } from "node:test";
-import { parseShell, readsOnly } from "../../../core/hooks/lib/shell.mjs";
+import {
+  parseShell,
+  programOf,
+  readsOnly,
+} from "../../../core/hooks/lib/shell.mjs";
 
 /** @param {string} text */
 const words = (text) => parseShell(text).commands.map((item) => item.words);
@@ -238,4 +242,127 @@ test("parseShell reads process substitution inside a word as bash does", (t) => 
       [["ls"], false, 1],
     ],
   );
+});
+
+test("parseShell splits at tabs and carriage returns and keeps escaped and trailing characters", (t) => {
+  const escaped = parseShell("echo \\$HOME a\\");
+  t.plan(4);
+  t.assert.deepEqual(words("a\tb\rc"), [["a", "b", "c"]]);
+  t.assert.deepEqual(escaped.commands[0]?.words, ["echo", "$HOME", "a"]);
+  t.assert.deepEqual(escaped.commands[0]?.expands, [false, false, false]);
+  t.assert.deepEqual(words("a;;b;"), [["a"], ["b"]]);
+});
+
+test("parseShell keeps descriptor numbers out of words and reads other redirection targets", (t) => {
+  t.plan(4);
+  t.assert.deepEqual(parseShell("echo x 2>err a1>f 12>g x>h").commands, [
+    {
+      words: ["echo", "x", "err", "a1", "f", "g", "x", "h"],
+      expands: Array(8).fill(false),
+      writes: true,
+      depth: 0,
+    },
+  ]);
+  t.assert.deepEqual(parseShell("echo x >&x1 >&12 >&-").commands, [
+    {
+      words: ["echo", "x", "x1"],
+      expands: [false, false, false],
+      writes: true,
+      depth: 0,
+    },
+  ]);
+  t.assert.deepEqual(parseShell("echo x > 1").commands[0]?.words, [
+    "echo",
+    "x",
+    "1",
+  ]);
+  t.assert.deepEqual(parseShell("ls &> log").commands, [
+    { words: ["ls", "log"], expands: [false, false], writes: true, depth: 0 },
+  ]);
+});
+
+test("parseShell strips here-document tabs only for <<- and CR line ends always", (t) => {
+  t.plan(5);
+  t.assert.deepEqual(words("cat <<EOF\r\nbody\r\nEOF\r\nls"), [
+    ["cat", "body"],
+    ["ls"],
+  ]);
+  t.assert.deepEqual(words("cat <<EOF\n\tEOF\nEOF"), [["cat", "EOF"]]);
+  t.assert.deepEqual(words("cat <<-EOF\n\t\tx\n\t\tEOF\nls"), [
+    ["cat", "x"],
+    ["ls"],
+  ]);
+  t.assert.deepEqual(parseShell("cat <<EOF\n$x\nEOF").commands[0]?.expands, [
+    false,
+    false,
+  ]);
+  t.assert.deepEqual(parseShell("<<EOF\nvouch\nEOF").commands, [
+    { words: ["vouch"], expands: [false], writes: false, depth: 0 },
+  ]);
+});
+
+test("parseShell marks substitutions inside double quotes and backticks as dynamic", (t) => {
+  t.plan(6);
+  t.assert.equal(parseShell('echo "$(date)"').dynamic, true);
+  t.assert.equal(parseShell('echo "a`b`"').dynamic, true);
+  t.assert.equal(parseShell("echo `date`").dynamic, true);
+  const plain = parseShell('echo "$x" a~b');
+  t.assert.equal(plain.dynamic, false);
+  t.assert.deepEqual(plain.commands[0]?.expands, [false, true, false]);
+  t.assert.deepEqual(
+    parseShell("a ) b # tail").commands.map((item) => [item.words, item.depth]),
+    [
+      [["a"], 0],
+      [["b"], 0],
+    ],
+  );
+});
+
+test("readsOnly accepts sed quiet and extended forms and bundled short options it does not refuse", (t) => {
+  const cases = [
+    "sed -n 5p a",
+    "sed --quiet 1p a",
+    "sed --silent -E 1p a",
+    "sed -r -n 1p a",
+    "git -P log",
+    "sort a-o",
+    "cat $F",
+  ];
+  t.plan(cases.length);
+  for (const text of cases) t.assert.equal(reading(text), true, text);
+});
+
+test("readsOnly refuses sed without -n, extra scripts, other options and expansions for strict programs", (t) => {
+  const cases = [
+    "sed 1p a",
+    "sed -n -i 1p a",
+    "sed -n -e 'w x' -e 1p a",
+    "sed -n x1p a",
+    "sed -n 1pz a",
+    "git --paginate log",
+    "sort $X",
+    "find $D",
+    "git log $R",
+    "rg $P f",
+    "file $F",
+  ];
+  t.plan(cases.length);
+  for (const text of cases) t.assert.equal(reading(text), false, text);
+});
+
+test("programOf skips leading reserved words and identifier assignments only", (t) => {
+  /** @param {string[]} words */
+  const of = (...words) =>
+    programOf({
+      words,
+      expands: words.map(() => false),
+      writes: false,
+      depth: 0,
+    });
+  t.plan(5);
+  t.assert.deepEqual(of("if", "A=1", "rm", "-f"), ["rm", "-f"]);
+  t.assert.deepEqual(of("a=b"), []);
+  t.assert.deepEqual(of("-x=1", "ls"), ["-x=1", "ls"]);
+  t.assert.deepEqual(of("1a=b", "ls"), ["1a=b", "ls"]);
+  t.assert.deepEqual(of("A-B=1", "ls"), ["A-B=1", "ls"]);
 });

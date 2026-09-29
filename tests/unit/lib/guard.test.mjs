@@ -748,3 +748,220 @@ test("guardWrites treats a malformed installation descriptor as unreadable", asy
     "VOUCH-GUARD-INSTALLATION",
   );
 });
+
+test("guardWrites states each documented reason in one line", async (t) => {
+  const box = await guardBox(t);
+  await symlink(box.path("missing/target"), box.path("dangling"));
+  await box.write("vouch/intents/260929-bytes/decisions.md", "");
+  await writeFile(
+    box.path("vouch/intents/260929-bytes/intent.md"),
+    Buffer.from([0xff]),
+  );
+  /** @param {string} tool @param {Record<string,unknown>} input */
+  const reason = async (tool, input) => {
+    const result = await guardWrites(
+      {
+        session_id: "s",
+        cwd: box.root,
+        hook_event_name: "PreToolUse",
+        tool_name: tool,
+        tool_input: input,
+      },
+      box.ctx,
+      box.entry,
+    );
+    return result.decision === "deny" ? result.reason : "allow";
+  };
+  const newline = box.path(`vouch/intents/${intent}/audit/x\ny`);
+  t.plan(8);
+  t.assert.equal(
+    await reason("Write", { file_path: box.path(audit), content: "" }),
+    `VOUCH-GUARD-AUDIT: Write ${audit}; audit records are appended only by Vouch hooks`,
+  );
+  t.assert.equal(
+    await reason("Write", {
+      file_path: box.path("a.vouch-lock/next"),
+      content: "",
+    }),
+    "VOUCH-GUARD-LOCK: Write a.vouch-lock/next; a Vouch hook owns this lock and its pending file",
+  );
+  t.assert.equal(
+    await reason("Write", {
+      file_path: box.path(".claude/settings.json"),
+      content: "",
+    }),
+    "VOUCH-GUARD-INSTALLATION: Write .claude/settings.json; the installed hook registration and runtime change only by reinstalling the distribution",
+  );
+  t.assert.equal(
+    await reason("Write", { file_path: box.path(done), content: "" }),
+    `VOUCH-GUARD-APPROVED: Write ${done}; tools neither change nor create approved artifacts`,
+  );
+  t.assert.equal(
+    await reason("Bash", { command: `echo x > ${artifact}` }),
+    `VOUCH-GUARD-ARTIFACT: Bash ${artifact}; shell writes to Vouch artifacts cannot be verified; use the file edit tool`,
+  );
+  t.assert.equal(
+    await reason("Write", { file_path: box.path("dangling"), content: "" }),
+    "VOUCH-GUARD-LINK: Write dangling; the real target of this link cannot be verified",
+  );
+  t.assert.equal(
+    await reason("Write", {
+      file_path: box.path("vouch/intents/260929-bytes/intent.md"),
+      content: "",
+    }),
+    "VOUCH-GUARD-UNVERIFIED: Write vouch/intents/260929-bytes/intent.md; the current artifact could not be read to verify its status",
+  );
+  t.assert.equal(
+    await reason("Write", { file_path: newline, content: "" }),
+    `VOUCH-GUARD-AUDIT: Write vouch/intents/${intent}/audit/x?y; audit records are appended only by Vouch hooks`,
+  );
+});
+
+test("guardWrites reads edits, writes and moves the way the tools apply them", async (t) => {
+  const box = await guardBox(t);
+  const titled = "vouch/intents/260929-titled/intent.md";
+  await box.write(titled, "---\ntitle: draft notes\nstatus: draft\n---\n");
+  await box.write("vouch/intents/260929-dir/design.md/keep", "");
+  /** @type {[string,Record<string,unknown>,string][]} */
+  const cases = [
+    [
+      "Edit",
+      {
+        file_path: box.path(titled),
+        old_string: "draft",
+        new_string: "approved",
+      },
+      "allow",
+    ],
+    [
+      "Edit",
+      {
+        file_path: box.path(titled),
+        old_string: "draft",
+        new_string: "approved",
+        replace_all: true,
+      },
+      "VOUCH-GUARD-APPROVED",
+    ],
+    ["Edit", { file_path: box.path(artifact), old_string: "absent" }, "allow"],
+    [
+      "Edit",
+      {
+        file_path: box.path(artifact),
+        old_string: 1,
+        new_string: "status: approved",
+      },
+      "VOUCH-GUARD-APPROVED",
+    ],
+    [
+      "Edit",
+      {
+        file_path: box.path(artifact),
+        old_string: "",
+        new_string: "status: approved",
+      },
+      "VOUCH-GUARD-APPROVED",
+    ],
+    [
+      "Edit",
+      {
+        file_path: box.path("vouch/intents/260929-new/intent.md"),
+        old_string: "x",
+        new_string: "y",
+      },
+      "allow",
+    ],
+    ["Write", { file_path: box.path(artifact), content: 42 }, "allow"],
+    [
+      "Write",
+      {
+        file_path: box.path("vouch/intents/260929-dir/design.md"),
+        content: draft,
+      },
+      "allow",
+    ],
+  ];
+  t.plan(cases.length + 1);
+  for (const [tool, input, expected] of cases)
+    t.assert.equal(
+      await box.decide(tool, input),
+      expected,
+      JSON.stringify(input),
+    );
+  const codex = await guardBox(t, "codex");
+  t.assert.equal(
+    await codex.decide("apply_patch", {
+      command:
+        "*** Begin Patch\n*** Update File: notes.md\n*** Move to: vouch/intents/260929-new/intent.md\n+status: approved\n*** End Patch\n",
+    }),
+    "VOUCH-GUARD-APPROVED",
+  );
+});
+
+test("guardWrites follows directory changes, subshells and unknown bases in shell commands", async (t) => {
+  const box = await guardBox(t);
+  const dir = `vouch/intents/${intent}`;
+  /** @type {[string,string][]} */
+  const cases = [
+    [`cd ${dir} && rm -r audit`, "VOUCH-GUARD-AUDIT"],
+    [`cd ${dir} && (cd /tmp) && rm -r audit`, "VOUCH-GUARD-AUDIT"],
+    [`pushd ${dir} && rm -r audit`, "VOUCH-GUARD-AUDIT"],
+    // After popd or cd - the base is unknown; only whole spellings are recognized then.
+    [`cd ${dir} && popd && rm -r audit`, "allow"],
+    [`cd ${dir} && cd - && rm -r audit`, "allow"],
+    ["cd ~ && node .claude/hooks/vouch-doctor.mjs", "VOUCH-GUARD-INSTALLATION"],
+    [
+      "node .claude/hooks/vouch-record-intent-review.mjs",
+      "VOUCH-GUARD-INSTALLATION",
+    ],
+    ["echo -exec .", "allow"],
+    ["rm -rf ..", "VOUCH-GUARD-AUDIT"],
+    ["mkdir -p ..", "allow"],
+  ];
+  t.plan(cases.length);
+  for (const [command, expected] of cases)
+    t.assert.equal(await box.decide("Bash", { command }), expected, command);
+});
+
+test("guardWrites recognizes protected spellings behind variables and orders reasons by priority", async (t) => {
+  const box = await guardBox(t);
+  const other = await sandbox(t, { git: false });
+  await box.write("existing.txt", "x");
+  await other.write("free.txt", "x");
+  /** @type {[string,string][]} */
+  const cases = [
+    ['echo x > "$ROOT/.claude/settings.json"', "VOUCH-GUARD-INSTALLATION"],
+    ['echo x > "$ROOT/vouch/intents/x/intent.md"', "VOUCH-GUARD-ARTIFACT"],
+    ['printf x >> "$DIR/audit/events.jsonl"', "VOUCH-GUARD-AUDIT"],
+    [
+      "Add-Content $env:ROOT\\vouch\\intents\\x\\audit\\events.jsonl x",
+      "VOUCH-GUARD-AUDIT",
+    ],
+    [`rm ${artifact} ${audit}`, "VOUCH-GUARD-AUDIT"],
+    ["rm -f existing.txt", "allow"],
+    [`rm -f '${other.path("free.txt")}'`, "allow"],
+  ];
+  t.plan(cases.length);
+  for (const [command, expected] of cases)
+    t.assert.equal(await box.decide("Bash", { command }), expected, command);
+});
+
+test("guardWrites refuses the whole installation when a descriptor lists non-string overrides", async (t) => {
+  const box = await guardBox(t);
+  await box.write(
+    ".claude/registry/installation.json",
+    JSON.stringify({
+      harness: "claude",
+      registration: "settings.json",
+      overrides: [1],
+    }),
+  );
+  t.plan(1);
+  t.assert.equal(
+    await box.decide("Write", {
+      file_path: box.path(".claude/other.json"),
+      content: "{}",
+    }),
+    "VOUCH-GUARD-INSTALLATION",
+  );
+});

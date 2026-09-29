@@ -149,3 +149,49 @@ test("parsePatch lists every file operation with its added lines and tolerates s
   ]);
   t.assert.deepEqual(parsePatch("no markers\n+line"), []);
 });
+
+test("normalizeSegment keeps a stream-only name in lower case", (t) => {
+  t.plan(1);
+  t.assert.equal(normalizeSegment(":ABC"), ":abc");
+});
+
+test("classifySegments anchors areas at the root and reads empty, current and glob segments", (t) => {
+  /** @type {[string[], import('../../../core/hooks/lib/runtime-contracts.mjs').GuardMatch|null][]} */
+  const cases = [
+    [["**"], { area: "audit", ancestor: false }],
+    ["vouch//intents/./x/audit".split("/"), { area: "audit", ancestor: false }],
+    [["other", "intents", "x", "audit"], null],
+    [["docs", "intents", "x", "intent.md"], null],
+    [["vouch", "intents", "x", "intent.md", "extra"], null],
+    [["vouch", "intents", "x", "au(d)it*"], null],
+    [["vouch", "intents", "x", "[!b]udit"], { area: "audit", ancestor: false }],
+  ];
+  t.plan(cases.length);
+  for (const [segments, expected] of cases)
+    t.assert.deepEqual(
+      classifySegments(segments, claudeScope),
+      expected,
+      segments.join("/"),
+    );
+});
+
+test("declaresApproved needs a leading delimiter and a status key and ignores indented delimiters", (t) => {
+  /** @type {[string, boolean][]} */
+  const cases = [
+    [" ---\nstatus: approved\n---\n", false],
+    ["---\nnote: status: approved\n---\n", false],
+    ["---\nstatusx: approved\n---\n", false],
+    ["---\nstatus: draft\n  ---\nstatus: approved\n", true],
+  ];
+  t.plan(cases.length);
+  for (const [text, expected] of cases)
+    t.assert.equal(declaresApproved(text), expected, JSON.stringify(text));
+});
+
+test("parsePatch needs markers at the start of a line and accepts a move without a space", (t) => {
+  t.plan(2);
+  t.assert.deepEqual(parsePatch("x *** Update File: a\n+b"), []);
+  t.assert.deepEqual(parsePatch("*** Update File: b\n*** Move to:c.md"), [
+    { kind: "update", path: "b", to: "c.md", added: [] },
+  ]);
+});

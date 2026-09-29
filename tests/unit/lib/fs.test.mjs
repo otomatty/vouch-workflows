@@ -359,6 +359,16 @@ test("file store locates spelled paths at their real place without refusing link
       { inside: "a/b/c", contains: false, kind: "missing", links: 0 },
     ],
     [
+      "nested/file/child",
+      undefined,
+      {
+        inside: "nested/file/child",
+        contains: false,
+        kind: "missing",
+        links: 0,
+      },
+    ],
+    [
       ".",
       undefined,
       { inside: "", contains: true, kind: "directory", links: 0 },
