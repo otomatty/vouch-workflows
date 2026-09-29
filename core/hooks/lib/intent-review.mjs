@@ -2,7 +2,6 @@ import approvals from "../../registry/approval.json" with { type: "json" };
 import commands from "../../registry/intent-review.json" with { type: "json" };
 import {
   compareIntentApprovalEvidence,
-  findApproval,
   identifySubmission,
   snapshotIntent,
 } from "./approval.mjs";
@@ -165,7 +164,6 @@ export async function reviewIntent(input, ctx) {
             field: /** @type {const} */ ("turn_id"),
           },
         };
-  const events = await listEvents(ctx.audit);
   if (command.kind === "confirm") {
     const target = command.target;
     const content = checkpointContent(target, {
@@ -192,67 +190,47 @@ export async function reviewIntent(input, ctx) {
       ...target,
       content,
     };
-    const approval = findApproval({ text, events, intent, newId: ctx.newId });
-    const why =
-      approval && (await blocked(ctx, intent, text, [...events, record]));
+    // A confirmation never applies an approval; only the approval's own input does.
     return {
       decision: "deny",
-      reason: `VOUCH-CHECKPOINT-RECORDED: ${id}; ${describeTarget(target)}${
-        !approval
-          ? ""
-          : why === null
-            ? `; approval ${approval.id} applied; intent.md approved`
-            : `; approval pending: ${why}`
-      }`,
+      reason: `VOUCH-CHECKPOINT-RECORDED: ${id}; ${describeTarget(target)}`,
       events: [record],
-      ...(approval && why === null ? { approve: { sha256 } } : {}),
     };
   }
-  // One approval per gate: another input for an approved gate reuses the first record.
-  let approval = findApproval({
-    text,
-    events: events.filter(
-      (event) =>
-        event.type !== "intent.approved" || event.parent === command.gate,
-    ),
+  // The approval that applies is always this input's own record, matched against it.
+  const events = await listEvents(ctx.audit);
+  const gate = events.find((event) => event.id === command.gate);
+  if (gate?.type !== "gate.opened" || gate.synthetic)
+    return deny("VOUCH-REVIEW-EVIDENCE: matching nonsynthetic gate required");
+  const wait = elapsedMilliseconds(gate.ts, ts);
+  if (wait === null)
+    return deny("VOUCH-REVIEW-EVIDENCE: valid ordered UTC timestamps required");
+  // Field order matches the recorded goldens of the record-only contract.
+  /** @type {import('./contracts.mjs').IntentApproved} */
+  const approval = {
+    id,
+    v: 1,
+    type: "intent.approved",
+    ts,
+    actor: "human",
     intent,
-    newId: ctx.newId,
+    session: input.session_id,
+    source: "intent",
+    parent: command.gate,
+    wait_ms: wait,
+    revision: snapshot.revision,
+    ...evidence,
+  };
+  const comparison = compareIntentApprovalEvidence({
+    gate,
+    approval,
+    input,
+    harness: ctx.harness,
+    intent,
+    text,
   });
-  if (!approval) {
-    const gate = events.find((event) => event.id === command.gate);
-    if (gate?.type !== "gate.opened" || gate.synthetic)
-      return deny("VOUCH-REVIEW-EVIDENCE: matching nonsynthetic gate required");
-    const wait = elapsedMilliseconds(gate.ts, ts);
-    if (wait === null)
-      return deny(
-        "VOUCH-REVIEW-EVIDENCE: valid ordered UTC timestamps required",
-      );
-    // Field order matches the recorded goldens of the record-only contract.
-    approval = {
-      id,
-      v: 1,
-      type: "intent.approved",
-      ts,
-      actor: "human",
-      intent,
-      session: input.session_id,
-      source: "intent",
-      parent: command.gate,
-      wait_ms: wait,
-      revision: snapshot.revision,
-      ...evidence,
-    };
-    const comparison = compareIntentApprovalEvidence({
-      gate,
-      approval,
-      input,
-      harness: ctx.harness,
-      intent,
-      text,
-    });
-    if (!comparison.matches)
-      return deny(`VOUCH-REVIEW-EVIDENCE: ${comparison.reason}`);
-  }
+  if (!comparison.matches)
+    return deny(`VOUCH-REVIEW-EVIDENCE: ${comparison.reason}`);
   const why = await blocked(ctx, intent, text, events);
   return {
     decision: "deny",
@@ -260,7 +238,7 @@ export async function reviewIntent(input, ctx) {
       why === null
         ? `VOUCH-APPROVAL-APPLIED: ${approval.id}; intent.md approved at revision ${sha256.slice(0, 12)}`
         : `VOUCH-APPROVAL-RECORDED: ${approval.id}; not applied: ${why}`,
-    ...(approval.id === id ? { events: [approval] } : {}),
+    events: [approval],
     ...(why === null ? { approve: { sha256 } } : {}),
   };
 }

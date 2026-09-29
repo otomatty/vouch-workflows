@@ -16,7 +16,7 @@ const digest = (text) => ({
 
 /** The unique `<!-- sec:id -->` line up to the next section marker. @param {string} text @param {string} id */
 function sectionOf(text, id) {
-  const lines = text.match(/[^\n]*\n|[^\n]+$/g) ?? [];
+  const lines = linesOf(text);
   const marker = `<!-- sec:${id} -->`;
   const starts = lines.flatMap((line, i) =>
     line.replace(/\r?\n$/, "") === marker ? [i] : [],
@@ -29,11 +29,15 @@ function sectionOf(text, id) {
   return lines.slice(start, end < 0 ? undefined : end).join("");
 }
 
-/** Rows of the first table in the plan section, as trimmed lines and cells. @param {string} text */
+/** Lines with their line breaks. @param {string} text */
+const linesOf = (text) => text.match(/[^\n]*\n|[^\n]+$/g) ?? [];
+
+/** Rows of the first table in the plan section: raw lines for digests, cells for reading. @param {string} text */
 function planRows(text) {
   const plan = sectionOf(text, approval.plan.section);
   if (plan === null) return null;
-  const lines = plan.split(/\r?\n/).map((line) => line.trim());
+  const raw = linesOf(plan);
+  const lines = raw.map((line) => line.trim());
   const first = lines.findIndex((line) => line.startsWith("|"));
   if (first < 0) return null;
   const end = lines.findIndex((line, i) => i > first && !line.startsWith("|"));
@@ -44,9 +48,11 @@ function planRows(text) {
       .replace(/\|$/, "")
       .split(/(?<!\\)\|/)
       .map((cell) => cell.trim());
-  const [, separator = "", ...rows] = table;
+  const [, separator = ""] = table;
   if (!/^\|(?:\s*:?-{3,}:?\s*\|)+$/.test(separator)) return null;
-  return rows.map((line) => ({ line, cells: cells(line) }));
+  return table
+    .slice(2)
+    .map((line, i) => ({ line: `${raw[first + 2 + i]}`, cells: cells(line) }));
 }
 
 /** @param {string} cell @param {string[]} tokens */
@@ -100,11 +106,15 @@ export function readCheckpointMode(text) {
   const [first, ...lines] = text.split(/\r?\n/);
   const close = lines.indexOf("---");
   if (first !== "---" || close < 0) return null;
-  const values = lines
+  // Every checkpoints key counts, even empty, so a second or broken line is a conflict.
+  const keys = lines
     .slice(0, close)
-    .flatMap((line) => /^checkpoints:\s*(\S+)\s*$/.exec(line)?.slice(1) ?? []);
-  const [mode] = values;
-  return values.length === 1 && workflow.checkpoint_modes.includes(`${mode}`)
+    .filter((line) => /^checkpoints\s*:/.test(line));
+  const mode =
+    keys.length === 1
+      ? /^checkpoints:\s*(\S+)\s*$/.exec(`${keys[0]}`)?.[1]
+      : undefined;
+  return mode !== undefined && workflow.checkpoint_modes.includes(mode)
     ? /** @type {import('./runtime-contracts.mjs').CheckpointMode} */ (mode)
     : null;
 }

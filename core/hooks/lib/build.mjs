@@ -6,6 +6,7 @@ import guard from "../../registry/write-guard.json" with { type: "json" };
 import { findApproval, snapshotIntent } from "./approval.mjs";
 import { normalizeSegment, parsePatch } from "./areas.mjs";
 import { listEvents } from "./audit.mjs";
+import { parseShell, programOf } from "./shell.mjs";
 
 // Build start boundary; see docs/development/approval-boundary.md.
 const [home = "vouch"] = guard.intents;
@@ -14,6 +15,29 @@ const artifacts = approval.build.map((stage) =>
     documents.artifacts[/** @type {'build'|'verify'} */ (stage)],
   ),
 );
+
+/**
+ * Words a shell command may write: arguments of redirecting commands and of registered writers.
+ * Null when a write is built at run time and cannot be verified.
+ * @param {string} text @returns {string[]|null}
+ */
+function shellTargets(text) {
+  const parsed = parseShell(text);
+  /** @type {string[]} */ const words = [];
+  for (const command of parsed.commands) {
+    const [program = "", ...args] = programOf(command);
+    const writer =
+      command.writes ||
+      approval.writers.includes(program) ||
+      (program === "sed" &&
+        args.some((arg) => /^(?:-[^-]*i|--in-place)/.test(arg)));
+    if (!writer) continue;
+    if (parsed.dynamic) return null;
+    // Destinations usually come last, so the reason names them first.
+    words.push(...args.filter((arg) => !arg.startsWith("-")).reverse());
+  }
+  return words;
+}
 
 /** @type {import('./runtime-contracts.mjs').GuardBuild} */
 export async function guardBuild(input, ctx) {
@@ -24,12 +48,10 @@ export async function guardBuild(input, ctx) {
     ? tools[input.tool_name]
     : undefined;
   const subject =
-    kind === "patch" ? input.tool_input.command : input.tool_input.file_path;
-  if (
-    (kind !== "write" && kind !== "edit" && kind !== "patch") ||
-    typeof subject !== "string"
-  )
-    return { decision: "allow" };
+    kind === "patch" || kind === "shell"
+      ? input.tool_input.command
+      : input.tool_input.file_path;
+  if (!kind || typeof subject !== "string") return { decision: "allow" };
   const paths =
     kind === "patch"
       ? parsePatch(subject).flatMap((operation) =>
@@ -37,10 +59,12 @@ export async function guardBuild(input, ctx) {
             ? [operation.path]
             : [operation.path, operation.to],
         )
-      : [subject];
+      : kind === "shell"
+        ? shellTargets(subject)
+        : [subject];
   const scope = [...guard.intents, ctx.intent].map(normalizeSegment);
-  /** @type {string|null} */ let target = null;
-  for (const path of paths) {
+  /** @type {string|null} */ let target = paths === null ? subject : null;
+  for (const path of paths ?? []) {
     const at = await ctx.locate(path, input.cwd);
     if (at.inside === null) continue;
     // Only the canonical vouch/ spelling is exempt; any spelling of a Build artifact is not.
