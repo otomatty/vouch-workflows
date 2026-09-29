@@ -729,7 +729,7 @@ test("a push checks the history of each source it sends, not only HEAD", async (
   ];
   const run = (/** @type {string} */ command) =>
     guardGit(bash(command), context(), fakeGit(answers).execute);
-  t.plan(denied.length + 3);
+  t.plan(denied.length + 5);
   for (const command of denied)
     t.assert.match(
       reason(await run(command)),
@@ -738,9 +738,12 @@ test("a push checks the history of each source it sends, not only HEAD", async (
       ),
       command,
     );
-  t.assert.deepEqual(await run("git push origin HEAD:topic :old"), {
-    decision: "allow",
-  });
+  for (const command of [
+    "git push origin HEAD:topic :old",
+    "git push origin --delete side",
+    "git push -d origin side",
+  ])
+    t.assert.deepEqual(await run(command), { decision: "allow" }, command);
   const calls = fakeGit(answers);
   await guardGit(bash("git push origin :old"), context(), calls.execute);
   t.assert.equal(
