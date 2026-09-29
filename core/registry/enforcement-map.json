@@ -1785,7 +1785,7 @@
         {
           "status": "implemented",
           "path": "tests/hooks/vouch-guard-writes-git.test.mjs",
-          "claim": "実際の Git リポジトリで、両ハーネスの派生入力の main への push と gh pr merge を Intent の有無に関わらず終了2で拒否し、Intent のブランチへの push を許すことを子プロセスで検査する。"
+          "claim": "実際の Git リポジトリで、両ハーネスの派生入力の main への push と gh pr merge を Intent の有無に関わらず終了2で拒否し、Intent のブランチへの push を許し、別の枝を送る push はその枝のコミット列で判定することを子プロセスで検査する。"
         },
         {
           "status": "implemented",
