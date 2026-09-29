@@ -52,7 +52,8 @@ function invocations(text, cwd, execute) {
         dirs && args.length === 1 && !dynamic && !/^-/.test(`${args[0]}`)
           ? [...dirs, `${args[0]}`]
           : null;
-    if (program !== "git") continue;
+    const merge = program === "gh" && args[0] === "pr" && args[1] === "merge";
+    if (program !== "git" && !merge) continue;
     /** @type {string[]|null} */ let steps = dirs;
     let i = 0;
     for (; args[i]?.startsWith("-"); i++) {
@@ -65,15 +66,9 @@ function invocations(text, cwd, execute) {
         i++;
     }
     found.push({
-      sub: `${args[i]}`,
-      args: args.slice(i + 1),
-      git:
-        steps &&
-        ((...rest) =>
-          readGit(cwd, execute)(
-            ...steps.flatMap((dir) => ["-C", dir]),
-            ...rest,
-          )),
+      sub: merge ? "pr merge" : `${args[i]}`,
+      args: args.slice(merge ? 2 : i + 1),
+      git: steps && readGit(cwd, execute, steps),
       dynamic,
       staged: found.some((item) => /^(?:add|rm|mv)$/.test(item.sub)),
     });
@@ -212,12 +207,19 @@ export async function guardGit(input, ctx, execute) {
   for (const git of typeof text === "string"
     ? invocations(text, input.cwd, execute)
     : []) {
+    /** @type {Found} */ const merged = [
+      "VOUCH-GIT-MERGE",
+      ["gh pr merge", ...git.args].join(" "),
+      "a person merges the pull request after reading the Brief",
+    ];
     const found =
-      git.sub === "push"
-        ? await push(git, ctx)
-        : git.sub === "commit"
-          ? await commit(git, ctx)
-          : null;
+      git.sub === "pr merge"
+        ? merged
+        : git.sub === "push"
+          ? await push(git, ctx)
+          : git.sub === "commit"
+            ? await commit(git, ctx)
+            : null;
     if (found)
       return {
         decision: "deny",

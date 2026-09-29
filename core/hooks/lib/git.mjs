@@ -25,9 +25,11 @@ export async function spawn(file, args, options, execute) {
 }
 
 /** @type {import('./runtime-contracts.mjs').ReadGit} */
-export function readGit(cwd, execute) {
+export function readGit(cwd, execute, steps = []) {
+  const at = steps.flatMap((dir) => ["-C", dir]);
   return async (...args) => {
-    const result = await spawn("git", args, { cwd, encoding: "utf8" }, execute);
+    const options = { cwd, encoding: /** @type {const} */ ("utf8") };
+    const result = await spawn("git", [...at, ...args], options, execute);
     return result.status === 0 ? String(result.stdout) : null;
   };
 }

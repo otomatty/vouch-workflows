@@ -163,7 +163,8 @@ export {};
  * @typedef {(file:string,args:string[],options:import('node:child_process').SpawnSyncOptions,execute?:SpawnPort)=>Promise<Spawned>} Spawn
  * Hidden window; a shell only when options ask for one; Git calls use runtime.json gitTimeoutMs.
  * @typedef {(...args:string[])=>Promise<string|null>} GitPort Stdout of a read-only Git command; null on failure.
- * @typedef {(cwd:string,execute?:SpawnPort)=>GitPort} ReadGit `--no-optional-locks` Git in `cwd`.
+ * @typedef {(cwd:string,execute?:SpawnPort,steps?:string[])=>GitPort} ReadGit `--no-optional-locks` Git in `cwd`,
+ * moved by each of `steps` in turn with `-C`.
  * @typedef {(harness:import('./contracts.mjs').Harness,tool:string)=>boolean} IsShellTool
  * @typedef {(subject:string)=>{type:string,unit:string}|null} CommitType A registered `<type>(<Unit>): ` subject.
  * @typedef {(text:string)=>Change[]} ReadChanges Entries of `--name-status -z` output.
