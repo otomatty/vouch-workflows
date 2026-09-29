@@ -263,9 +263,8 @@ export async function createFileStore(root, operations = native) {
       try {
         await operations.lstat(existing);
         break;
-      } catch (error) {
-        if (!hasCode(error, "ENOENT") && !hasCode(error, "ENOTDIR"))
-          throw error;
+      } catch {
+        // Missing, denied, looping or too long: one word must not fail a guard open.
         if (dirname(existing) === existing) return located(lexical, "missing");
         rest.unshift(basename(existing));
         existing = dirname(existing);
@@ -276,11 +275,19 @@ export async function createFileStore(root, operations = native) {
       real = await operations.realpath(existing);
     } catch {
       // A dangling or looping link stays where its own directory really is.
-      const parent = await operations.realpath(dirname(existing));
+      let parent = dirname(existing);
+      try {
+        parent = await operations.realpath(parent);
+      } catch {}
       return located(join(parent, basename(existing), ...rest), "unresolved");
     }
     if (rest.length > 0) return located(join(real, ...rest), "missing");
-    const info = await operations.stat(real);
+    let info;
+    try {
+      info = await operations.stat(real);
+    } catch {
+      return located(real, "unresolved");
+    }
     if (info.isFile()) return located(real, "file", info.nlink);
     return located(real, info.isDirectory() ? "directory" : "other");
   }

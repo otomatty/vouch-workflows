@@ -10,6 +10,7 @@ import {
   parsePatch,
 } from "./areas.mjs";
 import { parseShell, programOf, readsOnly } from "./shell.mjs";
+import { expandBraces, uncommented } from "./words.mjs";
 
 /** Reason IDs in priority order; see docs/development/write-guard.md. */
 const reasons = {
@@ -37,6 +38,10 @@ const reasons = {
   unverified: [
     "VOUCH-GUARD-UNVERIFIED",
     "the current artifact could not be read to verify its status",
+  ],
+  expansion: [
+    "VOUCH-GUARD-UNVERIFIED",
+    "the brace expansion has too many results to verify",
   ],
 };
 /** @typedef {keyof typeof reasons} Reason */
@@ -183,19 +188,32 @@ export async function guardWrites(input, ctx, entry) {
     }
     // Raw words without quote or escape processing also count: PowerShell and Windows paths
     // use backslashes as separators, which the POSIX reading above consumes as escapes.
-    for (const word of new Set(text.split(/[\s'"`;|&()<>]+/).filter(Boolean)))
+    const raw = uncommented(text).split(/[\s'"`;|&()<>]+/);
+    for (const word of new Set(raw.filter(Boolean)))
       for (const [area, shown, ancestor] of await hits(word, input.cwd, seen))
         if (!ancestor) named.push([area, shown]);
     if (!reading) found.push(...named);
   }
 
   /**
-   * Areas a word names: where it lands from the tracked cwd, then its own segments anywhere.
-   * @param {string} word @param {string|null} cwd
+   * Areas a word names after brace expansion: where it lands from the tracked cwd, then its
+   * own segments anywhere.
+   * @param {string} spelled @param {string|null} cwd
    * @param {Map<string,import('./runtime-contracts.mjs').PathLocation>} seen
    * @returns {Promise<[Reason,string,boolean][]>}
    */
-  async function hits(word, cwd, seen) {
+  async function hits(spelled, cwd, seen) {
+    const words = expandBraces(spelled);
+    if (!words) return [["expansion", spelled, false]];
+    /** @type {[Reason,string,boolean][]} */ const result = [];
+    for (const word of words) result.push(...(await named(word, cwd, seen)));
+    return result;
+  }
+
+  /** @param {string} word @param {string|null} cwd
+   * @param {Map<string,import('./runtime-contracts.mjs').PathLocation>} seen
+   * @returns {Promise<[Reason,string,boolean][]>} */
+  async function named(word, cwd, seen) {
     /** @type {[Reason,string,boolean][]} */ const result = [];
     if (cwd !== null || isAbsolute(word)) {
       const key = `${cwd}\0${word}`;

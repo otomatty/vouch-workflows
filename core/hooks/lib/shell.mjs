@@ -172,7 +172,7 @@ export function parseShell(text) {
                   ? ""
                   : "write";
     } else {
-      if ("*?[$".includes(c) || (c === "~" && word === null)) expands = true;
+      if ("*?[${".includes(c) || (c === "~" && word === null)) expands = true;
       word = (word ?? "") + c;
     }
   }

@@ -23,6 +23,7 @@
     "hooks/lib/runtime-contracts.mjs",
     "hooks/lib/shell.mjs",
     "hooks/lib/validation.mjs",
+    "hooks/lib/words.mjs",
     "hooks/vouch-doctor.mjs",
     "hooks/vouch-guard-writes.mjs",
     "hooks/vouch-record-intent-review.mjs",
