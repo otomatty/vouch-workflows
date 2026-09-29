@@ -185,6 +185,11 @@ export async function guardWrites(input, ctx, entry) {
             : null;
       }
     }
+    // Raw words without quote or escape processing also count: PowerShell and Windows paths
+    // use backslashes as separators, which the POSIX reading above consumes as escapes.
+    for (const word of new Set(text.split(/[\s'"`;|&()<>]+/).filter(Boolean)))
+      for (const [area, shown, ancestor] of await hits(word, input.cwd, seen))
+        if (area === "link" || !ancestor) named.push([area, shown]);
     if (!reading) found.push(...named);
   }
 
