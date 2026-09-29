@@ -85,7 +85,8 @@ export function readPlan(text) {
     plan: {
       units,
       risk,
-      design: units.some((unit) => unit.design || unit.risk === "H"),
+      // An H Unit must declare required, so this covers H as well.
+      design: units.some((unit) => unit.design),
     },
   };
 }
