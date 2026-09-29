@@ -1,6 +1,6 @@
 import { resolve } from "node:path";
 import { test } from "node:test";
-import { readContext } from "../../../core/hooks/lib/env.mjs";
+import { readContext, readIntent } from "../../../core/hooks/lib/env.mjs";
 
 test("Claude uses its exported project root only when an explicit root is absent", (t) => {
   const root = resolve(".");
@@ -95,4 +95,14 @@ test("doctor context derives its target from its entry URL rather than caller en
       nodeVersion: process.versions.node,
     },
   );
+});
+
+test("manual commands read the configured Intent only from the environment", (t) => {
+  t.plan(3);
+  t.assert.equal(
+    readIntent({ VOUCH_INTENT: "260929-orders" }),
+    "260929-orders",
+  );
+  t.assert.equal(readIntent({ VOUCH_INTENT: "" }), null);
+  t.assert.equal(readIntent({ VOUCH_HARNESS: "claude" }), null);
 });
