@@ -107,6 +107,32 @@ test("parseShell tracks subshell depth and marks substitutions as dynamic", (t) 
   t.assert.equal(substituted.dynamic, true);
 });
 
+test("parseShell keeps escaped characters inside double quotes literal", (t) => {
+  const parsed = parseShell('echo "a\\"b" "\\$HOME" "x\\\ny" "end\\');
+  t.plan(2);
+  t.assert.deepEqual(parsed.commands[0]?.words, [
+    "echo",
+    'a"b',
+    "$HOME",
+    "xy",
+    "end\\",
+  ]);
+  t.assert.deepEqual(parsed.commands[0]?.expands, [
+    false,
+    false,
+    false,
+    false,
+    false,
+  ]);
+});
+
+test("parseShell drops duplicated input descriptors but keeps input files as words", (t) => {
+  t.plan(1);
+  t.assert.deepEqual(parseShell("cat <&3 < in").commands, [
+    { words: ["cat", "in"], expands: [false, false], writes: false, depth: 0 },
+  ]);
+});
+
 test("parseShell skips comments, joins continued lines and keeps unterminated quotes", (t) => {
   t.plan(4);
   t.assert.deepEqual(words("ls # rm -rf vouch\necho a#b"), [

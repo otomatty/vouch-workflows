@@ -61,6 +61,8 @@ test("classifySegments names protected areas, their ancestors and glob matches f
     ["vouch/**", { area: "audit", ancestor: false }],
     [".claude/*", { area: "installation", ancestor: false }],
     [".claude/[hr]*/x", { area: "installation", ancestor: false }],
+    ["vouch/intents/x/aud?t", { area: "audit", ancestor: false }],
+    ["vouch/intents/x/[z-a]", { area: "audit", ancestor: false }],
   ];
   t.plan(cases.length + 1);
   for (const [path, expected] of cases)
@@ -93,6 +95,7 @@ test("declaresApproved reads any approved frontmatter status and nothing outside
     "---\nstatus: approved-ish\n---\n",
     "# ---\nstatus: approved\n",
     "---\nstatus: draft\n---\n",
+    "---\nstatus: draft\n",
   ];
   t.plan(approved.length + other.length + 1);
   for (const text of approved)

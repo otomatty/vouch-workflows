@@ -427,7 +427,9 @@ test("io leaves PreToolUse paths to main and supplies the file store's locate", 
     );
     port.options.files.resolvePath = async (path) => {
       resolved.push(path);
-      throw new Error("FS-ESCAPE: outside project root");
+      if (path === "/outside/file")
+        throw new Error("FS-ESCAPE: outside project root");
+      return path;
     };
     let located;
     await run(async (_input, ctx) => {
@@ -443,5 +445,9 @@ test("io leaves PreToolUse paths to main and supplies the file store's locate", 
     );
     t.assert.equal(port.output.stderr.includes("FS-ESCAPE"), !pre);
   }
-  t.assert.deepEqual(resolved, ["/outside/cwd"], "only PostToolUse pre-checks");
+  t.assert.deepEqual(
+    resolved,
+    ["/outside/cwd", "/outside/file"],
+    "only PostToolUse pre-checks",
+  );
 });

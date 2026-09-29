@@ -435,7 +435,7 @@ test("file store locates spelled paths at their real place without refusing link
   t.assert.equal(await box.read("nested/file"), "x", "locating never writes");
 });
 
-test("file store locate reports other node types and propagates unexpected lookup failures", async (t) => {
+test("file store locate reports other node types, a missing volume and unexpected lookup failures", async (t) => {
   const box = await sandbox(t, { git: false });
   await box.write("device", "");
   const failure = Object.assign(new Error("denied"), { code: "EACCES" });
@@ -466,7 +466,23 @@ test("file store locate reports other node types and propagates unexpected looku
       )
     ),
   });
-  t.plan(2);
+  const empty = await createFileStore(box.root, {
+    ...fs,
+    lstat: /** @type {typeof fs.lstat} */ (
+      /** @type {unknown} */ (
+        async () => {
+          throw Object.assign(new Error("gone"), { code: "ENOENT" });
+        }
+      )
+    ),
+  });
+  t.plan(3);
+  t.assert.deepEqual(await empty.locate("a/b"), {
+    inside: "a/b",
+    contains: false,
+    kind: "missing",
+    links: 0,
+  });
   t.assert.deepEqual(await special.locate("device"), {
     inside: "device",
     contains: false,

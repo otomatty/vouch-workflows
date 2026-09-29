@@ -1,6 +1,7 @@
-import { link, mkdir, symlink, writeFile } from "node:fs/promises";
+import { link, mkdir, symlink, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
+import { pathToFileURL } from "node:url";
 import { createFileStore } from "../../../core/hooks/lib/fs.mjs";
 import { guardWrites } from "../../../core/hooks/lib/guard.mjs";
 import { fakeClock, sandbox } from "../../helpers/runtime.mjs";
@@ -632,4 +633,71 @@ test("guardWrites protects the whole installation when its descriptor cannot be 
     await box.decide("Write", { file_path: box.path(audit), content: "" }),
     "VOUCH-GUARD-AUDIT",
   );
+});
+
+test("guardWrites accepts its entry as a file URL and protects the installation without a descriptor", async (t) => {
+  const box = await guardBox(t);
+  await unlink(box.path(".claude/registry/installation.json"));
+  const result = await guardWrites(
+    {
+      session_id: "s",
+      cwd: box.root,
+      hook_event_name: "PreToolUse",
+      tool_name: "Write",
+      tool_input: { file_path: box.path(".claude/other.json"), content: "{}" },
+    },
+    box.ctx,
+    pathToFileURL(box.entry).href,
+  );
+  t.plan(1);
+  t.assert.match(
+    result.decision === "deny" ? result.reason : "",
+    /^VOUCH-GUARD-INSTALLATION: Write \.claude\/other\.json; /,
+  );
+});
+
+test("guardWrites keeps approved artifacts protected when an edit lacks its replacement", async (t) => {
+  const box = await guardBox(t);
+  t.plan(2);
+  t.assert.equal(
+    await box.decide("Edit", {
+      file_path: box.path(artifact),
+      old_string: "AC-1",
+    }),
+    "allow",
+  );
+  t.assert.equal(
+    await box.decide("Edit", { file_path: box.path(done), old_string: "AC-1" }),
+    "VOUCH-GUARD-APPROVED",
+  );
+});
+
+test("guardWrites re-anchors shell words at absolute directory changes and refuses unverifiable links", async (t) => {
+  const box = await guardBox(t);
+  const other = await sandbox(t, { git: false });
+  await other.write("hooks/vouch-doctor.mjs", "");
+  await symlink(box.path("missing/target"), box.path("dangling"));
+  await box.write("shared.txt", "x");
+  await link(box.path("shared.txt"), box.path("hard.txt"));
+  const auditDir = box.path(`vouch/intents/${intent}/audit`);
+  /** @type {[string,string,string?][]} */
+  const cases = [
+    [`cd ~ && cd ${auditDir} && rm events.jsonl`, "VOUCH-GUARD-AUDIT"],
+    [`cd ~ && cd sub && echo x > ${audit}`, "VOUCH-GUARD-AUDIT"],
+    ["rm -f events.jsonl events.jsonl", "VOUCH-GUARD-AUDIT", auditDir],
+    [
+      `node ${other.path("hooks/vouch-doctor.mjs")}; cat ${audit}`,
+      "VOUCH-GUARD-AUDIT",
+    ],
+    ["echo x > dangling", "VOUCH-GUARD-LINK"],
+    ["echo x >> hard.txt", "VOUCH-GUARD-LINK"],
+    ["cat hard.txt dangling", "allow"],
+  ];
+  t.plan(cases.length);
+  for (const [command, expected, cwd] of cases)
+    t.assert.equal(
+      await box.decide("Bash", { command }, cwd),
+      expected,
+      command,
+    );
 });
