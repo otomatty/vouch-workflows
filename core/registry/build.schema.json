@@ -65,10 +65,20 @@
     "dod": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["section", "outputLines"],
+      "required": ["section", "outputLines", "redact"],
       "properties": {
         "section": { "const": "dod" },
-        "outputLines": { "type": "integer", "minimum": 1 }
+        "outputLines": { "type": "integer", "minimum": 1 },
+        "redact": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["names", "minLength", "mask"],
+          "properties": {
+            "names": { "type": "string", "minLength": 1 },
+            "minLength": { "type": "integer", "minimum": 1 },
+            "mask": { "type": "string", "minLength": 1 }
+          }
+        }
       }
     }
   }

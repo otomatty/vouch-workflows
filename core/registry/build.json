@@ -12,5 +12,13 @@
     "directories": ["__tests__", "spec", "specs", "test", "tests"],
     "names": ["^test_", "[._-](?:spec|test)s?\\.[^.]+$"]
   },
-  "dod": { "section": "dod", "outputLines": 200 }
+  "dod": {
+    "section": "dod",
+    "outputLines": 200,
+    "redact": {
+      "names": "TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL|API_?KEY|PRIVATE_?KEY|ACCESS_?KEY",
+      "minLength": 8,
+      "mask": "[redacted]"
+    }
+  }
 }
