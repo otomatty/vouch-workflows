@@ -3,6 +3,7 @@ import {
   createAuditStore,
   createIntentAuditStore,
   findEvent,
+  listEvents,
 } from "../../../core/hooks/lib/audit.mjs";
 import { readJson } from "../../helpers/registry.mjs";
 import { memoryFiles } from "../../helpers/runtime.mjs";
@@ -217,4 +218,29 @@ test("a rejected batch cannot leak uncommitted rows into a validated snapshot", 
     await files.readText("audit"),
     `${text}${JSON.stringify(next)}\n`,
   );
+});
+
+test("audit lists every validated record in file order as detached copies", async (t) => {
+  const first = event();
+  const second = { ...event(), id: "second-check" };
+  const files = memoryFiles({
+    audit: `${JSON.stringify(first)}\n${JSON.stringify(second)}\n`,
+  });
+  const audit = createAuditStore(files, "audit");
+  t.plan(7);
+  await t.assert.rejects(listEvents(undefined), /AUDIT-MISSING/);
+  await t.assert.rejects(
+    listEvents({ append: async () => "duplicate" }),
+    /AUDIT-MISSING/,
+  );
+  const listed = await listEvents(audit);
+  t.assert.deepEqual(listed, [first, second]);
+  /** @type {Record<string,unknown>} */ (listed[0]).id = "mutated";
+  t.assert.deepEqual(await audit.list(), [first, second]);
+  files.data.set("audit", `${JSON.stringify(first)}\ninvalid\n`);
+  await t.assert.rejects(audit.list(), /AUDIT-CORRUPT/);
+  files.data.delete("audit");
+  t.assert.deepEqual(await audit.list(), []);
+  files.data.set("audit", "");
+  t.assert.deepEqual(await audit.list(), []);
 });

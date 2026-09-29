@@ -5,11 +5,15 @@ import { readJson, validator } from "../helpers/registry.mjs";
 test("explicit review command vocabulary has a closed registry contract", (t) => {
   const valid = validator("intent-review");
   const registry = readJson("core/registry/intent-review.json");
-  t.plan(4);
+  t.plan(7);
   t.assert.equal(valid(registry), true);
   t.assert.equal(valid({ ...registry, open: "approve by default" }), false);
   t.assert.equal(valid({ ...registry, extra: true }), false);
   t.assert.equal(valid({ ...registry, gatePattern: ".*" }), false);
+  t.assert.equal(valid({ ...registry, confirmPrefix: "yes" }), false);
+  t.assert.equal(valid({ ...registry, targetPattern: ".*" }), false);
+  const { targetPattern: _pattern, ...partial } = registry;
+  t.assert.equal(valid(partial), false);
 });
 
 test("Claude Write captures preserve native stdin with their declared origin", (t) => {

@@ -2,7 +2,9 @@ import { symlink } from "node:fs/promises";
 import { join } from "node:path";
 import { Readable } from "node:stream";
 import { test } from "node:test";
+import { snapshotIntent } from "../../../core/hooks/lib/approval.mjs";
 import { run } from "../../../core/hooks/lib/io.mjs";
+import { planned } from "../../helpers/intent-review.mjs";
 import { readJson } from "../../helpers/registry.mjs";
 import {
   fakeClock,
@@ -450,4 +452,81 @@ test("io leaves PreToolUse paths to main and supplies the file store's locate", 
     ["/outside/cwd", "/outside/file"],
     "only PostToolUse pre-checks",
   );
+});
+
+test("io applies an approval only after the append, to the configured draft of that revision", async (t) => {
+  const payload = JSON.stringify(promptFor(process.cwd()).payload);
+  const draft = planned();
+  const approved = draft.replace("status: draft", "status: approved");
+  const sha256 = /** @type {string} */ (snapshotIntent(draft)?.revision.sha256);
+  const artifact = "vouch/intents/scope/intent.md";
+  const sample = readJson("tests/fixtures/audit/hook.check.jsonl");
+  /** @type {import('../../../core/hooks/lib/contracts.mjs').HookMain} */
+  const main = async () => ({
+    decision: "deny",
+    reason: "VOUCH-APPROVAL-APPLIED: evt_x",
+    events: [sample],
+    approve: { sha256 },
+  });
+  /** @param {Record<string,string>} files */
+  const attempt = async (files) => {
+    const port = ports(payload);
+    port.options.files = memoryFiles(files);
+    /** @type {string[]} */ const order = [];
+    const store = port.options.files;
+    const update = store.updateText;
+    store.updateText = async (path, change) => {
+      order.push(path);
+      return update(path, change);
+    };
+    await run(main, {
+      ...port.options,
+      context: { ...port.options.context, intent: "scope" },
+    });
+    return { ...port.output, order, files: store.data };
+  };
+  const applied = await attempt({ [artifact]: draft });
+  const again = await attempt({ [artifact]: approved });
+  const stale = await attempt({ [artifact]: `${draft}later\n` });
+  const missing = await attempt({});
+  t.plan(13);
+  t.assert.deepEqual(
+    [applied.code, applied.stderr],
+    [2, "VOUCH-APPROVAL-APPLIED: evt_x\n"],
+  );
+  t.assert.equal(applied.files.get(artifact), approved);
+  t.assert.deepEqual(applied.order, [
+    "vouch/intents/scope/audit/events.jsonl",
+    artifact,
+  ]);
+  t.assert.deepEqual([again.code, again.files.get(artifact)], [2, approved]);
+  t.assert.equal(stale.code, 0);
+  t.assert.match(stale.stderr, /^HOOK-2: APPROVAL-STALE/);
+  t.assert.equal(stale.files.get(artifact), `${draft}later\n`);
+  t.assert.equal(
+    stale.files.get("vouch/intents/scope/audit/events.jsonl"),
+    `${JSON.stringify(sample)}\n`,
+  );
+  t.assert.match(missing.stderr, /^HOOK-2: APPROVAL-STALE/);
+  t.assert.equal(missing.files.has(artifact), false);
+  const unscoped = ports(payload);
+  unscoped.options.files = memoryFiles({ [artifact]: draft });
+  await run(main, {
+    ...unscoped.options,
+    audit: { append: async () => "appended" },
+  });
+  t.assert.match(unscoped.output.stderr, /^HOOK-2: APPROVAL-SCOPE/);
+  t.assert.equal(unscoped.options.files.data.get(artifact), draft);
+  const failed = ports(payload);
+  failed.options.files = memoryFiles({ [artifact]: draft });
+  await run(main, {
+    ...failed.options,
+    context: { ...failed.options.context, intent: "scope" },
+    audit: {
+      append: async () => {
+        throw new Error("disk");
+      },
+    },
+  });
+  t.assert.equal(failed.options.files.data.get(artifact), draft);
 });

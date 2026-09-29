@@ -1,12 +1,16 @@
 import { createHash } from "node:crypto";
 import { test } from "node:test";
 import {
+  approvedText,
   compareIntentApprovalEvidence,
+  findApproval,
   identifySubmission,
   snapshotIntent,
 } from "../../../core/hooks/lib/approval.mjs";
+import { newId } from "../../../core/hooks/lib/clock.mjs";
 import { parseInput } from "../../../core/hooks/lib/validation.mjs";
-import { syntheticApproval } from "../../helpers/approval.mjs";
+import { evidenced, syntheticApproval } from "../../helpers/approval.mjs";
+import { planned } from "../../helpers/intent-review.mjs";
 import { capturedPrompt } from "../../helpers/runtime.mjs";
 
 test("snapshot hashes UTF-8 bytes with only the status value normalized", (t) => {
@@ -264,4 +268,90 @@ test("scope parent document input and wait mismatches cannot be reused as matchi
     }),
     { matches: true },
   );
+});
+
+test("approved text changes only the status value of a draft of that revision", (t) => {
+  const text = planned();
+  const crlf = text.replaceAll("\n", "\r\n");
+  const sha256 = /** @type {string} */ (snapshotIntent(text)?.revision.sha256);
+  const approved = text.replace("status: draft", "status: approved");
+  t.plan(8);
+  t.assert.equal(approvedText(text, sha256), approved);
+  t.assert.equal(approvedText(approved, sha256), approved);
+  t.assert.deepEqual(
+    snapshotIntent(/** @type {string} */ (approvedText(text, sha256))),
+    { status: "approved", revision: snapshotIntent(text)?.revision },
+  );
+  const crlfSha = /** @type {string} */ (snapshotIntent(crlf)?.revision.sha256);
+  t.assert.equal(
+    approvedText(crlf, crlfSha),
+    crlf.replace("status: draft", "status: approved"),
+  );
+  t.assert.equal(approvedText(crlf, sha256), null);
+  t.assert.equal(approvedText(`${text}changed`, sha256), null);
+  t.assert.equal(approvedText("# no frontmatter", sha256), null);
+  t.assert.equal(approvedText(text, "0".repeat(64)), null);
+});
+
+test("an approval counts only with derived identity, its own gate and matching revision", (t) => {
+  const text = planned();
+  const intent = "260929-plan";
+  const { gate, approval } = evidenced(text, { intent });
+  const approved = text.replace("status: draft", "status: approved");
+  /** @param {unknown[]} events @param {string} [current] */
+  const find = (events, current = text) =>
+    findApproval({
+      text: current,
+      events: /** @type {never} */ (events),
+      intent,
+      newId,
+    });
+  const { revision: _r, submission: _s, ...legacy } = approval;
+  const other = evidenced(`${text}later\n`, { intent });
+  const variants = [
+    [{ ...gate, synthetic: true }, approval],
+    [gate, { ...approval, synthetic: true }],
+    [approval],
+    [{ ...gate, intent: "other" }, approval],
+    [gate, { ...approval, intent: "other" }],
+    [{ ...gate, harness: "codex" }, approval],
+    [{ ...gate, revision: other.gate.revision }, approval],
+    [gate, { ...approval, revision: other.approval.revision }],
+    [gate, { ...approval, id: "evt_forged" }],
+    [gate, { ...approval, session: "rebound" }],
+    [
+      gate,
+      { ...approval, submission: { ...approval.submission, id: "rebound" } },
+    ],
+    [gate, { ...approval, wait_ms: 1 }],
+    [gate, { ...approval, ts: "2026-02-30T00:00:00Z" }],
+    [{ ...gate, type: "gate.approved" }, approval],
+    [
+      { ...gate, id: approval.id },
+      { ...approval, parent: approval.id },
+    ],
+    [{ ...gate, revision: undefined }, approval],
+    [gate, legacy],
+    [gate, { ...approval, type: "question.defaulted" }],
+  ];
+  t.plan(variants.length + 6);
+  t.assert.deepEqual(find([gate, approval]), approval);
+  t.assert.deepEqual(find([approval, gate], approved), approval);
+  t.assert.deepEqual(
+    find([gate, { ...approval, synthetic: true }, approval]),
+    approval,
+  );
+  t.assert.equal(find([gate, approval], `${text}later\n`), null);
+  t.assert.equal(find([gate, approval], "# unsupported"), null);
+  t.assert.deepEqual(
+    findApproval({
+      text,
+      events: [other.gate, other.approval, gate, approval],
+      intent,
+      newId,
+    }),
+    approval,
+  );
+  for (const events of variants)
+    t.assert.equal(find(events), null, JSON.stringify(events.at(-1)));
 });
