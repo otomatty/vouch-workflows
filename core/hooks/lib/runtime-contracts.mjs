@@ -12,7 +12,7 @@
  * @property {(path:string,update:TextUpdate) => Promise<boolean>} updateText Serialize with a lock; replace atomically.
  * @property {(path:string,text:string) => Promise<boolean>} writeText Write through updateText.
  * @property {(path:string,from?:string) => Promise<PathLocation>} locate Classify without trusting the spelling:
- * resolve against `from` (default: the root), map the deepest existing ancestor to its real path and append
+ * resolve against `from` (default: the root) with the platform's separators, map the deepest existing ancestor to its real path and append
  * the rest. Outside, linked and missing paths are results, not errors; a component that cannot be looked
  * up for any reason (denied, looping, too long) counts as missing, so a single word never fails the guard open.
  *
