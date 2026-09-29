@@ -134,3 +134,25 @@ HOOK-2 に従い、不正な stdin、`VOUCH_PROJECT_ROOT`・`VOUCH_HARNESS` の�
 - packaging：登録の matcher と write-guard.json のツール一覧の一致を検査します。
 - 性能：検査系の p95 2秒未満を、20回の子プロセスと合成負荷で測ります。
 - 実機：`scripts/check-write-guard.mjs` が、生成した配布を変更せずに隔離プロジェクトへコピーし、固定応答のプロバイダーが各ツールを要求します。拒否理由がツール結果としてモデルへ返ること、対象のバイトが変わらないこと、許可される更新と正規のフックの追記が行われることを観測します。対照として、登録から PreToolUse だけを外した実行で同じ要求が書き込みに至ることも観測します。スクリプト入力の観測であり、人の承認やモデル評価ではありません。
+
+## 実機での確認の契約
+
+`scripts/check-write-guard.mjs <claude|codex> <CLI の絶対パス>` は、生成した `dist/<harness>` を変更せずに隔離プロジェクトへコピーし、非対話 CLI を1回起動します。固定応答のプロバイダーが次のツールを順に要求し、次の要求に含まれるツール結果（モデルへ返る文）を記録します。`VOUCH_INTENT` を指定し、呼び出し元の `VOUCH_HARNESS` はもう一方のハーネス名にします。監査ログへの symlink `alias.jsonl` を起動前に置きます。
+
+| ケース | Claude | Codex | 期待する観測 |
+| --- | --- | --- | --- |
+| audit-file | 監査ログへの Write（偽の行を含む） | 監査ログへの apply_patch | `VOUCH-GUARD-AUDIT` が返り、監査ログが変わらない |
+| audit-shell | Bash で監査ログへ追記 | 同じ | 同上 |
+| registration | 登録ファイルから PreToolUse を消す Edit | 同じ内容の apply_patch | `VOUCH-GUARD-INSTALLATION` が返り、登録ファイルが変わらない |
+| approve | 下書きの status を approved にする Edit | 同じ内容の apply_patch | `VOUCH-GUARD-APPROVED` が返り、下書きが変わらない |
+| link | `alias.jsonl` への Write | `alias.jsonl` への apply_patch | `VOUCH-GUARD-AUDIT` が返り、監査ログが変わらない |
+| draft | 下書きの本文を変える Edit | 同じ内容の apply_patch | 理由が返らず、変更が反映される |
+| read | Bash で監査ログを cat | 同じ | 理由が返らず、監査の内容が返る |
+
+実行後の監査ログは、SessionStart の正規のフックが記録した session.started 1件だけで、harness がそのハーネスであることも確かめます。偽の行は含みません。
+
+終了2は、ツールが実行されず（対象のバイトが不変）、ツール結果に理由 ID が含まれることで確認します。フック自身の終了コードは CLI の外から観測できないためです。
+
+対照として、コピーした登録から PreToolUse だけを外した実行（`--control`）も行います。理由が返らないこと、audit-file・audit-shell・approve・link の対象が書き換わることを確認し、ガードがなければハーネスが書き込むことを示します。registration は、ハーネス自身の保護の有無を記録するだけで、期待値を置きません。
+
+観測は `tests/fixtures/native/write-guard-linux.json` に保存し、`scripts/lib/write-guard-native.mjs` の純粋関数で packaging テストが照合します。スクリプト入力の観測であり、人の承認やモデル評価ではありません。Windows では起動を拒否し、確認済みとは扱いません。
