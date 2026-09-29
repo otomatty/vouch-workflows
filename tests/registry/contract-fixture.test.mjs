@@ -62,3 +62,27 @@ test("contract execution refuses kinds and versions without a native capture", (
     "derivations start from a capture",
   );
 });
+
+test("synthetic inputs must name the inventoried capture they derive from", (t) => {
+  const write = readJson(
+    "tests/fixtures/harness/claude/2.1.283/linux/print/PreToolUse.Write.json",
+  );
+  const windows = readJson("tests/fixtures/harness/claude/PreToolUse.json");
+  const { source: _source, ...unsourced } = deriveFixture(edit, {});
+  const refused = [
+    unsourced,
+    {
+      ...deriveFixture(edit, {}),
+      source: { ...edit.source, key: "PreToolUse.Edit#2" },
+    },
+    { ...deriveFixture(write, {}), source: windows.source },
+    { ...deriveFixture(edit, {}), source: write.source },
+  ];
+  t.plan(refused.length);
+  for (const [index, fixture] of refused.entries())
+    t.assert.throws(
+      () => contractReference(fixture),
+      /TEST-7/,
+      `TEST-7: origin case ${index}`,
+    );
+});
