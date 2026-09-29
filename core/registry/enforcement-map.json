@@ -1335,7 +1335,7 @@
         {
           "status": "implemented",
           "path": "tests/registry/contract-fixture.test.mjs",
-          "claim": "契約実行は一覧の実機 fixture と、同じ種別・版から派生した synthetic だけを受け付ける。版不明、未採取の種別、変更したのに synthetic でない入力を TEST-7 で拒否する。runHook() も同じ判定を使う。"
+          "claim": "契約実行は一覧の実機 fixture と、その採取元を保ったまま同じ種別・版から派生した synthetic だけを受け付ける。版不明、未採取の種別、変更したのに synthetic でない入力、採取元のない・一致しない synthetic を TEST-7 で拒否する。runHook() も同じ判定を使う。"
         }
       ]
     },

@@ -60,7 +60,8 @@ export function captureRow(fixture) {
 
 /**
  * The inventoried capture that makes `fixture` eligible for contract execution.
- * Captures qualify as themselves; synthetic inputs need a capture of the same kind and version.
+ * Captures qualify as themselves; a synthetic input qualifies through the capture its
+ * source names, which must be of the same kind and version.
  * @param {HarnessFixture} fixture @returns {HarnessFixture}
  */
 export function contractReference(fixture) {
@@ -75,7 +76,11 @@ export function contractReference(fixture) {
   const captures = (entry?.fixtures ?? []).map((path) => readJson(path));
   const reference = fixture.synthetic
     ? fixture.provenance === "synthetic"
-      ? captures.find((capture) => capture.version === fixture.version)
+      ? captures.find(
+          (capture) =>
+            capture.version === fixture.version &&
+            isDeepStrictEqual(capture.source, fixture.source),
+        )
       : undefined
     : captures.find((capture) => isDeepStrictEqual(capture, fixture));
   if (!reference)
