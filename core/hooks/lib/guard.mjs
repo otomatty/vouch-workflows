@@ -55,14 +55,16 @@ async function guardScope(ctx, entry) {
     const value = JSON.parse(
       (await ctx.readText(`${home}/registry/installation.json`)) ?? "",
     );
-    if (typeof value.registration === "string")
-      installed = [
-        ...guard.installation,
-        value.registration,
-        ...[value.configuration, ...(value.overrides ?? [])].filter(
-          (name) => typeof name === "string",
-        ),
-      ];
+    const names = [
+      value.registration,
+      ...(value.configuration === undefined ? [] : [value.configuration]),
+      ...(value.overrides ?? []),
+    ];
+    if (
+      Array.isArray(value.overrides ?? []) &&
+      names.every((name) => typeof name === "string")
+    )
+      installed = [...guard.installation, ...names];
   } catch {
     // An unreadable descriptor protects the whole installation directory.
   }
