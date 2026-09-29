@@ -224,3 +224,18 @@ test("readsOnly accepts node only for the installed doctor as its single argumen
   );
   t.assert.equal(reading("node --eval x", doctor), false);
 });
+
+test("parseShell reads process substitution inside a word as bash does", (t) => {
+  const parsed = parseShell("echo a>(cat) b<(ls)");
+  t.plan(2);
+  t.assert.equal(parsed.dynamic, true);
+  t.assert.deepEqual(
+    parsed.commands.map((item) => [item.words, item.writes, item.depth]),
+    [
+      [["echo", "a"], false, 0],
+      [["cat"], false, 1],
+      [["b"], false, 0],
+      [["ls"], false, 1],
+    ],
+  );
+});
