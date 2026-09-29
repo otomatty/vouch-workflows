@@ -1672,8 +1672,13 @@
         },
         {
           "status": "implemented",
-          "path": "tests/scenario/approval-distribution.test.mjs",
-          "claim": "生成した両配布の登録をそのまま起動し、確認・承認の適用と Build 開始の境界が配布先で働くことを検査する。"
+          "path": "tests/scenario/claude-approval-distribution.test.mjs",
+          "claim": "生成したClaude の配布の登録をそのまま起動し、確認・承認の適用と Build 開始の境界が配布先で働くことを検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/scenario/codex-approval-distribution.test.mjs",
+          "claim": "生成したCodex の配布の登録をそのまま起動し、確認・承認の適用と Build 開始の境界が配布先で働くことを検査する。"
         },
         {
           "status": "implemented",

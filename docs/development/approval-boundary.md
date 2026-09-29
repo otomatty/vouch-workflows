@@ -199,6 +199,14 @@ Claude の非対話 CLI はフックの理由を表示するので、確認・�
 | 配布の生成と `package:check` | 150ファイルで成功 |
 | 行数 | lib 合計 2,880行（予算 3,000行）、intent-review.mjs 266行、フック合計 72行 |
 
+### CI で見つかった誤り
+
+最初の push（`39b00af`・`c6826d0`）の GitHub Actions では、Ubuntu / Windows の Node.js 24.x は成功し、Node.js 22.19.0 の2ジョブが失敗しました。
+
+- Windows / Node.js 22.19.0：追加した配布のシナリオテスト（両ハーネスを1ファイルに置いたもの）が、Node 22 のファイル単位の5秒制限に達しました。Codex の登録を PowerShell で7回起動するためです。アサーションと起動の回数を変えずに、ハーネス別のファイルへ分けました（`tests/scenario/claude-approval-distribution.test.mjs`・`codex-approval-distribution.test.mjs`、共通の手順は `tests/helpers/approval-distribution.mjs`）。既存の review-distribution と同じ分け方です。
+- 同じジョブの packaging の `NATIVE-NODE`（PowerShell からの node の探索が4秒の打ち切りに達した）は、この変更で触れていない検査で、main の `65b89f8` の同じジョブでも失敗しています。
+- Ubuntu / Node.js 22.19.0：既存のセッション開始の記録 p95 が 232.4ms でした。20回の中央値は約 42ms のままで、200ms を超えたのは 232.4ms と 237.6ms の2回だけです。同じ実行の他の予算テストにも 230ms・355ms の単発の外れ値があり、R-HOOK-13 に記録済みの runner の一時的な遅れと同じ形です。予算は変更していません。
+
 ### ミューテーション
 
 Linux / Node.js v22.22.2 の Stryker 10 で、checkpoints・build・intent-review の全体と、approval の追加部分（approvedText・findApproval）、io の適用、audit の一覧を測りました。設定はローカルの `reports/approval-stryker.config.mjs` で、commandRunner は関係する6つの unit テストファイルを `--test-concurrency=1` で実行します。閾値の変更や変異の除外はしていません。
