@@ -206,10 +206,14 @@ async function exercise(kase) {
     const registration = JSON.parse(
       readFileSync(resolve(project, ".codex/hooks.json"), "utf8"),
     );
-    const trust = await projectHookTrust(cli, env, project, [
-      registration.hooks.SessionStart[0].hooks[0].command,
-      registration.hooks.UserPromptSubmit[0].hooks[0].command,
-    ]);
+    const trust = await projectHookTrust(
+      cli,
+      env,
+      project,
+      ["SessionStart", "UserPromptSubmit", "PreToolUse"].map(
+        (event) => registration.hooks[event][0].hooks[0].command,
+      ),
+    );
     config += trust.config;
     writeFileSync(resolve(home, "config.toml"), config);
   }

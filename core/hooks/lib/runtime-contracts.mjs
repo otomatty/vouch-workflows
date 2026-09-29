@@ -100,7 +100,7 @@ export {};
  * @typedef {(text:string)=>ShellParse} ParseShell POSIX-like words only; no expansion or execution.
  * @typedef {(command:ShellCommand,doctor:(word:string)=>boolean)=>boolean} ReadsOnly
  * @typedef {(input:import('./contracts.mjs').HookInput,ctx:import('./contracts.mjs').ReadyHookContext,entry:string)=>Promise<import('./contracts.mjs').HookResult>} GuardWrites
- * `entry` is the hook file itself; its installation directory is never taken from stdin.
+ * `entry` is the hook file itself, as a path or file URL; the installation directory is never taken from stdin.
  */
 
 /**

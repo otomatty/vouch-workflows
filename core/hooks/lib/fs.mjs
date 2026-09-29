@@ -1,4 +1,12 @@
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import {
+  basename,
+  dirname,
+  isAbsolute,
+  join,
+  relative,
+  resolve,
+  sep,
+} from "node:path";
 
 // The builtin object avoids the ESM facade, which evaluates fs.promises and the stream getters.
 const fs = process.getBuiltinModule("node:fs");
@@ -224,8 +232,56 @@ export async function createFileStore(root, operations = native) {
     readText,
     updateText,
     writeText: (path, text) => updateText(path, () => text),
-    locate: async () => {
-      throw new Error("FS-LOCATE: not implemented");
-    },
+    locate,
   };
+
+  /** @param {string} from @param {string} to */
+  function outside(from, to) {
+    const path = relative(from, to);
+    return path === ".." || path.startsWith(`..${sep}`) || isAbsolute(path);
+  }
+  /** @type {(canonical:string,kind:import('./runtime-contracts.mjs').PathLocation['kind'],links?:number) => import('./runtime-contracts.mjs').PathLocation} */
+  function located(canonical, kind, links = 0) {
+    return {
+      inside: outside(base, canonical)
+        ? null
+        : relative(base, canonical).split(sep).join("/"),
+      contains: !outside(canonical, base),
+      kind,
+      links,
+    };
+  }
+
+  /** Classification only: links are followed, never refused. See FileStore.locate.
+   * @param {string} path @param {string} [from] */
+  async function locate(path, from = base) {
+    const lexical = resolve(base, from, path.replaceAll("\\", "/"));
+    if (lexical.includes("\0")) return located(lexical, "missing");
+    /** @type {string[]} */ const rest = [];
+    let existing = lexical;
+    for (;;) {
+      try {
+        await operations.lstat(existing);
+        break;
+      } catch (error) {
+        if (!hasCode(error, "ENOENT") && !hasCode(error, "ENOTDIR"))
+          throw error;
+        if (dirname(existing) === existing) return located(lexical, "missing");
+        rest.unshift(basename(existing));
+        existing = dirname(existing);
+      }
+    }
+    let real;
+    try {
+      real = await operations.realpath(existing);
+    } catch {
+      // A dangling or looping link stays where its own directory really is.
+      const parent = await operations.realpath(dirname(existing));
+      return located(join(parent, basename(existing), ...rest), "unresolved");
+    }
+    if (rest.length > 0) return located(join(real, ...rest), "missing");
+    const info = await operations.stat(real);
+    if (info.isFile()) return located(real, "file", info.nlink);
+    return located(real, info.isDirectory() ? "directory" : "other");
+  }
 }

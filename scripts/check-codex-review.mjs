@@ -177,10 +177,9 @@ try {
   );
   const commandKey =
     process.platform === "win32" ? "commandWindows" : "command";
-  const expected = [
-    registration.hooks.SessionStart[0].hooks[0][commandKey],
-    registration.hooks.UserPromptSubmit[0].hooks[0][commandKey],
-  ];
+  const expected = ["SessionStart", "UserPromptSubmit", "PreToolUse"].map(
+    (event) => registration.hooks[event][0].hooks[0][commandKey],
+  );
   const trust = await projectHookTrust(executable, env, project, expected);
   writeFileSync(
     resolve(base, "hooks-list.json"),

@@ -1,10 +1,15 @@
 {
   "version": 1,
   "nodeMinimum": [22, 19, 0],
-  "hooks": ["vouch-record-intent-review.mjs", "vouch-record-session-start.mjs"],
+  "hooks": [
+    "vouch-guard-writes.mjs",
+    "vouch-record-intent-review.mjs",
+    "vouch-record-session-start.mjs"
+  ],
   "commands": ["vouch-doctor.mjs"],
   "files": [
     "hooks/lib/approval.mjs",
+    "hooks/lib/areas.mjs",
     "hooks/lib/audit.mjs",
     "hooks/lib/clock.mjs",
     "hooks/lib/contracts.mjs",
@@ -12,11 +17,14 @@
     "hooks/lib/doctor.mjs",
     "hooks/lib/env.mjs",
     "hooks/lib/fs.mjs",
+    "hooks/lib/guard.mjs",
     "hooks/lib/intent-review.mjs",
     "hooks/lib/io.mjs",
     "hooks/lib/runtime-contracts.mjs",
+    "hooks/lib/shell.mjs",
     "hooks/lib/validation.mjs",
     "hooks/vouch-doctor.mjs",
+    "hooks/vouch-guard-writes.mjs",
     "hooks/vouch-record-intent-review.mjs",
     "hooks/vouch-record-session-start.mjs",
     "registry/agent-frontmatter.schema.json",
