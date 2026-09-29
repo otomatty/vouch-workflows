@@ -951,6 +951,41 @@
         "section": {
           "type": "string",
           "minLength": 1
+        },
+        "content": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "enum": ["intent.md", "design.md"]
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+            }
+          },
+          "required": ["path", "sha256"],
+          "additionalProperties": false
+        },
+        "submission": {
+          "type": "object",
+          "properties": {
+            "hook_event_name": {
+              "const": "UserPromptSubmit"
+            },
+            "field": {
+              "enum": ["prompt_id", "turn_id"]
+            },
+            "id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "prompt_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+            }
+          },
+          "required": ["hook_event_name", "field", "id", "prompt_sha256"],
+          "additionalProperties": false
         }
       },
       "required": ["id", "v", "type", "ts", "actor", "intent", "checkpoint"],
@@ -1001,6 +1036,117 @@
             "required": ["section"],
             "properties": {
               "section": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["submission"],
+            "properties": {
+              "submission": {}
+            }
+          },
+          "then": {
+            "required": ["content"],
+            "properties": {
+              "content": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["harness", "submission"],
+            "properties": {
+              "harness": {
+                "const": "claude"
+              },
+              "submission": {}
+            }
+          },
+          "then": {
+            "properties": {
+              "submission": {
+                "type": "object",
+                "properties": {
+                  "field": {
+                    "const": "prompt_id"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["harness", "submission"],
+            "properties": {
+              "harness": {
+                "const": "codex"
+              },
+              "submission": {}
+            }
+          },
+          "then": {
+            "properties": {
+              "submission": {
+                "type": "object",
+                "properties": {
+                  "field": {
+                    "const": "turn_id"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["content"],
+            "properties": {
+              "content": {}
+            }
+          },
+          "then": {
+            "required": ["harness", "session", "submission"],
+            "properties": {
+              "harness": {},
+              "session": {},
+              "submission": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["content", "checkpoint"],
+            "properties": {
+              "checkpoint": {
+                "const": "design"
+              },
+              "content": {}
+            }
+          },
+          "then": {
+            "properties": {
+              "content": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "const": "design.md"
+                  }
+                }
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "content": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "const": "intent.md"
+                  }
+                }
+              }
             }
           }
         }

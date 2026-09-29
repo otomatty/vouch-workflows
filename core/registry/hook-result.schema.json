@@ -37,6 +37,17 @@
           "items": {
             "$ref": "https://vouch.dev/schemas/audit-event.json"
           }
+        },
+        "approve": {
+          "type": "object",
+          "properties": {
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+            }
+          },
+          "required": ["sha256"],
+          "additionalProperties": false
         }
       },
       "required": ["decision", "reason"],

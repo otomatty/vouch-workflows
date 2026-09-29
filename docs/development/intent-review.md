@@ -60,6 +60,8 @@ Claude Code 2.1.280 に生成済み配布を隔離プロジェクトへコピー
 
 ## 残る作業
 
+現在の状態：checkpoint.confirmed の記録、確認点がそろった時の approved への更新、承認済み計画のない実装の遮断は[承認の境界](approval-boundary.md)で実装しました。以下は当時の記録です。
+
 実装済みの emitter は session.started / gate.opened / intent.approved の3種類です。残る24種類の emitter、approved への状態変更、承認を信頼できる入力経路の保証、Skill の承認以降、エージェント、実モデル評価は未実装・未実施です。人の承認を要求する境界として、この記録入口だけを利用しません。
 
 監査・フック設定・承認済み成果物への書き込み保護は、登録したツール（Claude の Write / Edit / Bash、Codex の apply_patch / Bash）の経路に限って[書き込み保護](write-guard.md)で実装しました。任意のプロセスからの stdin 偽装、生成したスクリプトなどの検査外の経路、ハーネス外の人の編集は防ぎません。

@@ -74,8 +74,52 @@ export {};
 
 /**
  * Explicit operator inputs only. No inference of consent from ordinary text.
- * @typedef {{kind:'open'}|{kind:'approve',gate:string}|{kind:'invalid'}|null} IntentReviewCommand
+ * @typedef {{kind:'open'}|{kind:'approve',gate:string}|{kind:'confirm',target:CheckpointTarget}|{kind:'invalid'}|null} IntentReviewCommand
  * @typedef {(prompt:string)=>IntentReviewCommand} ParseIntentReviewCommand
+ * @typedef {(input:import('./contracts.mjs').HookInput,ctx:import('./contracts.mjs').ReadyHookContext)=>Promise<import('./contracts.mjs').HookResult>} ReviewIntent
+ * Records explicit review, checkpoint and approval inputs; asks io to apply approval only for an
+ * approval input whose own record matches it and when every required checkpoint matches the current texts.
+ */
+
+/**
+ * Approval boundary (docs/development/approval-boundary.md). Pure functions over texts the caller
+ * read and validated audit records; they never read files, record events or trust actor claims.
+ * @typedef {'acceptance'|'scope'|'units'|'design'} TopicCheckpoint
+ * @typedef {{checkpoint:TopicCheckpoint}|{checkpoint:'unit',unit:string}|{checkpoint:'section',section:string}} CheckpointTarget
+ * @typedef {'topic'|'unit'|'section'} CheckpointMode
+ * @typedef {{id:string,risk:import('./contracts.mjs').Risk,design:boolean}} PlanUnit `design`: declared required.
+ * @typedef {{units:PlanUnit[],risk:import('./contracts.mjs').Risk,design:boolean}} Plan `risk`: highest Unit;
+ * `design`: an H Unit or a declared requirement.
+ * @typedef {{plan:Plan}|{error:string}} PlanReading
+ * @typedef {(text:string)=>PlanReading} ReadPlan The first table of the plan section, in registry grammar.
+ * @typedef {(text:string|null)=>CheckpointMode|null} ReadCheckpointMode A missing rules.md (null) is the
+ * workflow default; unreadable, duplicate or unknown settings are null, never the default.
+ * @typedef {(mode:CheckpointMode,plan:Plan)=>CheckpointTarget[]} RequiredCheckpoints
+ * @typedef {{intent:string,design:string|null}} ArtifactTexts
+ * @typedef {(target:CheckpointTarget,texts:ArtifactTexts)=>import('./contracts.mjs').CheckpointContent|null} CheckpointContentOf
+ * Digest of the exact confirmed bytes; null when the target is absent or not unique.
+ * @typedef {(target:CheckpointTarget)=>string} DescribeTarget "acceptance", "unit U1", "section plan".
+ * @typedef {(session:string,identity:string)=>string} NewId
+ * @typedef {object} CheckpointQuery
+ * @property {CheckpointTarget[]} required
+ * @property {AuditEvent[]} events
+ * @property {string} intent
+ * @property {ArtifactTexts} texts
+ * @property {NewId} newId
+ * @typedef {(query:CheckpointQuery)=>CheckpointTarget[]} MissingCheckpoints Required targets without a
+ * nonsynthetic, derived-identity confirmation of the current content, in required order.
+ * @typedef {object} ApprovalQuery
+ * @property {string} text Current intent.md, draft or approved.
+ * @property {AuditEvent[]} events
+ * @property {string} intent
+ * @property {NewId} newId
+ * @typedef {(query:ApprovalQuery)=>import('./contracts.mjs').IntentApproved|null} FindApproval The first
+ * approval of the text's revision whose derived identity, parent gate, scope and wait all match.
+ * @typedef {(text:string,sha256:string)=>string|null} ApprovedText The approved text of a draft or approved
+ * document of that revision, with only the status value changed; null for any other text.
+ * @typedef {(input:import('./contracts.mjs').HookInput,ctx:import('./contracts.mjs').ReadyHookContext)=>Promise<import('./contracts.mjs').HookResult>} GuardBuild
+ * PreToolUse file edits outside vouch/ or to the configured Intent's build and verify artifacts wait for
+ * an approved plan with evidence; unreadable evidence denies.
  */
 
 /**

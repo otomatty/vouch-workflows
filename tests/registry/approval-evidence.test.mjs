@@ -1,5 +1,8 @@
 import { test } from "node:test";
-import { isAuditEvent } from "../../core/hooks/lib/validation.mjs";
+import {
+  isAuditEvent,
+  isHookResult,
+} from "../../core/hooks/lib/validation.mjs";
 import { syntheticApproval } from "../helpers/approval.mjs";
 import { validator } from "../helpers/registry.mjs";
 
@@ -90,5 +93,128 @@ test("approval evidence wire contract and runtime agree on complete and malforme
   for (const { value, valid } of values) {
     t.assert.equal(validate(value), valid, JSON.stringify(value));
     t.assert.equal(isAuditEvent(value), valid, JSON.stringify(value));
+  }
+});
+
+test("checkpoint evidence binds content and submission to the harness in both validators", (t) => {
+  const validate = validator("audit-event");
+  const sha256 = "a".repeat(64);
+  /** @type {{value:unknown,valid:boolean}[]} */ const values = [];
+  for (const harness of /** @type {const} */ (["claude", "codex"])) {
+    const field = harness === "claude" ? "prompt_id" : "turn_id";
+    const record = {
+      id: "evt_checkpoint",
+      v: 1,
+      type: "checkpoint.confirmed",
+      ts: "2026-09-29T00:00:00Z",
+      actor: "human",
+      harness,
+      intent: "260929-plan",
+      session: "s-1",
+      checkpoint: "acceptance",
+      content: { path: "intent.md", sha256 },
+      submission: {
+        hook_event_name: "UserPromptSubmit",
+        field,
+        id: "input-1",
+        prompt_sha256: sha256,
+      },
+    };
+    const { content: _c, submission: _s, ...legacy } = record;
+    values.push(
+      { value: record, valid: true },
+      { value: legacy, valid: true },
+      {
+        value: {
+          ...record,
+          checkpoint: "design",
+          content: { path: "design.md", sha256 },
+        },
+        valid: true,
+      },
+      {
+        value: { ...record, checkpoint: "unit", unit: "U1" },
+        valid: true,
+      },
+      {
+        value: { ...record, checkpoint: "section", section: "plan" },
+        valid: true,
+      },
+      {
+        value: { ...record, checkpoint: "design" },
+        valid: false,
+      },
+      {
+        value: { ...record, content: { path: "design.md", sha256 } },
+        valid: false,
+      },
+      {
+        value: { ...record, content: { path: "../intent.md", sha256 } },
+        valid: false,
+      },
+      {
+        value: {
+          ...record,
+          content: { path: "intent.md", sha256: "A".repeat(64) },
+        },
+        valid: false,
+      },
+      {
+        value: {
+          ...record,
+          content: { path: "intent.md", sha256: `${sha256}\n` },
+        },
+        valid: false,
+      },
+      {
+        value: { ...record, content: { path: "intent.md", sha256, extra: 1 } },
+        valid: false,
+      },
+      {
+        value: {
+          ...record,
+          submission: {
+            ...record.submission,
+            field: harness === "claude" ? "turn_id" : "prompt_id",
+          },
+        },
+        valid: false,
+      },
+      { value: { ...record, actor: "model" }, valid: false },
+      { value: { ...record, checkpoint: "unit" }, valid: false },
+    );
+    for (const key of ["content", "submission", "session", "harness"]) {
+      const edited = { ...record };
+      Reflect.deleteProperty(edited, key);
+      values.push({ value: edited, valid: false });
+    }
+  }
+  t.plan(values.length * 2);
+  for (const { value, valid } of values) {
+    t.assert.equal(validate(value), valid, JSON.stringify(value));
+    t.assert.equal(isAuditEvent(value), valid, JSON.stringify(value));
+  }
+});
+
+test("hook results may ask io to apply approval only with a denial and a digest", (t) => {
+  const validate = validator("hook-result");
+  const approve = { sha256: "a".repeat(64) };
+  const cases = [
+    [{ decision: "deny", reason: "VOUCH-APPROVAL-APPLIED: x", approve }, true],
+    [{ decision: "allow", approve }, false],
+    [{ decision: "deny", reason: "x", approve: {} }, false],
+    [
+      { decision: "deny", reason: "x", approve: { sha256: "A".repeat(64) } },
+      false,
+    ],
+    [
+      { decision: "deny", reason: "x", approve: { ...approve, path: "../x" } },
+      false,
+    ],
+  ];
+  t.plan(cases.length * 2);
+  for (const [value, valid] of cases) {
+    t.assert.equal(validate(value), valid, JSON.stringify(value));
+    t.assert.equal(isHookResult(value), valid, JSON.stringify(value));
   }
 });

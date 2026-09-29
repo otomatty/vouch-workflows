@@ -82,3 +82,49 @@ export function compareIntentApprovalEvidence({
     return { matches: false, reason: "wait" };
   return { matches: true };
 }
+
+/** @type {import('./runtime-contracts.mjs').ApprovedText} */
+export function approvedText(text, sha256) {
+  const snapshot = snapshotIntent(text);
+  if (snapshot?.revision.sha256 !== sha256) return null;
+  return text.replace(/^(---\r?\nstatus: )draft/, "$1approved");
+}
+
+/** @type {import('./runtime-contracts.mjs').FindApproval} */
+export function findApproval({ text, events, intent, newId }) {
+  const sha256 = snapshotIntent(text)?.revision.sha256;
+  const gates = new Map(events.map((event) => [event.id, event]));
+  for (const approval of events) {
+    if (
+      approval.type !== "intent.approved" ||
+      approval.synthetic ||
+      approval.intent !== intent ||
+      !approval.submission ||
+      approval.revision.sha256 !== sha256 ||
+      approval.id !==
+        newId(
+          approval.session,
+          JSON.stringify([
+            approval.type,
+            approval.harness,
+            intent,
+            approval.submission.field,
+            approval.submission.id,
+          ]),
+        )
+    )
+      continue;
+    const gate = gates.get(approval.parent);
+    if (
+      gate?.type === "gate.opened" &&
+      !gate.synthetic &&
+      gate.id !== approval.id &&
+      gate.intent === intent &&
+      gate.harness === approval.harness &&
+      gate.revision?.sha256 === sha256 &&
+      elapsedMilliseconds(gate.ts, approval.ts) === approval.wait_ms
+    )
+      return approval;
+  }
+  return null;
+}

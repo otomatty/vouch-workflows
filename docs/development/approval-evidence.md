@@ -90,6 +90,8 @@ Windows Node.js 24.13.0 の Stryker 10 で approval.mjs / clock.mjs の2ファ�
 
 ## 次の実装
 
+現在の状態：確認点の記録、承認の適用、Build 開始の境界は[承認の境界](approval-boundary.md)で実装しました。以下は当時の記録です。
+
 次は信頼できる観測入力と対象文書をゲート発行・承認記録へ結び付ける契約です。必要な PreToolUse / PostToolUse 等の版付き実機 fixture を採取し、作成・確認点・承認イベントの emitter と監査書き込み保護を実装します。自然言語の同意と機械的な照合の責務を分けた統合試験が必要です。現段階では actor:human や matches:true を承認許可に使えません。
 
 Windows の性能未達、実ハーネスでの Skill 評価、残り26イベントの記録、Design / Build / Verify、エージェント、移行、全体のミューテーション CI も残っています。

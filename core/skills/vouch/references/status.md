@@ -16,11 +16,11 @@ status は、この Skill を配ったプロジェクトの現在地・確認点
 各成果物の frontmatter status を原文で示す。未知の値や欠落は未解釈・未記録とし、独自の状態名へ変換しない。ファイルの存在だけでステージを完了にしない。Design の省略は承認済み計画などに明示された根拠がある場合だけ示す。
 
 監査ログの末尾を入口に、必要な記録まで遡って成果物と対応付ける。型と必要フィールドは `{{HARNESS_DIR}}/registry/audit-events.json` と `{{HARNESS_DIR}}/registry/audit-event.schema.json` を参照する。未実装のイベント記録を作って補わない。[R-PROJECT-3]
-approved の宣言、承認イベントの存在、実際の人の承認を区別する。actor:human という JSON だけでは真正性を証明できない。承認検査フックが未実装の間はその限界も示す。[R-PROJECT-1]
+approved の宣言、承認イベントの存在、実際の人の承認を区別する。actor:human という JSON だけでは真正性を証明できない。承認の証跡は、submission を持つ intent.approved とその親の gate.opened が同じ版を指すことで示し、記録だけで適用されていない承認はその理由とともに示す。入力 ID と明示入力に依存する限界も示す。[R-PROJECT-1]
 
 ## 確認点と判断依頼
 
-確認点は rules の checkpoints、workflow の topic_checkpoints と high_risk_adds に合わせる。Unit や section、設計要否の根拠が欠けていれば不明・未確認とする。単なる成果物の更新を人の確認に数えない。
+確認点は rules の checkpoints、workflow の topic_checkpoints と high_risk_adds に合わせる。確認済みは、content と submission を持つ checkpoint.confirmed が現在の対象の内容と一致するものだけとする。確認後に対象が変わった確認点は再確認が必要と示す。Unit や section、設計要否の根拠が欠けていれば不明・未確認とする。単なる成果物の更新を人の確認に数えない。
 
 判断依頼は question.asked の id を起点に、question.answered / question.defaulted の parent と対応付ける。同じ Q 番号の再質問と別 Intent の記録を混ぜない。回答元や親が存在しない、ID が重複・矛盾する場合は不確実として示す。
 既定案が適用済みでも人は未回答である。その事実と未解決の再質問を分け、人の承認には置き換えない。status 自身は既定案を適用しない。[R-PROJECT-6]
