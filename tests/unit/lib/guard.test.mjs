@@ -533,7 +533,7 @@ test("guardWrites resolves relative words from a cwd outside the root and keeps 
   t.assert.equal(
     await box.decide(
       "Bash",
-      { command: `printf x >> ${join(outside, "free.txt")}` },
+      { command: `printf x >> '${join(outside, "free.txt")}'` },
       other.root,
     ),
     "allow",
@@ -682,11 +682,11 @@ test("guardWrites re-anchors shell words at absolute directory changes and refus
   const auditDir = box.path(`vouch/intents/${intent}/audit`);
   /** @type {[string,string,string?][]} */
   const cases = [
-    [`cd ~ && cd ${auditDir} && rm events.jsonl`, "VOUCH-GUARD-AUDIT"],
+    [`cd ~ && cd '${auditDir}' && rm events.jsonl`, "VOUCH-GUARD-AUDIT"],
     [`cd ~ && cd sub && echo x > ${audit}`, "VOUCH-GUARD-AUDIT"],
     ["rm -f events.jsonl events.jsonl", "VOUCH-GUARD-AUDIT", auditDir],
     [
-      `node ${other.path("hooks/vouch-doctor.mjs")}; cat ${audit}`,
+      `node '${other.path("hooks/vouch-doctor.mjs")}'; cat ${audit}`,
       "VOUCH-GUARD-AUDIT",
     ],
     ["echo x > dangling", "VOUCH-GUARD-LINK"],
@@ -700,4 +700,24 @@ test("guardWrites re-anchors shell words at absolute directory changes and refus
       expected,
       command,
     );
+});
+
+test("guardWrites finds protected paths spelled with backslashes, as PowerShell and Windows paths are", async (t) => {
+  const box = await guardBox(t);
+  const windows = (/** @type {string} */ path) => path.replaceAll("/", "\\");
+  /** @type {[string,string][]} */
+  const cases = [
+    [
+      `Add-Content -Path ${windows(box.path(audit))} -Value x`,
+      "VOUCH-GUARD-AUDIT",
+    ],
+    [`Set-Content ${windows(audit)} x`, "VOUCH-GUARD-AUDIT"],
+    ["Remove-Item -Recurse .claude\\hooks", "VOUCH-GUARD-INSTALLATION"],
+    // PowerShell reads are not recognized as read-only, so they are refused too.
+    [`Get-Content ${windows(audit)}`, "VOUCH-GUARD-AUDIT"],
+    [`Set-Content ${windows(`vouch/intents/${intent}/notes.md`)} x`, "allow"],
+  ];
+  t.plan(cases.length);
+  for (const [command, expected] of cases)
+    t.assert.equal(await box.decide("Bash", { command }), expected, command);
 });
