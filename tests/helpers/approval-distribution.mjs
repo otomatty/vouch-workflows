@@ -80,18 +80,36 @@ export async function exerciseApprovalDistribution(t, harness) {
   const field = harness === "claude" ? "prompt_id" : "turn_id";
   let count = 0;
   /** @param {string} text */
-  const send = (text) =>
-    invoke(
-      harness,
-      prompt,
-      root,
+  const payload = (text) => ({
+    ...capturedPrompt(harness).payload,
+    cwd: root,
+    prompt: text,
+    [field]: `synthetic-${++count}`,
+  });
+  /** @param {string} text */
+  const send = (text) => invoke(harness, prompt, root, payload(text), env);
+  // Preparatory inputs run the copied hook directly: Codex on Windows starts PowerShell per
+  // registered command, and the approval and writes below still go through the registrations.
+  /** @param {string} text */
+  const prepare = (text) =>
+    spawnSync(
+      process.execPath,
+      [resolve(root, home, "hooks/vouch-record-intent-review.mjs")],
       {
-        ...capturedPrompt(harness).payload,
         cwd: root,
-        prompt: text,
-        [field]: `synthetic-${++count}`,
+        input: JSON.stringify(payload(text)),
+        encoding: "utf8",
+        windowsHide: true,
+        timeout: 4000,
+        env: {
+          ...process.env,
+          VOUCH_PROJECT_ROOT: root,
+          VOUCH_HARNESS: harness,
+          VOUCH_INTENT: intent,
+          VOUCH_TEST_TIME: "2026-09-27T00:00:00.000Z",
+          NODE_OPTIONS: `--import="${pathToFileURL(resolve("tests/helpers/fixed-clock.mjs")).href}"`,
+        },
       },
-      env,
     );
   const write = () =>
     invoke(
@@ -111,8 +129,8 @@ export async function exerciseApprovalDistribution(t, harness) {
     );
   const before = write();
   const recorded = [
-    ...topics.map((target) => send(`vouch confirm ${target}`)),
-    send("vouch review"),
+    ...topics.map((target) => prepare(`vouch confirm ${target}`)),
+    prepare("vouch review"),
   ];
   const rows = () =>
     box.read(`${folder}/${audit}`).then((text) =>
