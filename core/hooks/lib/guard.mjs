@@ -82,15 +82,9 @@ export async function guardWrites(input, ctx, entry) {
     ? tools[input.tool_name]
     : undefined;
   const tool = input.tool_input;
-  const command = tool.command;
-  const path = tool.file_path;
-  if (
-    !kind ||
-    (kind === "patch" || kind === "shell"
-      ? typeof command !== "string"
-      : typeof path !== "string")
-  )
-    return { decision: "allow" };
+  const subject =
+    kind === "patch" || kind === "shell" ? tool.command : tool.file_path;
+  if (!kind || typeof subject !== "string") return { decision: "allow" };
   const scope = await guardScope(ctx, entry);
   /** @type {[Reason,string][]} */ const found = [];
 
@@ -113,15 +107,15 @@ export async function guardWrites(input, ctx, entry) {
       found.push(["approved", shown]);
   }
 
-  if (kind === "write" && typeof path === "string") {
+  if (kind === "write") {
     const content = tool.content;
     await target(
-      path,
+      subject,
       () => typeof content === "string" && declaresApproved(content),
     );
-  } else if (kind === "edit" && typeof path === "string") {
+  } else if (kind === "edit") {
     const [old, next] = [tool.old_string, tool.new_string];
-    await target(path, (current) => {
+    await target(subject, (current) => {
       if (typeof next !== "string") return false;
       if (typeof old !== "string" || !old || !current?.includes(old))
         return approvedLines(next);
@@ -131,13 +125,13 @@ export async function guardWrites(input, ctx, entry) {
           : current.replace(old, () => next),
       );
     });
-  } else if (kind === "patch" && typeof command === "string") {
-    for (const operation of parsePatch(command)) {
+  } else if (kind === "patch") {
+    for (const operation of parsePatch(subject)) {
       const adds = approvedLines(operation.added.join("\n"));
       await target(operation.path, () => adds);
       if (operation.to !== null) await target(operation.to, () => adds);
     }
-  } else if (typeof command === "string") await inspectShell(command);
+  } else await inspectShell(subject);
 
   /** @param {string} text */
   async function inspectShell(text) {
@@ -161,7 +155,7 @@ export async function guardWrites(input, ctx, entry) {
       for (const word of command.words)
         for (const spelled of [word, ...word.split("=").slice(1)]) {
           for (const [area, shown, ancestor] of await hits(spelled, cwd, seen))
-            if (area === "link" || !ancestor) named.push([area, shown]);
+            if (!ancestor) named.push([area, shown]);
             else if (remover) found.push([area, shown]);
         }
       const [entry] = args;
@@ -191,7 +185,7 @@ export async function guardWrites(input, ctx, entry) {
     // use backslashes as separators, which the POSIX reading above consumes as escapes.
     for (const word of new Set(text.split(/[\s'"`;|&()<>]+/).filter(Boolean)))
       for (const [area, shown, ancestor] of await hits(word, input.cwd, seen))
-        if (area === "link" || !ancestor) named.push([area, shown]);
+        if (!ancestor) named.push([area, shown]);
     if (!reading) found.push(...named);
   }
 

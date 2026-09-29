@@ -131,8 +131,7 @@ export function parseShell(text) {
       i = (newline < 0 ? text.length : newline) - 1;
     } else if (c === "\n") {
       end();
-      if (documents.length > 0)
-        i = bodies(text, i + 1, documents.splice(0)) - 1;
+      i = bodies(text, i + 1, documents.splice(0)) - 1;
     } else if (c === " " || c === "\t" || c === "\r") {
       flush();
     } else if ((c === "$" || c === "<" || c === ">") && next === "(") {
@@ -149,8 +148,8 @@ export function parseShell(text) {
       end();
       depth = c === "(" ? depth + 1 : Math.max(0, depth - 1);
     } else if (c === ";" || c === "|" || (c === "&" && next !== ">")) {
+      // A doubled operator such as && or || only ends another, empty command.
       end();
-      if (next === c || (c === "|" && next === "&")) i++;
     } else if (c === "<" || c === ">" || c === "&") {
       if (word !== null && /^\d+$/.test(word)) {
         word = null;
@@ -241,12 +240,8 @@ export function readsOnly(command, doctor) {
   while (keywords.has(command.words[start] ?? "")) start++;
   const [program, ...args] = command.words.slice(start);
   if (program === undefined) return true;
-  if (
-    program.includes("/") ||
-    /^[A-Za-z_][A-Za-z0-9_]*=/.test(program) ||
-    !guard.shell.readers.includes(program)
-  )
-    return false;
+  // Readers are bare names, so a path, a leading assignment or an expansion never matches.
+  if (!guard.shell.readers.includes(program)) return false;
   if (strict.has(program) && command.expands.slice(start + 1).some(Boolean))
     return false;
   /** @type {Record<string,string[]>} */ const refused = guard.shell.refused;

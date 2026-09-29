@@ -9,9 +9,9 @@ export const approvedLines = (text) =>
 
 /** @type {import('./runtime-contracts.mjs').NormalizeSegment} */
 export function normalizeSegment(segment) {
-  if (segment === "." || segment === "..") return segment;
+  // "." and ".." strip to nothing and so keep their own spelling.
   const name = segment
-    .replace(/:.*$/s, "")
+    .replace(/:.*/s, "")
     .replace(/[. ]+$/, "")
     .toLowerCase();
   return name || segment.toLowerCase();
