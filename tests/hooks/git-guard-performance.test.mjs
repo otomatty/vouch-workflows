@@ -4,9 +4,9 @@ import { hookTest as test } from "../helpers/hook-test.mjs";
 import { runHook, sandbox } from "../helpers/runtime.mjs";
 import { toolFixture } from "../helpers/write-guard.mjs";
 
-// The Git stage reads the current branch through one Git call; see docs/development/git-guard.md.
-test("resolving a default push through Git stays below the check p95 budget over twenty process executions", async (t) => {
-  const box = await sandbox(t);
+// The Git stage without a Git process; Git reads are measured apart (docs/development/git-guard.md).
+test("refusing a named push to main stays below the check p95 budget over twenty process executions", async (t) => {
+  const box = await sandbox(t, { git: false });
   /** @type {number[]} */ const times = [];
   t.plan(budgets.timing.samples * 2 + 1);
   // HOOK-13 condition: CPU count - 1 processes keep starting no-op hooks meanwhile.
@@ -19,14 +19,14 @@ test("resolving a default push through Git stays below the check p95 budget over
       const result = runHook(
         "vouch-guard-writes",
         toolFixture("claude", "Bash", box.root, {
-          command: `git status && git push -u origin HEAD # ${i}`,
+          command: `git push -u origin HEAD:main # ${i}`,
         }),
         { root: box.root, coverage: false },
       );
       t.assert.equal(result.exitCode, 2);
       t.assert.match(
         result.stderr,
-        /^VOUCH-GIT-PUSH: Bash git push -u origin HEAD; main is protected/,
+        /^VOUCH-GIT-PUSH: Bash git push -u origin HEAD:main; main is protected/,
       );
       times.push(result.durationMs);
     }
