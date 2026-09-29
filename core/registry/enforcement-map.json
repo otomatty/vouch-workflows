@@ -1516,7 +1516,7 @@
         {
           "status": "implemented",
           "path": "docs/development/git-guard.md",
-          "claim": "配布先の製品フックが、Intent のブランチのコミット件名の型と Unit、契約 → テスト（red）→ 実装の順と DoD の証跡を検査する契約を定める。このリポジトリ自身のコミットには配布フックを登録していないため、reviewer の検査は pending のまま。"
+          "claim": "配布先の製品フックが、Intent のブランチのコミット件名の型と Unit、契約 → テスト（red）→ 実装（green）の順と DoD の証跡を検査する契約を定める。このリポジトリ自身のコミットには配布フックを登録していないため、reviewer の検査は pending のまま。"
         }
       ]
     },
@@ -1812,12 +1812,12 @@
         {
           "status": "implemented",
           "path": "tests/unit/lib/git.test.mjs",
-          "claim": "コードを変えるコミットの型・Unit、test 型以外でのテストファイルの変更・削除、feat / fix の前の証跡付き contract（DoD 合格）と test（DoD 不合格）の規則と、clean・導出 ID・非 synthetic の DoD 記録だけを証跡に数えることを検査する。"
+          "claim": "コードを変えるコミットの型・Unit、test 型以外でのテストファイルの変更・削除、feat / fix の前の証跡付き contract（DoD 合格）と test（DoD 不合格）の規則、実装のあるブランチでコードを変えた最後のコミットの DoD 合格（green）と、clean・導出 ID・非 synthetic の DoD 記録だけを証跡に数えることを検査する。"
         },
         {
           "status": "implemented",
           "path": "tests/hooks/vouch-guard-writes-commit.test.mjs",
-          "claim": "実際の Git リポジトリで、契約 → 失敗するテスト → 実装の順と DoD コマンドの証跡でコミット・push が通り、別 Unit・別ブランチ・clean でない実行・偽装や synthetic の記録では通らず、テストの改変・削除を含む実装コミットと push を拒否することを検査する。"
+          "claim": "実際の Git リポジトリで、契約 → 失敗するテスト → 実装の順と DoD コマンドの証跡でコミットが通り、実装の DoD 合格の前の push を拒否して合格の後に通し、別 Unit・別ブランチ・clean でない実行・偽装や synthetic の記録では通らず、テストの改変・削除を含む実装コミットと push を拒否することを検査する。"
         },
         {
           "status": "pending",
