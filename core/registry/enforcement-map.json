@@ -474,6 +474,11 @@
           "status": "implemented",
           "path": "tests/hooks/vouch-record-intent-review.test.mjs",
           "claim": "両ハーネスのゲート・承認の再送で最初の時刻を保持する。同じ入力IDの版・親ゲートの付け替えは競合し、別入力は区別する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/vouch-record-intent-approval.test.mjs",
+          "claim": "確認の再送は記録を増やさず、同じ入力 ID の別の対象への付け替えは競合として記録しない。適用後の承認の再送は何も変えない。"
         }
       ]
     },
@@ -679,7 +684,7 @@
         },
         {
           "status": "pending",
-          "claim": "session.started、gate.opened、intent.approvedの3種は製品emitを実装済み。残り24イベントの製品emitは未実装。synthetic fixtureの成功は実機発火実績ではない。"
+          "claim": "session.started、gate.opened、intent.approved、checkpoint.confirmed の4種は製品emitを実装済み。残り23イベントの製品emitは未実装。synthetic fixtureの成功は実機発火実績ではない。"
         },
         {
           "status": "implemented",
@@ -703,7 +708,7 @@
         },
         {
           "status": "pending",
-          "claim": "gate.opened / intent.approved の明示操作による製品 emit は追加済み。checkpoint.confirmed、入力の信頼性保証、監査書き込み保護、承認許可・更新阻止は未実装。"
+          "claim": "gate.opened / intent.approved / checkpoint.confirmed の明示操作による製品 emit と承認の適用は追加済み（approval-boundary.md）。入力の真正性はハーネスの入力 ID と明示入力に依存し、監査の書き込み保護は登録したツールに限る。"
         },
         {
           "status": "implemented",
@@ -728,6 +733,11 @@
           "status": "implemented",
           "path": "tests/packaging/native-review-evidence.test.mjs",
           "claim": "保存した実機監査出力の関係を検査し、欠損・合成記録・親子不一致・プロバイダー要求・配布や下書きの変更を成功としない。人の承認を判定するフックではない。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/vouch-record-intent-approval.test.mjs",
+          "claim": "checkpoint.confirmed を含む承認の流れを、両ハーネスの新規 golden で全文比較する。"
         }
       ]
     },
@@ -1603,22 +1613,47 @@
         },
         {
           "status": "pending",
-          "claim": "承認の真正性と計画の採択、PR マージを強制するフックは未実装。"
+          "claim": "承認済み計画の遮断はファイル編集ツールに限る。シェル・登録していないツール・サブエージェントの未採取経路、builder の起動（#8）、commit・push・PR マージの検査（#6）は未実装。人の同意の真正性はハーネスの入力 ID と明示入力の完全一致に依存し、stdin の偽装や登録外の経路での監査の編集は区別できない。"
         },
         {
           "status": "implemented",
           "path": "tests/unit/lib/approval.test.mjs",
-          "claim": "対象文書の版・別途渡した入力の識別子・設定スコープ・親ゲート・待ち時間の純粋な整合性を検査する。matches:true は真正性や同意の証明ではなく、承認の許可・状態更新は未実装。記録フックは別テストで検証する。"
+          "claim": "対象文書の版・別途渡した入力の識別子・設定スコープ・親ゲート・待ち時間の純粋な整合性と、導出した ID・自身のゲート・同じ版による承認の連鎖、status だけを変える approved の本文を検査する。一致は真正性や同意の証明ではない。"
         },
         {
           "status": "implemented",
           "path": "tests/hooks/vouch-record-intent-review.test.mjs",
-          "claim": "明示入力に対する gate.opened / intent.approved の記録と版・入力識別子の整合性を検査する。状態変更・真正性保証・Build許可は未実装。"
+          "claim": "明示入力に対する gate.opened / intent.approved の記録と版・入力識別子の整合性を、記録だけの契約として検査する。承認の適用は vouch-record-intent-approval.test.mjs で検証する。"
         },
         {
           "status": "implemented",
           "path": "tests/unit/lib/guard.test.mjs",
-          "claim": "ファイル編集ツールとシェルによる approved の作成・承認済み成果物の変更を拒否し、下書きの編集を許すことを検査する。approved への正規の更新経路と承認の真正性は未実装で、この拒否を承認の証明には使わない。"
+          "claim": "ファイル編集ツールとシェルによる approved の作成・承認済み成果物の変更を拒否し、下書きの編集を許すことを検査する。approved への正規の更新はレビュー記録フックだけで、この拒否を承認の証明には使わない。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/unit/lib/checkpoints.test.mjs",
+          "claim": "計画の書式、rules.md の粒度、必要な確認点（topic / unit / section、Design の条件、H の Unit）、確認した内容の digest、導出した ID を持つ現在の内容の確認だけを数えることを検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/vouch-record-intent-approval.test.mjs",
+          "claim": "版付き採取から派生した両ハーネスの入力で、確認点と承認の記録、確認点がそろった時だけの同じ版の approved への更新、古い確認・task-notification の中継・類似レコード・再送・付け替え・破損の負例、L でも確認点が必要で PR の記録を作らないことを検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/unit/lib/build.test.mjs",
+          "claim": "Build 開始の判定を、vouch/ の外と Build・Verify 成果物への書き込み、証跡のない approved・古い版・読めない証跡の拒否、承認済み計画での許可で検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/vouch-guard-writes-build.test.mjs",
+          "claim": "Claude の Write / Edit と Codex の apply_patch の派生入力で、承認前の実装の書き込みの拒否と承認後の許可、証跡のない approved・編集された approved・破損した監査の拒否を子プロセスで検査する。シェルは検査外であることも固定する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/scenario/approval-distribution.test.mjs",
+          "claim": "生成した両配布の登録をそのまま起動し、確認・承認の適用と Build 開始の境界が配布先で働くことを検査する。"
         }
       ]
     },
@@ -1714,6 +1749,11 @@
         {
           "status": "pending",
           "claim": "Intent 内の判断依頼カードの下書きは対応済み。質問・既定適用イベントの実記録、作成内容と status の解釈のモデル評価は未実装・未実施。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/vouch-record-intent-approval.test.mjs",
+          "claim": "question.asked / question.defaulted と gate.approved が監査にあっても、確認点・承認に数えないことを検査する。質問イベントの記録は未実装。"
         }
       ]
     },

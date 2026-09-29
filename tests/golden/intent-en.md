@@ -45,7 +45,7 @@ Propose Intent boundaries by behavior and show dependencies. Consider separating
 | --- | --- | --- | --- | --- |
 | Unfilled | Unfilled | Unfilled | Unassessed | Undecided |
 
-Plan Design for tier H or when required by the plan. Distinguish that plan from an adopted design.
+Plan Design for tier H or when required by the plan. Distinguish that plan from an adopted design. Start the risk cell with `L`, `M` or `H` and the Design cell with `required` or `not-required` (approval.json). Tier H is `required`. Approval is not applied while any row stays unassessed or undecided.
 
 <!-- sec:verification -->
 ## Verification and planned evidence
@@ -85,7 +85,7 @@ Use the granularity and conditions in workflow.json and rules.md, including Unit
 | --- | --- | --- | --- |
 | Unfilled | Unfilled | Unanswered | Unconfirmed |
 
-Approval authenticity checks are not implemented. Human words may be recorded in decisions.md, but do not change this draft to approved or start Build. [R-PROJECT-1]
+Hooks record a confirmation when the person enters `vouch confirm <target>`, and an approval when the person enters `vouch approve <gate ID>` for a `vouch review` gate. The hook changes this draft to approved only when every checkpoint is confirmed. The model never changes it to approved and does not implement a plan that is not approved. [R-PROJECT-1]
 
 <!-- sec:references -->
 ## References

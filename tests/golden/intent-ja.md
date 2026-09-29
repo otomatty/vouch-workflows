@@ -45,7 +45,7 @@ status: draft
 | --- | --- | --- | --- | --- |
 | 未記入 | 未記入 | 未記入 | 未評価 | 未確定 |
 
-H または計画が要求する Unit は Design を予定する。設計の採択は未実施と区別する。
+H または計画が要求する Unit は Design を予定する。設計の採択は未実施と区別する。リスク階層の欄は `L`・`M`・`H`、Design 要否の欄は `required`・`not-required` で始める（approval.json）。H は `required` とする。未評価・未確定の行が残る計画には承認を適用しない。
 
 <!-- sec:verification -->
 ## 検証と証拠の予定
@@ -85,7 +85,7 @@ workflow.json と rules.md の粒度・適用条件を使い、H の Unit 確認
 | --- | --- | --- | --- |
 | 未記入 | 未記入 | 未回答 | 未確認 |
 
-承認の真正性検査は未実装。人の発言は decisions.md に記録できるが、この下書きを approved に変更しない。Build は開始しない。[R-PROJECT-1]
+確認は人が `vouch confirm <対象>` を入力した時、承認は `vouch review` のゲートに `vouch approve <ゲート ID>` を入力した時にフックが記録する。確認点がそろった時だけフックがこの下書きを approved にする。モデルは approved に変更せず、承認済みでない計画で実装しない。[R-PROJECT-1]
 
 <!-- sec:references -->
 ## 参照元

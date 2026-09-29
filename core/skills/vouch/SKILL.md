@@ -8,12 +8,12 @@ reads: always
 # Vouch
 
 Vouch の配布先を診断する。現在対応している操作は doctor、読み取り専用 status、Intent の下書き作成である。
-引数なしではこの対応範囲を案内する。ask / report / migrate と承認後のステージ進行は未実装と伝え、完了したように扱わない。
+引数なしではこの対応範囲を案内する。ask / report / migrate と Build 以降のステージ進行は未実装と伝え、完了したように扱わない。
 Claude では `/vouch doctor` または `/vouch status`、Codex では `$vouch doctor` または `$vouch status` を指定できる。
 
 ## Intent
 
-新しい要望の計画・指定した Intent の下書き修正は [Intent Skill](../vouch-intent/SKILL.md) を読む。Claude では `/vouch-intent`、Codex では `$vouch-intent` でも指定できる。現在は承認・Build 開始を行わない。
+新しい要望の計画・指定した Intent の下書き修正は [Intent Skill](../vouch-intent/SKILL.md) を読む。Claude では `/vouch-intent`、Codex では `$vouch-intent` でも指定できる。確認点と承認は人の `vouch confirm` / `vouch review` / `vouch approve` の入力でフックが記録・適用し、モデルは承認も Build 開始も行わない。
 
 ## Status
 

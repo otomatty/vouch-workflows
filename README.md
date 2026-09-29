@@ -2,7 +2,7 @@
 
 Claude Code と Codex 向けの開発ワークフロー。仕様書は [docs/README.md](docs/README.md) から参照できます。
 
-レジストリ、入出力スキーマ、JSDoc の契約、共通ランタイムと、Claude / Codex のセッション開始を記録する最初の製品フックを実装しています。両ハーネスの登録設定と配布生成、配布先を読み取り検査する doctor も実装しました。doctor と読み取り専用 status の共通 Skill、配布先の AGENTS.md、日英の rules テンプレートも実装しました。Intent の下書き Skill と日英 intent / decisions テンプレートも追加しました。承認の記録・検査、他のフック・Skill 操作・エージェントは未実装です。ハーネスのツールから監査ログ・フック設定・承認済み成果物への書き込みを遮る PreToolUse のガードは実装済みで、検査できる範囲と限界を[書き込み保護](docs/development/write-guard.md)に記載しています。[レジストリ契約](docs/development/contracts.md)、[共通ランタイム](docs/development/runtime.md)、[セッション開始の検証記録](docs/development/session-start.md)、[Claude 配布の契約](docs/development/claude-distribution.md)、[Codex 配布の契約](docs/development/codex-distribution.md)、[doctor の契約](docs/development/doctor.md)に範囲を記載しています。既知の Windows の記録系 p95 時間予算は未達です。測定環境ごとの結果を検証記録に分けて残しています。
+レジストリ、入出力スキーマ、JSDoc の契約、共通ランタイムと、Claude / Codex のセッション開始を記録する最初の製品フックを実装しています。両ハーネスの登録設定と配布生成、配布先を読み取り検査する doctor も実装しました。doctor と読み取り専用 status の共通 Skill、配布先の AGENTS.md、日英の rules テンプレートも実装しました。Intent の下書き Skill と日英 intent / decisions テンプレートも追加しました。人の明示入力による確認点と承認の記録、確認点がそろった時の approved への更新、承認済み計画のない実装のファイル編集の遮断を実装し、範囲と限界を[承認の境界](docs/development/approval-boundary.md)に記載しています。他のフック・Skill 操作・エージェントは未実装です。ハーネスのツールから監査ログ・フック設定・承認済み成果物への書き込みを遮る PreToolUse のガードは実装済みで、検査できる範囲と限界を[書き込み保護](docs/development/write-guard.md)に記載しています。[レジストリ契約](docs/development/contracts.md)、[共通ランタイム](docs/development/runtime.md)、[セッション開始の検証記録](docs/development/session-start.md)、[Claude 配布の契約](docs/development/claude-distribution.md)、[Codex 配布の契約](docs/development/codex-distribution.md)、[doctor の契約](docs/development/doctor.md)に範囲を記載しています。既知の Windows の記録系 p95 時間予算は未達です。測定環境ごとの結果を検証記録に分けて残しています。
 
 ## 開発環境
 
@@ -54,6 +54,6 @@ lockfile を書き換えるときは npm 11.5.0〜11.6.2 を使いません。�
 
 status は成果物と監査を根拠に現在地・確認点・未回答の判断依頼を表示する Skill です。状態を遷移させるランタイムは追加していません。モデルによる振る舞いの評価は未実施です。[status と共通文書](docs/development/status.md)に検証範囲を記載しています。日英の rules テンプレートは配布先の templates/ に置き、既存の `vouch/rules.md` は変更しません。
 
-新規の計画作成や指定した下書きの修正は Claude で `/vouch-intent`、Codex で `$vouch-intent` を使います。現在は `status: draft` の計画と判断記録までで、承認済みへの変更や Build は開始しません。[Intent 下書きの契約と検証範囲](docs/development/intent.md)を参照してください。
+新規の計画作成や指定した下書きの修正は Claude で `/vouch-intent`、Codex で `$vouch-intent` を使います。Skill は `status: draft` の計画と判断記録を作ります。確認点は人が `vouch confirm <対象>`、承認は `vouch review` で開いたゲートに `vouch approve <ゲート ID>` を入力した時にフックが記録し、確認点がそろった時だけフックが approved にします。Build の Skill は未実装です。[Intent 下書きの契約と検証範囲](docs/development/intent.md)と[承認の境界](docs/development/approval-boundary.md)を参照してください。
 
 Intent Skill の実ハーネスでの発見・選択・生成結果の評価は未実施です。現在の自動テストは契約・文書構造・配布を検査します。

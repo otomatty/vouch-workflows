@@ -17,7 +17,7 @@ approved への正規の更新経路と承認の真正性は #5、テストの�
 | audit | `vouch/intents/<intent>/audit/` とその下 | 製品フックの AuditStore。io.run から FileStore のロック・一時ファイル・rename で追記する | 内容や actor に関わらず拒否 |
 | lock | 名前が `.vouch-lock` で終わる要素を含むパス | FileStore の updateText | 拒否 |
 | installation | 配布ディレクトリの `hooks/`・`registry/` と、`registry/installation.json` の registration・configuration・overrides が名指すファイル | 配布物をコピーする人（ハーネスの外） | 拒否 |
-| artifact | `vouch/intents/<intent>/intent.md`、`design.md` | 下書きはモデル（ファイル編集ツール）。approved への変更は #5 の正規経路（未実装）。承認済みの内容を変える主体はない | 現在 approved、または書き込み後に approved になり得る変更を拒否。シェルからの書き込みは内容を検証できないため下書きも拒否 |
+| artifact | `vouch/intents/<intent>/intent.md`、`design.md` | 下書きはモデル（ファイル編集ツール）。intent.md の approved への変更は[承認の境界](approval-boundary.md)のレビュー記録フックだけ。承認済みの内容を変える主体はない | 現在 approved、または書き込み後に approved になり得る変更を拒否。シェルからの書き込みは内容を検証できないため下書きも拒否 |
 
 installation.json の overrides は、登録を上書き・無効化できる同じディレクトリのファイルです。Claude は `settings.local.json` を持ちます。Claude の [フック文書](https://code.claude.com/docs/en/hooks) によると、設定ファイルのフックの直接編集はセッション中にも読み込まれ、`disableAllHooks` で無効化できます。登録ファイルの保護は、ガード自身を外されないためにも必要です。
 
