@@ -623,7 +623,7 @@ test("a push checks each commit only against the commits before it", async (t) =
   };
   const files = {
     [artifact]: plan,
-    [audit]: `${record(contract, 0)}\n${record(red, 1)}\n`,
+    [audit]: `${record(contract, 0)}\n${record(red, 1)}\n${record(sha("3"), 0)}\n`,
   };
   /** @param {string[][]} commits */
   const history = (commits) =>
@@ -656,5 +656,57 @@ test("a push checks each commit only against the commits before it", async (t) =
       ),
     ),
     /^VOUCH-COMMIT-ORDER: Bash git push \(3{12} feat\(U1\): app\); /,
+  );
+});
+
+test("a push with an implementation needs a passing DoD at its last code commit", async (t) => {
+  /** @param {string} commit @param {number} exit */
+  const record = (commit, exit) => {
+    const output = { path: "build-log.md", sha256: `${exit}`.repeat(64) };
+    return `${JSON.stringify({
+      id: newId(
+        commit,
+        JSON.stringify(["hook.check", "dod", intent, output.sha256]),
+      ),
+      v: 1,
+      type: "hook.check",
+      ts: "2026-09-29T00:00:00Z",
+      actor: "hook",
+      intent,
+      check: "dod",
+      result: exit ? "fail" : "pass",
+      duration_ms: 1,
+      commit,
+      clean: true,
+      commands: [
+        {
+          target: "t",
+          command: "c",
+          cwd: ".",
+          result: exit ? "fail" : "pass",
+          duration_ms: 1,
+          exit_code: exit,
+        },
+      ],
+      output,
+    })}\n`;
+  };
+  const history = `\x1e${sha("1")}\x1ftest(U1): red\0\nA\0tests/a.test.js\0\x1e${sha("2")}\x1ffix(U1): repair\0\nM\0src/a.js\0\x1e${sha("5")}\x1fdocs(U1): log\0\nM\0vouch/log.md\0`;
+  const push = bash("git push origin vouch/260929-git");
+  const red = { [artifact]: plan, [audit]: record(sha("1"), 1) };
+  const green = {
+    ...red,
+    [audit]: `${record(sha("1"), 1)}${record(sha("2"), 0)}`,
+  };
+  t.plan(2);
+  t.assert.equal(
+    reason(
+      await guardGit(push, context(red), fakeGit({ [log]: history }).execute),
+    ),
+    `VOUCH-COMMIT-EVIDENCE: Bash git push (${"2".repeat(12)} fix(U1): repair); the implementation needs a passing DoD at its last code commit`,
+  );
+  t.assert.deepEqual(
+    await guardGit(push, context(green), fakeGit({ [log]: history }).execute),
+    { decision: "allow" },
   );
 });

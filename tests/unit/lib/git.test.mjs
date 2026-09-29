@@ -9,6 +9,7 @@ import {
   readChanges,
   readGit,
   spawn,
+  unprovenTip,
 } from "../../../core/hooks/lib/git.mjs";
 
 // Git operations and DoD evidence: docs/development/git-guard.md.
@@ -415,5 +416,26 @@ test("commitViolation weighs every changed path and skips untyped earlier commit
       proven,
     ),
     null,
+  );
+});
+
+test("unprovenTip asks for a passing DoD at the last code commit once an implementation is on the branch", (t) => {
+  const contract = commit("1", "contract(U1): types");
+  const feat = commit("3", "feat(U1): app");
+  const notes = commit("9", "docs(U1): log", [["M", "vouch/log.md"]]);
+  const green = commit("4", "fix(U2): repair");
+  t.plan(6);
+  t.assert.equal(unprovenTip([contract], proven), null, "no implementation");
+  t.assert.equal(
+    unprovenTip([contract, commit("5", "refactor(U1): x")], proven),
+    null,
+    "refactor only",
+  );
+  t.assert.deepEqual(unprovenTip([contract, feat], proven), feat);
+  t.assert.deepEqual(unprovenTip([contract, feat, notes], proven), feat);
+  t.assert.equal(unprovenTip([feat, green, notes], proven), null);
+  t.assert.deepEqual(
+    unprovenTip([green, commit("6", "chore(U1): bump")], proven),
+    commit("6", "chore(U1): bump"),
   );
 });

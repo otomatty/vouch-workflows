@@ -10,7 +10,7 @@ import { hookTest as test } from "../helpers/hook-test.mjs";
 
 // Commit order and test protection through the registered guard: docs/development/git-guard.md.
 
-test("the contract, red test and green implementation order commits and pushes with the DoD command's evidence", async (t) => {
+test("the contract, red test and green implementation order commits and pushes only with the DoD command's evidence", async (t) => {
   const box = await gitBox(t);
   await box.write("src/types.js", "// contract\n");
   const early = box.guard('git add -A && git commit -m "feat(U1): add app"');
@@ -24,9 +24,16 @@ test("the contract, red test and green implementation order commits and pushes w
     "git add -A && git commit -m \"$(cat <<'EOF'\nfeat(U1): add app\n\nBody.\nEOF\n)\"",
   );
   box.commit("feat(U1): add app");
+  const beforeGreen = box.guard(`git push -u origin ${branch}`);
+  const green = box.dod();
   const push = box.guard(`git push -u origin ${branch}`, { harness: "codex" });
   const log = await box.read(buildLog);
-  t.plan(8);
+  t.plan(10);
+  t.assert.match(
+    beforeGreen.stderr,
+    /^VOUCH-COMMIT-EVIDENCE: Bash git push \([0-9a-f]{12} feat\(U1\): add app\); the implementation needs a passing DoD at its last code commit\n$/,
+  );
+  t.assert.deepEqual([green.status, green.report.ok], [0, true]);
   t.assert.equal(
     early.stderr,
     "VOUCH-COMMIT-ORDER: Bash feat(U1): add app; the implementation needs contract(U1) with a passing DoD, then test(U1) with a failing DoD earlier on this branch\n",
@@ -36,7 +43,7 @@ test("the contract, red test and green implementation order commits and pushes w
   t.assert.deepEqual([red.status, red.report.ok], [2, false]);
   t.assert.deepEqual([heredoc.exitCode, heredoc.stderr], [0, ""]);
   t.assert.deepEqual([push.exitCode, push.stderr], [0, ""]);
-  t.assert.equal((log.match(/<!-- dod -->/g) ?? []).length, 2);
+  t.assert.equal((log.match(/<!-- dod -->/g) ?? []).length, 3);
   t.assert.match(log, /1 failing: app is missing/);
 });
 
