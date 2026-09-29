@@ -3,13 +3,13 @@ import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { isAuditEvent } from "../../core/hooks/lib/validation.mjs";
-import { gitBox } from "../helpers/git-guard.mjs";
+import { audit, buildLog, gitBox } from "../helpers/git-guard.mjs";
 import { hookTest as test } from "../helpers/hook-test.mjs";
 import { tree } from "../helpers/packaging.mjs";
 import { validator } from "../helpers/registry.mjs";
 
 // Manual DoD command: docs/development/git-guard.md.
-const log = "vouch/intents/260927-review/build-log.md";
+const log = buildLog;
 
 /** The source entry, whose project root is this repository. @param {Record<string,string>} env */
 function source(env) {
@@ -52,7 +52,7 @@ test("the installed command runs the DoD at a clean commit and records it in bui
   box.commit("test(U1): app");
   const failed = box.dod();
   const text = await box.read(log);
-  const records = (await box.read(box.audit))
+  const records = (await box.read(audit))
     .trim()
     .split("\n")
     .map((line) => JSON.parse(line))
@@ -102,7 +102,7 @@ test("the installed command runs the DoD at a clean commit and records it in bui
 
 test("the installed command fails before running when the audit is unreadable", async (t) => {
   const box = await gitBox(t);
-  await box.write(box.audit, "broken\n");
+  await box.write(audit, "broken\n");
   const before = tree(box.root);
   const result = box.dod();
   t.plan(3);
@@ -126,7 +126,7 @@ test("the installed command reports commands that cannot start and uncommitted c
   );
   await box.write("src/dirty.js", "// uncommitted\n");
   const result = box.dod();
-  const record = (await box.read(box.audit))
+  const record = (await box.read(audit))
     .trim()
     .split("\n")
     .map((line) => JSON.parse(line))

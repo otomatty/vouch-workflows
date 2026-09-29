@@ -82,10 +82,32 @@ for (const harness of /** @type {const} */ (["claude", "codex"])) {
       denied.stderr,
       /^VOUCH-GIT-PUSH: Bash git push -u origin HEAD:main; main is protected/,
     );
+    // The allowed calls run the copied guard directly; PowerShell starts slowly on Windows.
+    /** @param {string} command */
+    const direct = (command) =>
+      spawnSync(
+        process.execPath,
+        [join(root, home, "hooks/vouch-guard-writes.mjs")],
+        {
+          cwd: root,
+          input: JSON.stringify(
+            toolFixture(harness, "Bash", root, { command }).payload,
+          ),
+          encoding: "utf8",
+          windowsHide: true,
+          timeout: 4000,
+          env: {
+            ...process.env,
+            VOUCH_PROJECT_ROOT: root,
+            VOUCH_HARNESS: harness,
+            VOUCH_INTENT: "260929-installed",
+          },
+        },
+      );
     t.assert.deepEqual(
       [
-        run("git push -u origin vouch/260929-installed").status,
-        run(`node ${home}/hooks/vouch-dod.mjs`).status,
+        direct("git push -u origin vouch/260929-installed").status,
+        direct(`node ${home}/hooks/vouch-dod.mjs`).status,
       ],
       [0, 0],
     );

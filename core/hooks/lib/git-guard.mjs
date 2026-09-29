@@ -10,7 +10,6 @@ import {
   commitViolation,
   dodEvidence,
   isShellTool,
-  readChanges,
   readGit,
 } from "./git.mjs";
 import { parseShell, programOf } from "./shell.mjs";
@@ -82,9 +81,9 @@ function invocations(text, cwd, execute) {
  * @param {GitPort} git @param {Context} ctx
  */
 async function branch(git, ctx) {
+  if (!ctx.intent) return null;
   const top = await git("rev-parse", "--show-toplevel");
-  if (!ctx.intent || top === null) return null;
-  if ((await ctx.locate(top.trim())).inside !== "") return null;
+  if (top === null || (await ctx.locate(top.trim())).inside !== "") return null;
   try {
     const log = await branchHistory(git);
     const text = await ctx.readText(
@@ -123,15 +122,14 @@ async function push(git, ctx) {
   if (git.dynamic || (current && !git.git))
     return ["VOUCH-GIT-PUSH", shown, "the destination cannot be verified"];
   const names = [...targets];
-  if (current && git.git) {
-    const upstream = targets.includes("")
-      ? await git.git(..."rev-parse --abbrev-ref @{push}".split(" "))
-      : null;
-    names.push(
-      `${await git.git("symbolic-ref", "--short", "-q", "HEAD")}`,
-      `${upstream}`.replace(/^[^/]*\//, ""),
-    );
-  }
+  // `## <branch>...<remote>/<upstream>`: the current branch and, for a default push, its upstream.
+  const status =
+    current && (await git.git?.("status", "-b", "--porcelain", "-z", "-uno"));
+  const [, head = "", upstream = ""] =
+    /^## (?:No commits yet on )?(\S+?)(?:\.{3}[^/\s]*\/(\S+))?(?: |$)/.exec(
+      `${`${status}`.split("\0", 1)}`,
+    ) ?? [];
+  names.push(head, targets.includes("") ? upstream : "");
   const main = names
     .map((name) => name.trim())
     .find((name) => name === "*" || build.protected.includes(name));
@@ -170,18 +168,24 @@ async function commit(git, ctx) {
   if (found === null) return null;
   const all =
     git.staged || git.args.some((arg) => /^-[^-]*a|^--all$/.test(arg));
-  const head = await git.git("rev-parse", "--verify", "-q", "HEAD");
-  const diff = "diff --no-renames --name-status -z".split(" ");
-  const staged = await git.git(...diff, all && head ? "HEAD" : "--cached");
-  const others = "ls-files -z --others --exclude-standard".split(" ");
-  const untracked = all ? await git.git(...others) : "";
-  if (staged === null || untracked === null)
+  const status = await git.git(
+    ..."status --porcelain -z -uall --no-renames".split(" "),
+  );
+  if (status === null)
     return ["VOUCH-GIT-UNVERIFIED", subject, "the changes could not be read"];
-  const added = untracked.split("\0").filter(Boolean);
-  const changes = [
-    ...readChanges(staged),
-    ...added.map((path) => /** @type {[string,string]} */ (["A", path])),
-  ];
+  /** @type {import('./runtime-contracts.mjs').Change[]} */ const changes = [];
+  for (const entry of status.split("\0").filter(Boolean)) {
+    // The index column alone, or with the worktree and untracked files when the command stages.
+    const code = all ? entry.slice(0, 2) : entry.slice(0, 1).replace("?", "");
+    const kind = /D/.test(code)
+      ? "D"
+      : /[A?]/.test(code)
+        ? "A"
+        : /[MT]/.test(code)
+          ? "M"
+          : "";
+    if (kind) changes.push([kind, entry.slice(3)]);
+  }
   const broken = commitViolation(
     { subject, changes },
     found.log,

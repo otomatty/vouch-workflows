@@ -148,16 +148,11 @@ test("readChanges pairs name-status entries and ignores a trailing separator", (
 test("branchHistory lists the commits outside every protected branch, oldest first", async (t) => {
   /** @type {string[][]} */ const calls = [];
   const log = `\x1e${sha("1")}\x1fcontract(U1): types\0\nA\0src/types.js\0\x1e${sha("2")}\x1ftest(U1): red\0\nA\0tests/a.test.js\0M\0vouch/x.md\0\x1e${sha("3")}\x1fdocs: empty\0`;
-  /** @type {Record<string,string|null>} */ const answers = {
-    "for-each-ref": "refs/heads/main\nrefs/remotes/origin/main\n",
-    "rev-parse": `${sha("3")}\n`,
-    log,
-  };
   const history = await branchHistory(async (...args) => {
     calls.push(args);
-    return answers[`${args[0]}`] ?? null;
+    return log;
   });
-  t.plan(3);
+  t.plan(2);
   t.assert.deepEqual(history, [
     {
       sha: sha("1"),
@@ -174,48 +169,32 @@ test("branchHistory lists the commits outside every protected branch, oldest fir
     },
     { sha: sha("3"), subject: "docs: empty", changes: [] },
   ]);
-  t.assert.deepEqual(calls[0], [
-    "for-each-ref",
-    "--format=%(refname)",
-    "refs/heads/main",
-    "refs/remotes/*/main",
-  ]);
-  t.assert.deepEqual(calls[2], [
-    "log",
-    "--no-merges",
-    "--no-renames",
-    "--reverse",
-    "--name-status",
-    "-z",
-    "HEAD",
-    "--format=%x1e%H%x1f%s",
-    "--not",
-    "refs/heads/main",
-    "refs/remotes/origin/main",
+  t.assert.deepEqual(calls, [
+    [
+      "log",
+      "--no-merges",
+      "--no-renames",
+      "--reverse",
+      "--name-status",
+      "-z",
+      "HEAD",
+      "--format=%x1e%H%x1f%s",
+      "--not",
+      "--branches=[m]ain",
+      "--remotes=*/[m]ain",
+    ],
   ]);
 });
 
-test("branchHistory is empty without a commit and null when Git cannot list refs or the log", async (t) => {
+test("branchHistory is empty without a commit and null when Git cannot list the log", async (t) => {
   /** @param {Record<string,string|null>} answers */
   const port =
     (answers) =>
     async (/** @type {string[]} */ ...args) =>
       answers[`${args[0]}`] ?? null;
-  t.plan(3);
-  t.assert.deepEqual(
-    await branchHistory(port({ "for-each-ref": "", "rev-parse": null })),
-    [],
-  );
-  t.assert.equal(
-    await branchHistory(port({ "for-each-ref": null, "rev-parse": "x\n" })),
-    null,
-  );
-  t.assert.equal(
-    await branchHistory(
-      port({ "for-each-ref": "", "rev-parse": "x\n", log: null }),
-    ),
-    null,
-  );
+  t.plan(2);
+  t.assert.deepEqual(await branchHistory(port({ "rev-parse": null })), []);
+  t.assert.equal(await branchHistory(port({ "rev-parse": "x\n" })), null);
 });
 
 test("dodEvidence counts clean, derived, nonsynthetic dod records of the Intent", (t) => {

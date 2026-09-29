@@ -1,22 +1,12 @@
 import budgets from "../../core/registry/budgets.json" with { type: "json" };
 import { cpuLoad } from "../helpers/cpu-load.mjs";
-import { gitIn } from "../helpers/git-guard.mjs";
 import { hookTest as test } from "../helpers/hook-test.mjs";
-import { planned } from "../helpers/intent-review.mjs";
 import { runHook, sandbox } from "../helpers/runtime.mjs";
 import { toolFixture } from "../helpers/write-guard.mjs";
 
-test("checking a commit against the branch history stays below the check p95 budget over twenty process executions", async (t) => {
+// The Git stage reads the current branch through one Git call; see docs/development/git-guard.md.
+test("resolving a default push through Git stays below the check p95 budget over twenty process executions", async (t) => {
   const box = await sandbox(t);
-  await box.write("vouch/intents/260929-perf/intent.md", planned());
-  await box.write("README.md", "base\n");
-  gitIn(box.root, "add", "-A");
-  gitIn(box.root, "commit", "-qm", "chore: base");
-  gitIn(box.root, "checkout", "-qb", "vouch/260929-perf");
-  await box.write("src/types.js", "// contract\n");
-  gitIn(box.root, "add", "-A");
-  gitIn(box.root, "commit", "-qm", "contract(U1): types");
-  await box.write("src/app.js", "// app\n");
   /** @type {number[]} */ const times = [];
   t.plan(budgets.timing.samples * 2 + 1);
   // HOOK-13 condition: CPU count - 1 processes keep starting no-op hooks meanwhile.
@@ -29,12 +19,15 @@ test("checking a commit against the branch history stays below the check p95 bud
       const result = runHook(
         "vouch-guard-writes",
         toolFixture("claude", "Bash", box.root, {
-          command: `git add -A && git commit -m 'feat(U1): app ${i}'`,
+          command: `git status && git push -u origin HEAD # ${i}`,
         }),
-        { root: box.root, intent: "260929-perf", coverage: false },
+        { root: box.root, coverage: false },
       );
       t.assert.equal(result.exitCode, 2);
-      t.assert.match(result.stderr, /^VOUCH-COMMIT-ORDER: /);
+      t.assert.match(
+        result.stderr,
+        /^VOUCH-GIT-PUSH: Bash git push -u origin HEAD; main is protected/,
+      );
       times.push(result.durationMs);
     }
   } finally {

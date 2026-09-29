@@ -52,33 +52,29 @@ export function readChanges(text) {
 
 /** @type {import('./runtime-contracts.mjs').BranchHistory} */
 export async function branchHistory(git) {
-  const patterns = build.protected.flatMap((name) => [
-    `refs/heads/${name}`,
-    `refs/remotes/*/${name}`,
-  ]);
-  const refs = await git("for-each-ref", "--format=%(refname)", ...patterns);
-  const head = await git("rev-parse", "--verify", "-q", "HEAD");
-  if (refs === null) return null;
-  if (head === null) return [];
   // Commits reachable from HEAD but from no protected branch, merges excluded, oldest first.
+  // A bracket keeps Git from reading a plain name as a `name/*` prefix.
+  const globs = build.protected.map((name) => `[${name[0]}]${name.slice(1)}`);
   const log = await git(
     ..."log --no-merges --no-renames --reverse --name-status -z HEAD".split(
       " ",
     ),
     "--format=%x1e%H%x1f%s",
     "--not",
-    ...refs.split("\n").filter(Boolean),
+    ...globs.flatMap((glob) => [`--branches=${glob}`, `--remotes=*/${glob}`]),
   );
-  return (
-    log
-      ?.split("\x1e")
-      .slice(1)
-      .map((chunk) => {
-        const end = chunk.indexOf("\0");
-        const [sha = "", subject = ""] = chunk.slice(0, end).split("\x1f");
-        return { sha, subject, changes: readChanges(chunk.slice(end + 1)) };
-      }) ?? null
-  );
+  if (log === null)
+    return (await git("rev-parse", "--verify", "-q", "HEAD")) === null
+      ? []
+      : null;
+  return log
+    .split("\x1e")
+    .slice(1)
+    .map((chunk) => {
+      const end = chunk.indexOf("\0");
+      const [sha = "", subject = ""] = chunk.slice(0, end).split("\x1f");
+      return { sha, subject, changes: readChanges(chunk.slice(end + 1)) };
+    });
 }
 
 /** @type {import('./runtime-contracts.mjs').DodEvidence} */

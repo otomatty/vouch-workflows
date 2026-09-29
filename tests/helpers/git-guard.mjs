@@ -1,12 +1,18 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { cp } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { appendFile, cp } from "node:fs/promises";
 import { resolve } from "node:path";
-import { approvalBox, audit, intent, planned } from "./intent-review.mjs";
-import { runHook } from "./runtime.mjs";
+import { newId } from "../../core/hooks/lib/clock.mjs";
+import { evidenced } from "./approval.mjs";
+import { planned } from "./intent-review.mjs";
+import { runHook, sandbox } from "./runtime.mjs";
 import { toolFixture } from "./write-guard.mjs";
 
 // Git guard and DoD in a real repository; see docs/development/git-guard.md.
+const intent = "260929-guarded";
 export const branch = `vouch/${intent}`;
+export const audit = `vouch/intents/${intent}/audit/events.jsonl`;
+export const buildLog = `vouch/intents/${intent}/build-log.md`;
 /** Passes before tests exist and after the implementation; fails in between. */
 const check = [
   'const { existsSync } = require("node:fs");',
@@ -52,34 +58,37 @@ export function gitIn(root, ...args) {
 
 /**
  * A project on an Intent branch from main with an approved two-Unit plan, a DoD in rules.md and
- * the runtime copied to `.claude/` (ignored), so the DoD command resolves this root.
+ * the runtime copied to `.claude/` (ignored), so the DoD command resolves this root. The approval
+ * records are hand-authored with derived identities (helpers/approval.mjs); vouch/ stays
+ * uncommitted so audit records carry across branch switches.
  * @param {import('node:test').TestContext} t @param {'claude'|'codex'} [harness]
  */
 export async function gitBox(t, harness = "claude") {
-  const box = await approvalBox(
-    t,
-    harness,
-    planned([
-      ["U1", "L: small", "not-required: none"],
-      ["U2", "L: small", "not-required: none"],
-    ]),
+  const box = await sandbox(t);
+  const draft = planned([
+    ["U1", "L: small", "not-required: none"],
+    ["U2", "L: small", "not-required: none"],
+  ]);
+  const { gate, approval } = evidenced(draft, { intent, harness });
+  await box.write(
+    `vouch/intents/${intent}/intent.md`,
+    draft.replace("status: draft", "status: approved"),
   );
+  await box.write(
+    audit,
+    `${JSON.stringify(gate)}\n${JSON.stringify(approval)}\n`,
+  );
+  await box.write("vouch/rules.md", rules);
   await box.write(".gitignore", ".claude/\n");
   await box.write("check.js", check);
-  await box.write("vouch/rules.md", rules);
   await cp(resolve("core/hooks"), box.path(".claude/hooks"), {
     recursive: true,
   });
   await cp(resolve("core/registry"), box.path(".claude/registry"), {
     recursive: true,
   });
-  gitIn(box.root, "add", "-A");
-  gitIn(box.root, "commit", "-qm", "chore: base");
-  gitIn(box.root, "checkout", "-qb", branch);
-  await box.approveAfter();
   /**
-   * Commit every change outside vouch/ with a subject, outside the guard. The audit and
-   * build-log.md stay uncommitted so their records carry across branch switches.
+   * Commit every change outside vouch/ with a subject, outside the guard.
    * @param {string} subject
    */
   const commit = (subject) => {
@@ -87,6 +96,8 @@ export async function gitBox(t, harness = "claude") {
     gitIn(box.root, "commit", "-qm", subject);
     return gitIn(box.root, "rev-parse", "HEAD").trim();
   };
+  commit("chore: base");
+  gitIn(box.root, "checkout", "-qb", branch);
   /** Run the copied DoD command as the model would. */
   const dod = () => {
     const result = spawnSync(
@@ -103,6 +114,43 @@ export async function gitBox(t, harness = "claude") {
     return { status: result.status, report: JSON.parse(result.stdout) };
   };
   /**
+   * Append a DoD record shaped and identified as the command writes it. The guard cannot tell
+   * it from a run (docs/development/git-guard.md); the flow test runs the real command.
+   * @param {string} sha @param {number} exit @param {Record<string,unknown>} [extra]
+   */
+  const prove = (sha, exit, extra = {}) => {
+    const sha256 = createHash("sha256").update(`${sha} ${exit}`).digest("hex");
+    const result = exit === 0 ? "pass" : "fail";
+    const record = {
+      id: newId(sha, JSON.stringify(["hook.check", "dod", intent, sha256])),
+      v: 1,
+      type: "hook.check",
+      ts: "2026-09-29T00:00:00.000Z",
+      actor: "hook",
+      intent,
+      stage: "build",
+      check: "dod",
+      result,
+      duration_ms: 1,
+      missing: 0,
+      commit: sha,
+      clean: true,
+      commands: [
+        {
+          target: "Unit tests",
+          command: "node check.js",
+          cwd: ".",
+          result,
+          duration_ms: 1,
+          exit_code: exit,
+        },
+      ],
+      output: { path: "build-log.md", sha256 },
+      ...extra,
+    };
+    return appendFile(box.path(audit), `${JSON.stringify(record)}\n`);
+  };
+  /**
    * The registered guard on a Bash call derived from a versioned capture.
    * @param {string} command @param {{harness?:'claude'|'codex',intent?:string}} [options]
    */
@@ -112,5 +160,5 @@ export async function gitBox(t, harness = "claude") {
       toolFixture(options.harness ?? harness, "Bash", box.root, { command }),
       { root: box.root, intent: options.intent ?? intent },
     );
-  return { ...box, audit, commit, dod, guard };
+  return { ...box, commit, dod, prove, guard };
 }

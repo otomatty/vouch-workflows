@@ -14,13 +14,10 @@ const plan = planned([
   ["U2", "L: small", "not-required: none"],
 ]);
 const sha = (/** @type {string} */ c) => c.repeat(40);
-const refs =
-  "for-each-ref --format=%(refname) refs/heads/main refs/remotes/*/main";
 const log =
-  "log --no-merges --no-renames --reverse --name-status -z HEAD --format=%x1e%H%x1f%s --not refs/heads/main";
-const cached = "diff --no-renames --name-status -z --cached";
-const worktree = "diff --no-renames --name-status -z HEAD";
-const untracked = "ls-files -z --others --exclude-standard";
+  "log --no-merges --no-renames --reverse --name-status -z HEAD --format=%x1e%H%x1f%s --not --branches=[m]ain --remotes=*/[m]ain";
+const status = "status --porcelain -z -uall --no-renames";
+const branch = "status -b --porcelain -z -uno";
 
 /**
  * A Git double keyed by the arguments after the lock option; records every call.
@@ -29,14 +26,10 @@ const untracked = "ls-files -z --others --exclude-standard";
 function fakeGit(overrides = {}) {
   /** @type {Record<string,string|null>} */ const answers = {
     "rev-parse --show-toplevel": "/project\n",
-    [refs]: "refs/heads/main\n",
     "rev-parse --verify -q HEAD": `${sha("9")}\n`,
     [log]: "",
-    "symbolic-ref --short -q HEAD": "vouch/260929-git\n",
-    "rev-parse --abbrev-ref @{push}": "origin/vouch/260929-git\n",
-    [cached]: "",
-    [worktree]: "",
-    [untracked]: "",
+    [branch]: "## vouch/260929-git...origin/vouch/260929-git [ahead 1]\0",
+    [status]: "",
     ...overrides,
   };
   /** @type {string[]} */ const calls = [];
@@ -160,8 +153,8 @@ test("pushes that name, spell or default to main deny with or without an Intent"
 });
 
 test("pushes of the current or default branch resolve it through Git", async (t) => {
-  const onMain = { "symbolic-ref --short -q HEAD": "main\n" };
-  const upstreamMain = { "rev-parse --abbrev-ref @{push}": "origin/main\n" };
+  const onMain = { [branch]: "## main\0" };
+  const upstreamMain = { [branch]: "## vouch/260929-git...origin/main\0" };
   const cases = [
     ["git push", onMain, true],
     ["git push origin HEAD", onMain, true],
@@ -169,14 +162,7 @@ test("pushes of the current or default branch resolve it through Git", async (t)
     ["git push origin HEAD", upstreamMain, false],
     ["git push", {}, false],
     ["git push -u origin HEAD", {}, false],
-    [
-      "git push",
-      {
-        "symbolic-ref --short -q HEAD": null,
-        "rev-parse --abbrev-ref @{push}": null,
-      },
-      false,
-    ],
+    ["git push", { [branch]: null }, false],
   ];
   t.plan(cases.length);
   for (const [command, overrides, deny] of cases) {
@@ -237,7 +223,7 @@ test("destinations and directories built at run time cannot be verified", async 
 });
 
 test("git runs from the input cwd with fixed cd and -C steps", async (t) => {
-  const git = fakeGit({ "symbolic-ref --short -q HEAD": "main\n" });
+  const git = fakeGit({ [branch]: "## No commits yet on main\0" });
   const result = await guardGit(
     bash("cd sub && git -C inner push"),
     context(undefined, { intent: "" }),
@@ -247,7 +233,7 @@ test("git runs from the input cwd with fixed cd and -C steps", async (t) => {
   t.assert.equal(result.decision, "deny");
   t.assert.equal(
     git.calls.includes(
-      "git -C sub -C inner symbolic-ref --short -q HEAD @/project",
+      "git -C sub -C inner status -b --porcelain -z -uno @/project",
     ),
     true,
     git.calls.join("\n"),
@@ -255,7 +241,7 @@ test("git runs from the input cwd with fixed cd and -C steps", async (t) => {
 });
 
 test("commit subjects come from -m forms and the quoted here-document only", async (t) => {
-  const code = { [cached]: "A\0src/app.js\0", [worktree]: "A\0src/app.js\0" };
+  const code = { [status]: "A  src/app.js\0" };
   const typed = [
     "git commit -m wip",
     "git commit -am wip",
@@ -289,14 +275,12 @@ test("commit subjects come from -m forms and the quoted here-document only", asy
 
 test("commit changes widen to the worktree and new files when the command stages them", async (t) => {
   const staged = {
-    [cached]: "M\0vouch/rules.md\0",
-    [worktree]: "M\0vouch/rules.md\0",
-    [untracked]: "src/new.js\0",
+    [status]: "M  vouch/rules.md\0?? src/new.js\0",
   };
   const noHead = {
     ...staged,
     "rev-parse --verify -q HEAD": null,
-    [cached]: "A\0vouch/rules.md\0",
+    [log]: null,
   };
   const cases = [
     ["git commit -m wip", staged, "allow"],
@@ -322,20 +306,20 @@ test("commit rules report unit, test and order in the registry wording", async (
   const cases = [
     [
       "git commit -m 'docs(U9): x'",
-      { [cached]: "M\0README.md\0" },
+      { [status]: "M  README.md\0" },
       "VOUCH-COMMIT-UNIT: Bash docs(U9): x; U9 is not a Unit of the plan",
     ],
     [
       "git commit -m 'fix(U1): x'",
-      { [cached]: "D\0tests/a.test.js\0" },
+      { [status]: "D  tests/a.test.js\0" },
       "VOUCH-COMMIT-TEST: Bash fix(U1): x; test files change or disappear only in test(U1) commits",
     ],
     [
       "git commit -m 'feat(U2): x'",
-      { [cached]: "A\0src/b.js\0" },
+      { [status]: "A  src/b.js\0" },
       "VOUCH-COMMIT-ORDER: Bash feat(U2): x; the implementation needs contract(U2) with a passing DoD, then test(U2) with a failing DoD earlier on this branch",
     ],
-    ["git commit -m 'test(U1): x'", { [cached]: "D\0tests/a.test.js\0" }, ""],
+    ["git commit -m 'test(U1): x'", { [status]: "D  tests/a.test.js\0" }, ""],
   ];
   t.plan(cases.length);
   for (const [command, answers, expected] of cases)
@@ -352,7 +336,7 @@ test("commit rules report unit, test and order in the registry wording", async (
 });
 
 test("order checks apply only to the configured Intent's project repository", async (t) => {
-  const code = { [cached]: "A\0src/app.js\0" };
+  const code = { [status]: "A  src/app.js\0" };
   const command = bash("git commit -m 'feat(U1): impl'");
   t.plan(4);
   t.assert.deepEqual(
@@ -393,10 +377,10 @@ test("unreadable history, plan, audit or changes deny commits and pushes", async
   const commit = "git commit -m 'feat(U1): impl'";
   const cases = [
     [commit, { [log]: null }, {}],
-    [commit, { [cached]: null }, {}],
-    ["git commit -am 'feat(U1): impl'", { [untracked]: null }, {}],
+    [commit, { [status]: null }, {}],
+    ["git commit -am 'feat(U1): impl'", { [status]: null }, {}],
     [commit, {}, { [audit]: "broken\n" }],
-    ["git push origin vouch/260929-git", { [refs]: null }, {}],
+    ["git push origin vouch/260929-git", { [log]: null }, {}],
     ["git push origin vouch/260929-git", {}, { [audit]: "broken\n" }],
   ];
   t.plan(cases.length);
@@ -418,7 +402,7 @@ test("unreadable history, plan, audit or changes deny commits and pushes", async
 });
 
 test("a missing or invalid plan names the Unit as unknown", async (t) => {
-  const answers = { [cached]: "A\0src/app.js\0" };
+  const answers = { [status]: "A  src/app.js\0" };
   const command = bash("git commit -m 'contract(U1): types'");
   t.plan(2);
   t.assert.match(
@@ -483,7 +467,7 @@ test("deny reasons stay on one bounded line whatever the subject spells", async 
   const result = await guardGit(
     bash(`git commit -m 'docs(${unit}): x'`),
     context(),
-    fakeGit({ [cached]: "M\0README.md\0" }).execute,
+    fakeGit({ [status]: "M  README.md\0" }).execute,
   );
   t.plan(3);
   t.assert.match(reason(result), /^VOUCH-COMMIT-UNIT: Bash docs\(U+/);
