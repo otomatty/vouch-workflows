@@ -168,7 +168,14 @@
     "hook.check": {
       "fields": {
         "required": ["check", "result", "duration_ms"],
-        "optional": ["missing", "stale"]
+        "optional": [
+          "missing",
+          "stale",
+          "commit",
+          "clean",
+          "commands",
+          "output"
+        ]
       },
       "measures": ["duration_ms", "missing", "stale"],
       "pairs_with": []

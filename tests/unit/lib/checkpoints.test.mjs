@@ -8,6 +8,7 @@ import {
   readCheckpointMode,
   readPlan,
   requiredCheckpoints,
+  tableRows,
 } from "../../../core/hooks/lib/checkpoints.mjs";
 import { newId } from "../../../core/hooks/lib/clock.mjs";
 import { confirmation } from "../../helpers/approval.mjs";
@@ -544,5 +545,30 @@ test("a Unit confirmation goes stale when only its row's spacing or line break c
   t.assert.deepEqual(
     missing(text.replace(row, (line) => line.replace("\n", "\r\n"))),
     [target],
+  );
+});
+
+test("tableRows reads the first table of a named section and defaults to the plan", (t) => {
+  const text = [
+    "<!-- sec:dod -->",
+    "## DoD",
+    "",
+    "| Target | Command |",
+    "| --- | --- |",
+    "| Tests | `npm test \\| cat` |",
+    "",
+    "| Later | table |",
+    "<!-- sec:plan -->",
+    "",
+  ].join("\n");
+  t.plan(3);
+  t.assert.deepEqual(
+    tableRows(text, "dod")?.map((row) => row.cells),
+    [["Tests", "`npm test \\| cat`"]],
+  );
+  t.assert.equal(tableRows(text, "restrictions"), null);
+  t.assert.deepEqual(
+    tableRows(planned())?.map((row) => row.cells[0]),
+    ["U1"],
   );
 });

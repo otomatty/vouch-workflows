@@ -32,9 +32,10 @@ function sectionOf(text, id) {
 /** Lines with their line breaks. @param {string} text */
 const linesOf = (text) => text.match(/[^\n]*\n|[^\n]+$/g) ?? [];
 
-/** Rows of the first table in the plan section: raw lines for digests, cells for reading. @param {string} text */
-function planRows(text) {
-  const plan = sectionOf(text, approval.plan.section);
+/** Rows of the first table in a section: raw lines for digests, cells for reading.
+ * @param {string} text @param {string} [id] */
+export function tableRows(text, id = approval.plan.section) {
+  const plan = sectionOf(text, id);
   if (plan === null) return null;
   const raw = linesOf(plan);
   const lines = raw.map((line) => line.trim());
@@ -61,7 +62,7 @@ const token = (cell, tokens) =>
 
 /** @type {import('./runtime-contracts.mjs').ReadPlan} */
 export function readPlan(text) {
-  const rows = planRows(text);
+  const rows = tableRows(text);
   if (!rows?.length)
     return { error: "a plan table with Unit rows is required" };
   const { required, skipped } = approval.plan.design;
@@ -155,7 +156,7 @@ export function checkpointContent(target, texts) {
     return snapshot && { path: "design.md", sha256: snapshot.revision.sha256 };
   }
   if (target.checkpoint === "unit") {
-    const rows = planRows(texts.intent)?.filter(
+    const rows = tableRows(texts.intent)?.filter(
       (row) => row.cells[0] === target.unit,
     );
     return rows?.length === 1

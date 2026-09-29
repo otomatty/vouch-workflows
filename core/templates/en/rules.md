@@ -18,6 +18,7 @@ Choose language and checkpoints from workflow.json. Fill in project-specific ent
 | Dependency audit at every risk tier | Unconfigured | Unconfigured | Unconfigured |
 
 Add tests, static analysis and application checks tied to acceptance criteria. Explain omitted checks and provide alternative evidence. Do not report an unconfigured command as executed. Basis: decision record §7, §8 and §18 Q3.
+Write the command and its working directory (relative to the root; the root when omitted) as separate inline code, and escape `|` in the table as `\|`. During Build, `node {{HARNESS_DIR}}/hooks/vouch-dod.mjs` runs these commands and records their output and results in build-log.md and the audit log. Exit code 0 passes; the model analyzes and fixes failures.
 
 <!-- sec:restrictions -->
 ## Restrictions and scope [R-PROJECT-4]

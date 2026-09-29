@@ -28,7 +28,7 @@ test("runtime inventory classifies every entry and every core file without omiss
   t.assert.deepEqual(runtime.nodeMinimum, [22, 19, 0]);
   t.assert.deepEqual(
     runtime.commands,
-    ["vouch-doctor.mjs"],
-    "DIST-5: manual diagnostic is not event wiring",
+    ["vouch-doctor.mjs", "vouch-dod.mjs"],
+    "DIST-5: manual diagnostic and DoD commands are not event wiring",
   );
 });

@@ -57,3 +57,5 @@ status は成果物と監査を根拠に現在地・確認点・未回答の判�
 新規の計画作成や指定した下書きの修正は Claude で `/vouch-intent`、Codex で `$vouch-intent` を使います。Skill は `status: draft` の計画と判断記録を作ります。確認点は人が `vouch confirm <対象>`、承認は `vouch review` で開いたゲートに `vouch approve <ゲート ID>` を入力した時にフックが記録し、確認点がそろった時だけフックが approved にします。Build の Skill は未実装です。[Intent 下書きの契約と検証範囲](docs/development/intent.md)と[承認の境界](docs/development/approval-boundary.md)を参照してください。
 
 Intent Skill の実ハーネスでの発見・選択・生成結果の評価は未実施です。現在の自動テストは契約・文書構造・配布を検査します。
+
+Build の機械的なガードとして、登録したシェルツールからの `main` への push と `gh pr merge`、Intent のブランチでのコードを変えるコミットの型と Unit、`test` 型以外でのテストファイルの変更・削除、契約（DoD 合格）→ テスト（DoD 不合格）→ 実装の順序の違反と、実装を含むブランチでコードを変えた最後のコミットに DoD 合格（green）の証跡がない push を PreToolUse のガードが遮ります。DoD は配布先で `node .claude/hooks/vouch-dod.mjs`（Codex は `.codex`）が `vouch/rules.md` の表のコマンドを実行し、出力・結果・所要時間を build-log.md と監査に記録します。本番データの操作など判断が要る範囲との区別、検査できる経路と限界は [Git 操作の検査と DoD](docs/development/git-guard.md) に記載しています。この機能のため、所有者の判断で lib の行数予算を 3,000 行から 3,500 行に引き上げました。

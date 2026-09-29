@@ -1,6 +1,10 @@
 import { resolve } from "node:path";
 import { test } from "node:test";
-import { readContext } from "../../../core/hooks/lib/env.mjs";
+import {
+  readContext,
+  readIntent,
+  readSecrets,
+} from "../../../core/hooks/lib/env.mjs";
 
 test("Claude uses its exported project root only when an explicit root is absent", (t) => {
   const root = resolve(".");
@@ -95,4 +99,33 @@ test("doctor context derives its target from its entry URL rather than caller en
       nodeVersion: process.versions.node,
     },
   );
+});
+
+test("manual commands read the configured Intent only from the environment", (t) => {
+  t.plan(3);
+  t.assert.equal(
+    readIntent({ VOUCH_INTENT: "260929-orders" }),
+    "260929-orders",
+  );
+  t.assert.equal(readIntent({ VOUCH_INTENT: "" }), null);
+  t.assert.equal(readIntent({ VOUCH_HARNESS: "claude" }), null);
+});
+
+test("manual commands read secret-named variable values of a minimum length, longest first", (t) => {
+  const rule = { names: "TOKEN|SECRET", minLength: 8 };
+  process.env.VOUCH_UNIT_SECRET = "from-the-process";
+  const own = readSecrets(rule);
+  delete process.env.VOUCH_UNIT_SECRET;
+  t.plan(2);
+  t.assert.deepEqual(
+    readSecrets(rule, {
+      GH_TOKEN: "abcdefgh",
+      my_secret: "abcdefghij",
+      SHORT_TOKEN: "abcdefg",
+      EMPTY_TOKEN: undefined,
+      PATH: "/usr/local/bin:/usr/bin",
+    }),
+    ["abcdefghij", "abcdefgh"],
+  );
+  t.assert.equal(own.includes("from-the-process"), true);
 });
