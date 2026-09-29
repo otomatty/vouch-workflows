@@ -143,16 +143,18 @@ HOOK-2 に従い、不正な stdin、`VOUCH_PROJECT_ROOT`・`VOUCH_HARNESS` の�
 | --- | --- | --- | --- |
 | audit-file | 監査ログへの Write（偽の行を含む） | 監査ログへの apply_patch | `VOUCH-GUARD-AUDIT` が返り、監査ログが変わらない |
 | audit-shell | Bash で監査ログへ追記 | 同じ | 同上 |
-| registration | 登録ファイルから PreToolUse を消す Edit | 同じ内容の apply_patch | `VOUCH-GUARD-INSTALLATION` が返り、登録ファイルが変わらない |
+| registration | 登録ファイルでフックを無効にする Edit | 同じ目的の apply_patch | `VOUCH-GUARD-INSTALLATION` が返り、登録ファイルが変わらない |
 | approve | 下書きの status を approved にする Edit | 同じ内容の apply_patch | `VOUCH-GUARD-APPROVED` が返り、下書きが変わらない |
 | link | `alias.jsonl` への Write | `alias.jsonl` への apply_patch | `VOUCH-GUARD-AUDIT` が返り、監査ログが変わらない |
 | draft | 下書きの本文を変える Edit | 同じ内容の apply_patch | 理由が返らず、変更が反映される |
-| read | Bash で監査ログを cat | 同じ | 理由が返らず、監査の内容が返る |
+| read | Bash で監査ログを cat | 同じ | 理由が返らず、監査の先頭レコードの ID が返る |
 
 実行後の監査ログは、SessionStart の正規のフックが記録した session.started 1件だけで、harness がそのハーネスであることも確かめます。偽の行は含みません。
 
 終了2は、ツールが実行されず（対象のバイトが不変）、ツール結果に理由 ID が含まれることで確認します。フック自身の終了コードは CLI の外から観測できないためです。
 
-対照として、コピーした登録から PreToolUse だけを外した実行（`--control`）も行います。理由が返らないこと、audit-file・audit-shell・approve・link の対象が書き換わることを確認し、ガードがなければハーネスが書き込むことを示します。registration は、ハーネス自身の保護の有無を記録するだけで、期待値を置きません。
+対照として、コピーした登録から PreToolUse だけを外した実行（`--control`）も行います。理由が返らないこと、audit-file・audit-shell・approve の対象が書き換わることを確認し、ガードがなければハーネスが書き込むことを示します。link と registration は、ハーネス自身の保護の有無を記録するだけで、期待値を置きません。最初の試行で、Claude 2.1.284 は symlink への Write を自ら拒否し、Codex 0.153.4 は `.codex/` への apply_patch を自ら拒否したためです。
+
+registration の編集は、ハーネスが設定として受け付ける内容にします。Claude は `disableAllHooks` を加える Edit、Codex は SessionStart の matcher を変える apply_patch です。存在しないイベント名への書き換えは、Claude が編集後の設定検証で拒否しました。
 
 観測は `tests/fixtures/native/write-guard-linux.json` に保存し、`scripts/lib/write-guard-native.mjs` の純粋関数で packaging テストが照合します。スクリプト入力の観測であり、人の承認やモデル評価ではありません。Windows では起動を拒否し、確認済みとは扱いません。

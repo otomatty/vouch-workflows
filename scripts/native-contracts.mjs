@@ -51,6 +51,7 @@
  * @property {string} platform
  * @property {string} nodeVersion
  * @property {'guarded'|'control'} registration Control removes only PreToolUse from the copy.
+ * @property {number|null} exitCode CLI exit code, not the hook exit code.
  * @property {GuardObservation[]} observations
  * @property {{type:unknown,harness:unknown}[]} audit Audit records after the run.
  * @property {boolean} forged A scripted forged record reached the audit.
