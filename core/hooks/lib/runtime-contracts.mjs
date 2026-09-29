@@ -175,8 +175,8 @@ export {};
  * @typedef {(commit:{subject:string,changes:Change[]},earlier:Commit[],units:string[],proven:Proven)=>['type'|'unit'|'test'|'order',string]|null} CommitViolation
  * The first broken rule and its registry detail; `earlier` holds the branch commits before it, oldest first.
  * @typedef {(input:import('./contracts.mjs').HookInput,ctx:import('./contracts.mjs').ReadyHookContext,execute?:SpawnPort)=>Promise<import('./contracts.mjs').HookResult>} GuardGit
- * PreToolUse shell pushes to a protected branch deny; with a configured Intent, pushes and `-m`
- * commits in the project repository that break a commit rule deny, and unreadable evidence denies.
+ * PreToolUse shell pushes to a protected branch and `gh pr merge` deny; with a configured Intent, pushes
+ * and `-m` commits in the project repository that break a commit rule deny, and unreadable evidence denies.
  * @typedef {{intent:string|null,now:() => string,execute?:SpawnPort}} DodPorts
  * @typedef {(files:FileStore,environment:DoctorEnvironment,git:GitStatus,ports?:DodPorts)=>Promise<DoctorReport>} RunDod
  * Runs the rules.md DoD for an approved plan, appends build-log.md, then one hook.check record.

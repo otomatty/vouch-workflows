@@ -93,6 +93,10 @@ push 先の枝名を次の規則で求め、保護対象（`build.json` の `pro
 
 push 先が保護対象でなく Intent を設定している時は、プロジェクトのリポジトリのコミット列全体に上の規則を当て、最初に当たったコミット（短縮 SHA と件名）を理由にして拒否します。コミット列・intent.md・監査を読めない時は `VOUCH-GIT-UNVERIFIED` で拒否します（fail-closed）。
 
+## PR のマージ
+
+§4（承認を代行しない）と §6・§18（L を含むすべてのリスク階層で、PR は人が Brief を読んでマージし、自動マージしない）に従い、登録したシェルツールの GitHub CLI `gh pr merge`（`--auto` を含む）を `VOUCH-GIT-MERGE` で拒否します。Intent の設定の有無に関わらず検査します。[承認の境界](approval-boundary.md)が #6 に残した「モデルによるマージの遮断」のうち、機械的に判定できる部分です。ローカルの `git merge` は禁止リストにないので遮らず、その結果を保護対象の枝へ push することは push の検査が拒否します。
+
 ## Git の起動
 
 フックは `spawnSync("git", ["--no-optional-locks", ...])` をシェルなしで、`runtime.json` の gitTimeoutMs（1.5秒）で起動します。使うのは読み取りのサブコマンド（`rev-parse`、`symbolic-ref`、`for-each-ref`、`log`、`diff`、`ls-files`、`status`）だけで、ネットワークに出ません。`node:child_process` は Git のコマンドがある時に初めて読み込みます。
@@ -157,9 +161,10 @@ stdout に doctor と同じスキーマ（`doctor-report.schema.json`、ID は `
 | `VOUCH-COMMIT-UNIT` | Unit が計画にない |
 | `VOUCH-COMMIT-TEST` | `test` 型以外のコミットでテストファイルを変更・削除する |
 | `VOUCH-COMMIT-ORDER` | 実装の型に必要な、証跡付きの契約・テストのコミットが先にない |
+| `VOUCH-GIT-MERGE` | `gh pr merge` で PR をマージする |
 | `VOUCH-GIT-UNVERIFIED` | コミット列・変更・intent.md・監査を読めない |
 
-stderr は `<理由 ID>: Bash <対象>; <説明>` の1行で、対象は push のコマンド、コミットの件名、または push で当たったコミットの短縮 SHA と件名です。制御文字は `?` に置き換えます。書き込み保護と Build 開始の境界の理由が優先です。
+stderr は `<理由 ID>: Bash <対象>; <説明>` の1行で、対象は push・マージのコマンド、コミットの件名、または push で当たったコミットの短縮 SHA と件名です。対象は200文字、全体は600文字までに切り詰め、制御文字は `?` に置き換えます。書き込み保護と Build 開始の境界の理由が優先です。
 
 ## 行数予算の変更
 
@@ -176,6 +181,7 @@ P-7 は予算の超過に Opus 5.5 での失敗の実証を求めますが、今
 | 件名を読めないコミット、ハーネス外のコミット、`--amend`・rebase で作ったコミット | コミット時は検査外。push 時にコミット列で拒否 |
 | 別名（`git config alias.*`）、`sh -c`・`eval`・スクリプト・変数を介した Git、登録していないツール | 検査外 |
 | `git push` 以外の経路での共有（`git send-pack`、別のクローンからの push、Web の操作） | 検査外 |
+| `gh pr merge` 以外のマージ（`gh api`、MCP の GitHub ツール、Web の操作） | 検査外 |
 | 保護対象の名前が `main` 以外のリポジトリ | `build.json` にない名前は保護しない |
 | 一覧にない命名のテストファイル | 保護しない |
 | `test` 型のコミットでのテストの改変・削除、DoD の不合格が意図した理由か | 許可する。reviewer と人が判断する |
