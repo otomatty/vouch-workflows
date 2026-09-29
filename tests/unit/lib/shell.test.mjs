@@ -345,6 +345,8 @@ test("readsOnly refuses sed without -n, extra scripts, other options and expansi
     "git log $R",
     "rg $P f",
     "file $F",
+    "sort {-o,out} a",
+    "git log {--output=x,}",
   ];
   t.plan(cases.length);
   for (const text of cases) t.assert.equal(reading(text), false, text);
@@ -365,4 +367,15 @@ test("programOf skips leading reserved words and identifier assignments only", (
   t.assert.deepEqual(of("-x=1", "ls"), ["-x=1", "ls"]);
   t.assert.deepEqual(of("1a=b", "ls"), ["1a=b", "ls"]);
   t.assert.deepEqual(of("A-B=1", "ls"), ["A-B=1", "ls"]);
+});
+
+test("parseShell marks unquoted braces as expanding and readers still read through them", (t) => {
+  t.plan(3);
+  t.assert.deepEqual(parseShell("cat {a,b} c").commands[0]?.expands, [
+    false,
+    true,
+    false,
+  ]);
+  t.assert.equal(reading("cat f{1..3}.txt"), true);
+  t.assert.equal(reading("{ cat a; }"), true);
 });

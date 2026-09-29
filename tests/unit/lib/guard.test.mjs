@@ -965,3 +965,133 @@ test("guardWrites refuses the whole installation when a descriptor lists non-str
     "VOUCH-GUARD-INSTALLATION",
   );
 });
+
+test("guardWrites expands braces like bash before classifying shell words", async (t) => {
+  const box = await guardBox(t);
+  const home = `vouch/intents/${intent}`;
+  /** @type {[string,string,string?][]} */
+  const cases = [
+    [`echo x >> ${home}/{audit,b}/events.jsonl`, "VOUCH-GUARD-AUDIT"],
+    [`echo x >> ${home}/au{d,}it/events.jsonl`, "VOUCH-GUARD-AUDIT"],
+    [`echo x >> ${home}/aud{h..j}t/events.jsonl`, "VOUCH-GUARD-AUDIT"],
+    [`rm -rf ${home}/{audit,tmp}`, "VOUCH-GUARD-AUDIT"],
+    ["echo x >> {notes,audit}/next.jsonl", "VOUCH-GUARD-AUDIT", box.path(home)],
+    ["cp x .claude/{hooks,y}/z", "VOUCH-GUARD-INSTALLATION"],
+    [`echo x > ${home}/{intent,design}.md`, "VOUCH-GUARD-ARTIFACT"],
+    [`touch ${"{a,b}".repeat(9)}`, "VOUCH-GUARD-UNVERIFIED"],
+    [`ls ${"{a,b}".repeat(9)}`, "allow"],
+    [`cat ${home}/{audit/events.jsonl,intent.md}`, "allow"],
+    ["for i in {1..1000}; do echo $i >> out.txt; done", "allow"],
+    ["cp notes.{md,bak} && echo x >> {notes,log}/next.jsonl", "allow"],
+  ];
+  t.plan(cases.length);
+  for (const [command, expected, cwd] of cases)
+    t.assert.equal(
+      await box.decide("Bash", { command }, cwd),
+      expected,
+      command,
+    );
+});
+
+test("guardWrites keeps deciding when a word cannot be looked up", async (t) => {
+  const box = await guardBox(t);
+  await symlink(box.path("loop-b"), box.path("loop-a"));
+  await symlink(box.path("loop-a"), box.path("loop-b"));
+  const long = "a".repeat(300);
+  /** @type {[string,Record<string,unknown>,string][]} */
+  const cases = [
+    [
+      "Bash",
+      { command: `echo x >> ${audit}; cat loop-a/x` },
+      "VOUCH-GUARD-AUDIT",
+    ],
+    [
+      "Bash",
+      { command: `echo x >> ${audit}; cat ${long}` },
+      "VOUCH-GUARD-AUDIT",
+    ],
+    ["Bash", { command: `cat ${long}/x ${audit}` }, "allow"],
+    ["Bash", { command: "echo x > loop-a/x" }, "VOUCH-GUARD-LINK"],
+    [
+      "Write",
+      { file_path: box.path("loop-a/x"), content: "" },
+      "VOUCH-GUARD-LINK",
+    ],
+    ["Write", { file_path: box.path(long), content: "" }, "allow"],
+    [
+      "Write",
+      {
+        file_path: box.path(`vouch/intents/${intent}/audit/${long}`),
+        content: "",
+      },
+      "VOUCH-GUARD-AUDIT",
+    ],
+  ];
+  t.plan(cases.length);
+  for (const [tool, input, expected] of cases)
+    t.assert.equal(
+      await box.decide(tool, input),
+      expected,
+      JSON.stringify(input).slice(0, 80),
+    );
+});
+
+test("guardWrites drops only comments every shell reads alike and refuses shell words shaped like protected paths anywhere", async (t) => {
+  const box = await guardBox(t);
+  const other = await sandbox(t, { git: false });
+  const elsewhere = other.path("archive/audit/events.jsonl");
+  await symlink(
+    box.path(`vouch/intents/${intent}/audit/next.jsonl`),
+    box.path("pending"),
+  );
+  await symlink(box.path("vouch/intents/260929-new"), box.path("pending-dir"));
+  const windows = (/** @type {string} */ path) => path.replaceAll("/", "\\");
+  /** @type {[string,Record<string,unknown>,string][]} */
+  const cases = [
+    ["Bash", { command: `echo ok > notes.txt # ${audit}` }, "allow"],
+    ["Bash", { command: `# keep ${audit}\necho ok > notes.txt` }, "allow"],
+    [
+      "Bash",
+      { command: `echo "ok" > notes.txt # ${audit}` },
+      "VOUCH-GUARD-AUDIT",
+    ],
+    ["Bash", { command: `(( x #)); rm ${audit}` }, "VOUCH-GUARD-AUDIT"],
+    [
+      "Bash",
+      { command: `Add-Content <#x#> ${windows(audit)} y` },
+      "VOUCH-GUARD-AUDIT",
+    ],
+    [
+      "Bash",
+      { command: `Write-Output ok # x\rRemove-Item ${windows(audit)}` },
+      "VOUCH-GUARD-AUDIT",
+    ],
+    // Shell words keep their spelled shape: Git Bash reads /c/... unlike Node.js.
+    ["Bash", { command: `printf x >> '${elsewhere}'` }, "VOUCH-GUARD-AUDIT"],
+    [
+      "Bash",
+      { command: `printf x > '${other.path("job.vouch-lock")}'` },
+      "VOUCH-GUARD-LOCK",
+    ],
+    ["Write", { file_path: elsewhere, content: "x" }, "allow"],
+    // A link to a protected target that does not exist yet is unresolved.
+    [
+      "Write",
+      { file_path: box.path("pending"), content: "x" },
+      "VOUCH-GUARD-LINK",
+    ],
+    ["Bash", { command: "echo x > pending" }, "VOUCH-GUARD-LINK"],
+    [
+      "Write",
+      { file_path: box.path("pending-dir/audit/events.jsonl"), content: "x" },
+      "VOUCH-GUARD-LINK",
+    ],
+  ];
+  t.plan(cases.length);
+  for (const [tool, input, expected] of cases)
+    t.assert.equal(
+      await box.decide(tool, input),
+      expected,
+      JSON.stringify(input).slice(0, 80),
+    );
+});

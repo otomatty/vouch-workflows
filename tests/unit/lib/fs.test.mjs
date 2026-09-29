@@ -445,7 +445,7 @@ test("file store locates spelled paths at their real place without refusing link
   t.assert.equal(await box.read("nested/file"), "x", "locating never writes");
 });
 
-test("file store locate reports other node types, a missing volume and unexpected lookup failures", async (t) => {
+test("file store locate reports other node types, a missing volume and components it cannot look up", async (t) => {
   const box = await sandbox(t, { git: false });
   await box.write("device", "");
   const failure = Object.assign(new Error("denied"), { code: "EACCES" });
@@ -499,5 +499,67 @@ test("file store locate reports other node types, a missing volume and unexpecte
     kind: "other",
     links: 0,
   });
-  await t.assert.rejects(refusing.locate("blocked/file"), failure);
+  // A denied lookup counts as missing, so one word never fails a guard open.
+  t.assert.deepEqual(await refusing.locate("blocked/file"), {
+    inside: "blocked/file",
+    contains: false,
+    kind: "missing",
+    links: 0,
+  });
+});
+
+test("file store locate walks up from looping links and long names and reports targets it cannot examine", async (t) => {
+  const box = await sandbox(t, { git: false });
+  await box.write("vouch/audit/events.jsonl", "x");
+  await box.write("vanished", "x");
+  await fs.symlink(box.path("loop-b"), box.path("loop-a"));
+  await fs.symlink(box.path("loop-a"), box.path("loop-b"));
+  await fs.symlink(box.path("missing/target"), box.path("dangling"));
+  const long = "a".repeat(300);
+  const gone = Object.assign(new Error("gone"), { code: "ENOENT" });
+  const files = await createFileStore(box.root);
+  const vanishing = await createFileStore(box.root, {
+    ...fs,
+    stat: /** @type {typeof fs.stat} */ (
+      /** @type {unknown} */ (
+        async (/** @type {string} */ path) => {
+          if (path.endsWith("vanished")) throw gone;
+          return fs.stat(path);
+        }
+      )
+    ),
+  });
+  let broken = false;
+  const unrooted = await createFileStore(box.root, {
+    ...fs,
+    realpath: /** @type {typeof fs.realpath} */ (
+      /** @type {unknown} */ (
+        async (/** @type {string} */ path) => {
+          if (broken) throw gone;
+          return fs.realpath(path);
+        }
+      )
+    ),
+  });
+  broken = true;
+  /** @param {string} inside @param {'missing'|'unresolved'} kind */
+  const at = (inside, kind) => ({ inside, contains: false, kind, links: 0 });
+  t.plan(5);
+  t.assert.deepEqual(
+    await files.locate("loop-a/x"),
+    at("loop-a/x", "unresolved"),
+  );
+  t.assert.deepEqual(await files.locate(long), at(long, "missing"));
+  t.assert.deepEqual(
+    await files.locate(`vouch/audit/${long}/x`),
+    at(`vouch/audit/${long}/x`, "missing"),
+  );
+  t.assert.deepEqual(
+    await vanishing.locate("vanished"),
+    at("vanished", "unresolved"),
+  );
+  t.assert.deepEqual(
+    await unrooted.locate("dangling"),
+    at("dangling", "unresolved"),
+  );
 });

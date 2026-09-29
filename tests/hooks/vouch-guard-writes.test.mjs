@@ -276,6 +276,30 @@ test("links into the audit and hard links are refused through the process bounda
   t.assert.match(hard.stderr, /^VOUCH-GUARD-LINK: /);
 });
 
+test("words the guard cannot look up, braces and comments are decided through the process boundary", async (t) => {
+  const box = await guardBox(t);
+  await symlink(box.path("loop-b"), box.path("loop-a"));
+  await symlink(box.path("loop-a"), box.path("loop-b"));
+  const run = (/** @type {string} */ command) =>
+    box.guard("claude", "Bash", { command });
+  const looping = run(`echo x >> ${audit}; cat loop-a/x`);
+  const long = run(`echo x >> ${audit}; cat ${"a".repeat(300)}`);
+  const braced = run(
+    `echo x >> vouch/intents/${intent}/{audit,b}/events.jsonl`,
+  );
+  const commented = run(`echo ok > notes.txt # ${audit}`);
+  t.plan(4);
+  for (const result of [looping, long, braced])
+    t.assert.deepEqual(
+      [result.exitCode, result.stderr.split(":")[0]],
+      [2, "VOUCH-GUARD-AUDIT"],
+    );
+  t.assert.deepEqual(
+    [commented.exitCode, commented.stdout, commented.stderr],
+    [0, "", ""],
+  );
+});
+
 test("unregistered tools and other harness events pass without output", async (t) => {
   const box = await guardBox(t);
   const agent = toolFixture("claude", "Agent", box.root, {
