@@ -1,4 +1,5 @@
 import { test } from "node:test";
+import { readSecrets } from "../../core/hooks/lib/env.mjs";
 import { isAuditEvent } from "../../core/hooks/lib/validation.mjs";
 import { readJson, validator } from "../helpers/registry.mjs";
 
@@ -165,4 +166,32 @@ test("the manual report schema accepts DoD check IDs beside doctor IDs", (t) => 
     t.assert.equal(valid(report(id)), true, id);
   for (const id of ["DOD-", "TEST-COMMAND"])
     t.assert.equal(valid(report(id)), false, id);
+});
+
+test("the DoD redaction names cover token, key and auth variables but not author names", (t) => {
+  const { redact } = readJson("core/registry/build.json").dod;
+  const value = (/** @type {string} */ name) => `${name.toLowerCase()}-value`;
+  const secret = [
+    "GITHUB_TOKEN",
+    "AWS_SECRET_ACCESS_KEY",
+    "DB_PASSWORD",
+    "OPENAI_API_KEY",
+    "DOCKER_AUTH_CONFIG",
+    "NPM_CONFIG__AUTH",
+    "AUTH_HEADER",
+  ];
+  const plain = [
+    "GIT_AUTHOR_NAME",
+    "GIT_AUTHOR_EMAIL",
+    "AUTHORIZED_USERS",
+    "PATH",
+  ];
+  const found = readSecrets(
+    redact,
+    Object.fromEntries(
+      [...secret, ...plain].map((name) => [name, value(name)]),
+    ),
+  );
+  t.plan(1);
+  t.assert.deepEqual(found.sort(), secret.map(value).sort());
 });
