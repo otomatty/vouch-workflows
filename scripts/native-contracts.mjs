@@ -56,5 +56,26 @@
  * @property {{type:unknown,harness:unknown}[]} audit Audit records after the run.
  * @property {boolean} forged A scripted forged record reached the audit.
  * @property {string[]} errors Expectation IDs the check reported.
+ *
+ * Scripted approval inputs and implementation writes; see docs/development/approval-boundary.md.
+ * @typedef {'write-before'|'confirm-acceptance'|'confirm-scope'|'confirm-units'|'review'|'approve'|'write-after'} ApprovalStep
+ *
+ * @typedef {object} ApprovalObservation
+ * @property {ApprovalStep} step
+ * @property {number|null} exitCode CLI exit code; null when the exercise ended the CLI.
+ * @property {number} promptRequests Provider conversation requests that carried the prompt.
+ * @property {string|null} reason First VOUCH-* ID in the tool result (writes) or CLI output (inputs).
+ * @property {boolean} written The scripted implementation file exists after the step.
+ * @property {'draft'|'approved'|null} status intent.md status after the step; null when unsupported.
+ *
+ * @typedef {object} ApprovalRun
+ * @property {'claude'|'codex'} harness
+ * @property {string} cliVersion
+ * @property {string} platform
+ * @property {string} nodeVersion
+ * @property {ApprovalObservation[]} observations
+ * @property {{type:unknown,harness:unknown,synthetic:unknown}[]} audit Audit records after the run.
+ * @property {boolean} revisionKept The approved intent.md has the revision of the prepared draft.
+ * @property {string[]} errors Expectation IDs the check reported.
  */
 export {};

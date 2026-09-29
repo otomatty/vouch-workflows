@@ -150,7 +150,23 @@ Intent の承認は PR の承認ではありません。このフックは gate.
 - unit：計画・粒度・対象の内容・必要な確認点・確認の数え方、承認の連鎖と適用の関数、Build の判定、io の適用の順序と競合、監査の一覧を直接検査します。
 - hooks：Claude 2.1.283 / Codex 0.153.4 の版付き UserPromptSubmit と Write / Edit / apply_patch の採取から派生した synthetic 入力を runHook で実行します。正例に加え、偽装（actor の主張、ID の導出の不一致、synthetic、task-notification の本文、構造化質問の回答、question.defaulted、gate.approved）、欠損（ゲート・確認・計画・rules・design.md）、破損（監査・rules・frontmatter）、再送（同じ入力、付け替え、適用後）を検査します。既存の記録だけのテストは記録の契約として残し、承認の適用と Build の境界は別のテストで検証します。
 - registry：スキーマの受理・拒否と Ajv の一致、語彙と計画の書式の整合を検査します。
-- 実機：配布をコピーした隔離プロジェクトで、ネイティブ CLI にスクリプトの入力を送り、確認・承認の適用と Build の境界を観測します。スクリプト入力の観測であり、人の承認やモデル評価ではありません。
+- 実機：次節の契約で、ネイティブ CLI にスクリプトの入力を送って観測します。スクリプト入力の観測であり、人の承認やモデル評価ではありません。
+
+## 実機での確認の契約
+
+`scripts/check-approval.mjs <claude|codex> <CLI の絶対パス>` は、生成した `dist/<harness>` を変更せずに隔離プロジェクトへコピーし、計画の表を持つ下書きの Intent を置きます。隔離した設定領域と固定応答のループバックのプロバイダーを使い、非対話 CLI を次の順に1回ずつ起動します。呼び出し元の `VOUCH_HARNESS` はもう一方のハーネス名にし、登録が自分の名前を設定することを記録の harness で確かめます。
+
+| 手順 | 入力 | 期待する観測 |
+| --- | --- | --- |
+| write-before | プロバイダーが `src/app.js` を作るツール（Claude は Write、Codex は apply_patch）を要求する | ツール結果に `VOUCH-BUILD-UNAPPROVED` が返り、ファイルができない |
+| confirm-acceptance / confirm-scope / confirm-units | `vouch confirm acceptance` など | プロンプトがプロバイダーに届かない。intent.md は draft のまま |
+| review | `vouch review` | 同上 |
+| approve | 監査の gate.opened の ID を使う `vouch approve <ID>` | プロンプトが届かず、intent.md が同じ版の approved になる |
+| write-after | write-before と同じ要求 | 理由が返らず、ファイルができる |
+
+Claude の非対話 CLI はフックの理由を表示するので、確認・レビュー・承認の理由 ID（`VOUCH-CHECKPOINT-RECORDED`・`VOUCH-REVIEW-RECORDED`・`VOUCH-APPROVAL-APPLIED`）も確かめます。Codex の exec は遮断の理由を表示しない既知の挙動（[版付き fixture と伝播の検証](harness-fixtures.md)）があるため、理由が表示された時だけ照合します。
+
+実行後の監査ログは、session.started を除くと checkpoint.confirmed 3件、gate.opened、intent.approved の順で、すべて synthetic でなく、harness がそのハーネスです。観測は `tests/fixtures/native/approval-linux.json` に保存し、`scripts/lib/approval-native.mjs` の純粋関数で packaging テストが照合します。Windows では起動を拒否し、確認済みとは扱いません。
 
 ## 検出・拒否できる範囲と限界
 
