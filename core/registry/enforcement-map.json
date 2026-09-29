@@ -282,6 +282,21 @@
           "status": "implemented",
           "path": "tests/packaging/write-guard-native.test.mjs",
           "claim": "Linux の Claude 2.1.284 / Codex 0.153.4 の非対話 CLI で、PreToolUse の終了2がツールを止め、Claude は「PreToolUse:<ツール> hook error」、Codex は「Command blocked by PreToolUse hook」に続けて理由をモデルへ返すことを、保存した観測で照合する。Windows・macOS・対話 CLI・他の版は未検証。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/vouch-record-intent-approval.test.mjs",
+          "claim": "確認点と承認の記録・適用も理由付き終了2で入力を消費し、破損した監査などの予期しない失敗は終了0の診断になることを検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/vouch-guard-writes-build.test.mjs",
+          "claim": "Build 開始の境界の拒否は理由付き終了2、承認済み計画と境界外の書き込みは終了0であることを検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/approval-native.test.mjs",
+          "claim": "Linux の Claude Code 2.1.284 / Codex 0.153.4 の非対話 CLI で、確認・レビュー・承認の入力がプロバイダーに届かず下書きが同じ版の approved になること、承認前の実装の書き込みが拒否されツール結果に理由が返り、承認後に許可されることを保存した観測で照合する。スクリプト入力の観測であり、人の承認やモデル評価ではない。"
         }
       ]
     },
@@ -1455,6 +1470,11 @@
           "status": "implemented",
           "path": "docs/development/write-guard.md",
           "claim": "追加した areas・guard・shell と fs の locate 部分に限定して Stryker を測定。初回79.42%（生存278件）から、冗長な条件の削除とテストの追加で1274変異中1200検出、94.19%（生存74件）。生存の内訳を記録。lib 全体の変更前比較と夜間 CI / Issue 作成は未実施。"
+        },
+        {
+          "status": "implemented",
+          "path": "docs/development/approval-boundary.md",
+          "claim": "追加した checkpoints・build・intent-review と、approval・io・audit の変更部分に限定して Stryker を測定。765変異中738検出、生存27、96.47%。生存理由を記録。lib 全体の変更前比較と夜間 CI / Issue 作成は未実施。"
         }
       ]
     },
@@ -1654,6 +1674,11 @@
           "status": "implemented",
           "path": "tests/scenario/approval-distribution.test.mjs",
           "claim": "生成した両配布の登録をそのまま起動し、確認・承認の適用と Build 開始の境界が配布先で働くことを検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/approval-native.test.mjs",
+          "claim": "Linux の Claude Code 2.1.284 / Codex 0.153.4 の非対話 CLI で、確認・レビュー・承認の入力がプロバイダーに届かず下書きが同じ版の approved になること、承認前の実装の書き込みが拒否されツール結果に理由が返り、承認後に許可されることを保存した観測で照合する。スクリプト入力の観測であり、人の承認やモデル評価ではない。"
         }
       ]
     },

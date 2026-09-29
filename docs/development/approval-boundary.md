@@ -180,3 +180,54 @@ Claude の非対話 CLI はフックの理由を表示するので、確認・�
 | 任意のプロセスからの stdin の偽装、ハーネス外での監査・成果物の編集 | 検査外。形式と ID の導出が正しい偽のレコードは区別できない |
 | 検査とツール実行の間の競合 | 防がない |
 | Intent を設定していないセッション | 検査しない |
+
+## 検証記録
+
+2026-09-29 に実装しました。契約は `af9086b`、失敗する先行テストは `c9e6d8d`、実装は `d80b378` です。分岐を埋める追加テストは `033b497`、到達しない条件の削除は `c097f8c`、Skill・テンプレート・記録の更新は `39b00af` です。実機確認の契約は `1738d86`、先行テストは `e17d786`、検証スクリプトは `2dc3d2c`、保存した観測は `c6826d0` です。変異検査で見つけた不足のテストは `23bc6fa` です。
+
+先行テストのうち2点は、実装のコミットでテスト側を直しました。配布のシナリオテストが、コピーした登録の環境変数（Claude の `VOUCH_HARNESS`）を呼び出し元の値で上書きしていた誤りと、JSDoc の型の絞り込み（`in` による判定、`null` を含む引数の型）です。期待値は緩めていません。
+
+既存の記録だけのテスト（`vouch-record-intent-review.test.mjs`）と、その golden 2件（`claude-intent-review.jsonl`・`codex-intent-review.jsonl`）は変更せずに成功しています。計画の表のない下書きへの承認は、記録だけを行い適用しないためです。レコードの項目の順序も保ちました。新規の golden は、確認点から承認の適用までの全文の `claude-intent-approval.jsonl`・`codex-intent-approval.jsonl` です。intent テンプレートの2文を変えたため、`intent-ja.md`・`intent-en.md` の golden はこの2文だけを UPDATE_GOLDEN=1 で更新しました。
+
+| 検査 | Linux / Node.js v22.22.2（`23bc6fa`） |
+| --- | --- |
+| `npm run check` | 成功、35.7秒 |
+| content / registry / packaging / scenario / unit / hooks | 33 / 57 / 37 / 15 / 174 / 64件成功 |
+| 性能（合成負荷、各20回） | 承認の適用 p95 71.4ms、承認済み計画での実装の書き込みの検査 p95 63.3ms。既存の記録 p95 59.0 / 68.1 / 64.0ms、ガード p95 62.6ms |
+| lib 行 / 分岐 / 関数 | 全体 99.96 / 99.28 / 100%。approval・build・checkpoints・intent-review は各100% |
+| フック行 / 分岐 / 関数 | 100 / 100 / 100% |
+| 配布の生成と `package:check` | 150ファイルで成功 |
+| 行数 | lib 合計 2,880行（予算 3,000行）、intent-review.mjs 266行、フック合計 72行 |
+
+### ミューテーション
+
+Linux / Node.js v22.22.2 の Stryker 10 で、checkpoints・build・intent-review の全体と、approval の追加部分（approvedText・findApproval）、io の適用、audit の一覧を測りました。設定はローカルの `reports/approval-stryker.config.mjs` で、commandRunner は関係する6つの unit テストファイルを `--test-concurrency=1` で実行します。閾値の変更や変異の除外はしていません。
+
+最初は 765変異中 699件を検出、生存66件で、スコアは 91.37% でした。生存変異からテストの不足を読み取り、自己を親とする承認の記録順、Edit とシェルの種類、入れ子の build-log.md、理由の制御文字と長さ、ゲートの ID、未対応の下書き、保留中の承認の理由、二つ目のゲートの承認、Design を宣言した M の計画、区切り行と表の端、計画の誤りの文言のテストを加えました（`23bc6fa`）。
+
+最後は 765変異中 738件を検出し、スコアは 96.47% です。生存27件は次のとおりで、いずれも結果が変わらないと判断しました。
+
+- `snapshotIntent(null)` が null を返すため、null の事前判定を外しても同じもの
+- 既定の文字列・既定のエンコーディング・レジストリにある値の既定値
+- 行・表の検出の端（`< 0` と `<= 0`、先頭の `|` の有無、行末の改行の正規表現）で、検査済みの入力の形から結果が変わらないもの
+- 確認対象が design でない時にも design.md を読むもの、io で同じ本文を書き直すもの
+
+lib 全体の変更前スコアは測っていないため、全体で生存変異が増えていないとは主張しません。夜間 CI の測定は未実装のままです（#15）。
+
+### 実機での確認
+
+`c6826d0` の観測は、この環境に導入済みの Claude Code 2.1.284 と、npm の `@openai/codex@0.153.4` を作業ディレクトリに導入した Codex で、Linux / Node.js v22.22.2 の `scripts/check-approval.mjs` により得ました。どちらも非対話の起動で、固定応答のループバックのプロバイダーを使い、外部のモデルへの要求は送っていません。観測は `tests/fixtures/native/approval-linux.json` にあります。
+
+| ハーネス | 結果 |
+| --- | --- |
+| Claude Code 2.1.284 | 7手順すべてが期待どおり。承認前の Write のツール結果に `VOUCH-BUILD-UNAPPROVED` が返りファイルはできず、確認・レビュー・承認の入力はプロバイダーに届かず、それぞれの理由 ID が表示された。承認後に下書きが同じ版の approved になり、同じ Write でファイルができた |
+| Codex 0.153.4 | 7手順すべてが期待どおり。承認前の apply_patch には「Command blocked by PreToolUse hook: VOUCH-BUILD-UNAPPROVED」が返った。exec は入力の遮断の理由を表示しない既知の挙動のまま、監査と intent.md で確認と承認の適用を確かめた |
+
+両ハーネスとも、監査は session.started を除いて checkpoint.confirmed 3件、gate.opened、intent.approved の順で、synthetic はなく、harness は起動したハーネスでした。スクリプト入力の観測であり、人の実承認やモデル評価ではありません。
+
+確認していない範囲は次のとおりです。
+
+- Windows と macOS、対話 CLI、他の CLI の版での実機確認。検証スクリプトは Windows で起動を拒否する。
+- サブエージェントのツール呼び出しと、シェル・登録していないツールによる実装の書き込み（検査外）。
+- builder エージェントの起動の検査（#8）、commit・push・PR マージの検査（#6）、構造化質問の回答の記録（#12）。
+- GitHub Actions の CI の結果。push 後の実行結果は PR（otomatty/vouch-workflows#23）で確認する。
