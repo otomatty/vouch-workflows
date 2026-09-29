@@ -428,10 +428,18 @@ test("file store locates spelled paths at their real place without refusing link
       other.path("alias/dir-link"),
       { inside: "nested/file", contains: false, kind: "file", links: 1 },
     ],
+    // A backslash separates only on Windows; elsewhere it is part of a name.
     [
       "nested\\file",
       undefined,
-      { inside: "nested/file", contains: false, kind: "file", links: 1 },
+      process.platform === "win32"
+        ? { inside: "nested/file", contains: false, kind: "file", links: 1 }
+        : {
+            inside: "nested\\file",
+            contains: false,
+            kind: "missing",
+            links: 0,
+          },
     ],
     [
       "bad\0name",
@@ -562,4 +570,24 @@ test("file store locate walks up from looping links and long names and reports t
     await unrooted.locate("dangling"),
     at("dangling", "unresolved"),
   );
+});
+
+test("file store locate reads a backslash as the platform does", async (t) => {
+  const box = await sandbox(t, { git: false });
+  await box.write("vouch/audit/events.jsonl", "x");
+  const files = await createFileStore(box.root);
+  const windows = process.platform === "win32";
+  t.plan(2);
+  t.assert.deepEqual(await files.locate("vouch\\audit\\events.jsonl"), {
+    inside: windows ? "vouch/audit/events.jsonl" : "vouch\\audit\\events.jsonl",
+    contains: false,
+    kind: windows ? "file" : "missing",
+    links: windows ? 1 : 0,
+  });
+  t.assert.deepEqual(await files.locate("vouch/audit/..\\x"), {
+    inside: windows ? "vouch/x" : "vouch/audit/..\\x",
+    contains: false,
+    kind: "missing",
+    links: 0,
+  });
 });

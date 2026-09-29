@@ -1095,3 +1095,141 @@ test("guardWrites drops only comments every shell reads alike and refuses shell 
       JSON.stringify(input).slice(0, 80),
     );
 });
+
+test("guardWrites judges a Codex move by its source and an update by every approved line it holds", async (t) => {
+  const box = await guardBox(t, "codex");
+  const other = await sandbox(t, { git: false });
+  await box.write("notes.md", approvedText);
+  await box.write("draft-notes.md", draft);
+  await writeFile(box.path("bytes.md"), Buffer.from([0x2d, 0x0a, 0xff]));
+  await other.write("elsewhere.md", draft);
+  const quoted = "vouch/intents/260929-quoted/intent.md";
+  await box.write(quoted, `${draft}\n\`\`\`yaml\nstatus: approved\n\`\`\`\n`);
+  const fresh = "vouch/intents/260929-new/intent.md";
+  /** @param {string[]} lines */
+  const patch = (...lines) =>
+    ["*** Begin Patch", ...lines, "*** End Patch", ""].join("\n");
+  /** @type {[string,string][]} */
+  const cases = [
+    [
+      patch("*** Add File: notes-copy.md", "+---", "+status: approved", "+---"),
+      "allow",
+    ],
+    [
+      patch(
+        "*** Update File: notes.md",
+        `*** Move to: ${fresh}`,
+        "@@",
+        "-AC-1",
+        "+AC-2",
+      ),
+      "VOUCH-GUARD-APPROVED",
+    ],
+    [
+      patch(
+        `*** Update File: ${other.path("elsewhere.md")}`,
+        `*** Move to: ${fresh}`,
+        "+x",
+      ),
+      "VOUCH-GUARD-APPROVED",
+    ],
+    [
+      patch("*** Update File: draft-notes.md", `*** Move to: ${fresh}`, "+x"),
+      "allow",
+    ],
+    [
+      patch("*** Update File: missing.md", `*** Move to: ${fresh}`, "+x"),
+      "allow",
+    ],
+    // A source that cannot be read as text may hold an approved line.
+    [
+      patch("*** Update File: bytes.md", `*** Move to: ${fresh}`, "+x"),
+      "VOUCH-GUARD-APPROVED",
+    ],
+    [
+      patch("*** Update File: vouch", `*** Move to: ${fresh}`, "+x"),
+      "VOUCH-GUARD-APPROVED",
+    ],
+    [patch(`*** Update File: ${fresh}`, "+x"), "allow"],
+    // Dropping the closing `---` would pull the quoted line into the frontmatter.
+    [
+      patch(`*** Update File: ${quoted}`, "@@", " status: draft", "----"),
+      "VOUCH-GUARD-APPROVED",
+    ],
+    [
+      patch(
+        `*** Update File: ${artifact}`,
+        "@@",
+        "-AC-1: keep it.",
+        "+AC-1: keep all.",
+      ),
+      "allow",
+    ],
+  ];
+  t.plan(cases.length);
+  for (const [command, expected] of cases)
+    t.assert.equal(
+      await box.decide("apply_patch", { command }),
+      expected,
+      command,
+    );
+});
+
+test("guardWrites reads a backslash both as a separator and as the platform does", async (t) => {
+  const box = await guardBox(t);
+  const auditDir = box.path(`vouch/intents/${intent}/audit`);
+  // Windows climbs out through `..\`; Linux and macOS create a name inside the directory.
+  const inside = (/** @type {string} */ reason) =>
+    process.platform === "win32" ? "allow" : reason;
+  /** @type {[string,Record<string,unknown>,string][]} */
+  const cases = [
+    [
+      "Write",
+      { file_path: `${auditDir}/..\\..\\..\\..\\forged.jsonl`, content: "{}" },
+      inside("VOUCH-GUARD-AUDIT"),
+    ],
+    [
+      "Write",
+      { file_path: `${box.path(".claude/hooks")}/..\\..\\x.mjs`, content: "" },
+      inside("VOUCH-GUARD-INSTALLATION"),
+    ],
+    [
+      "Write",
+      { file_path: `${box.path("docs")}/..\\notes.md`, content: "" },
+      "allow",
+    ],
+    [
+      "Bash",
+      { command: `cd vouch/intents/${intent} && printf x > 'audit/..\\x'` },
+      inside("VOUCH-GUARD-AUDIT"),
+    ],
+    ["Bash", { command: "printf x > 'notes\\..\\x'" }, "allow"],
+  ];
+  t.plan(cases.length);
+  for (const [tool, input, expected] of cases)
+    t.assert.equal(
+      await box.decide(tool, input),
+      expected,
+      JSON.stringify(input).slice(-80),
+    );
+});
+
+test("guardWrites treats git commands that are not read-only as removers of the directories they name", async (t) => {
+  const box = await guardBox(t);
+  /** @type {[string,string][]} */
+  const cases = [
+    [`git rm -r vouch/intents/${intent}`, "VOUCH-GUARD-AUDIT"],
+    ["git checkout -- vouch", "VOUCH-GUARD-AUDIT"],
+    ["git checkout -- .", "VOUCH-GUARD-AUDIT"],
+    ["git restore -s HEAD~1 vouch", "VOUCH-GUARD-AUDIT"],
+    ["git clean -fdx vouch", "VOUCH-GUARD-AUDIT"],
+    ["git -C vouch checkout -- .", "VOUCH-GUARD-AUDIT"],
+    ["git add vouch && git commit -m record", "allow"],
+    ["git log -- vouch", "allow"],
+    ["git checkout main && git stash", "allow"],
+    ["git rm --cached notes.md", "allow"],
+  ];
+  t.plan(cases.length);
+  for (const [command, expected] of cases)
+    t.assert.equal(await box.decide("Bash", { command }), expected, command);
+});
