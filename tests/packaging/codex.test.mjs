@@ -49,6 +49,7 @@ test("Codex distribution reproduces exact source bytes and registers every produ
   t.assert.deepEqual(Object.keys(settings.hooks), [
     "SessionStart",
     "UserPromptSubmit",
+    "PreToolUse",
   ]);
   const [registration] = settings.hooks.SessionStart;
   t.assert.equal(settings.hooks.SessionStart.length, 1);
@@ -69,9 +70,12 @@ test("Codex distribution reproduces exact source bytes and registers every produ
           [
             ...[
               text,
-              settings.hooks.UserPromptSubmit[0].hooks[0][
-                text === command.command ? "command" : "commandWindows"
-              ],
+              ...["UserPromptSubmit", "PreToolUse"].map(
+                (event) =>
+                  settings.hooks[event][0].hooks[0][
+                    text === command.command ? "command" : "commandWindows"
+                  ],
+              ),
             ]
               .join(" ")
               .matchAll(/vouch-[a-z-]+\.mjs/g),

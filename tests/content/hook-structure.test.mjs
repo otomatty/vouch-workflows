@@ -135,7 +135,8 @@ test("HOOK-13 budgets are measured only in performance files under the synthetic
   );
   t.plan(1 + performance.length * 2);
   t.assert.deepEqual(
-    files.filter((name) => source(name).includes("recordP95Ms")),
+    // Record and check budgets alike; a check hook guards tool calls.
+    files.filter((name) => /\b(?:record|check)P95Ms\b/.test(source(name))),
     performance,
     "HOOK-13: budget files",
   );

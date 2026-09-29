@@ -33,12 +33,14 @@ export async function run(main, options = {}) {
     if (!input) throw new Error("HOOK-14: invalid hook input");
     const context = options.context ?? readContext();
     const files = options.files ?? (await createFileStore(context.projectRoot));
-    await files.resolvePath(input.cwd);
+    // A failed containment check fails open, so a PreToolUse guard classifies paths itself.
+    const contained = input.hook_event_name !== "PreToolUse";
+    if (contained) await files.resolvePath(input.cwd);
     if ("tool_input" in input && Object.hasOwn(input.tool_input, "file_path")) {
       const path = input.tool_input.file_path;
       if (typeof path !== "string")
         throw new Error("HOOK-14: invalid file_path");
-      await files.resolvePath(path);
+      if (contained) await files.resolvePath(path);
     }
     const audit =
       options.audit ??
@@ -49,6 +51,7 @@ export async function run(main, options = {}) {
     const result = await main(input, {
       ...context,
       readText: (path) => files.readText(path),
+      locate: (path, from) => files.locate(path, from),
       ...(audit ? { audit } : {}),
     });
     if (!isHookResult(result))

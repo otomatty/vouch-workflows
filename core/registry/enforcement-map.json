@@ -272,6 +272,16 @@
           "status": "implemented",
           "path": "tests/packaging/hook-propagation.test.mjs",
           "claim": "Linux の Claude 2.1.283 / Codex 0.153.4 の非対話・対話 CLI で、変更していない配布登録の終了0（許可、fail-open、Intent 未指定）と終了2（遮断と理由）の親 CLI への伝播を、保存した観測で照合する。Codex exec で理由が表示されない2件は既知の不一致として固定する。スクリプト入力であり、人の同意やモデル評価ではない。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/vouch-guard-writes.test.mjs",
+          "claim": "書き込みガードの拒否は終了2と stderr の1行の VOUCH-GUARD-* 理由、許可・登録外のツール・他のイベントは終了0で出力なし、不正入力は HOOK-14 の終了0になることを検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/write-guard-native.test.mjs",
+          "claim": "Linux の Claude 2.1.284 / Codex 0.153.4 の非対話 CLI で、PreToolUse の終了2がツールを止め、Claude は「PreToolUse:<ツール> hook error」、Codex は「Command blocked by PreToolUse hook」に続けて理由をモデルへ返すことを、保存した観測で照合する。Windows・macOS・対話 CLI・他の版は未検証。"
         }
       ]
     },
@@ -378,6 +388,16 @@
           "status": "implemented",
           "path": "tests/hooks/vouch-doctor.test.mjs",
           "claim": "手動 doctor の欠損・登録改変・リンクの負例と、未配布入口の失敗を子プロセスで検査する。イベントフックの動作保証とは分ける。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/vouch-guard-writes.test.mjs",
+          "claim": "版付き Linux 採取から派生した synthetic 入力で、Claude の Write / Edit / Bash と Codex の apply_patch / Bash による監査ログ・ロックへの書き込みを終了2で拒否し、拒否した入力でどのファイルも変わらないこと、ロック中の更新を妨げず正規フックの追記が続くことを検査する。検査外の経路（生成したスクリプト、変数、eval、ハーネス外の人の編集）の遮断は証明しない。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/write-guard-native.test.mjs",
+          "claim": "Linux の Claude 2.1.284 / Codex 0.153.4 の非対話 CLI で、変更していない配布登録が監査ログへの書き込みを止めて理由をモデルへ返し、監査ログには起動フックの session.started だけが残る観測を照合する。PreToolUse を外した対照では同じ書き込みが監査ログに届く。スクリプト入力であり、人の承認やモデル評価ではない。"
         }
       ]
     },
@@ -563,6 +583,11 @@
           "status": "implemented",
           "path": ".github/workflows/ci.yml",
           "claim": "Windows の CI ジョブで TMP・TEMP を RUNNER_TEMP（作業ボリューム）に向ける。npm の各段階より前に設定することを tests/content/environment.test.mjs が検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/write-guard-performance.test.mjs",
+          "claim": "書き込みガード（検査系）のシェル書き込みの判定を、CPU 数 − 1 個の合成負荷の下で20回計測し、起動込みの p95 2秒未満を要求する。"
         }
       ]
     },
@@ -584,7 +609,7 @@
         {
           "status": "implemented",
           "path": "tests/unit/lib/io.test.mjs",
-          "claim": "共通 io の不正入力・例外・tool_input.file_path の検査呼び出しを確認する。root の別名で綴った cwd・file_path で main が呼ばれることも確認する。"
+          "claim": "共通 io の不正入力・例外・tool_input.file_path の型検査を確認する。root の別名で綴った cwd・file_path で main が呼ばれること、PreToolUse では包含の検査を main に委ねて locate を渡すことも確認する。"
         },
         {
           "status": "implemented",
@@ -600,6 +625,16 @@
           "status": "implemented",
           "path": "tests/registry/codex-capture.test.mjs",
           "claim": "Codex 0.153.4 の SessionStart / UserPromptSubmit の版・採取時 HEAD・原文との一致を検証。旧版不明9件は別に保持する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/unit/lib/guard.test.mjs",
+          "claim": "書き込みガードがツール入力のパス・パッチ・シェルの語を信頼せず、locate で実体へ対応付けて分類することを検査する。記号リンク・junction・root の別名・宛先のないリンク・ハードリンク・大文字小文字・末尾ドット・ADS・root 外の cwd を扱う。Windows の 8.3 短縮名・subst は CI の一時ディレクトリでのみ観測する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/unit/lib/fs.test.mjs",
+          "claim": "FileStore.locate が、リンク・root の別名・未作成のパス・root の外を例外にせず実体の位置・種類・リンク数を返し、書き込まず、予期しない I/O エラーは伝えることを検査する。"
         }
       ]
     },
@@ -1040,6 +1075,16 @@
           "status": "implemented",
           "path": "tests/content/runtime-inventory.test.mjs",
           "claim": "runtime レジストリでイベントフックと手動 doctor を分類し、すべての入口と core の .mjs / .json を列挙する。doctor は DIST-5 の診断コマンドでイベント登録対象外。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/write-guard.test.mjs",
+          "claim": "両ハーネスの PreToolUse 登録の matcher が write-guard.json のツール一覧と一致し、ガードの入口を指すこと、登録ファイルを保護対象として名指す配布記述を検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/scenario/write-guard-distribution.test.mjs",
+          "claim": "配布をコピーしたプロジェクトで、登録どおりのコマンドが配布ディレクトリ・監査・承認済み成果物への書き込みを拒否し、doctor の起動と下書きの編集を許し、起動フックの追記が続くことを検査する。"
         }
       ]
     },
@@ -1336,6 +1381,11 @@
           "status": "implemented",
           "path": "tests/registry/contract-fixture.test.mjs",
           "claim": "契約実行は一覧の実機 fixture と、その採取元を保ったまま同じ種別・版から派生した synthetic だけを受け付ける。版不明、未採取の種別、変更したのに synthetic でない入力、採取元のない・一致しない synthetic を TEST-7 で拒否する。runHook() も同じ判定を使う。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/registry/write-guard.test.mjs",
+          "claim": "書き込みガードが検査するツールは、一覧で artifact-guard に分類した版付き実機 fixture のある PreToolUse の種別と一致することを検査する。"
         }
       ]
     },
@@ -1390,6 +1440,11 @@
           "status": "implemented",
           "path": "docs/development/file-store-performance.md",
           "claim": "fs.mjs全体を変更前後で測定し、85.12%から92.59%、生存18件から10件、新規生存0件。lib全体の基準測定・夜間CI・Issue作成は未実施。"
+        },
+        {
+          "status": "implemented",
+          "path": "docs/development/write-guard.md",
+          "claim": "追加した areas・guard・shell と fs の locate 部分に限定して Stryker を測定。初回79.42%（生存278件）から、冗長な条件の削除とテストの追加で1274変異中1200検出、94.19%（生存74件）。生存の内訳を記録。lib 全体の変更前比較と夜間 CI / Issue 作成は未実施。"
         }
       ]
     },
@@ -1559,6 +1614,11 @@
           "status": "implemented",
           "path": "tests/hooks/vouch-record-intent-review.test.mjs",
           "claim": "明示入力に対する gate.opened / intent.approved の記録と版・入力識別子の整合性を検査する。状態変更・真正性保証・Build許可は未実装。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/unit/lib/guard.test.mjs",
+          "claim": "ファイル編集ツールとシェルによる approved の作成・承認済み成果物の変更を拒否し、下書きの編集を許すことを検査する。approved への正規の更新経路と承認の真正性は未実装で、この拒否を承認の証明には使わない。"
         }
       ]
     },
@@ -1592,7 +1652,17 @@
         },
         {
           "status": "pending",
-          "claim": "既存の audit lib の追記検査はあるが、ハーネスの全ツールによる手編集を遮断するフックと status のモデル評価は未実装。"
+          "claim": "登録していないツール、生成したスクリプトや変数などの間接経路、ハーネス外の人の編集による手編集の遮断と、status のモデル評価は未実装。形式の正しい偽の行は検出できない。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/vouch-guard-writes.test.mjs",
+          "claim": "登録したツールから監査ログ・ロック・配布の登録と実行物への書き込みを、内容や tool_input の actor 等の主張に関わらず拒否することを検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/write-guard-native.test.mjs",
+          "claim": "Linux の Claude 2.1.284 / Codex 0.153.4 で、監査ログ・登録ファイル・承認済みへの変更の遮断と、PreToolUse を外すと監査と approved への書き込みが届く対照を保存した観測で照合する。"
         }
       ]
     },

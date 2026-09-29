@@ -91,22 +91,27 @@ export async function projectHookTrust(executable, env, project, commands) {
   }
 }
 
+/** Registered events in the order their expected commands are passed. */
+const events = ["sessionStart", "userPromptSubmit", "preToolUse"];
+
 /** Exact event-command mapping before writing trust into the isolated home.
  * @param {import('../native-contracts.mjs').ListedHook[]} hooks
- * @param {string} source @param {string[]} commands @returns {string}
+ * @param {string} source @param {string[]} commands One per event, in `events` order.
+ * @returns {string}
  */
 export function projectHookConfig(hooks, source, commands) {
+  const expected = events.slice(0, commands.length);
   if (
-    hooks.length !== 2 ||
-    new Set(hooks.map((hook) => hook.eventName)).size !== 2 ||
+    hooks.length !== commands.length ||
+    new Set(hooks.map((hook) => hook.eventName)).size !== commands.length ||
     hooks.some(
       (hook) =>
         hook.source !== "project" ||
         hook.sourcePath !== source ||
         !hook.key.startsWith(`${source}:`) ||
         !/^sha256:[a-f0-9]{64}$/.test(hook.currentHash) ||
-        !["sessionStart", "userPromptSubmit"].includes(hook.eventName) ||
-        hook.command !== commands[hook.eventName === "sessionStart" ? 0 : 1],
+        !expected.includes(hook.eventName) ||
+        hook.command !== commands[expected.indexOf(hook.eventName)],
     )
   )
     throw new Error("NATIVE-HOOKS: unexpected registration; no trust written");

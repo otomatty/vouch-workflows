@@ -91,6 +91,12 @@ test("JSDoc rejects impossible decision and audit discriminants", (t) => {
           now: () => "2026-09-27T00:00:00Z",
           newId: () => "test",
           readText: async () => null,
+          locate: async () => ({
+            inside: null,
+            contains: false,
+            kind: "missing",
+            links: 0,
+          }),
         },
       ),
     ),

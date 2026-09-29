@@ -44,3 +44,41 @@ test("native trust rejects a foreign extra malformed or mismatched registration"
       /NATIVE-HOOKS/,
     );
 });
+
+test("native trust also accepts the reviewed guard definition when three commands are expected", (t) => {
+  const guarded = [...commands, "guard writes"];
+  const all = [
+    ...hooks,
+    {
+      key: `${source}:preToolUse:0:0`,
+      eventName: "preToolUse",
+      currentHash: `sha256:${"b".repeat(64)}`,
+      sourcePath: source,
+      source: "project",
+      command: "guard writes",
+    },
+  ];
+  t.plan(3);
+  t.assert.equal(
+    (projectHookConfig(all, source, guarded).match(/trusted_hash = /g) ?? [])
+      .length,
+    3,
+  );
+  t.assert.throws(
+    () => projectHookConfig(hooks, source, guarded),
+    /NATIVE-HOOKS/,
+  );
+  t.assert.throws(
+    () =>
+      projectHookConfig(
+        all.map((hook) =>
+          hook.eventName === "preToolUse"
+            ? { ...hook, command: "other" }
+            : hook,
+        ),
+        source,
+        guarded,
+      ),
+    /NATIVE-HOOKS/,
+  );
+});

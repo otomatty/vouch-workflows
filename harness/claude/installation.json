@@ -1,4 +1,5 @@
 {
   "harness": "claude",
-  "registration": "settings.json"
+  "registration": "settings.json",
+  "overrides": ["settings.local.json"]
 }

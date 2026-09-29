@@ -408,3 +408,46 @@ test("io supplies contained artifact reads instead of trusting a caller override
   t.assert.equal(observed, "draft bytes");
   t.assert.equal(port.output.code, 0);
 });
+
+test("io leaves PreToolUse paths to main and supplies the file store's locate", async (t) => {
+  const payload = promptFor(process.cwd()).payload;
+  /** @type {string[]} */ const resolved = [];
+  const events = ["PreToolUse", "PostToolUse"];
+  t.plan(events.length * 2 + 1);
+  for (const hook_event_name of events) {
+    const port = ports(
+      JSON.stringify({
+        ...payload,
+        cwd: "/outside/cwd",
+        hook_event_name,
+        tool_name: "Write",
+        tool_input: { file_path: "/outside/file" },
+        ...(hook_event_name === "PostToolUse" ? { tool_response: {} } : {}),
+      }),
+    );
+    port.options.files.resolvePath = async (path) => {
+      resolved.push(path);
+      if (path === "/outside/file")
+        throw new Error("FS-ESCAPE: outside project root");
+      return path;
+    };
+    let located;
+    await run(async (_input, ctx) => {
+      located = await ctx.locate("nested/file");
+      return { decision: "allow" };
+    }, port.options);
+    const pre = hook_event_name === "PreToolUse";
+    t.assert.deepEqual(
+      located,
+      pre
+        ? { inside: "nested/file", contains: false, kind: "missing", links: 0 }
+        : undefined,
+    );
+    t.assert.equal(port.output.stderr.includes("FS-ESCAPE"), !pre);
+  }
+  t.assert.deepEqual(
+    resolved,
+    ["/outside/cwd", "/outside/file"],
+    "only PostToolUse pre-checks",
+  );
+});

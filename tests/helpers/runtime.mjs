@@ -66,6 +66,19 @@ export function memoryFiles(initial = {}) {
     readText: async (path) => data.get(path) ?? null,
     updateText,
     writeText: async (path, text) => updateText(path, () => text),
+    // Keys are root-relative; the memory store has no links, aliases or outside paths.
+    locate: async (path) => {
+      const inside = path.replaceAll("\\", "/").replace(/^\.\/?/, "");
+      const directory = [...data.keys()].some((key) =>
+        key.startsWith(`${inside}/`),
+      );
+      return {
+        inside,
+        contains: inside === "",
+        kind: data.has(inside) ? "file" : directory ? "directory" : "missing",
+        links: data.has(inside) ? 1 : 0,
+      };
+    },
   };
 }
 

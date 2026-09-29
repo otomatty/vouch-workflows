@@ -22,6 +22,18 @@
           }
         ]
       }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "apply_patch|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "VOUCH_HARNESS=codex node \"${VOUCH_PROJECT_ROOT:?VOUCH_PROJECT_ROOT required}/.codex/hooks/vouch-guard-writes.mjs\"",
+            "commandWindows": "$env:VOUCH_HARNESS = 'codex'; & node \"$env:VOUCH_PROJECT_ROOT/.codex/hooks/vouch-guard-writes.mjs\"; exit $LASTEXITCODE"
+          }
+        ]
+      }
     ]
   }
 }
