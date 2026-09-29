@@ -22,7 +22,8 @@ const status = "status --porcelain -z -uall --no-renames";
 const branch = "status -b --porcelain -z -uno";
 
 /**
- * A Git double keyed by the arguments after the lock option; records every call.
+ * A Git double keyed by the arguments after the lock option; records every call. The checked-out
+ * branch vouch/260929-git reads as HEAD, as Git reads the current branch.
  * @param {Record<string,string|null>} overrides
  */
 function fakeGit(overrides = {}) {
@@ -40,7 +41,10 @@ function fakeGit(overrides = {}) {
     const key = args.slice(1).join(" ");
     calls.push(`${file} ${key} @${options.cwd}`);
     const steps = key.match(/^(?:-C \S+ )*/)?.[0] ?? "";
-    const answer = answers[key.slice(steps.length)];
+    const answer =
+      answers[
+        key.slice(steps.length).replace(/ vouch\/260929-git( |$)/, " HEAD$1")
+      ];
     return answer === null || answer === undefined
       ? { status: 128, stdout: "" }
       : { status: 0, stdout: answer };
