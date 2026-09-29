@@ -214,7 +214,15 @@ PR（otomatty/vouch-workflows#22）への Devin のレビューは3点を指摘�
 
 PowerShell で POSIX と読み方が異なるコマンド（`\"`、`<# #>`、復帰文字で終わるコメント）では、読み取り専用の判定が書き込みを見逃し得ることも分かりました。Windows のシェルは検査外・未検証の範囲にあり、限界の表に明記しました。
 
-修正後の `762c6e0` の `npm run check` は Linux / Node.js v22.22.2 で成功しました（35.2秒）。content / registry / packaging / scenario / unit / hooks は 33 / 53 / 35 / 13 / 138 / 50件、lib 全体の行 / 分岐 / 関数は 99.95 / 99.05 / 100%、areas・fs・guard・shell・words は各100%です。記録 p95 は 80.8 / 78.1 / 76.3ms、ガード p95 は 77.2ms、配布は142ファイルです。
+同じ PR への CodeRabbit のレビューは、さらに3点を指摘し、どれも再現しました。
+
+- Linux と macOS の `\` は名前の一部ですが、locate は `\` を区切りに置き換えていました。書き込みツールの `<監査ディレクトリ>/..\..\x` を root 直下と判定し、実際には監査ディレクトリの中にファイルができました。
+- apply_patch の Move は移動先を追加行だけで判定し、approved の行を持つ別のファイルを成果物の位置へ移せました。閉じる `---` 行を消して、本文の `status: approved` 行を frontmatter に入れる Update も通りました。
+- 読み取り専用でない git（`git rm -r`、`git checkout --`、`git restore`、`git clean`）が、root・`vouch`・Intent のディレクトリを名指しても拒否しませんでした。
+
+契約（`b508318`）、失敗する先行テスト（`54fdc3c`）、実装（`293da75`）の順に直しました。locate は `\` をその OS の読み方で解決し、ガードが `/` に置き換えた読み方も別に判定します。先行テストに合わせ、`\` を常に区切りとした locate の既存のテストの1ケースを、新しい契約に沿って直しています。
+
+修正後の `293da75` の `npm run check` は Linux / Node.js v22.22.2 で成功しました（33.0秒）。content / registry / packaging / scenario / unit / hooks は 33 / 53 / 35 / 13 / 142 / 50件、lib 全体の行 / 分岐 / 関数は 99.95 / 99.07 / 100%、areas・fs・guard・shell・words は各100%です。記録 p95 は 64.9 / 75.4 / 74.6ms、ガード p95 は 69.0ms、配布は142ファイルです。
 
 ### ミューテーション
 
