@@ -206,6 +206,8 @@ test("checkpoint modes come from rules.md frontmatter or the workflow default", 
     [rules("checkpoints: topic\ncheckpoints:"), null],
     [rules("checkpoints:\ncheckpoints: unit"), null],
     [rules("checkpoints : unit"), null],
+    [rules("checkpoints: unit\nold_checkpoints: topic"), "unit"],
+    [rules("checkpoints: topic\ncheckpointsX: unit"), "topic"],
     [`${rules("language: en")}checkpoints: unit\n`, null],
     [`﻿${rules("checkpoints: unit")}`, null],
   ];

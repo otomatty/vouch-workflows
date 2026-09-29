@@ -315,6 +315,7 @@ test("shell redirections and writers naming paths outside vouch wait for the app
     ["claude", "echo x > $(pwd)/vouch/notes.md"],
     ["codex", `echo done >> vouch/intents/${intent}/build-log.md`],
     ["claude", "FOO=1 mv old.js src/app.js"],
+    ["claude", "sed -ni 1p src/app.js"],
   ];
   t.plan(commands.length * 2);
   for (const [harness, command] of commands) {
@@ -339,4 +340,22 @@ test("shell redirections and writers naming paths outside vouch wait for the app
       command,
     );
   }
+});
+
+test("shell reasons name the destination or the unverifiable command, and readers with -i stay outside", async (t) => {
+  const files = { [artifact]: draft };
+  /** @param {string} command */
+  const reason = async (command) =>
+    (await guardBuild(tool("Bash", { command }), context(files))).reason ?? "";
+  t.plan(4);
+  t.assert.match(
+    await reason("echo x > src/app.js"),
+    /^VOUCH-BUILD-UNAPPROVED: Bash src\/app\.js; /,
+  );
+  t.assert.match(
+    await reason("echo x > $(pwd)/vouch/notes.md"),
+    /^VOUCH-BUILD-UNAPPROVED: Bash echo x > \$\(pwd\)\/vouch\/notes\.md; /,
+  );
+  t.assert.equal(await reason("grep -i todo src/app.js"), "");
+  t.assert.equal(await reason("sed -n s/x-i/y/p src/app.js"), "");
 });

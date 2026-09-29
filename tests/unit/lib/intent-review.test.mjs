@@ -225,7 +225,8 @@ test("confirmations record the digest of the confirmed part with derived identit
   const absent = await send("vouch confirm section nowhere");
   const rows = await audit.list();
   const [first] = rows;
-  t.plan(9);
+  t.plan(10);
+  t.assert.equal(accepted.decision, "deny");
   t.assert.match(
     reason(accepted),
     /^VOUCH-CHECKPOINT-RECORDED: evt_[a-f0-9]{64}; acceptance$/,
@@ -310,6 +311,7 @@ test("an approval applies only from its own input once rules, plan and every cur
   const unapplied = files.data.get(artifact);
   const again = await send(`vouch approve ${gate.id}`, {
     at: "2026-09-29T00:00:05Z",
+    identity: "approve-b",
   });
   const approvals = (await audit.list()).filter(
     (row) => row.type === "intent.approved",
@@ -326,7 +328,10 @@ test("an approval applies only from its own input once rules, plan and every cur
   );
   t.assert.equal("approve" in last, false);
   t.assert.equal(unapplied, planned());
-  t.assert.match(reason(again), /^VOUCH-APPROVAL-APPLIED: /);
+  t.assert.equal(
+    reason(again).split(";")[0],
+    `VOUCH-APPROVAL-APPLIED: ${newId("s-1", JSON.stringify(["intent.approved", "claude", intent, "prompt_id", "approve-b"]))}`,
+  );
   t.assert.deepEqual("approve" in again && again.approve, {
     sha256: snapshotIntent(planned())?.revision.sha256,
   });
