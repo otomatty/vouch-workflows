@@ -55,6 +55,7 @@ test("Claude distribution reproduces exact source bytes and registers every prod
   t.assert.deepEqual(Object.keys(settings.hooks), [
     "SessionStart",
     "UserPromptSubmit",
+    "PreToolUse",
   ]);
   const [registration] = settings.hooks.SessionStart;
   t.assert.equal(settings.hooks.SessionStart.length, 1);
@@ -71,6 +72,7 @@ test("Claude distribution reproduces exact source bytes and registers every prod
   const registered = [
     ...registration.hooks,
     ...settings.hooks.UserPromptSubmit[0].hooks,
+    ...settings.hooks.PreToolUse[0].hooks,
   ]
     .map((/** @type {{args:string[]}} */ hook) =>
       hook.args[0]?.split("/").at(-1),

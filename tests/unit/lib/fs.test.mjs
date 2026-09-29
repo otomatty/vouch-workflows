@@ -321,3 +321,157 @@ test("descriptor writer completes partial writes, retries a refused write and pr
     closed,
   );
 });
+
+test("file store locates spelled paths at their real place without refusing links or outside paths", async (t) => {
+  const box = await sandbox(t, { git: false });
+  const other = await sandbox(t, { git: false });
+  await box.write("nested/file", "x");
+  await box.write("nested/shared", "y");
+  await fs.link(box.path("nested/shared"), box.path("nested/hard"));
+  await fs.symlink(box.path("nested/file"), box.path("file-link"));
+  await fs.symlink(box.path("nested"), box.path("dir-link"), "junction");
+  await fs.symlink(other.path("elsewhere"), box.path("dangling"));
+  await fs.symlink(box.path("loop-b"), box.path("loop-a"));
+  await fs.symlink(box.path("loop-a"), box.path("loop-b"));
+  await fs.symlink(box.root, other.path("alias"), "junction");
+  await fs.symlink(box.path("nested/file"), other.path("inbound"));
+  const files = await createFileStore(box.root);
+  /** @type {[string, string|undefined, import('../../../core/hooks/lib/runtime-contracts.mjs').PathLocation][]} */
+  const cases = [
+    [
+      "nested/file",
+      undefined,
+      { inside: "nested/file", contains: false, kind: "file", links: 1 },
+    ],
+    [
+      "nested/hard",
+      undefined,
+      { inside: "nested/hard", contains: false, kind: "file", links: 2 },
+    ],
+    [
+      "nested",
+      undefined,
+      { inside: "nested", contains: false, kind: "directory", links: 0 },
+    ],
+    [
+      "a/b/c",
+      undefined,
+      { inside: "a/b/c", contains: false, kind: "missing", links: 0 },
+    ],
+    [
+      ".",
+      undefined,
+      { inside: "", contains: true, kind: "directory", links: 0 },
+    ],
+    [
+      "..",
+      undefined,
+      { inside: null, contains: true, kind: "directory", links: 0 },
+    ],
+    [
+      other.path("x"),
+      undefined,
+      { inside: null, contains: false, kind: "missing", links: 0 },
+    ],
+    [
+      "file-link",
+      undefined,
+      { inside: "nested/file", contains: false, kind: "file", links: 1 },
+    ],
+    [
+      "dir-link/new/deeper",
+      undefined,
+      {
+        inside: "nested/new/deeper",
+        contains: false,
+        kind: "missing",
+        links: 0,
+      },
+    ],
+    [
+      "dangling",
+      undefined,
+      { inside: "dangling", contains: false, kind: "unresolved", links: 0 },
+    ],
+    [
+      "loop-a",
+      undefined,
+      { inside: "loop-a", contains: false, kind: "unresolved", links: 0 },
+    ],
+    [
+      join(other.path("alias"), "nested", "file"),
+      undefined,
+      { inside: "nested/file", contains: false, kind: "file", links: 1 },
+    ],
+    [
+      other.path("inbound"),
+      undefined,
+      { inside: "nested/file", contains: false, kind: "file", links: 1 },
+    ],
+    [
+      "file",
+      box.path("nested"),
+      { inside: "nested/file", contains: false, kind: "file", links: 1 },
+    ],
+    [
+      "../nested/file",
+      other.path("alias/dir-link"),
+      { inside: "nested/file", contains: false, kind: "file", links: 1 },
+    ],
+    [
+      "nested\\file",
+      undefined,
+      { inside: "nested/file", contains: false, kind: "file", links: 1 },
+    ],
+    [
+      "bad\0name",
+      undefined,
+      { inside: "bad\0name", contains: false, kind: "missing", links: 0 },
+    ],
+  ];
+  t.plan(cases.length + 1);
+  for (const [path, from, expected] of cases)
+    t.assert.deepEqual(await files.locate(path, from), expected, path);
+  t.assert.equal(await box.read("nested/file"), "x", "locating never writes");
+});
+
+test("file store locate reports other node types and propagates unexpected lookup failures", async (t) => {
+  const box = await sandbox(t, { git: false });
+  await box.write("device", "");
+  const failure = Object.assign(new Error("denied"), { code: "EACCES" });
+  const special = await createFileStore(box.root, {
+    ...fs,
+    stat: /** @type {typeof fs.stat} */ (
+      /** @type {unknown} */ (
+        async (/** @type {string} */ path) => {
+          const info = await fs.stat(path);
+          return path.endsWith("device")
+            ? Object.assign(Object.create(info), {
+                isFile: () => false,
+                isDirectory: () => false,
+              })
+            : info;
+        }
+      )
+    ),
+  });
+  const refusing = await createFileStore(box.root, {
+    ...fs,
+    lstat: /** @type {typeof fs.lstat} */ (
+      /** @type {unknown} */ (
+        async (/** @type {string} */ path) => {
+          if (path.endsWith("blocked")) throw failure;
+          return fs.lstat(path);
+        }
+      )
+    ),
+  });
+  t.plan(2);
+  t.assert.deepEqual(await special.locate("device"), {
+    inside: "device",
+    contains: false,
+    kind: "other",
+    links: 0,
+  });
+  await t.assert.rejects(refusing.locate("blocked/file"), failure);
+});
