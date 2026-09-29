@@ -490,3 +490,32 @@ test("deny reasons stay on one bounded line whatever the subject spells", async 
   t.assert.equal(reason(result).length <= 600, true);
   t.assert.doesNotMatch(reason(result), /\n/);
 });
+
+test("pull request merges through the GitHub CLI deny with or without an Intent", async (t) => {
+  const denied = [
+    "gh pr merge 23 --squash",
+    "gh pr merge --auto --merge",
+    "git push origin topic && gh pr merge",
+  ];
+  const allowed = ["gh pr view 23", "gh pr create --fill", "git merge main"];
+  t.plan(denied.length * 2 + allowed.length);
+  for (const command of denied)
+    for (const scope of [intent, ""])
+      t.assert.match(
+        reason(
+          await guardGit(
+            bash(command),
+            context(undefined, { intent: scope }),
+            fakeGit().execute,
+          ),
+        ),
+        /^VOUCH-GIT-MERGE: Bash gh pr merge.*; a person merges the pull request after reading the Brief$/,
+        `${command} ${scope}`,
+      );
+  for (const command of allowed)
+    t.assert.deepEqual(
+      await guardGit(bash(command), context(), fakeGit().execute),
+      { decision: "allow" },
+      command,
+    );
+});

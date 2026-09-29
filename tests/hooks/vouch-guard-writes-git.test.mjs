@@ -5,7 +5,7 @@ import { tree } from "../helpers/packaging.mjs";
 
 // Git push and commit checks through the registered guard: docs/development/git-guard.md.
 
-test("pushes to main deny in both harnesses with or without an Intent, and other pushes pass", async (t) => {
+test("pushes to main and pull request merges deny in both harnesses with or without an Intent, and other pushes pass", async (t) => {
   const box = await gitBox(t);
   /** @type {[string,'claude'|'codex',string|undefined][]} */
   const denied = [
@@ -24,11 +24,16 @@ test("pushes to main deny in both harnesses with or without an Intent, and other
     box.guard("git push", { harness: "codex" }),
   ];
   gitIn(box.root, "checkout", "-q", "main");
+  const merge = box.guard("gh pr merge 23 --squash", { harness: "codex" });
   const onMain = [
     box.guard("git push"),
     box.guard("git push origin HEAD", { intent: "" }),
   ];
-  t.plan(results.length * 2 + allowed.length + onMain.length);
+  t.plan(results.length * 2 + allowed.length + onMain.length + 1);
+  t.assert.equal(
+    merge.stderr,
+    "VOUCH-GIT-MERGE: Bash gh pr merge 23 --squash; a person merges the pull request after reading the Brief\n",
+  );
   for (const result of results) {
     t.assert.equal(result.exitCode, 2);
     t.assert.match(
