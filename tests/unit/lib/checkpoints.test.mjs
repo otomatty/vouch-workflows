@@ -74,6 +74,57 @@ test("plans read Unit IDs, risk and design identifiers from the first plan table
   );
 });
 
+test("compact or aligned separators, indentation and trailing spaces read the same plan", (t) => {
+  const plan = planned();
+  t.plan(4);
+  t.assert.deepEqual(
+    readPlan(
+      plan.replace(
+        "| --- | --- | --- | --- | --- |",
+        "|---|:---:|---|---:|:---|",
+      ),
+    ),
+    readPlan(plan),
+  );
+  t.assert.deepEqual(
+    readPlan(
+      plan
+        .replace("## Plan\n", "## Plan\nColumns: Unit | Risk |\n")
+        .replace(/(\| U1 .*\n)/, "$1Prose after the table |\n"),
+    ),
+    readPlan(plan),
+  );
+  t.assert.deepEqual(readPlan(plan.replace(/^\|/gm, "  |")), readPlan(plan));
+  t.assert.deepEqual(readPlan(plan.replace(/\|\n/g, "|   \n")), readPlan(plan));
+});
+
+test("plan errors name the row and the identifier that is wrong", (t) => {
+  /** @param {string[][]} rows */
+  const error = (rows) =>
+    /** @type {{error:string}} */ (readPlan(planned(rows))).error;
+  t.plan(5);
+  t.assert.equal(
+    /** @type {{error:string}} */ (readPlan("")).error,
+    "a plan table with Unit rows is required",
+  );
+  t.assert.equal(
+    error([["", "L", "not-required"]]),
+    "row: a unique Unit ID is required",
+  );
+  t.assert.equal(
+    error([["U 1", "L", "not-required"]]),
+    "U 1: a unique Unit ID is required",
+  );
+  t.assert.equal(
+    error([["U1", "Low", "not-required"]]),
+    "U1: risk must start with L, M or H",
+  );
+  t.assert.equal(
+    error([["U1", "L", "maybe"]]),
+    "U1: design must start with required or not-required",
+  );
+});
+
 test("an H Unit requires Design even when every row declares none", (t) => {
   t.plan(2);
   const result = readPlan(planned([["U1", "H: schema", "required: contract"]]));
@@ -112,6 +163,18 @@ test("placeholder, ambiguous and malformed plans are errors, never defaults", (t
     plan.replace(/\| U1 .*\n/, "|  | AC-1 | src | L | not-required |\n"),
     plan.replace(/\| --- .*\n\| U1 .*\n/, ""),
     "",
+    plan.replace(
+      "| --- | --- | --- | --- | --- |\n",
+      "| U0 | AC-1 | src | L | not-required |\n",
+    ),
+    plan.replace(
+      "| --- | --- | --- | --- | --- |",
+      "| --- | --- | --- | --- | --- | extra",
+    ),
+    plan.replace(
+      "| --- | --- | --- | --- | --- |",
+      "x| --- | --- | --- | --- | --- |",
+    ),
     `${plan.replace(/\| U1 .*\n/, "")}`.replace(
       "| --- | --- | --- | --- | --- |",
       "| --- | --- | --- | --- | --- |\nnot a row",
@@ -138,6 +201,8 @@ test("checkpoint modes come from rules.md frontmatter or the workflow default", 
     [rules("checkpoints: unit\ncheckpoints: topic"), null],
     [rules("checkpoints: Topic"), null],
     ["---\ncheckpoints: unit\n", null],
+    [rules("old_checkpoints: unit"), null],
+    [rules("checkpoints: unit extra"), null],
     [`${rules("language: en")}checkpoints: unit\n`, null],
     [`﻿${rules("checkpoints: unit")}`, null],
   ];

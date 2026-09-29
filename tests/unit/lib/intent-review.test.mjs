@@ -453,3 +453,69 @@ test("approval input needs a matching nonsynthetic gate and ordered times", asyn
   );
   t.assert.equal((await audit.list()).length, 1);
 });
+
+test("gates derive their identity, and unsupported drafts are refused with a denial", async (t) => {
+  const { send, files, audit } = project({ [artifact]: planned() });
+  const opened = await send("vouch review", { identity: "open-a" });
+  const [gate] = await audit.list();
+  files.data.set(artifact, "unknown format\n");
+  const unsupported = await send("vouch confirm acceptance");
+  t.plan(5);
+  t.assert.equal(opened.decision, "deny");
+  t.assert.match(
+    reason(opened),
+    /^VOUCH-REVIEW-RECORDED: evt_[a-f0-9]{64}; draft review opened; no status change$/,
+  );
+  t.assert.equal(
+    gate?.id,
+    newId(
+      "s-1",
+      JSON.stringify(["gate.opened", "claude", intent, "prompt_id", "open-a"]),
+    ),
+  );
+  t.assert.equal(unsupported.decision, "deny");
+  t.assert.match(reason(unsupported), /^VOUCH-REVIEW-DRAFT/);
+});
+
+test("a pending approval says what is missing, and a second gate gets its own approval", async (t) => {
+  const { send, audit } = project({ [artifact]: planned() });
+  await send("vouch review");
+  await send("vouch review");
+  const [first, second] = await audit.list();
+  await send(`vouch approve ${first?.id}`);
+  const pending = await send("vouch confirm acceptance");
+  const other = await send(`vouch approve ${second?.id}`);
+  const approvals = (await audit.list()).filter(
+    (row) => row.type === "intent.approved",
+  );
+  t.plan(5);
+  t.assert.match(
+    reason(pending),
+    /; acceptance; approval pending: checkpoints scope, units$/,
+  );
+  t.assert.equal("approve" in pending, false);
+  t.assert.equal(other.events?.length, 1);
+  t.assert.equal(approvals.length, 2);
+  t.assert.deepEqual(
+    approvals.map((row) => row.type === "intent.approved" && row.parent),
+    [first?.id, second?.id],
+  );
+});
+
+test("an M plan that declares Design applies once design.md is confirmed", async (t) => {
+  const { send, files, audit } = project({
+    [artifact]: planned([["U1", "M: internal", "required: diagram"]]),
+    [design]: "---\nstatus: draft\n---\n# Design\n",
+  });
+  for (const target of ["acceptance", "scope", "units", "design"])
+    await send(`vouch confirm ${target}`);
+  await send("vouch review");
+  const gate = (await audit.list()).find((row) => row.type === "gate.opened");
+  const applied = await send(`vouch approve ${gate?.id}`);
+  t.plan(2);
+  t.assert.match(reason(applied), /^VOUCH-APPROVAL-APPLIED: /);
+  t.assert.equal(
+    snapshotIntent(files.data.get(artifact) ?? "")?.status,
+    "approved",
+  );
+});

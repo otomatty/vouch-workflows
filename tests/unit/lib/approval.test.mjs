@@ -330,6 +330,10 @@ test("an approval counts only with derived identity, its own gate and matching r
       { ...gate, id: approval.id },
       { ...approval, parent: approval.id },
     ],
+    [
+      { ...approval, parent: approval.id },
+      { ...gate, id: approval.id },
+    ],
     [{ ...gate, revision: undefined }, approval],
     [gate, legacy],
     [gate, { ...approval, type: "question.defaulted" }],

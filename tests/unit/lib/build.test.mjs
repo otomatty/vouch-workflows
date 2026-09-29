@@ -247,3 +247,44 @@ test("unreadable evidence denies instead of failing open", async (t) => {
       /^VOUCH-BUILD-UNAPPROVED: Write src\/app\.js; .*unreadable/,
     );
 });
+
+test("only file edit tools, only the Intent's own artifacts, and a sanitized target are considered", async (t) => {
+  const files = { [artifact]: draft };
+  const edit = await guardBuild(
+    tool("Edit", { file_path: "src/app.js", old_string: "a", new_string: "b" }),
+    context(files),
+  );
+  const shell = await guardBuild(
+    tool("Bash", { command: "true", file_path: "src/app.js" }),
+    context(files),
+  );
+  const nested = await guardBuild(
+    write(`vouch/intents/${intent}/notes/build-log.md`),
+    context(files),
+  );
+  const control = await guardBuild(
+    write(`src/a\u0007${"x".repeat(300)}.js`),
+    context(files),
+  );
+  const approvedFiles = { [artifact]: approved, [audit]: jsonl([gate]) };
+  const missing = await guardBuild(write("src/app.js"), context(approvedFiles));
+  t.plan(6);
+  t.assert.match(
+    edit.reason ?? "",
+    /^VOUCH-BUILD-UNAPPROVED: Edit src\/app\.js; /,
+  );
+  t.assert.deepEqual(shell, { decision: "allow" });
+  t.assert.deepEqual(nested, { decision: "allow" });
+  t.assert.match(
+    control.reason ?? "",
+    /^VOUCH-BUILD-UNAPPROVED: Write src\/a\?x{194}; /,
+  );
+  t.assert.equal(
+    missing.reason,
+    `VOUCH-BUILD-UNAPPROVED: Write src/app.js; implementation waits for an approved plan (no approval evidence for revision ${gate.revision?.sha256.slice(0, 12)})`,
+  );
+  t.assert.match(
+    (await guardBuild(write("src/app.js"), context({}))).reason ?? "",
+    /\(no intent\.md\)$/,
+  );
+});
