@@ -424,7 +424,13 @@ test("unprovenTip asks for a passing DoD at the last code commit once an impleme
   const feat = commit("3", "feat(U1): app");
   const notes = commit("9", "docs(U1): log", [["M", "vouch/log.md"]]);
   const green = commit("4", "fix(U2): repair");
-  t.plan(6);
+  const mixed = commit("7", "fix(U1): both", [
+    ["M", "src/app.js"],
+    ["M", "vouch/log.md"],
+  ]);
+  t.plan(8);
+  t.assert.deepEqual(unprovenTip([contract, mixed], proven), mixed);
+  t.assert.deepEqual(unprovenTip([commit("8", "wip"), feat], proven), feat);
   t.assert.equal(unprovenTip([contract], proven), null, "no implementation");
   t.assert.equal(
     unprovenTip([contract, commit("5", "refactor(U1): x")], proven),
