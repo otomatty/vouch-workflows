@@ -1474,7 +1474,7 @@
         {
           "status": "implemented",
           "path": "docs/development/approval-boundary.md",
-          "claim": "追加した checkpoints・build・intent-review と、approval・io・audit の変更部分に限定して Stryker を測定。765変異中738検出、生存27、96.47%。生存理由を記録。lib 全体の変更前比較と夜間 CI / Issue 作成は未実施。"
+          "claim": "追加した checkpoints・build・intent-review と、approval・io・audit の変更部分に限定して Stryker を測定。レビューへの修正後に767変異中736検出、生存31、95.96%。生存理由を記録。lib 全体の変更前比較と夜間 CI / Issue 作成は未実施。"
         }
       ]
     },
@@ -1633,7 +1633,7 @@
         },
         {
           "status": "pending",
-          "claim": "承認済み計画の遮断はファイル編集ツールに限る。シェル・登録していないツール・サブエージェントの未採取経路、builder の起動（#8）、commit・push・PR マージの検査（#6）は未実装。人の同意の真正性はハーネスの入力 ID と明示入力の完全一致に依存し、stdin の偽装や登録外の経路での監査の編集は区別できない。"
+          "claim": "承認済み計画の遮断は、ファイル編集ツールと、シェルのリダイレクト・writers（cp、mv、tee など）・sed -i に限る。writers にないプログラム・bash -c・eval、登録していないツール、サブエージェントの未採取経路、builder の起動（#8）、commit・push・PR マージの検査（#6）は未実装。人の同意の真正性はハーネスの入力 ID と明示入力の完全一致に依存し、stdin の偽装や登録外の経路での監査の編集は区別できない。"
         },
         {
           "status": "implemented",
@@ -1658,17 +1658,17 @@
         {
           "status": "implemented",
           "path": "tests/hooks/vouch-record-intent-approval.test.mjs",
-          "claim": "版付き採取から派生した両ハーネスの入力で、確認点と承認の記録、確認点がそろった時だけの同じ版の approved への更新、古い確認・task-notification の中継・類似レコード・再送・付け替え・破損の負例、L でも確認点が必要で PR の記録を作らないことを検査する。"
+          "claim": "版付き採取から派生した両ハーネスの入力で、確認点と承認の記録、その入力自身の承認記録で確認点がそろった時だけの同じ版の approved への更新、確認や後の入力で既存の承認記録を有効にしないこと、古い確認・task-notification の中継・類似レコード・再送・付け替え・破損の負例、L でも確認点が必要で PR の記録を作らないことを検査する。"
         },
         {
           "status": "implemented",
           "path": "tests/unit/lib/build.test.mjs",
-          "claim": "Build 開始の判定を、vouch/ の外と Build・Verify 成果物への書き込み、証跡のない approved・古い版・読めない証跡の拒否、承認済み計画での許可で検査する。"
+          "claim": "Build 開始の判定を、vouch/ の外と Build・Verify 成果物への書き込み（ファイル編集ツールとシェルのリダイレクト・writers・sed -i）、証跡のない approved・古い版・読めない証跡の拒否、承認済み計画での許可、ファイルを名指さないコマンドの許可で検査する。"
         },
         {
           "status": "implemented",
           "path": "tests/hooks/vouch-guard-writes-build.test.mjs",
-          "claim": "Claude の Write / Edit と Codex の apply_patch の派生入力で、承認前の実装の書き込みの拒否と承認後の許可、証跡のない approved・編集された approved・破損した監査の拒否を子プロセスで検査する。シェルは検査外であることも固定する。"
+          "claim": "Claude の Write / Edit / Bash と Codex の apply_patch / Bash の派生入力で、承認前の実装の書き込みの拒否と承認後の許可、証跡のない approved・編集された approved・破損した監査の拒否を子プロセスで検査する。"
         },
         {
           "status": "implemented",
