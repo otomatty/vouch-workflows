@@ -1440,6 +1440,11 @@
           "status": "implemented",
           "path": "docs/development/file-store-performance.md",
           "claim": "fs.mjs全体を変更前後で測定し、85.12%から92.59%、生存18件から10件、新規生存0件。lib全体の基準測定・夜間CI・Issue作成は未実施。"
+        },
+        {
+          "status": "implemented",
+          "path": "docs/development/write-guard.md",
+          "claim": "追加した areas・guard・shell と fs の locate 部分に限定して Stryker を測定。初回79.42%（生存278件）から、冗長な条件の削除とテストの追加で1274変異中1200検出、94.19%（生存74件）。生存の内訳を記録。lib 全体の変更前比較と夜間 CI / Issue 作成は未実施。"
         }
       ]
     },

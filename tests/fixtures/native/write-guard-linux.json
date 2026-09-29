@@ -5,7 +5,7 @@
   "humanApproval": false,
   "modelEvaluation": false,
   "date": "2026-09-29",
-  "commit": "9707532",
+  "commit": "3541537",
   "script": "scripts/check-write-guard.mjs",
   "runs": [
     {
@@ -68,7 +68,7 @@
           "case": "read",
           "tool": "Bash",
           "reason": null,
-          "result": "{\"id\":\"evt_59e700a05369d790591b43f2d9ed3966f14385def9d22090b2872e2561757282\",\"v\":1,\"type\":\"session.started\",\"ts\":\"2026-09-29T02:10:30.859Z\",\"actor\":\"hook\",\"harness\":\"claude\",\"intent\":\"260929-write-guard\",\"session\":\"7a871deb-796a-4a3b-8d8d-4a071df8fb1e\"}",
+          "result": "{\"id\":\"evt_e03a87e23a0e2a1812f6b642cc7300747c3c2bd6309d9e87d88cc950b8624284\",\"v\":1,\"type\":\"session.started\",\"ts\":\"2026-09-29T02:38:02.196Z\",\"actor\":\"hook\",\"harness\":\"claude\",\"intent\":\"260929-write-guard\",\"session\":\"1091f63a-4ffe-4a59-83e9-c370feb85ed5\"}",
           "changed": false,
           "expected": true
         }
@@ -210,7 +210,7 @@
           "case": "draft",
           "tool": "apply_patch",
           "reason": null,
-          "result": "Script completed\nWall time 0.3 seconds\nOutput:\n\nOK {}",
+          "result": "Script completed\nWall time 0.2 seconds\nOutput:\n\nOK {}",
           "changed": true,
           "expected": true
         },
@@ -218,7 +218,7 @@
           "case": "read",
           "tool": "Bash",
           "reason": null,
-          "result": "Script completed\nWall time 0.1 seconds\nOutput:\n\nOK {\"chunk_id\":\"d37620\",\"wall_time_seconds\":0.000005479,\"exit_code\":0,\"original_token_count\":64,\"output\":\"{\\\"id\\\":\\\"evt_8a746cb31621b6043961439900b556d5ca930e164b5d7801feb52301013422ab\\\",\\\"v\\\":1,\\\"type\\\":\\\"session.started\\\",\\\"ts\\\":\\\"2026-09-29T02:10:35.201Z\\\",\\\"actor\\\":\\\"hook\\\",\\\"harness\\\":\\\"codex\\\",\\\"intent\\\":\\\"260929-write-guard\\\",\\\"session\\\":\\\"01a0eaed-9999-7561-9e10-30c891df79f3\\\"}\\n\"}",
+          "result": "Script completed\nWall time 0.1 seconds\nOutput:\n\nOK {\"chunk_id\":\"b0aecd\",\"wall_time_seconds\":0.000005086,\"exit_code\":0,\"original_token_count\":64,\"output\":\"{\\\"id\\\":\\\"evt_883caa96e3dc1fbddab7c70505abd3db2946e63e1c9db3eb208924049ef4b1e5\\\",\\\"v\\\":1,\\\"type\\\":\\\"session.started\\\",\\\"ts\\\":\\\"2026-09-29T02:38:05.910Z\\\",\\\"actor\\\":\\\"hook\\\",\\\"harness\\\":\\\"codex\\\",\\\"intent\\\":\\\"260929-write-guard\\\",\\\"session\\\":\\\"01a0eb06-c9c4-7b02-af14-85456c913f5f\\\"}\\n\"}",
           "changed": false,
           "expected": true
         }
@@ -252,7 +252,7 @@
           "case": "audit-shell",
           "tool": "Bash",
           "reason": null,
-          "result": "Script completed\nWall time 0.1 seconds\nOutput:\n\nOK {\"chunk_id\":\"3ffd6f\",\"wall_time_seconds\":0.00000539,\"exit_code\":0,\"original_token_count\":0,\"output\":\"\"}",
+          "result": "Script completed\nWall time 0.1 seconds\nOutput:\n\nOK {\"chunk_id\":\"c29d24\",\"wall_time_seconds\":0.000003467,\"exit_code\":0,\"original_token_count\":0,\"output\":\"\"}",
           "changed": true,
           "expected": true
         },
@@ -260,7 +260,7 @@
           "case": "link",
           "tool": "apply_patch",
           "reason": null,
-          "result": "Script completed\nWall time 0.2 seconds\nOutput:\n\nOK {}",
+          "result": "Script completed\nWall time 0.1 seconds\nOutput:\n\nOK {}",
           "changed": true,
           "expected": true
         },
@@ -276,7 +276,7 @@
           "case": "registration",
           "tool": "apply_patch",
           "reason": null,
-          "result": "Script completed\nWall time 0.1 seconds\nOutput:\n\nERR patch rejected: writing outside of the project; rejected by user approval settings",
+          "result": "Script completed\nWall time 0.0 seconds\nOutput:\n\nERR patch rejected: writing outside of the project; rejected by user approval settings",
           "changed": false,
           "expected": false
         },
@@ -284,7 +284,7 @@
           "case": "draft",
           "tool": "apply_patch",
           "reason": null,
-          "result": "Script completed\nWall time 0.2 seconds\nOutput:\n\nOK {}",
+          "result": "Script completed\nWall time 0.1 seconds\nOutput:\n\nOK {}",
           "changed": true,
           "expected": true
         },
@@ -292,7 +292,7 @@
           "case": "read",
           "tool": "Bash",
           "reason": null,
-          "result": "Script completed\nWall time 0.1 seconds\nOutput:\n\nOK {\"chunk_id\":\"6e8132\",\"wall_time_seconds\":0.000004785,\"exit_code\":0,\"original_token_count\":202,\"output\":\"{\\\"id\\\":\\\"evt_94bc1c3dde0a52805bda722c84cce9f38518fe966f915caf1517712190379ef1\\\",\\\"v\\\":1,\\\"type\\\":\\\"session.started\\\",\\\"ts\\\":\\\"2026-09-29T02:10:37.489Z\\\",\\\"actor\\\":\\\"hook\\\",\\\"harness\\\":\\\"codex\\\",\\\"intent\\\":\\\"260929-write-guard\\\",\\\"session\\\":\\\"01a0eaed-a282-75c3-a1ba-ffec95942342\\\"}\\n{\\\"id\\\":\\\"evt_forged_file\\\",\\\"v\\\":1,\\\"type\\\":\\\"intent.approved\\\",\\\"ts\\\":\\\"2026-09-29T00:00:00.000Z\\\",\\\"actor\\\":\\\"human\\\",\\\"intent\\\":\\\"260929-write-guard\\\",\\\"sour",
+          "result": "Script completed\nWall time 0.1 seconds\nOutput:\n\nOK {\"chunk_id\":\"00f1f5\",\"wall_time_seconds\":0.000003953,\"exit_code\":0,\"original_token_count\":202,\"output\":\"{\\\"id\\\":\\\"evt_62aa41b5d956406c47e7206a123706e264912e6a56cfaf03ed6becefaf6063ab\\\",\\\"v\\\":1,\\\"type\\\":\\\"session.started\\\",\\\"ts\\\":\\\"2026-09-29T02:38:07.843Z\\\",\\\"actor\\\":\\\"hook\\\",\\\"harness\\\":\\\"codex\\\",\\\"intent\\\":\\\"260929-write-guard\\\",\\\"session\\\":\\\"01a0eb06-d16d-7250-ac61-86dc7bba82b6\\\"}\\n{\\\"id\\\":\\\"evt_forged_file\\\",\\\"v\\\":1,\\\"type\\\":\\\"intent.approved\\\",\\\"ts\\\":\\\"2026-09-29T00:00:00.000Z\\\",\\\"actor\\\":\\\"human\\\",\\\"intent\\\":\\\"260929-write-guard\\\",\\\"sour",
           "changed": false,
           "expected": true
         }
