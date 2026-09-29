@@ -1,0 +1,265 @@
+{
+  "v": 1,
+  "kind": "native-cli-observation",
+  "scripted": true,
+  "humanApproval": false,
+  "modelEvaluation": false,
+  "runs": [
+    {
+      "harness": "claude",
+      "cliVersion": "2.1.284 (Claude Code)",
+      "platform": "linux",
+      "nodeVersion": "v22.22.2",
+      "observations": [
+        {
+          "step": "write-before",
+          "exitCode": 0,
+          "promptRequests": 0,
+          "reason": "VOUCH-BUILD-UNAPPROVED",
+          "written": false,
+          "status": "draft"
+        },
+        {
+          "step": "confirm-acceptance",
+          "exitCode": 0,
+          "promptRequests": 0,
+          "reason": "VOUCH-CHECKPOINT-RECORDED",
+          "written": false,
+          "status": "draft"
+        },
+        {
+          "step": "confirm-scope",
+          "exitCode": 0,
+          "promptRequests": 0,
+          "reason": "VOUCH-CHECKPOINT-RECORDED",
+          "written": false,
+          "status": "draft"
+        },
+        {
+          "step": "confirm-units",
+          "exitCode": 0,
+          "promptRequests": 0,
+          "reason": "VOUCH-CHECKPOINT-RECORDED",
+          "written": false,
+          "status": "draft"
+        },
+        {
+          "step": "review",
+          "exitCode": 0,
+          "promptRequests": 0,
+          "reason": "VOUCH-REVIEW-RECORDED",
+          "written": false,
+          "status": "draft"
+        },
+        {
+          "step": "approve",
+          "exitCode": 0,
+          "promptRequests": 0,
+          "reason": "VOUCH-APPROVAL-APPLIED",
+          "written": false,
+          "status": "approved"
+        },
+        {
+          "step": "write-after",
+          "exitCode": 0,
+          "promptRequests": 0,
+          "reason": null,
+          "written": true,
+          "status": "approved"
+        }
+      ],
+      "audit": [
+        {
+          "type": "session.started",
+          "harness": "claude",
+          "synthetic": false
+        },
+        {
+          "type": "session.started",
+          "harness": "claude",
+          "synthetic": false
+        },
+        {
+          "type": "checkpoint.confirmed",
+          "harness": "claude",
+          "synthetic": false
+        },
+        {
+          "type": "session.started",
+          "harness": "claude",
+          "synthetic": false
+        },
+        {
+          "type": "checkpoint.confirmed",
+          "harness": "claude",
+          "synthetic": false
+        },
+        {
+          "type": "session.started",
+          "harness": "claude",
+          "synthetic": false
+        },
+        {
+          "type": "checkpoint.confirmed",
+          "harness": "claude",
+          "synthetic": false
+        },
+        {
+          "type": "session.started",
+          "harness": "claude",
+          "synthetic": false
+        },
+        {
+          "type": "gate.opened",
+          "harness": "claude",
+          "synthetic": false
+        },
+        {
+          "type": "session.started",
+          "harness": "claude",
+          "synthetic": false
+        },
+        {
+          "type": "intent.approved",
+          "harness": "claude",
+          "synthetic": false
+        },
+        {
+          "type": "session.started",
+          "harness": "claude",
+          "synthetic": false
+        }
+      ],
+      "revisionKept": true,
+      "errors": []
+    },
+    {
+      "harness": "codex",
+      "cliVersion": "codex-cli 0.153.4",
+      "platform": "linux",
+      "nodeVersion": "v22.22.2",
+      "observations": [
+        {
+          "step": "write-before",
+          "exitCode": 0,
+          "promptRequests": 0,
+          "reason": "VOUCH-BUILD-UNAPPROVED",
+          "written": false,
+          "status": "draft"
+        },
+        {
+          "step": "confirm-acceptance",
+          "exitCode": 0,
+          "promptRequests": 0,
+          "reason": null,
+          "written": false,
+          "status": "draft"
+        },
+        {
+          "step": "confirm-scope",
+          "exitCode": 0,
+          "promptRequests": 0,
+          "reason": null,
+          "written": false,
+          "status": "draft"
+        },
+        {
+          "step": "confirm-units",
+          "exitCode": 0,
+          "promptRequests": 0,
+          "reason": null,
+          "written": false,
+          "status": "draft"
+        },
+        {
+          "step": "review",
+          "exitCode": 0,
+          "promptRequests": 0,
+          "reason": null,
+          "written": false,
+          "status": "draft"
+        },
+        {
+          "step": "approve",
+          "exitCode": 0,
+          "promptRequests": 0,
+          "reason": null,
+          "written": false,
+          "status": "approved"
+        },
+        {
+          "step": "write-after",
+          "exitCode": 0,
+          "promptRequests": 0,
+          "reason": null,
+          "written": true,
+          "status": "approved"
+        }
+      ],
+      "audit": [
+        {
+          "type": "session.started",
+          "harness": "codex",
+          "synthetic": false
+        },
+        {
+          "type": "session.started",
+          "harness": "codex",
+          "synthetic": false
+        },
+        {
+          "type": "checkpoint.confirmed",
+          "harness": "codex",
+          "synthetic": false
+        },
+        {
+          "type": "session.started",
+          "harness": "codex",
+          "synthetic": false
+        },
+        {
+          "type": "checkpoint.confirmed",
+          "harness": "codex",
+          "synthetic": false
+        },
+        {
+          "type": "session.started",
+          "harness": "codex",
+          "synthetic": false
+        },
+        {
+          "type": "checkpoint.confirmed",
+          "harness": "codex",
+          "synthetic": false
+        },
+        {
+          "type": "session.started",
+          "harness": "codex",
+          "synthetic": false
+        },
+        {
+          "type": "gate.opened",
+          "harness": "codex",
+          "synthetic": false
+        },
+        {
+          "type": "session.started",
+          "harness": "codex",
+          "synthetic": false
+        },
+        {
+          "type": "intent.approved",
+          "harness": "codex",
+          "synthetic": false
+        },
+        {
+          "type": "session.started",
+          "harness": "codex",
+          "synthetic": false
+        }
+      ],
+      "revisionKept": true,
+      "errors": []
+    }
+  ]
+}
