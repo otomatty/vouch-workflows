@@ -721,3 +721,30 @@ test("guardWrites finds protected paths spelled with backslashes, as PowerShell 
   for (const [command, expected] of cases)
     t.assert.equal(await box.decide("Bash", { command }), expected, command);
 });
+
+test("guardWrites treats a malformed installation descriptor as unreadable", async (t) => {
+  const box = await guardBox(t);
+  await box.write(
+    ".claude/registry/installation.json",
+    JSON.stringify({
+      harness: "claude",
+      registration: "settings.json",
+      overrides: "settings.local.json",
+    }),
+  );
+  t.plan(2);
+  t.assert.equal(
+    await box.decide("Write", {
+      file_path: box.path(".claude/settings.local.json"),
+      content: "{}",
+    }),
+    "VOUCH-GUARD-INSTALLATION",
+  );
+  t.assert.equal(
+    await box.decide("Write", {
+      file_path: box.path(".claude/other.json"),
+      content: "{}",
+    }),
+    "VOUCH-GUARD-INSTALLATION",
+  );
+});
