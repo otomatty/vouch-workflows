@@ -35,6 +35,14 @@ export function readContext(env = process.env) {
 /** A manual command's explicitly configured Intent, never inferred. @param {Record<string,string|undefined>} [env] */
 export const readIntent = (env = process.env) => env.VOUCH_INTENT || null;
 
+/** Values of secret-named variables, longest first. @param {{names:string,minLength:number}} rule @param {Record<string,string|undefined>} [env] */
+export const readSecrets = ({ names, minLength }, env = process.env) =>
+  Object.keys(env)
+    .filter((name) => new RegExp(names, "i").test(name))
+    .flatMap((name) => env[name] ?? [])
+    .filter((value) => value.length >= minLength)
+    .sort((a, b) => b.length - a.length);
+
 /** @param {string} entryUrl @returns {import('./runtime-contracts.mjs').DoctorEnvironment} */
 export function readDoctorContext(entryUrl) {
   const directory = resolve(dirname(fileURLToPath(entryUrl)), "..");

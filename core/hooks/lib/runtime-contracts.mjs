@@ -165,18 +165,14 @@ export {};
  * @typedef {(harness:import('./contracts.mjs').Harness,tool:string)=>boolean} IsShellTool
  * @typedef {(subject:string)=>{type:string,unit:string}|null} CommitType A registered `<type>(<Unit>): ` subject.
  * @typedef {(text:string)=>Change[]} ReadChanges Entries of `--name-status -z` output.
- * @typedef {(git:GitPort,rev?:string)=>Promise<Commit[]|null>} BranchHistory Non-merge commits of `rev` (HEAD) outside every protected branch,
- * oldest first; empty for an unknown `rev`; null when unreadable or `rev` starts with `-`.
+ * @typedef {(git:GitPort,rev?:string)=>Promise<Commit[]|null>} BranchHistory Non-merge commits of `rev` (HEAD) outside every protected branch, oldest first; empty for an unknown `rev`; null when unreadable or `rev` starts with `-`.
  * @typedef {(sha:string,kind:'pass'|'fail')=>boolean} Proven
  * @typedef {(events:AuditEvent[],intent:string,newId:NewId)=>Proven} DodEvidence Clean, nonsynthetic, derived-ID dod checks of the Intent; `fail` needs a nonzero exit.
- * @typedef {(commit:{subject:string,changes:Change[]},earlier:Commit[],units:string[],proven:Proven)=>['type'|'unit'|'test'|'order',string]|null} CommitViolation
- * The first broken rule and its registry detail; `earlier` holds the branch commits before it, oldest first.
+ * @typedef {(commit:{subject:string,changes:Change[]},earlier:Commit[],units:string[],proven:Proven)=>['type'|'unit'|'test'|'order',string]|null} CommitViolation The first broken rule and its registry detail; `earlier` holds the branch commits before it, oldest first.
  * @typedef {(log:Commit[],proven:Proven)=>Commit|null} UnprovenTip The last code commit of a branch with a feat or fix, unless a DoD passed there.
- * @typedef {(input:import('./contracts.mjs').HookInput,ctx:import('./contracts.mjs').ReadyHookContext,execute?:SpawnPort)=>Promise<import('./contracts.mjs').HookResult>} GuardGit
- * Shell pushes to a protected branch and `gh pr merge` deny; with an Intent, pushes and `-m` commits of the project that break a rule deny.
+ * @typedef {(input:import('./contracts.mjs').HookInput,ctx:import('./contracts.mjs').ReadyHookContext,execute?:SpawnPort)=>Promise<import('./contracts.mjs').HookResult>} GuardGit Shell pushes to a protected branch and `gh pr merge` deny; with an Intent, pushes and `-m` commits of the project that break a rule deny.
  * @typedef {{intent:string|null,now:() => string,execute?:SpawnPort,secrets?:string[]}} DodPorts `secrets`: values the DoD output never keeps.
- * @typedef {(files:FileStore,environment:DoctorEnvironment,git:GitStatus,ports?:DodPorts)=>Promise<DoctorReport>} RunDod
- * Runs the rules.md DoD for an approved plan, appends build-log.md, then one hook.check record.
+ * @typedef {(files:FileStore,environment:DoctorEnvironment,git:GitStatus,ports?:DodPorts)=>Promise<DoctorReport>} RunDod Runs the rules.md DoD for an approved plan, appends build-log.md, then one hook.check record.
  */
 
 /**

@@ -5,6 +5,13 @@ import { normalizeSegment } from "./areas.mjs";
 
 // Git operations and DoD evidence; see docs/development/git-guard.md.
 const { commits, tests } = build;
+/** @type {{requires:Record<string,string[]|undefined>,evidence:Record<string,string>}} */
+const { requires, evidence } = commits;
+
+/** `git status` arguments for staged, unstaged and untracked changes: each untracked file, no renames. */
+export const changeStatus = "status --porcelain -z -uall --no-renames".split(
+  " ",
+);
 
 /** @type {import('./runtime-contracts.mjs').IsShellTool} */
 export function isShellTool(harness, tool) {
@@ -51,20 +58,20 @@ export function readChanges(text) {
 }
 
 /** @type {import('./runtime-contracts.mjs').BranchHistory} */
-export async function branchHistory(git) {
-  // Commits reachable from HEAD but from no protected branch, merges excluded, oldest first.
+export async function branchHistory(git, rev = "HEAD") {
+  // Commits reachable from `rev` but from no protected branch, merges excluded, oldest first.
   // A bracket keeps Git from reading a plain name as a `name/*` prefix.
   const globs = build.protected.map((name) => `[${name[0]}]${name.slice(1)}`);
+  if (rev.startsWith("-")) return null;
   const log = await git(
-    ..."log --no-merges --no-renames --reverse --name-status -z HEAD --format=%x1e%H%x1f%s --not".split(
-      " ",
-    ),
+    ..."log --no-merges --no-renames --reverse --name-status -z HEAD --format=%x1e%H%x1f%s --not"
+      .split(" ")
+      .map((word) => (word === "HEAD" ? rev : word)),
     ...globs.flatMap((glob) => [`--branches=${glob}`, `--remotes=*/${glob}`]),
+    "--",
   );
   if (log === null)
-    return (await git("rev-parse", "--verify", "-q", "HEAD")) === null
-      ? []
-      : null;
+    return (await git("rev-parse", "--verify", "-q", rev)) === null ? [] : null;
   return log
     .split("\x1e")
     .slice(1)
@@ -124,11 +131,6 @@ export function commitViolation(commit, earlier, units, proven) {
   if (!units.includes(unit)) return ["unit", unit];
   if (type !== commits.tests && code.some(changesTest))
     return ["test", `${commits.tests}(${unit})`];
-  /** @type {Record<string,string[]|undefined>} */ const requires =
-    commits.requires;
-  const evidence = /** @type {Record<string,'pass'|'fail'>} */ (
-    commits.evidence
-  );
   const chain = requires[type] ?? [];
   let from = 0;
   for (const required of chain) {
@@ -157,7 +159,7 @@ export function unprovenTip(log, proven) {
   const code = log.filter(({ changes }) => changes.some(inCode));
   const tip = code.at(-1);
   const built = code.some(({ subject }) =>
-    Object.hasOwn(commits.requires, `${commitType(subject)?.type}`),
+    Object.hasOwn(requires, `${commitType(subject)?.type}`),
   );
   return tip && built && !proven(tip.sha, "pass") ? tip : null;
 }

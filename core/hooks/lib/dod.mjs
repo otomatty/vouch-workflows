@@ -8,8 +8,8 @@ import { findApproval, snapshotIntent } from "./approval.mjs";
 import { createIntentAuditStore, listEvents } from "./audit.mjs";
 import { tableRows } from "./checkpoints.mjs";
 import { elapsedMilliseconds, newId, now, sha256Hex } from "./clock.mjs";
-import { readIntent } from "./env.mjs";
-import { readGit, spawn } from "./git.mjs";
+import { readIntent, readSecrets } from "./env.mjs";
+import { changeStatus, readGit, spawn } from "./git.mjs";
 
 // DoD execution and recording; see docs/development/git-guard.md.
 /** @typedef {import('./runtime-contracts.mjs').DoctorCheck} Check */
@@ -44,7 +44,7 @@ export async function runDod(
   files,
   environment,
   _git,
-  ports = { intent: readIntent(), now },
+  ports = { intent: readIntent(), now, secrets: readSecrets(build.dod.redact) },
 ) {
   const { intent } = ports;
   if (!intent)
@@ -66,9 +66,7 @@ export async function runDod(
     return report(check("DOD-RULES", false, `${approval.rules}: no DoD rows`));
   const git = readGit(environment.projectRoot, ports.execute);
   const commit = (await git("rev-parse", "--verify", "-q", "HEAD"))?.trim();
-  const status = await git(
-    ..."status --porcelain -z -uall --no-renames".split(" "),
-  );
+  const status = await git(...changeStatus);
   const clean = Boolean(
     commit &&
       status?.split("\0").every((entry) => !entry || /^.. vouch\//.test(entry)),
@@ -120,7 +118,9 @@ export async function runDod(
       duration_ms: duration,
       ...(exit === null ? {} : { exit_code: exit }),
     };
-    const output = `${result.stdout ?? ""}${result.stderr ?? ""}${result.error ? `${result.error.message}\n` : ""}`;
+    let output = `${result.stdout ?? ""}${result.stderr ?? ""}${result.error ? `${result.error.message}\n` : ""}`;
+    for (const secret of ports.secrets ?? [])
+      output = output.replaceAll(secret, build.dod.redact.mask);
     body += `- Command: \`${command}\`\n- Directory: \`${cwd}\`\n- Result: ${item.result} (exit ${exit ?? "none"}, ${duration} ms)\n\n${fenced(output)}`;
     rowsAt.push({ line, name, item });
   }
@@ -147,10 +147,8 @@ export async function runDod(
       ),
     ),
   ];
-  const id = newId(
-    commit ?? "",
-    JSON.stringify(["hook.check", "dod", intent, sha256]),
-  );
+  const key = JSON.stringify(["hook.check", "dod", intent, sha256]);
+  const id = newId(commit ?? "", key);
   await audit.append([
     {
       id,

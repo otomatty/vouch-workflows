@@ -7,6 +7,7 @@ import { listEvents } from "./audit.mjs";
 import { readPlan } from "./checkpoints.mjs";
 import {
   branchHistory,
+  changeStatus,
   commitViolation,
   dodEvidence,
   isShellTool,
@@ -19,10 +20,11 @@ import { parseShell, programOf } from "./shell.mjs";
 /**
  * @typedef {import('./contracts.mjs').ReadyHookContext} Context
  * @typedef {import('./runtime-contracts.mjs').GitPort} GitPort
- * @typedef {{sub:string,args:string[],git:GitPort|null,dynamic:boolean,staged:boolean}} Invocation
- * `git` is null when the directory is built at run time; `staged`: an earlier Git command may stage.
+ * @typedef {{sub:string,args:string[],git:GitPort|null,dynamic:boolean,staged:boolean}} Invocation `git`: null when the directory is built at run time; `staged`: an earlier Git command may stage.
  * @typedef {[id:string,shown:string,why:string]} Found
  */
+/** Global options that take the next word as their value. */
+const valued = /^(?:-c|--(?:namespace|config-env|git-dir|work-tree))$/;
 /** @type {Record<'type'|'unit'|'test'|'order',(detail:string)=>string>} */
 const reasons = {
   type: (types) =>
@@ -60,10 +62,7 @@ function invocations(text, cwd, execute) {
       const option = `${args[i]}`;
       if (/^--(?:git-dir|work-tree)/.test(option)) steps = null;
       if (option === "-C") steps = steps && [...steps, `${args[++i]}`];
-      else if (
-        /^(?:-c|--(?:namespace|config-env|git-dir|work-tree))$/.test(option)
-      )
-        i++;
+      else if (valued.test(option)) i++;
     }
     found.push({
       sub: merge ? "pr merge" : `${args[i]}`,
@@ -76,17 +75,14 @@ function invocations(text, cwd, execute) {
   return found;
 }
 
-/**
- * The configured Intent's branch commits, plan Units and DoD evidence; null outside the project
- * repository or without an Intent; a string when they cannot be read.
- * @param {GitPort} git @param {Context} ctx
- */
-async function branch(git, ctx) {
+/** The configured Intent's commits of `rev`, plan Units and DoD evidence; null outside the project
+ * repository or without an Intent; a string when unreadable. @param {GitPort} git @param {Context} ctx @param {string} [rev] */
+async function branch(git, ctx, rev) {
   if (!ctx.intent) return null;
   const top = await git("rev-parse", "--show-toplevel");
   if (top === null || (await ctx.locate(top.trim())).inside !== "") return null;
   try {
-    const log = await branchHistory(git);
+    const log = await branchHistory(git, rev);
     const text = await ctx.readText(
       `${guard.intents.join("/")}/${ctx.intent}/${documents.artifacts.intent}`,
     );
@@ -107,6 +103,8 @@ async function branch(git, ctx) {
 async function push(git, ctx) {
   const shown = ["git push", ...git.args].join(" ");
   /** @type {string[]} */ const targets = [];
+  /** @type {string[]} */ const sources = [];
+  const deleting = git.args.some((arg) => /^(?:-d|--delete)$/.test(arg));
   let words = 0;
   for (let i = 0; i < git.args.length; i++) {
     const arg = `${git.args[i]}`;
@@ -114,9 +112,12 @@ async function push(git, ctx) {
     if (/^--(?:all|mirror|branches)$/.test(arg)) targets.push("*");
     if (/^--repo/.test(arg)) words++;
     if (/^(?:-o|--push-option|--receive-pack|--exec|--repo)$/.test(arg)) i++;
-    const to = `${arg.replace(/^\+/, "").split(":").at(-1)}`;
-    if (!arg.startsWith("-") && words++ > 0)
+    const [from = "", ...rest] = arg.replace(/^\+/, "").split(":");
+    const to = `${rest.at(-1) ?? from}`;
+    if (!arg.startsWith("-") && words++ > 0) {
       targets.push(to.includes("*") ? "*" : to.replace(/^refs\/heads\//, ""));
+      sources.push(deleting ? "" : from);
+    }
   }
   if (targets.length === 0 && !git.args.includes("--tags")) targets.push("");
   const current = targets.some((name) => name === "" || name === "HEAD");
@@ -140,19 +141,25 @@ async function push(git, ctx) {
       shown,
       `${main === "*" ? "all branches include a protected branch" : `${main} is protected`}; it changes only through a pull request a person merges`,
     ];
-  const found = git.git && (await branch(git.git, ctx));
-  if (typeof found === "string") return ["VOUCH-GIT-UNVERIFIED", shown, found];
-  if (!found) return null;
-  for (const [i, item] of found.log.entries()) {
-    const earlier = found.log.slice(0, i);
-    const broken = commitViolation(item, earlier, found.units, found.proven);
-    const at = `git push (${item.sha.slice(0, 12)} ${item.subject})`;
-    if (broken) return explain(broken, at);
+  // Each source's own commits; a deletion sends none, and no refspec sends HEAD.
+  for (const rev of new Set(sources.length ? sources : ["HEAD"])) {
+    const found = rev ? git.git && (await branch(git.git, ctx, rev)) : null;
+    if (typeof found === "string")
+      return ["VOUCH-GIT-UNVERIFIED", shown, found];
+    if (!found) continue;
+    const { log, units, proven } = found;
+    for (const [i, item] of log.entries()) {
+      const broken = commitViolation(item, log.slice(0, i), units, proven);
+      const at = `git push (${item.sha.slice(0, 12)} ${item.subject})`;
+      if (broken) return explain(broken, at);
+    }
+    const tip = unprovenTip(log, proven);
+    const at = tip && `git push (${tip.sha.slice(0, 12)} ${tip.subject})`;
+    const why =
+      "the implementation needs a passing DoD at its last code commit";
+    if (at) return ["VOUCH-COMMIT-EVIDENCE", at, why];
   }
-  const tip = unprovenTip(found.log, found.proven);
-  const at = tip && `git push (${tip.sha.slice(0, 12)} ${tip.subject})`;
-  const why = "the implementation needs a passing DoD at its last code commit";
-  return at ? ["VOUCH-COMMIT-EVIDENCE", at, why] : null;
+  return null;
 }
 
 /** An early check of a commit whose subject `-m` names; a push checks the recorded commits.
@@ -172,30 +179,19 @@ async function commit(git, ctx) {
   if (found === null) return null;
   const all =
     git.staged || git.args.some((arg) => /^-[^-]*a|^--all$/.test(arg));
-  const status = await git.git(
-    ..."status --porcelain -z -uall --no-renames".split(" "),
-  );
+  const status = await git.git(...changeStatus);
   if (status === null)
     return ["VOUCH-GIT-UNVERIFIED", subject, "the changes could not be read"];
   /** @type {import('./runtime-contracts.mjs').Change[]} */ const changes = [];
   for (const entry of status.split("\0").filter(Boolean)) {
-    // The index column alone, or with the worktree and untracked files when the command stages.
-    const code = all ? entry.slice(0, 2) : entry.slice(0, 1).replace("?", "");
-    const kind = /D/.test(code)
-      ? "D"
-      : /[A?]/.test(code)
-        ? "A"
-        : /[MT]/.test(code)
-          ? "M"
-          : "";
-    if (kind) changes.push([kind, entry.slice(3)]);
+    // The index column, with the worktree under -a; untracked files only after an add.
+    if (entry.startsWith("??") && !git.staged) continue;
+    const code = entry.slice(0, all ? 2 : 1).replaceAll("?", "A");
+    const kind = ["D", "A", "M", "T"].find((letter) => code.includes(letter));
+    if (kind) changes.push([kind.replace("T", "M"), entry.slice(3)]);
   }
-  const broken = commitViolation(
-    { subject, changes },
-    found.log,
-    found.units,
-    found.proven,
-  );
+  const { log, units, proven } = found;
+  const broken = commitViolation({ subject, changes }, log, units, proven);
   return broken && explain(broken, subject);
 }
 
