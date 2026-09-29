@@ -274,6 +274,11 @@ test("runDod writes nothing without a configured Intent, an evidenced approved p
       "DOD-RULES",
     ],
   ];
+  /** @type {Record<string,string>} */ const details = {
+    "DOD-SCOPE": "VOUCH_INTENT names no Intent",
+    "DOD-PLAN": `${home}: no approved plan with evidence`,
+    "DOD-RULES": "vouch/rules.md: no DoD rows",
+  };
   const missing = project();
   Reflect.deleteProperty(missing, "vouch/rules.md");
   cases.push([intent, missing, "DOD-RULES"]);
@@ -288,8 +293,8 @@ test("runDod writes nothing without a configured Intent, an evidenced approved p
       execute: run.execute,
     });
     t.assert.deepEqual(
-      [report.ok, report.checks.map((item) => item.id)],
-      [false, [id]],
+      [report.ok, report.checks.map((item) => [item.id, item.detail])],
+      [false, [[id, details[`${id}`]]]],
     );
     t.assert.equal(JSON.stringify(Object.fromEntries(files.data)), before);
     t.assert.deepEqual(run.calls, []);
@@ -416,4 +421,59 @@ test("runDod records a command that could not start as a failure without an exit
   );
   t.assert.equal(log.includes("FS-ESCAPE: outside project root"), true);
   t.assert.equal(report.ok, false);
+});
+
+test("runDod fails a run with a failing row, an unconfigured row, or names an unnamed row by its position", async (t) => {
+  const ok = { status: 0, stdout: "ok\n", stderr: "" };
+  const unnamed = rules.replace(
+    "| Dependency audit | Unconfigured | Unconfigured | Unconfigured |",
+    "|  | `npm audit` | exit 0 | build-log.md |",
+  );
+  /** @param {string} text @param {Record<string,import('../../../core/hooks/lib/runtime-contracts.mjs').Spawned>} shell */
+  async function run(text, shell) {
+    const files = memoryFiles(project({ "vouch/rules.md": text }));
+    await runDod(files, environment, git, {
+      intent,
+      now: ticking(),
+      execute: processes({}, shell).execute,
+    });
+    return records(files).at(-1);
+  }
+  const failing = await run(unnamed, {
+    "node check.js": ok,
+    "npm run lint | cat": ok,
+    "npm audit": { status: 1, stdout: "1 high\n", stderr: "" },
+  });
+  const unconfigured = await run(rules, {
+    "node check.js": ok,
+    "npm run lint | cat": ok,
+  });
+  t.plan(4);
+  t.assert.deepEqual([failing.result, failing.missing], ["fail", 0]);
+  t.assert.equal(failing.commands[2].target, "row 3");
+  t.assert.deepEqual([unconfigured.result, unconfigured.missing], ["fail", 1]);
+  t.assert.equal(
+    unconfigured.commands.every(
+      (/** @type {{result:string}} */ item) => item.result === "pass",
+    ),
+    true,
+  );
+});
+
+test("runDod derives the identity of a run without a commit from an empty commit", async (t) => {
+  const files = memoryFiles(project());
+  await runDod(files, environment, git, {
+    intent,
+    now: ticking(),
+    execute: processes({ "rev-parse --verify -q HEAD": null }).execute,
+  });
+  const record = records(files).at(-1);
+  t.plan(1);
+  t.assert.equal(
+    record.id,
+    newId(
+      "",
+      JSON.stringify(["hook.check", "dod", intent, record.output.sha256]),
+    ),
+  );
 });

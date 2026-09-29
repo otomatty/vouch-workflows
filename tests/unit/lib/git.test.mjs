@@ -129,6 +129,7 @@ test("commitType reads a registered type and a Unit scope from the subject", (t)
     ["feat(U 1): add", null],
     ["feat(U1): ", null],
     ["wip", null],
+    ["revert feat(U1): add", null],
   ];
   t.plan(cases.length);
   for (const [subject, expected] of cases)
@@ -223,12 +224,13 @@ test("dodEvidence counts clean, derived, nonsynthetic dod records of the Intent"
       ...refused,
       unran,
       uncommitted,
-      { ...pass, type: "session.started", session: "s" },
+      { ...dod({ commit: sha("7") }, [0]), type: "session.started" },
     ]),
     intent,
     newId,
   );
-  t.plan(9);
+  t.plan(10);
+  t.assert.equal(proven(sha("7"), "pass"), false, "other event types");
   t.assert.equal(proven(sha("a"), "pass"), true);
   t.assert.equal(proven(sha("a"), "fail"), false);
   t.assert.equal(proven(sha("b"), "fail"), true);
@@ -392,5 +394,26 @@ test("commitViolation requires only a red test of the same Unit before fix", (t)
   t.assert.deepEqual(
     commitViolation(fix, [commit("5", "test(U2): red")], units, proven),
     ["order", "test(U1) with a failing DoD"],
+  );
+});
+
+test("commitViolation weighs every changed path and skips untyped earlier commits", (t) => {
+  const mixed = commit("0", "refactor(U1): x", [
+    ["M", "src/a.js"],
+    ["M", "tests/a.test.js"],
+  ]);
+  t.plan(2);
+  t.assert.deepEqual(commitViolation(mixed, [], units, proven), [
+    "test",
+    "test(U1)",
+  ]);
+  t.assert.equal(
+    commitViolation(
+      commit("3", "fix(U1): repair"),
+      [commit("0", "wip", [["M", "vouch/a.md"]]), commit("2", "test(U1): red")],
+      units,
+      proven,
+    ),
+    null,
   );
 });

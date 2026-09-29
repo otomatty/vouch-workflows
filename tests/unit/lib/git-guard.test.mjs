@@ -503,3 +503,158 @@ test("pull request merges through the GitHub CLI deny with or without an Intent"
       command,
     );
 });
+
+test("push arguments keep the remote, option values and other programs apart from destinations", async (t) => {
+  const onMain = { [branch]: "## main\0" };
+  /** @type {[string,Record<string,string|null>,string][]} */
+  const cases = [
+    ["git push main", {}, "allow"],
+    ["git push origin topic -o main", {}, "allow"],
+    ["git push origin +main", {}, "deny"],
+    ["git push origin HEAD topic", onMain, "deny"],
+    ["git push origin topic", onMain, "allow"],
+    ['FOO="$HOME" git push origin topic', {}, "allow"],
+    ["cd sub-dir && git push", {}, "allow"],
+    ["docker push origin main", {}, "allow"],
+    ["echo pr merge && hub pr merge", {}, "allow"],
+    ["git", {}, "allow"],
+  ];
+  t.plan(cases.length + 1);
+  for (const [command, answers, decision] of cases)
+    t.assert.equal(
+      (
+        await guardGit(
+          bash(command),
+          context(undefined, { intent: "" }),
+          fakeGit(answers).execute,
+        )
+      ).decision,
+      decision,
+      command,
+    );
+  t.assert.equal(
+    reason(
+      await guardGit(
+        bash("git push origin main"),
+        context(),
+        fakeGit().execute,
+      ),
+    ),
+    "VOUCH-GIT-PUSH: Bash git push origin main; main is protected; it changes only through a pull request a person merges",
+  );
+});
+
+test("commit subjects and staged columns follow git's own option spelling", async (t) => {
+  const stagedVouch = {
+    [status]: "M  vouch/rules.md\0 M src/app.js\0?? tests/Data.test.js\0",
+  };
+  /** @type {[string,Record<string,string>,RegExp][]} */
+  const cases = [
+    ["git commit --amend -m wip", stagedVouch, /^$/],
+    ["git commit -a -m 'refactor(U1): x'", stagedVouch, /^$/],
+    [
+      "git commit -m \"$(cat << 'EOF'\nwip\nEOF\n)\"",
+      { [status]: "A  src/a.js\0" },
+      /^VOUCH-COMMIT-TYPE: Bash wip; /,
+    ],
+    [
+      "git commit -m 'refactor(U1): x'",
+      { [status]: "M  src/a.js\0M  tests/a.test.js\0" },
+      /^VOUCH-COMMIT-TEST: /,
+    ],
+  ];
+  t.plan(cases.length + 1);
+  for (const [command, answers, expected] of cases)
+    t.assert.match(
+      reason(
+        await guardGit(bash(command), context(), fakeGit(answers).execute),
+      ),
+      expected,
+      command,
+    );
+  t.assert.equal(
+    reason(
+      await guardGit(
+        bash("gh pr merge 23 --squash"),
+        context(),
+        fakeGit().execute,
+      ),
+    ),
+    "VOUCH-GIT-MERGE: Bash gh pr merge 23 --squash; a person merges the pull request after reading the Brief",
+  );
+});
+
+test("a push checks each commit only against the commits before it", async (t) => {
+  const contract = sha("1");
+  const red = sha("2");
+  /** @param {string} commit @param {number} exit */
+  const record = (commit, exit) => {
+    const output = {
+      path: "build-log.md",
+      sha256: (exit ? "e" : "f").repeat(64),
+    };
+    return JSON.stringify({
+      id: newId(
+        commit,
+        JSON.stringify(["hook.check", "dod", intent, output.sha256]),
+      ),
+      v: 1,
+      type: "hook.check",
+      ts: "2026-09-29T00:00:00Z",
+      actor: "hook",
+      intent,
+      check: "dod",
+      result: exit ? "fail" : "pass",
+      duration_ms: 1,
+      commit,
+      clean: true,
+      commands: [
+        {
+          target: "t",
+          command: "c",
+          cwd: ".",
+          result: exit ? "fail" : "pass",
+          duration_ms: 1,
+          exit_code: exit,
+        },
+      ],
+      output,
+    });
+  };
+  const files = {
+    [artifact]: plan,
+    [audit]: `${record(contract, 0)}\n${record(red, 1)}\n`,
+  };
+  /** @param {string[][]} commits */
+  const history = (commits) =>
+    commits
+      .map(([c, subject, path]) => `\x1e${c}\x1f${subject}\0\nA\0${path}\0`)
+      .join("");
+  const ordered = history([
+    [sha("0"), "wip", "vouch/notes.md"],
+    [contract, "contract(U1): types", "src/types.js"],
+    [red, "test(U1): red", "tests/a.test.js"],
+    [sha("3"), "feat(U1): app", "src/app.js"],
+  ]);
+  const reversed = history([
+    [sha("3"), "feat(U1): app", "src/app.js"],
+    [contract, "contract(U1): types", "src/types.js"],
+    [red, "test(U1): red", "tests/a.test.js"],
+  ]);
+  const push = bash("git push origin vouch/260929-git");
+  t.plan(2);
+  t.assert.deepEqual(
+    await guardGit(push, context(files), fakeGit({ [log]: ordered }).execute),
+    { decision: "allow" },
+  );
+  t.assert.match(
+    reason(
+      await guardGit(
+        push,
+        context(files),
+        fakeGit({ [log]: reversed }).execute,
+      ),
+    ),
+    /^VOUCH-COMMIT-ORDER: Bash git push \(3{12} feat\(U1\): app\); /,
+  );
+});
