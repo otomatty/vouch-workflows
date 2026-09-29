@@ -96,7 +96,7 @@
     "checkpoint.confirmed": {
       "fields": {
         "required": ["intent", "checkpoint"],
-        "optional": ["unit", "section"]
+        "optional": ["unit", "section", "content", "submission"]
       },
       "measures": [],
       "pairs_with": []

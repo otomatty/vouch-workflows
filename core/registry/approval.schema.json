@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vouch.dev/schemas/approval.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "version", "rules", "plan", "topics", "build"],
+  "properties": {
+    "$schema": {
+      "const": "./approval.schema.json"
+    },
+    "version": {
+      "const": 1
+    },
+    "rules": {
+      "const": "vouch/rules.md"
+    },
+    "plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["section", "unit", "risks", "design"],
+      "properties": {
+        "section": {
+          "const": "plan"
+        },
+        "unit": {
+          "const": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}(?![\\s\\S])"
+        },
+        "risks": {
+          "const": ["L", "M", "H"]
+        },
+        "design": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["required", "skipped"],
+          "properties": {
+            "required": {
+              "const": "required"
+            },
+            "skipped": {
+              "const": "not-required"
+            }
+          }
+        }
+      }
+    },
+    "topics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["acceptance", "scope", "units"],
+      "properties": {
+        "acceptance": {
+          "const": "acceptance"
+        },
+        "scope": {
+          "const": "scope"
+        },
+        "units": {
+          "const": "plan"
+        }
+      }
+    },
+    "build": {
+      "const": ["build", "verify"]
+    }
+  }
+}

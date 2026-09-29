@@ -14,7 +14,7 @@ export async function main(input, ctx) {
   if (input.hook_event_name !== "UserPromptSubmit" || !ctx.intent)
     return { decision: "allow" };
   const command = parseIntentReviewCommand(input.prompt);
-  if (!command) return { decision: "allow" };
+  if (!command || command.kind === "confirm") return { decision: "allow" };
   if (command.kind === "invalid")
     return {
       decision: "deny",

@@ -29,6 +29,8 @@
     "hooks/vouch-record-intent-review.mjs",
     "hooks/vouch-record-session-start.mjs",
     "registry/agent-frontmatter.schema.json",
+    "registry/approval.json",
+    "registry/approval.schema.json",
     "registry/audit-event.schema.json",
     "registry/audit-events.json",
     "registry/audit-events.schema.json",

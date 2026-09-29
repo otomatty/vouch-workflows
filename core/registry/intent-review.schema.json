@@ -14,8 +14,21 @@
     },
     "gatePattern": {
       "const": "^evt_[a-f0-9]{64}(?![\\s\\S])"
+    },
+    "confirmPrefix": {
+      "const": "vouch confirm "
+    },
+    "targetPattern": {
+      "const": "^(?:(acceptance|scope|units|design)|unit ([A-Za-z0-9][A-Za-z0-9._-]{0,63})|section ([a-z][a-z-]{0,63}))(?![\\s\\S])"
     }
   },
-  "required": ["version", "open", "approvePrefix", "gatePattern"],
+  "required": [
+    "version",
+    "open",
+    "approvePrefix",
+    "gatePattern",
+    "confirmPrefix",
+    "targetPattern"
+  ],
   "additionalProperties": false
 }

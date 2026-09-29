@@ -37,6 +37,9 @@
  * @typedef {{path:'intent.md',sha256:string}} IntentRevision
  * @typedef {{hook_event_name:'UserPromptSubmit',field:'prompt_id'|'turn_id',id:string,prompt_sha256:string}} Submission
  * @typedef {({harness:'claude',submission:Submission & {field:'prompt_id'}}|{harness:'codex',submission:Submission & {field:'turn_id'}}) & {session:string,revision:IntentRevision}} IntentApprovalEvidence
+ * `content` digests the confirmed part only: an intent.md section or Unit row, or the normalized design.md.
+ * @typedef {{path:'intent.md'|'design.md',sha256:string}} CheckpointContent
+ * @typedef {({harness:'claude',submission:Submission & {field:'prompt_id'}}|{harness:'codex',submission:Submission & {field:'turn_id'}}) & {session:string,content:CheckpointContent}} CheckpointEvidence
  */
 /** @typedef {AuditCommon & {type:'intent.created',intent:string,risk:Risk}} IntentCreated */
 /** @typedef {AuditCommon & {type:'intent.approved',intent:string,actor:'human',source:'intent',parent:string,wait_ms:number} & ({revision?:never,submission?:never}|IntentApprovalEvidence)} IntentApproved */
@@ -45,7 +48,7 @@
 /** @typedef {AuditCommon & {type:'stage.completed',intent:string,parent:string,duration_ms:number} & ({stage:'build',loop_iterations:number,tests:number}|{stage:Exclude<Stage,'build'>,loop_iterations?:number,tests?:number})} StageCompleted */
 /** @typedef {AuditCommon & {type:'unit.started',intent:string,unit:string,risk:Risk}} UnitStarted */
 /** @typedef {AuditCommon & {type:'unit.completed',intent:string,unit:string,risk:Risk,parent:string,duration_ms:number,files_changed:number,lines_changed:number}} UnitCompleted */
-/** @typedef {AuditCommon & {type:'checkpoint.confirmed',intent:string,actor:'human'} & ({checkpoint:'acceptance'|'scope'|'units'|'design',section?:string}|{checkpoint:'unit',unit:string}|{checkpoint:'section',section:string})} CheckpointConfirmed */
+/** @typedef {AuditCommon & {type:'checkpoint.confirmed',intent:string,actor:'human'} & ({checkpoint:'acceptance'|'scope'|'units'|'design',section?:string}|{checkpoint:'unit',unit:string}|{checkpoint:'section',section:string}) & ({content?:never,submission?:never}|CheckpointEvidence)} CheckpointConfirmed */
 /** @typedef {AuditCommon & {type:'gate.opened',intent:string,source:'intent'|'pr'} & ({revision?:never}|{revision:IntentRevision,source:'intent',actor:'hook',harness:Harness,session:string})} GateOpened */
 /** @typedef {AuditCommon & {type:'gate.approved',intent:string,actor:'human',source:'intent'|'pr',parent:string,wait_ms:number}} GateApproved */
 /** @typedef {AuditCommon & {type:'gate.rejected',intent:string,actor:'human',source:'intent'|'pr',parent:string,wait_ms:number,reason:string}} GateRejected */
@@ -68,10 +71,10 @@
 /** @typedef {AuditCommon & {type:`legacy.${string}`,original_type:string,raw:string,source_path:string}} LegacyEvent */
 /** @typedef {IntentCreated|IntentApproved|IntentCompleted|StageStarted|StageCompleted|UnitStarted|UnitCompleted|CheckpointConfirmed|GateOpened|GateApproved|GateRejected|QuestionAsked|QuestionAnswered|QuestionDefaulted|AsideAsked|AsideAnswered|HookCheck|HookDenied|ReviewRequested|ReviewCompleted|KnowledgeRefreshed|SessionStarted|SessionResumed|SessionCompacted|SessionEnded|LearnRecorded|MigrationCompleted|LegacyEvent} AuditEvent */
 /**
- * find returns a detached record. Mutating it cannot alter future reads or writes.
+ * find and list return detached records in file order. Mutating them cannot alter future reads or writes.
  * Each lookup and valid nonempty append rereads the file. Validation may reuse only an exactly
  * equal previously validated text snapshot, including the read under the write lock.
- * @typedef {{append:(events:AuditEvent[]) => Promise<'appended'|'duplicate'>,find?:(id:string) => Promise<AuditEvent|undefined>}} AuditStore
+ * @typedef {{append:(events:AuditEvent[]) => Promise<'appended'|'duplicate'>,find?:(id:string) => Promise<AuditEvent|undefined>,list?:() => Promise<AuditEvent[]>}} AuditStore
  */
 
 /**
@@ -96,7 +99,10 @@
  * Complete audit records, not raw stdin or a harness-specific stdout response.
  * `deny` requires a nonempty reason. io.run appends validated records, then reports
  * denial on stderr with exit 2. Harness-specific stdout adapters are separate.
- * @typedef {{decision:'allow',reason?:string,events?:AuditEvent[]}|{decision:'deny',reason:string,events?:AuditEvent[]}} HookResult
+ * `approve` asks io.run, after the append succeeds, to turn the configured Intent's draft of
+ * that revision into approved; any other current text fails the run instead (docs/development/approval-boundary.md).
+ * @typedef {{sha256:string}} ApproveTransition
+ * @typedef {{decision:'allow',reason?:string,events?:AuditEvent[]}|{decision:'deny',reason:string,events?:AuditEvent[],approve?:ApproveTransition}} HookResult
  * @typedef {{exitCode:0,stdout:JsonValue,stderr:string}|{exitCode:2,stdout:JsonValue,stderr:string}} HookProcessResult
  */
 
@@ -107,7 +113,8 @@
  * @property {Harness} harness Selected by installation, not payload claims.
  * @property {string} [intent] Explicit installed scope, never derived from stdin.
  * @property {(path:string) => Promise<string|null>} [readText] io supplies contained UTF-8 artifact reads.
- * @property {AuditStore} [audit] io supplies the configured intent store. Session recording requires find().
+ * @property {AuditStore} [audit] io supplies the configured intent store. Session recording requires find();
+ * approval and the build boundary also require list().
  * @property {string} generation Knowledge generation to compare with citations.
  * @property {() => string} now UTC time supplied by clock.mjs.
  * @property {(session:string,inputIdentity:string) => string} newId Deterministic event identity.
