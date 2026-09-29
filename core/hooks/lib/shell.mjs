@@ -135,11 +135,7 @@ export function parseShell(text) {
         i = bodies(text, i + 1, documents.splice(0)) - 1;
     } else if (c === " " || c === "\t" || c === "\r") {
       flush();
-    } else if (
-      (c === "$" || c === "<" || c === ">") &&
-      next === "(" &&
-      (c === "$" || word === null)
-    ) {
+    } else if ((c === "$" || c === "<" || c === ">") && next === "(") {
       end();
       dynamic = true;
       depth++;
