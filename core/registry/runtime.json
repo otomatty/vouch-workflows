@@ -40,6 +40,8 @@
     "registry/audit-migration.schema.json",
     "registry/budgets.json",
     "registry/budgets.schema.json",
+    "registry/build.json",
+    "registry/build.schema.json",
     "registry/diagrams.json",
     "registry/diagrams.schema.json",
     "registry/doctor-report.schema.json",

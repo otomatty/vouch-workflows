@@ -21,7 +21,7 @@
         "properties": {
           "id": {
             "type": "string",
-            "pattern": "^DOCTOR-[A-Z]+$"
+            "pattern": "^(?:DOCTOR|DOD)-[A-Z]+$"
           },
           "ok": {
             "type": "boolean"

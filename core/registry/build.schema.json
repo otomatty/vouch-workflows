@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vouch.dev/schemas/build.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "version", "protected", "commits", "tests", "dod"],
+  "$defs": {
+    "names": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[a-z_]+$" },
+      "minItems": 1,
+      "uniqueItems": true
+    }
+  },
+  "properties": {
+    "$schema": { "const": "./build.schema.json" },
+    "version": { "const": 1 },
+    "protected": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]*$" },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "commits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["types", "tests", "requires", "evidence"],
+      "properties": {
+        "types": { "$ref": "#/$defs/names" },
+        "tests": { "const": "test" },
+        "requires": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["feat", "fix"],
+          "properties": {
+            "feat": { "const": ["contract", "test"] },
+            "fix": { "const": ["test"] }
+          }
+        },
+        "evidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["contract", "test"],
+          "properties": {
+            "contract": { "const": "pass" },
+            "test": { "const": "fail" }
+          }
+        }
+      }
+    },
+    "tests": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["directories", "names"],
+      "properties": {
+        "directories": { "$ref": "#/$defs/names" },
+        "names": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    },
+    "dod": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["section", "outputLines"],
+      "properties": {
+        "section": { "const": "dod" },
+        "outputLines": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

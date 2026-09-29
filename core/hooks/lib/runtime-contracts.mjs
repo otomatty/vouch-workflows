@@ -154,6 +154,35 @@ export {};
  */
 
 /**
+ * Git operations and DoD evidence (docs/development/git-guard.md). Only the process port runs
+ * programs; the other functions read texts and records the caller supplies.
+ * @typedef {[status:string,path:string]} Change A `--name-status --no-renames` entry; paths are root-relative.
+ * @typedef {{sha:string,subject:string,changes:Change[]}} Commit
+ * @typedef {{status:number|null,stdout?:string|Buffer|null,stderr?:string|Buffer|null,error?:Error}} Spawned
+ * @typedef {(file:string,args:string[],options:import('node:child_process').SpawnSyncOptions)=>Spawned} SpawnPort
+ * @typedef {(file:string,args:string[],options:import('node:child_process').SpawnSyncOptions,execute?:SpawnPort)=>Promise<Spawned>} Spawn
+ * Hidden window; a shell only when options ask for one; Git calls use runtime.json gitTimeoutMs.
+ * @typedef {(...args:string[])=>Promise<string|null>} GitPort Stdout of a read-only Git command; null on failure.
+ * @typedef {(cwd:string,execute?:SpawnPort)=>GitPort} ReadGit `--no-optional-locks` Git in `cwd`.
+ * @typedef {(harness:import('./contracts.mjs').Harness,tool:string)=>boolean} IsShellTool
+ * @typedef {(subject:string)=>{type:string,unit:string}|null} CommitType A registered `<type>(<Unit>): ` subject.
+ * @typedef {(text:string)=>Change[]} ReadChanges Entries of `--name-status -z` output.
+ * @typedef {(git:GitPort)=>Promise<Commit[]|null>} BranchHistory Non-merge commits of HEAD outside every
+ * protected branch, oldest first; null when Git cannot list them.
+ * @typedef {(sha:string,kind:'pass'|'fail')=>boolean} Proven
+ * @typedef {(events:AuditEvent[],intent:string,newId:NewId)=>Proven} DodEvidence Nonsynthetic dod checks of
+ * the Intent at a clean commit with a derived identity; `fail` needs a command that exited nonzero.
+ * @typedef {(commit:{subject:string,changes:Change[]},earlier:Commit[],units:string[],proven:Proven)=>['type'|'unit'|'test'|'order',string]|null} CommitViolation
+ * The first broken rule and its registry detail; `earlier` holds the branch commits before it, oldest first.
+ * @typedef {(input:import('./contracts.mjs').HookInput,ctx:import('./contracts.mjs').ReadyHookContext,execute?:SpawnPort)=>Promise<import('./contracts.mjs').HookResult>} GuardGit
+ * PreToolUse shell pushes to a protected branch deny; with a configured Intent, pushes and `-m`
+ * commits in the project repository that break a commit rule deny, and unreadable evidence denies.
+ * @typedef {{intent:string|null,now:() => string,execute?:SpawnPort}} DodPorts
+ * @typedef {(files:FileStore,environment:DoctorEnvironment,git:GitStatus,ports?:DodPorts)=>Promise<DoctorReport>} RunDod
+ * Runs the rules.md DoD for an approved plan, appends build-log.md, then one hook.check record.
+ */
+
+/**
  * FileStore awaits both synchronous native operations and asynchronous test ports.
  * The native CLI driver blocks only its own process; it does not cache metadata.
  * Every update retains validation, owned locking, fsync, close, and atomic rename.

@@ -1,0 +1,16 @@
+{
+  "$schema": "./build.schema.json",
+  "version": 1,
+  "protected": ["main"],
+  "commits": {
+    "types": ["contract", "test", "feat", "fix", "refactor", "docs", "chore"],
+    "tests": "test",
+    "requires": { "feat": ["contract", "test"], "fix": ["test"] },
+    "evidence": { "contract": "pass", "test": "fail" }
+  },
+  "tests": {
+    "directories": ["__tests__", "spec", "specs", "test", "tests"],
+    "names": ["^test_", "[._-](?:spec|test)s?\\.[^.]+$"]
+  },
+  "dod": { "section": "dod", "outputLines": 200 }
+}
