@@ -98,8 +98,8 @@ export async function gitBox(t, harness = "claude") {
   };
   commit("chore: base");
   gitIn(box.root, "checkout", "-qb", branch);
-  /** Run the copied DoD command as the model would. */
-  const dod = () => {
+  /** Run the copied DoD command as the model would. @param {Record<string,string>} [env] */
+  const dod = (env = {}) => {
     const result = spawnSync(
       process.execPath,
       [box.path(".claude/hooks/vouch-dod.mjs")],
@@ -108,7 +108,7 @@ export async function gitBox(t, harness = "claude") {
         encoding: "utf8",
         windowsHide: true,
         timeout: 4000,
-        env: { ...process.env, VOUCH_INTENT: intent },
+        env: { ...process.env, VOUCH_INTENT: intent, ...env },
       },
     );
     return { status: result.status, report: JSON.parse(result.stdout) };

@@ -103,3 +103,19 @@ test("unreadable audits deny, and repositories other than the project are not or
     );
   t.assert.deepEqual([unscoped.exitCode, unscoped.stderr], [0, ""]);
 });
+
+test("a push of another branch checks that branch's commits, not the checked-out one", async (t) => {
+  const box = await gitBox(t);
+  gitIn(box.root, "checkout", "-qb", "side");
+  await box.write("src/draft.js", "// draft\n");
+  box.commit("wip");
+  gitIn(box.root, "checkout", "-q", branch);
+  const other = box.guard("git push origin side:topic");
+  const own = box.guard(`git push origin ${branch}`);
+  t.plan(2);
+  t.assert.match(
+    other.stderr,
+    /^VOUCH-COMMIT-TYPE: Bash git push \([0-9a-f]{12} wip\); /,
+  );
+  t.assert.deepEqual([own.exitCode, own.stderr], [0, ""]);
+});

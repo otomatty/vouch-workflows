@@ -184,8 +184,26 @@ test("branchHistory lists the commits outside every protected branch, oldest fir
       "--not",
       "--branches=[m]ain",
       "--remotes=*/[m]ain",
+      "--",
     ],
   ]);
+});
+
+test("branchHistory reads a named source and refuses one that reads as an option", async (t) => {
+  /** @type {string[][]} */ const calls = [];
+  const port = async (/** @type {string[]} */ ...args) => {
+    calls.push(args);
+    return null;
+  };
+  t.plan(5);
+  t.assert.equal(await branchHistory(port, "--output=x"), null);
+  t.assert.deepEqual(calls, []);
+  t.assert.deepEqual(await branchHistory(port, "topic"), []);
+  t.assert.deepEqual(
+    [calls[0]?.[6], calls[0]?.includes("HEAD"), calls[0]?.at(-1)],
+    ["topic", false, "--"],
+  );
+  t.assert.deepEqual(calls[1], ["rev-parse", "--verify", "-q", "topic"]);
 });
 
 test("branchHistory is empty without a commit and null when Git cannot list the log", async (t) => {

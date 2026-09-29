@@ -477,3 +477,30 @@ test("runDod derives the identity of a run without a commit from an empty commit
     ),
   );
 });
+
+test("runDod replaces secret values in the output before build-log.md keeps them", async (t) => {
+  const files = memoryFiles(project());
+  const { execute } = processes(
+    {},
+    {
+      "node check.js": {
+        status: 0,
+        stdout: Buffer.from("token=abcdefgh-long and abcdefgh\n"),
+        stderr: Buffer.from("abcdefgh\n"),
+      },
+    },
+  );
+  await runDod(files, environment, git, {
+    intent,
+    now: ticking(),
+    execute,
+    secrets: ["abcdefgh-long", "abcdefgh"],
+  });
+  const log = `${files.data.get(`${home}/build-log.md`)}`;
+  t.plan(2);
+  t.assert.equal(log.includes("abcdefgh"), false);
+  t.assert.match(
+    log,
+    /```text\ntoken=\[redacted\] and \[redacted\]\n\[redacted\]\n```/,
+  );
+});

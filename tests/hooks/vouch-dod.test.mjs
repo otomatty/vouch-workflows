@@ -151,3 +151,21 @@ test("the installed command reports commands that cannot start and uncommitted c
   );
   t.assert.equal(record.clean, false);
 });
+
+test("the installed command keeps secret-named variable values out of build-log.md", async (t) => {
+  const box = await gitBox(t);
+  const rules = await box.read("vouch/rules.md");
+  await box.write(
+    "vouch/rules.md",
+    rules.replace(
+      "`node check.js`",
+      '`node -e "console.log(process.env.VOUCH_TEST_TOKEN)"`',
+    ),
+  );
+  const result = box.dod({ VOUCH_TEST_TOKEN: "s3cr3t-value-for-dod" });
+  const text = await box.read(log);
+  t.plan(3);
+  t.assert.equal(result.status, 0);
+  t.assert.equal(text.includes("s3cr3t-value-for-dod"), false);
+  t.assert.match(text, /```text\n\[redacted\]\n```/);
+});

@@ -15,7 +15,9 @@ const plan = planned([
 ]);
 const sha = (/** @type {string} */ c) => c.repeat(40);
 const log =
-  "log --no-merges --no-renames --reverse --name-status -z HEAD --format=%x1e%H%x1f%s --not --branches=[m]ain --remotes=*/[m]ain";
+  "log --no-merges --no-renames --reverse --name-status -z HEAD --format=%x1e%H%x1f%s --not --branches=[m]ain --remotes=*/[m]ain --";
+/** The log of another pushed source. @param {string} rev */
+const logOf = (rev) => log.replace(" HEAD ", ` ${rev} `);
 const status = "status --porcelain -z -uall --no-renames";
 const branch = "status -b --porcelain -z -uno";
 
@@ -273,9 +275,12 @@ test("commit subjects come from -m forms and the quoted here-document only", asy
     );
 });
 
-test("commit changes widen to the worktree and new files when the command stages them", async (t) => {
+test("commit changes widen to the worktree with -a and to new files after an add", async (t) => {
   const staged = {
     [status]: "M  vouch/rules.md\0?? src/new.js\0",
+  };
+  const tracked = {
+    [status]: "M  vouch/rules.md\0 M src/app.js\0?? src/new.js\0",
   };
   const noHead = {
     ...staged,
@@ -284,8 +289,10 @@ test("commit changes widen to the worktree and new files when the command stages
   };
   const cases = [
     ["git commit -m wip", staged, "allow"],
-    ["git commit -am wip", staged, "deny"],
-    ["git commit --all -m wip", staged, "deny"],
+    ["git commit -am wip", staged, "allow"],
+    ["git commit --all -m wip", staged, "allow"],
+    ["git commit -am wip", tracked, "deny"],
+    ["git commit -m wip", tracked, "allow"],
     ["git add -A && git commit -m wip", staged, "deny"],
     ["git rm x && git commit -m wip", staged, "deny"],
     ["git add -A; git commit -m wip", noHead, "deny"],
@@ -708,5 +715,40 @@ test("a push with an implementation needs a passing DoD at its last code commit"
   t.assert.deepEqual(
     await guardGit(push, context(green), fakeGit({ [log]: history }).execute),
     { decision: "allow" },
+  );
+});
+
+test("a push checks the history of each source it sends, not only HEAD", async (t) => {
+  const side = `\x1e${sha("7")}\x1fwip\0\nA\0src/draft.js\0`;
+  const answers = { [log]: "", [logOf("side")]: side };
+  const denied = [
+    "git push origin side:topic",
+    "git push origin +side:topic",
+    "git push origin side",
+    "git push origin HEAD:topic side:other",
+  ];
+  const run = (/** @type {string} */ command) =>
+    guardGit(bash(command), context(), fakeGit(answers).execute);
+  t.plan(denied.length + 3);
+  for (const command of denied)
+    t.assert.match(
+      reason(await run(command)),
+      new RegExp(
+        `^VOUCH-COMMIT-TYPE: Bash git push \\(${"7".repeat(12)} wip\\); `,
+      ),
+      command,
+    );
+  t.assert.deepEqual(await run("git push origin HEAD:topic :old"), {
+    decision: "allow",
+  });
+  const calls = fakeGit(answers);
+  await guardGit(bash("git push origin :old"), context(), calls.execute);
+  t.assert.equal(
+    calls.calls.some((call) => call.includes(" log ")),
+    false,
+  );
+  t.assert.match(
+    reason(await run("git push origin +-x:topic")),
+    /^VOUCH-GIT-UNVERIFIED: Bash git push origin \+-x:topic; the branch history/,
   );
 });
