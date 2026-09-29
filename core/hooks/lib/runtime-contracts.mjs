@@ -167,12 +167,10 @@ export {};
  * @typedef {(text:string)=>Change[]} ReadChanges Entries of `--name-status -z` output.
  * @typedef {(git:GitPort)=>Promise<Commit[]|null>} BranchHistory Non-merge commits outside every protected branch, oldest first; null when unreadable.
  * @typedef {(sha:string,kind:'pass'|'fail')=>boolean} Proven
- * @typedef {(events:AuditEvent[],intent:string,newId:NewId)=>Proven} DodEvidence Nonsynthetic dod checks of the Intent at a clean commit
- * with a derived identity; `fail` needs a command that exited nonzero.
+ * @typedef {(events:AuditEvent[],intent:string,newId:NewId)=>Proven} DodEvidence Clean, nonsynthetic, derived-ID dod checks of the Intent; `fail` needs a nonzero exit.
  * @typedef {(commit:{subject:string,changes:Change[]},earlier:Commit[],units:string[],proven:Proven)=>['type'|'unit'|'test'|'order',string]|null} CommitViolation
  * The first broken rule and its registry detail; `earlier` holds the branch commits before it, oldest first.
- * @typedef {(log:Commit[],proven:Proven)=>Commit|null} UnprovenTip The last code-changing commit of a branch with an implementation commit
- * when it has no passing DoD; null otherwise.
+ * @typedef {(log:Commit[],proven:Proven)=>Commit|null} UnprovenTip The last code commit of a branch with a feat or fix, unless a DoD passed there.
  * @typedef {(input:import('./contracts.mjs').HookInput,ctx:import('./contracts.mjs').ReadyHookContext,execute?:SpawnPort)=>Promise<import('./contracts.mjs').HookResult>} GuardGit
  * Shell pushes to a protected branch and `gh pr merge` deny; with an Intent, pushes and `-m` commits of the project that break a rule deny.
  * @typedef {{intent:string|null,now:() => string,execute?:SpawnPort}} DodPorts

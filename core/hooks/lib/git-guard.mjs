@@ -11,6 +11,7 @@ import {
   dodEvidence,
   isShellTool,
   readGit,
+  unprovenTip,
 } from "./git.mjs";
 import { parseShell, programOf } from "./shell.mjs";
 
@@ -148,7 +149,10 @@ async function push(git, ctx) {
     const at = `git push (${item.sha.slice(0, 12)} ${item.subject})`;
     if (broken) return explain(broken, at);
   }
-  return null;
+  const tip = unprovenTip(found.log, found.proven);
+  const at = tip && `git push (${tip.sha.slice(0, 12)} ${tip.subject})`;
+  const why = "the implementation needs a passing DoD at its last code commit";
+  return at ? ["VOUCH-COMMIT-EVIDENCE", at, why] : null;
 }
 
 /** An early check of a commit whose subject `-m` names; a push checks the recorded commits.

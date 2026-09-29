@@ -61,8 +61,7 @@ export async function runDod(
       check("DOD-PLAN", false, `${home}: no approved plan with evidence`),
     );
   const rules = await files.readText(approval.rules);
-  const rows =
-    (rules === null ? null : tableRows(rules, build.dod.section)) ?? [];
+  const rows = tableRows(rules ?? "", build.dod.section) ?? [];
   if (rows.length === 0)
     return report(check("DOD-RULES", false, `${approval.rules}: no DoD rows`));
   const git = readGit(environment.projectRoot, ports.execute);
@@ -101,14 +100,11 @@ export async function runDod(
     const begun = ports.now();
     /** @type {import('./runtime-contracts.mjs').Spawned} */ let result;
     try {
+      const at = await files.resolvePath(cwd);
       result = await spawn(
         command,
         [],
-        {
-          cwd: await files.resolvePath(cwd),
-          shell: true,
-          stdio: ["ignore", "pipe", "pipe"],
-        },
+        { cwd: at, shell: true, stdio: ["ignore", "pipe", "pipe"] },
         ports.execute,
       );
     } catch (error) {
@@ -129,10 +125,8 @@ export async function runDod(
     rowsAt.push({ line, name, item });
   }
   const commands = rowsAt.flatMap(({ item }) => (item ? [item] : []));
-  const result =
-    missing === 0 && commands.every((item) => item.result === "pass")
-      ? "pass"
-      : "fail";
+  const passed = commands.every((item) => item.result === "pass");
+  const result = missing === 0 && passed ? "pass" : "fail";
   const header = `<!-- dod -->\n## DoD ${started}\n\n- Intent: \`${intent}\`\n- Commit: ${linked}\n- Result: ${result}\n`;
   const entry = header + body;
   const sha256 = sha256Hex(Buffer.from(entry, "utf8"));

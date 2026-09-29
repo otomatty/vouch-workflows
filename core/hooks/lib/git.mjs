@@ -56,11 +56,9 @@ export async function branchHistory(git) {
   // A bracket keeps Git from reading a plain name as a `name/*` prefix.
   const globs = build.protected.map((name) => `[${name[0]}]${name.slice(1)}`);
   const log = await git(
-    ..."log --no-merges --no-renames --reverse --name-status -z HEAD".split(
+    ..."log --no-merges --no-renames --reverse --name-status -z HEAD --format=%x1e%H%x1f%s --not".split(
       " ",
     ),
-    "--format=%x1e%H%x1f%s",
-    "--not",
     ...globs.flatMap((glob) => [`--branches=${glob}`, `--remotes=*/${glob}`]),
   );
   if (log === null)
@@ -113,11 +111,13 @@ function changesTest([status, path]) {
   );
 }
 
+/** A change outside vouch/. @param {import('./runtime-contracts.mjs').Change} change */
+const inCode = ([, path]) =>
+  normalizeSegment(`${path.split("/")[0]}`) !== "vouch";
+
 /** @type {import('./runtime-contracts.mjs').CommitViolation} */
 export function commitViolation(commit, earlier, units, proven) {
-  const code = commit.changes.filter(
-    ([, path]) => normalizeSegment(`${path.split("/")[0]}`) !== "vouch",
-  );
+  const code = commit.changes.filter(inCode);
   const { type = "", unit = "" } = commitType(commit.subject) ?? {};
   if (code.length === 0) return null;
   if (!type) return ["type", commits.types.join(", ")];
@@ -150,4 +150,14 @@ export function commitViolation(commit, earlier, units, proven) {
       ];
   }
   return null;
+}
+
+/** @type {import('./runtime-contracts.mjs').UnprovenTip} */
+export function unprovenTip(log, proven) {
+  const code = log.filter(({ changes }) => changes.some(inCode));
+  const tip = code.at(-1);
+  const built = code.some(({ subject }) =>
+    Object.hasOwn(commits.requires, `${commitType(subject)?.type}`),
+  );
+  return tip && built && !proven(tip.sha, "pass") ? tip : null;
 }
