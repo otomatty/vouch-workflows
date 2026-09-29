@@ -28,7 +28,7 @@ const mixed = [
 
 test("plans read Unit IDs, risk and design identifiers from the first plan table", (t) => {
   const high = [...mixed, ["U3", "H, public API", "required"]];
-  t.plan(5);
+  t.plan(6);
   t.assert.deepEqual(readPlan(planned()), {
     plan: {
       units: [{ id: "U1", risk: "L", design: false }],
@@ -66,6 +66,12 @@ test("plans read Unit IDs, risk and design identifiers from the first plan table
     "| Extra | table | ignored | x | y |\n\n<!-- sec:verification -->",
   );
   t.assert.deepEqual(readPlan(later), readPlan(planned()));
+  t.assert.deepEqual(
+    readPlan(
+      "---\nstatus: draft\n---\n<!-- sec:plan -->\n| Unit | a | b | c | d |\n| --- | --- | --- | --- | --- |\n| U1 | a | b | L | not-required |",
+    ),
+    readPlan(planned()),
+  );
 });
 
 test("an H Unit requires Design even when every row declares none", (t) => {
@@ -102,6 +108,10 @@ test("placeholder, ambiguous and malformed plans are errors, never defaults", (t
       ["U1", "M", "required"],
     ]),
     plan.replace(/\| U1 .*\n/, "| U1 | AC-1 | src | L |\n"),
+    plan.replace(/\| U1 .*\n/, "| U1 | AC-1 |\n"),
+    plan.replace(/\| U1 .*\n/, "|  | AC-1 | src | L | not-required |\n"),
+    plan.replace(/\| --- .*\n\| U1 .*\n/, ""),
+    "",
     `${plan.replace(/\| U1 .*\n/, "")}`.replace(
       "| --- | --- | --- | --- | --- |",
       "| --- | --- | --- | --- | --- |\nnot a row",
@@ -304,6 +314,7 @@ test("absent, duplicated or unsupported targets have no content", (t) => {
       },
     ],
     [{ checkpoint: "design" }, texts],
+    [{ checkpoint: "scope" }, { intent: "", design: null }],
     [{ checkpoint: "design" }, { intent: text, design: "# No frontmatter\n" }],
   ];
   t.plan(cases.length);
