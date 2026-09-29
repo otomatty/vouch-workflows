@@ -48,15 +48,16 @@ function invoke(harness, registered, root, payload, env) {
     encoding: "utf8",
     windowsHide: true,
     timeout: 4000,
+    // The registration's own environment wins, as the harness applies it.
     env: {
       ...process.env,
-      ...env,
       CLAUDE_PROJECT_DIR: root,
       VOUCH_PROJECT_ROOT: root,
       VOUCH_HARNESS: harness === "claude" ? "codex" : "claude",
       VOUCH_INTENT: intent,
       VOUCH_TEST_TIME: "2026-09-27T00:00:00.000Z",
       NODE_OPTIONS: `--import="${pathToFileURL(resolve("tests/helpers/fixed-clock.mjs")).href}"`,
+      ...env,
     },
   });
 }

@@ -46,7 +46,7 @@ export async function reviewBox(t, harness = "claude") {
 }
 
 /** Plan rows: Unit ID, risk cell and design cell as an author writes them. */
-export const lowPlan = [["U1", "L: wording only", "not-required: no contract"]];
+const lowPlan = [["U1", "L: wording only", "not-required: no contract"]];
 
 /**
  * A synthetic draft with every intent section and a plan table in the registry grammar.

@@ -109,7 +109,7 @@ test("placeholder, ambiguous and malformed plans are errors, never defaults", (t
   ];
   t.plan(cases.length);
   for (const text of cases)
-    t.assert.equal(typeof readPlan(text).error, "string", text.slice(0, 400));
+    t.assert.equal("error" in readPlan(text), true, text.slice(0, 400));
 });
 
 test("checkpoint modes come from rules.md frontmatter or the workflow default", (t) => {
@@ -133,7 +133,11 @@ test("checkpoint modes come from rules.md frontmatter or the workflow default", 
   ];
   t.plan(cases.length);
   for (const [text, mode] of cases)
-    t.assert.equal(readCheckpointMode(text), mode, JSON.stringify(text));
+    t.assert.equal(
+      readCheckpointMode(/** @type {string|null} */ (text)),
+      mode,
+      JSON.stringify(text),
+    );
 });
 
 test("required checkpoints follow the mode, the Design condition and H Unit additions", (t) => {

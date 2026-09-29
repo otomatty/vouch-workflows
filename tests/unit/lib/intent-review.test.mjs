@@ -107,7 +107,7 @@ function project(initial, harness = "claude") {
     locate: files.locate,
     audit,
   };
-  /** @param {string} prompt @param {{identity?:string,at?:string,session?:string,ctx?:Partial<import('../../../core/hooks/lib/contracts.mjs').ReadyHookContext>}} [options] */
+  /** @param {string} prompt @param {{identity?:string,at?:string,session?:string}} [options] */
   async function send(prompt, options = {}) {
     if (options.at) instant = options.at;
     const identity = options.identity ?? `id-${++count}`;
@@ -119,7 +119,7 @@ function project(initial, harness = "claude") {
       prompt,
       [harness === "claude" ? "prompt_id" : "turn_id"]: identity,
     };
-    const result = await reviewIntent(input, { ...ctx, ...options.ctx });
+    const result = await reviewIntent(input, ctx);
     if (result.events?.length) await audit.append(result.events);
     if (result.decision === "deny" && result.approve) {
       const approved = approvedText(
@@ -142,7 +142,16 @@ test("review main allows unrelated, unscoped and non-prompt input without readin
   t.plan(3);
   t.assert.deepEqual(await send("yes"), { decision: "allow" });
   t.assert.deepEqual(
-    await send("vouch review", { ctx: { intent: undefined } }),
+    await reviewIntent(
+      {
+        hook_event_name: "UserPromptSubmit",
+        session_id: "s",
+        cwd: "/project",
+        prompt: "vouch review",
+        prompt_id: "unscoped",
+      },
+      { ...ctx, intent: "" },
+    ),
     { decision: "allow" },
   );
   t.assert.deepEqual(
@@ -318,7 +327,7 @@ test("an approval applies only when rules, plan and every current checkpoint agr
       `^VOUCH-CHECKPOINT-RECORDED: evt_[a-f0-9]{64}; units; approval ${rows[1]?.id} applied; intent\\.md approved$`,
     ),
   );
-  t.assert.deepEqual(last.approve, {
+  t.assert.deepEqual("approve" in last && last.approve, {
     sha256: snapshotIntent(planned())?.revision.sha256,
   });
   t.assert.equal(
@@ -350,7 +359,7 @@ test("confirmed checkpoints let the approval itself apply the same revision", as
     /^VOUCH-APPROVAL-APPLIED: evt_[a-f0-9]{64}; intent\.md approved at revision [a-f0-9]{12}$/,
   );
   t.assert.equal(applied.events?.[0]?.type, "intent.approved");
-  t.assert.deepEqual(applied.approve, {
+  t.assert.deepEqual("approve" in applied && applied.approve, {
     sha256: snapshotIntent(planned())?.revision.sha256,
   });
   t.assert.equal(

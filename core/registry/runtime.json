@@ -11,6 +11,8 @@
     "hooks/lib/approval.mjs",
     "hooks/lib/areas.mjs",
     "hooks/lib/audit.mjs",
+    "hooks/lib/build.mjs",
+    "hooks/lib/checkpoints.mjs",
     "hooks/lib/clock.mjs",
     "hooks/lib/contracts.mjs",
     "hooks/lib/doctor-process.mjs",

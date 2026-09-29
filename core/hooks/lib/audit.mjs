@@ -45,11 +45,18 @@ export async function findEvent(store, id) {
   return store.find(id);
 }
 
+/** @param {import('./contracts.mjs').AuditStore|undefined} store */
+export async function listEvents(store) {
+  if (!store?.list)
+    throw new Error("AUDIT-MISSING: approval evidence requires a listing");
+  return store.list();
+}
+
 /**
  * Append-only logical log, atomically replaced by FileStore. No partial batches.
  * @param {import('./runtime-contracts.mjs').FileStore} files
  * @param {string} path Explicit installation-owned destination.
- * @returns {import('./runtime-contracts.mjs').AuditStore & {find:(id:string) => Promise<import('./contracts.mjs').AuditEvent|undefined>}}
+ * @returns {import('./runtime-contracts.mjs').AuditStore & {find:(id:string) => Promise<import('./contracts.mjs').AuditEvent|undefined>,list:() => Promise<import('./contracts.mjs').AuditEvent[]>}}
  */
 export function createAuditStore(files, path) {
   /** @type {{text:string|null,events:Map<string,import('./contracts.mjs').AuditEvent>}|undefined} */
@@ -66,6 +73,11 @@ export function createAuditStore(files, path) {
     async find(id) {
       // A caller must never receive a mutable reference into the validated snapshot.
       return structuredClone(validated(await files.readText(path)).get(id));
+    },
+    async list() {
+      return structuredClone([
+        ...validated(await files.readText(path)).values(),
+      ]);
     },
     async append(events) {
       const batch = structuredClone(events);

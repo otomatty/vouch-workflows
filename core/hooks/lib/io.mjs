@@ -1,3 +1,4 @@
+import { approvedText } from "./approval.mjs";
 import { createIntentAuditStore } from "./audit.mjs";
 import { readContext, readDoctorContext } from "./env.mjs";
 import { createFileStore, descriptorWriter, readDescriptor } from "./fs.mjs";
@@ -60,6 +61,23 @@ export async function run(main, options = {}) {
       if (!audit)
         throw new Error("AUDIT-MISSING: explicit audit destination required");
       await audit.append(result.events);
+    }
+    // Approval changes the configured draft only after its evidence is durable.
+    if (result.decision === "deny" && result.approve) {
+      const { sha256 } = result.approve;
+      if (!context.intent)
+        throw new Error("APPROVAL-SCOPE: configured intent required");
+      await files.updateText(
+        `vouch/intents/${context.intent}/intent.md`,
+        (before) => {
+          const after = before === null ? null : approvedText(before, sha256);
+          if (after === null)
+            throw new Error(
+              "APPROVAL-STALE: the draft changed before approval",
+            );
+          return after === before ? null : after;
+        },
+      );
     }
     if (result.decision === "deny") {
       stderr.write(`${result.reason}\n`);
