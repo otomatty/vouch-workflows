@@ -130,9 +130,9 @@ async function push(git, ctx) {
       `${`${status}`.split("\0", 1)}`,
     ) ?? [];
   names.push(head, targets.includes("") ? upstream : "");
-  const main = names
-    .map((name) => name.trim())
-    .find((name) => name === "*" || build.protected.includes(name));
+  const main = names.find(
+    (name) => name === "*" || build.protected.includes(name),
+  );
   if (main !== undefined)
     return [
       "VOUCH-GIT-PUSH",
