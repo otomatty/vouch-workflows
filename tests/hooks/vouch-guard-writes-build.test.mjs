@@ -86,7 +86,7 @@ test("file edits outside vouch wait for the configured Intent's approved plan", 
     t.assert.deepEqual([item.exitCode, item.stderr], [0, ""]);
 });
 
-test("drafting inside vouch, unscoped sessions and shell commands are outside the boundary", async (t) => {
+test("drafting inside vouch, unscoped sessions and shell commands that name no project file are outside the boundary", async (t) => {
   const box = await approvalBox(t, "codex");
   const results = [
     guard(box, "claude", "Edit", {
@@ -109,7 +109,10 @@ test("drafting inside vouch, unscoped sessions and shell commands are outside th
       { file_path: box.path("src/app.js"), content: "x" },
       "",
     ),
-    guard(box, "claude", "Bash", { command: "npm test > test-output.txt" }),
+    guard(box, "claude", "Bash", { command: "npm test" }),
+    guard(box, "codex", "Bash", {
+      command: `mkdir -p vouch/intents/${intent}/notes`,
+    }),
   ];
   t.plan(results.length);
   for (const result of results)
@@ -162,4 +165,25 @@ test("the write guard reasons keep priority over the Build boundary", async (t) 
   t.plan(2);
   t.assert.equal(result.exitCode, 2);
   t.assert.match(result.stderr, /^VOUCH-GUARD-AUDIT: /);
+});
+
+test("shell writes outside vouch wait for the approved plan in both harnesses", async (t) => {
+  const box = await approvalBox(t);
+  const writes = [
+    guard(box, "claude", "Bash", { command: "echo x > src/app.js" }),
+    guard(box, "codex", "Bash", { command: "cp notes.txt src/app.js" }),
+  ];
+  await box.approveAfter();
+  const after = guard(box, "claude", "Bash", {
+    command: "echo x > src/app.js",
+  });
+  t.plan(writes.length * 2 + 1);
+  for (const result of writes) {
+    t.assert.equal(result.exitCode, 2);
+    t.assert.match(
+      result.stderr,
+      /^VOUCH-BUILD-UNAPPROVED: Bash src\/app\.js; /,
+    );
+  }
+  t.assert.deepEqual([after.exitCode, after.stderr], [0, ""]);
 });

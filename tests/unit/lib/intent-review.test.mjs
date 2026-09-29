@@ -296,7 +296,7 @@ test("replays keep the first time and synthetic records cannot be reused", async
   t.assert.equal(reused.events, undefined);
 });
 
-test("an approval applies only when rules, plan and every current checkpoint agree", async (t) => {
+test("an approval applies only from its own input once rules, plan and every current checkpoint agree", async (t) => {
   const { send, files, audit } = project({ [artifact]: planned() });
   await send("vouch review");
   const [gate] = await audit.list();
@@ -304,39 +304,39 @@ test("an approval applies only when rules, plan and every current checkpoint agr
   const early = await send(`vouch approve ${gate.id}`, {
     at: "2026-09-29T00:00:02Z",
   });
-  const again = await send(`vouch approve ${gate.id}`);
-  const rows = await audit.list();
+  await send("vouch confirm acceptance");
+  await send("vouch confirm scope");
+  const last = await send("vouch confirm units");
+  const unapplied = files.data.get(artifact);
+  const again = await send(`vouch approve ${gate.id}`, {
+    at: "2026-09-29T00:00:05Z",
+  });
+  const approvals = (await audit.list()).filter(
+    (row) => row.type === "intent.approved",
+  );
   t.plan(10);
   t.assert.match(
     reason(early),
     /^VOUCH-APPROVAL-RECORDED: evt_[a-f0-9]{64}; not applied: checkpoints acceptance, scope, units$/,
   );
   t.assert.equal("approve" in early, false);
-  t.assert.deepEqual(again.events ?? [], []);
-  t.assert.match(
-    reason(again),
-    new RegExp(`^VOUCH-APPROVAL-RECORDED: ${rows[1]?.id}; not applied`),
-  );
-  t.assert.equal(rows.length, 2);
-  await send("vouch confirm acceptance");
-  await send("vouch confirm scope");
-  const last = await send("vouch confirm units");
   t.assert.match(
     reason(last),
-    new RegExp(
-      `^VOUCH-CHECKPOINT-RECORDED: evt_[a-f0-9]{64}; units; approval ${rows[1]?.id} applied; intent\\.md approved$`,
-    ),
+    /^VOUCH-CHECKPOINT-RECORDED: evt_[a-f0-9]{64}; units$/,
   );
-  t.assert.deepEqual("approve" in last && last.approve, {
+  t.assert.equal("approve" in last, false);
+  t.assert.equal(unapplied, planned());
+  t.assert.match(reason(again), /^VOUCH-APPROVAL-APPLIED: /);
+  t.assert.deepEqual("approve" in again && again.approve, {
     sha256: snapshotIntent(planned())?.revision.sha256,
   });
   t.assert.equal(
     files.data.get(artifact),
     planned().replace("status: draft", "status: approved"),
   );
-  t.assert.equal(
-    (await audit.list()).filter((row) => row.type === "intent.approved").length,
-    1,
+  t.assert.deepEqual(
+    approvals.map((row) => row.type === "intent.approved" && row.wait_ms),
+    [2000, 5000],
   );
   t.assert.match(
     reason(await send("vouch confirm units")),
@@ -477,28 +477,31 @@ test("gates derive their identity, and unsupported drafts are refused with a den
   t.assert.match(reason(unsupported), /^VOUCH-REVIEW-DRAFT/);
 });
 
-test("a pending approval says what is missing, and a second gate gets its own approval", async (t) => {
-  const { send, audit } = project({ [artifact]: planned() });
+test("a confirmation never activates a recorded approval, and each gate gets its own approval", async (t) => {
+  const { send, audit, files } = project({ [artifact]: planned() });
   await send("vouch review");
   await send("vouch review");
   const [first, second] = await audit.list();
   await send(`vouch approve ${first?.id}`);
-  const pending = await send("vouch confirm acceptance");
+  for (const target of ["acceptance", "scope"])
+    await send(`vouch confirm ${target}`);
+  const confirmed = await send("vouch confirm units");
+  const afterConfirm = files.data.get(artifact) ?? "";
   const other = await send(`vouch approve ${second?.id}`);
   const approvals = (await audit.list()).filter(
     (row) => row.type === "intent.approved",
   );
   t.plan(5);
-  t.assert.match(
-    reason(pending),
-    /; acceptance; approval pending: checkpoints scope, units$/,
-  );
-  t.assert.equal("approve" in pending, false);
-  t.assert.equal(other.events?.length, 1);
-  t.assert.equal(approvals.length, 2);
+  t.assert.equal("approve" in confirmed, false);
+  t.assert.equal(snapshotIntent(afterConfirm)?.status, "draft");
+  t.assert.match(reason(other), /^VOUCH-APPROVAL-APPLIED: /);
   t.assert.deepEqual(
     approvals.map((row) => row.type === "intent.approved" && row.parent),
     [first?.id, second?.id],
+  );
+  t.assert.equal(
+    snapshotIntent(files.data.get(artifact) ?? "")?.status,
+    "approved",
   );
 });
 

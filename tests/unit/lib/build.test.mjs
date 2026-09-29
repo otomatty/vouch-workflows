@@ -140,7 +140,16 @@ test("vouch artifacts before approval, outside paths and unscoped sessions are n
       }),
     ],
     [write("src/app.js"), context(files, { intent: "" })],
-    [tool("Bash", { command: "echo x > src/app.js" }), context(files)],
+    [tool("Bash", { command: "npm test" }), context(files)],
+    [tool("Bash", { command: "node scripts/generate.mjs" }), context(files)],
+    [
+      tool("Bash", { command: "cat src/app.js | wc -l > /dev/null" }),
+      context(files),
+    ],
+    [
+      tool("Bash", { command: `mkdir -p vouch/intents/${intent}/notes` }),
+      context(files),
+    ],
     [
       tool("Agent", { prompt: "build it", subagent_type: "general-purpose" }),
       context(files),
@@ -287,4 +296,47 @@ test("only file edit tools, only the Intent's own artifacts, and a sanitized tar
     (await guardBuild(write("src/app.js"), context({}))).reason ?? "",
     /\(no intent\.md\)$/,
   );
+});
+
+test("shell redirections and writers naming paths outside vouch wait for the approved plan", async (t) => {
+  const files = { [artifact]: draft };
+  const approvedFiles = {
+    [artifact]: approved,
+    [audit]: jsonl([gate, approval]),
+  };
+  const commands = [
+    ["claude", "echo x > src/app.js"],
+    ["claude", "cat <<'EOF' >> README.md\nnew line\nEOF"],
+    ["codex", "cp notes.txt src/app.js"],
+    ["codex", "printf x | tee -a src/app.js"],
+    ["claude", "sed -i s/a/b/ src/app.js"],
+    ["claude", "sed --in-place=.bak s/a/b/ src/app.js"],
+    ["codex", "mkdir -p src/feature && touch src/feature/index.js"],
+    ["claude", "echo x > $(pwd)/vouch/notes.md"],
+    ["codex", `echo done >> vouch/intents/${intent}/build-log.md`],
+    ["claude", "FOO=1 mv old.js src/app.js"],
+  ];
+  t.plan(commands.length * 2);
+  for (const [harness, command] of commands) {
+    const input = tool("Bash", { command });
+    const denied = await guardBuild(
+      input,
+      context(files, { harness: /** @type {'claude'|'codex'} */ (harness) }),
+    );
+    t.assert.match(
+      denied.reason ?? "",
+      /^VOUCH-BUILD-UNAPPROVED: Bash .+; implementation waits for an approved plan \(intent\.md is a draft\)$/,
+      command,
+    );
+    t.assert.deepEqual(
+      await guardBuild(
+        input,
+        context(approvedFiles, {
+          harness: /** @type {'claude'|'codex'} */ (harness),
+        }),
+      ),
+      { decision: "allow" },
+      command,
+    );
+  }
 });

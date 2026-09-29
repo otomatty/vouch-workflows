@@ -62,33 +62,36 @@ for (const harness of /** @type {const} */ (["claude", "codex"])) {
   });
 }
 
-test("an approval recorded before the last checkpoint is applied by that confirmation", async (t) => {
+test("confirmations never activate a recorded approval; only a new approval input applies it", async (t) => {
   const box = await approvalBox(t);
   box.send("vouch review");
   const [gate] = await box.rows();
   if (!gate) throw Error("gate");
   const early = box.send(`vouch approve ${gate.id}`, "2026-09-27T00:00:02Z");
-  const before = await box.read(artifact);
   const confirmations = topics.map((target) => box.confirm(target));
   const last = confirmations.at(-1);
+  const before = await box.read(artifact);
+  const again = box.send(`vouch approve ${gate.id}`, "2026-09-27T00:00:05Z");
   const rows = await box.rows();
   t.plan(7);
-  t.assert.equal(early.exitCode, 2);
   t.assert.match(
     early.stderr,
     /^VOUCH-APPROVAL-RECORDED: evt_[a-f0-9]{64}; not applied: checkpoints acceptance, scope, units\n$/,
   );
-  t.assert.equal(before, draft);
   t.assert.match(
     last?.stderr ?? "",
-    /^VOUCH-CHECKPOINT-RECORDED: evt_[a-f0-9]{64}; units; approval evt_[a-f0-9]{64} applied; intent\.md approved\n$/,
+    /^VOUCH-CHECKPOINT-RECORDED: evt_[a-f0-9]{64}; units\n$/,
   );
+  t.assert.equal(before, draft);
+  t.assert.match(again.stderr, /^VOUCH-APPROVAL-APPLIED: /);
   t.assert.equal(await box.read(artifact), approved);
-  t.assert.equal(
-    rows.filter((row) => row.type === "intent.approved").length,
-    1,
+  t.assert.deepEqual(
+    rows
+      .filter((row) => row.type === "intent.approved")
+      .map((row) => row.type === "intent.approved" && row.wait_ms),
+    [2000, 5000],
   );
-  t.assert.equal(rows.length, 5);
+  t.assert.equal(rows.length, 6);
 });
 
 test("a changed section needs only its own checkpoint again", async (t) => {
@@ -102,13 +105,11 @@ test("a changed section needs only its own checkpoint again", async (t) => {
   box.send("vouch review");
   const gate = (await box.rows()).findLast((row) => row.type === "gate.opened");
   const stale = box.send(`vouch approve ${gate?.id}`, "2026-09-27T00:00:02Z");
-  const again = box.confirm("acceptance");
+  box.confirm("acceptance");
+  const again = box.send(`vouch approve ${gate?.id}`, "2026-09-27T00:00:04Z");
   t.plan(4);
   t.assert.match(stale.stderr, /; not applied: checkpoints acceptance\n$/);
-  t.assert.match(
-    again.stderr,
-    /; acceptance; approval evt_[a-f0-9]{64} applied/,
-  );
+  t.assert.match(again.stderr, /^VOUCH-APPROVAL-APPLIED: /);
   t.assert.equal(
     await box.read(artifact),
     changed.replace("status: draft", "status: approved"),
@@ -134,7 +135,11 @@ test("H plans need Design adoption and every Unit; unit and section modes come f
   );
   box.confirm("design");
   box.confirm("unit U1");
-  const last = box.confirm("unit U2");
+  box.confirm("unit U2");
+  const last = box.send(
+    `vouch approve ${first.gate.id}`,
+    "2026-09-27T00:00:05Z",
+  );
   const unit = await approvalBox(t);
   await unit.write(
     "vouch/rules.md",
@@ -153,7 +158,7 @@ test("H plans need Design adoption and every Unit; unit and section modes come f
     /; not applied: checkpoints unit U1, unit U2, design\n$/,
   );
   t.assert.match(designless.stderr, /^VOUCH-CHECKPOINT-TARGET: design/);
-  t.assert.match(last.stderr, /; unit U2; approval evt_[a-f0-9]{64} applied/);
+  t.assert.match(last.stderr, /^VOUCH-APPROVAL-APPLIED: /);
   t.assert.equal(
     await box.read(artifact),
     high.replace("status: draft", "status: approved"),

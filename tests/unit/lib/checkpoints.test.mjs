@@ -203,6 +203,9 @@ test("checkpoint modes come from rules.md frontmatter or the workflow default", 
     ["---\ncheckpoints: unit\n", null],
     [rules("old_checkpoints: unit"), null],
     [rules("checkpoints: unit extra"), null],
+    [rules("checkpoints: topic\ncheckpoints:"), null],
+    [rules("checkpoints:\ncheckpoints: unit"), null],
+    [rules("checkpoints : unit"), null],
     [`${rules("language: en")}checkpoints: unit\n`, null],
     [`﻿${rules("checkpoints: unit")}`, null],
   ];
@@ -305,7 +308,7 @@ test("checkpoint content digests the exact confirmed section, row or normalized 
   t.assert.deepEqual(
     checkpointContent({ checkpoint: "unit", unit: "U-2.b" }, texts),
     intent(
-      "| U-2.b | AC-1 | src | M — internal | required — contract diagram |",
+      "| U-2.b | AC-1 | src | M — internal | required — contract diagram |\n",
     ),
   );
   t.assert.deepEqual(checkpointContent({ checkpoint: "design" }, texts), {
@@ -325,7 +328,7 @@ test("checkpoint content digests the exact confirmed section, row or normalized 
       { checkpoint: "unit", unit: "U1" },
       { intent: crlf, design },
     ),
-    intent("| U1 | AC-1 | src | L: wording | not-required: none |"),
+    intent("| U1 | AC-1 | src | L: wording | not-required: none |\r\n"),
   );
   t.assert.deepEqual(
     checkpointContent({ checkpoint: "acceptance" }, { intent: crlf, design }),
@@ -507,4 +510,37 @@ test("only derived, nonsynthetic confirmations of the current content count", (t
   t.assert.deepEqual(query([...lookalikes, unit, scope, designed]), [
     { checkpoint: "acceptance" },
   ]);
+});
+
+test("a Unit confirmation goes stale when only its row's spacing or line break changes", (t) => {
+  const intent = "260929-plan";
+  const text = planned();
+  /** @type {import('../../../core/hooks/lib/runtime-contracts.mjs').CheckpointTarget} */
+  const target = { checkpoint: "unit", unit: "U1" };
+  const content = checkpointContent(target, { intent: text, design: null });
+  if (!content) throw new Error("content");
+  const events = [confirmation(target, content, { intent })];
+  /** @param {string} current */
+  const missing = (current) =>
+    missingCheckpoints({
+      required: [target],
+      events,
+      intent,
+      texts: { intent: current, design: null },
+      newId,
+    });
+  const row = /\| U1 .*\n/;
+  t.plan(4);
+  t.assert.deepEqual(missing(text), []);
+  t.assert.deepEqual(missing(text.replace(row, (line) => `  ${line}`)), [
+    target,
+  ]);
+  t.assert.deepEqual(
+    missing(text.replace(row, (line) => line.replace("\n", "  \n"))),
+    [target],
+  );
+  t.assert.deepEqual(
+    missing(text.replace(row, (line) => line.replace("\n", "\r\n"))),
+    [target],
+  );
 });

@@ -28,10 +28,9 @@ function p95(t, times, name, budget) {
 
 test("applying an approval stays below the record p95 budget over twenty process executions", async (t) => {
   const box = await approvalBox(t);
-  for (const target of ["acceptance", "scope"]) box.confirm(target);
+  for (const target of ["acceptance", "scope", "units"]) box.confirm(target);
   box.send("vouch review");
   const gate = (await box.rows()).find((row) => row.type === "gate.opened");
-  box.send(`vouch approve ${gate?.id}`);
   const pending = await box.read(audit);
   /** @type {number[]} */ const times = [];
   t.plan(budgets.timing.samples * 2 + 1);
@@ -43,14 +42,11 @@ test("applying an approval stays below the record p95 budget over twenty process
       await box.write(artifact, planned());
       const result = runHook(
         "vouch-record-intent-review",
-        box.fixture("vouch confirm units", `timing-${index}`),
+        box.fixture(`vouch approve ${gate?.id}`, `timing-${index}`),
         { root: box.root, intent, coverage: false },
       );
       t.assert.equal(result.exitCode, 2);
-      t.assert.match(
-        result.stderr,
-        /; units; approval evt_[a-f0-9]{64} applied/,
-      );
+      t.assert.match(result.stderr, /^VOUCH-APPROVAL-APPLIED: /);
       times.push(result.durationMs);
     }
   } finally {
