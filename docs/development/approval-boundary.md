@@ -48,7 +48,7 @@
 
 ### 粒度の選択
 
-粒度は `vouch/rules.md` の frontmatter の `checkpoints:`（topic / unit / section）で選びます。ファイルがなければ `workflow.json` の既定 topic です。ファイルがあるのに frontmatter の区切り、`checkpoints:` の1行、選択肢のどれかが欠ける・重複する・不正な場合は設定誤りとし、承認を適用しません。黙って既定に置き換えません。
+粒度は `vouch/rules.md` の frontmatter の `checkpoints:`（topic / unit / section）で選びます。ファイルがなければ `workflow.json` の既定 topic です。ファイルがあるのに frontmatter の区切りが欠ける、`checkpoints` のキーの行が1行でない（空の値の行も数える）、値が選択肢のどれでもない場合は設定誤りとし、承認を適用しません。黙って既定に置き換えません。
 
 ### 計画の読み取り
 
@@ -80,7 +80,7 @@
 | --- | --- |
 | acceptance / scope / units | intent.md の `sec:acceptance` / `sec:scope` / `sec:plan` 節 |
 | section `<ID>` | intent.md の `sec:<ID>` 節 |
-| unit `<ID>` | `sec:plan` 節の最初の表で、1列目が ID の行 |
+| unit `<ID>` | `sec:plan` 節の最初の表で、1列目が ID の行。行頭・行末の空白と改行を含むバイト列 |
 | design | design.md 全体。intent.md と同じ frontmatter の規則で status を draft に置き換えた版 |
 
 節は `<!-- sec:ID -->` だけの行から、次の `<!-- sec:` で始まる行の前まで（なければ末尾まで）のバイト列です。区切り行と改行を含み、正規化しません。区切り行が1つでない、行がない、design.md が対応する frontmatter を持たない場合は対象がなく、`VOUCH-CHECKPOINT-TARGET` で記録しません。
@@ -103,27 +103,27 @@ checkpoint.confirmed に任意の `content`（path は intent.md か design.md�
 2. rules.md の粒度が有効で、計画が読める。
 3. 必要な確認点がすべて現在の内容で確認されている。
 
-`vouch approve` は、既存の照合が一致すれば、条件2・3に関わらず承認を記録します（既存の記録の契約）。条件がそろえば同じ入力で適用し、`VOUCH-APPROVAL-APPLIED` を返します。そろわなければ記録だけを行い、`VOUCH-APPROVAL-RECORDED` と適用しなかった理由（rules、plan、checkpoints と不足の一覧）を返します。その後の `vouch confirm` で条件がそろった時は、その確認の記録と同じ入力で適用し、理由に approved を示します。人が承認をやり直す必要はありません。
+適用するのは `vouch approve` の入力だけです。条件1の承認は、その入力から作った承認記録で、既存の照合（版・スコープ・親ゲート・入力・待ち時間）がその入力と一致したものに限ります。監査にある別の入力の承認記録を、後の入力で有効にすることはしません。登録外の経路で書かれた形式の正しい承認記録を、人の別の操作で approved に結び付けないためです。
 
-同じゲートに条件1を満たす承認がすでにある時、別の入力 ID の `vouch approve` は新しい承認を記録せず、既存の承認で適用を判定します。同じ回答の待ち時間を二重に数えないためです。同じ入力 ID の再送は既存の記録と同じ ID になり、追記しません。
+`vouch approve` は、照合が一致すれば、条件2・3に関わらず承認を記録します（既存の記録の契約）。条件がそろえば同じ入力で適用し、`VOUCH-APPROVAL-APPLIED` を返します。そろわなければ記録だけを行い、`VOUCH-APPROVAL-RECORDED` と適用しなかった理由（rules、plan、checkpoints と不足の一覧）を返します。`vouch confirm` は確認点を記録するだけで、承認を適用しません。不足を直した後は、人が `vouch approve <ゲート ID>` をもう一度入力します。その入力は自分の承認記録を作るので、1つのゲートに承認記録が複数あり得ます。approved にしたのは最後の記録で、待ち時間の集計（#12）はこれを区別します。同じ入力 ID の再送は既存の記録と同じ ID になり、追記しません。
 
 ### 更新の手順と順序
 
-HookResult の `approve: {sha256}` が、承認の適用の指示です。io.run は、監査レコードの追記に成功した後に、設定した Intent の intent.md を FileStore の updateText（ロック・一時ファイル・原子的な置き換え）で更新します。更新の関数は、その時点の本文が版 sha256 の対応する draft の時だけ、frontmatter の `status: draft` を `status: approved` に置き換えます。本文・改行・末尾は変えないので、版は同じです。すでに同じ版の approved なら書き込みません。それ以外（競合する変更、版の違い、ファイルの消失）は例外とし、HOOK-2 の終了0の診断になります。記録は残り、同じ入力の再送か次の確認で適用できます。
+HookResult の `approve: {sha256}` が、承認の適用の指示です。io.run は、監査レコードの追記に成功した後に、設定した Intent の intent.md を FileStore の updateText（ロック・一時ファイル・原子的な置き換え）で更新します。更新の関数は、その時点の本文が版 sha256 の対応する draft の時だけ、frontmatter の `status: draft` を `status: approved` に置き換えます。本文・改行・末尾は変えないので、版は同じです。すでに同じ版の approved なら書き込みません。それ以外（競合する変更、版の違い、ファイルの消失）は例外とし、HOOK-2 の終了0の診断になります。記録は残り、同じ入力の再送か新しい `vouch approve` の入力で適用できます。
 
 モデルとツールは approved を作りません。書き込み保護はツールからの approved の作成と承認済みの変更を引き続き拒否します。正規の更新主体はこのフックだけです。
 
 ## Build 開始の境界
 
-設定した Intent があり、PreToolUse のツールがファイル編集ツール（Claude の Write / Edit、Codex の apply_patch）の時、書き込み保護の検査の後に次を検査します。
+設定した Intent があり、PreToolUse のツールが登録したツールの時、書き込み保護の検査の後に次を検査します。
 
-- 対象：プロジェクト内で `vouch/` の外にあるパス、または設定した Intent の Build・Verify の成果物（build-log.md、review.md）
+- 対象：プロジェクト内で `vouch/` の外にあるパス、または設定した Intent の Build・Verify の成果物（build-log.md、review.md）。ファイル編集ツール（Claude の Write / Edit、Codex の apply_patch）では書き込み先のパスです。シェル（両ハーネスの Bash）では、出力をリダイレクトする単純コマンドと、`approval.json` の writers（cp、mv、tee など）と `sed -i` の単純コマンドの、プログラム名と `-` で始まる語を除く語です。語は入力の cwd から解決します。これらの書き込みに `$(`・バッククォートなどの動的な構成があれば、書き込み先を確定できないので対象とします
 - 許可：intent.md が approved で、その版に「承認の適用」の条件1の承認がある
 - 拒否：それ以外。`VOUCH-BUILD-UNAPPROVED` と理由（intent.md がない、draft、未対応、その版の承認の証跡がない、読めない）
 
 監査や intent.md を読めない時は、fail-open にせず拒否します。確認点は承認の適用時に検査済みなので、Build 開始では再検査しません。承認後に rules.md の粒度を変えても、承認済みの計画を遡って無効にしないためです。
 
-`vouch/` の中（Intent の下書き、decisions.md、design.md、rules.md、知識レイヤー）と、プロジェクトの外への書き込みは対象外です。Intent を設定していない時は検査しません。シェルのコマンドは、任意のプログラムの書き込み先を機械的に確定できないため対象外です。Skill はファイル編集ツールで実装します。builder エージェント（#8）の起動の検査は、エージェントの定義とともに同じ判定を使って追加します。
+`vouch/` の中（Intent の下書き、decisions.md、design.md、rules.md、知識レイヤー）と、プロジェクトの外への書き込みは対象外です。Intent を設定していない時は検査しません。シェルでは、名指した語がファイル名でなくても対象に数えるため、過剰側に倒れます（`echo text > vouch/...` の text なども数える）。writers にないプログラム（node、python、npm のスクリプト、`bash -c`、eval など）の書き込み先は機械的に確定できないため検査外です。テストの実行などの調査は妨げません。Skill はファイル編集ツールで実装します。builder エージェント（#8）の起動の検査は、エージェントの定義とともに同じ判定を使って追加します。
 
 ## 承認コミットと PR
 
@@ -135,7 +135,7 @@ Intent の承認は PR の承認ではありません。このフックは gate.
 
 | 理由 ID | 条件 |
 | --- | --- |
-| `VOUCH-CHECKPOINT-RECORDED` | 確認点を記録した。承認を適用した時はそれも示す |
+| `VOUCH-CHECKPOINT-RECORDED` | 確認点を記録した。承認は適用しない |
 | `VOUCH-CHECKPOINT-TARGET` | 確認の対象が文書にない、または一意でない |
 | `VOUCH-APPROVAL-RECORDED` | 承認を記録したが、適用の条件がそろわない |
 | `VOUCH-APPROVAL-APPLIED` | 承認を記録し、intent.md を approved にした |
@@ -176,7 +176,8 @@ Claude の非対話 CLI はフックの理由を表示するので、確認・�
 | 確認点の不足・古い確認での承認 | 記録だけにして適用しない |
 | 古い承認・別 Intent・合成・旧形式・ID の導出の不一致 | 承認の連鎖に数えない |
 | 承認なしのファイル編集ツールによる実装の書き込み | Build の境界が拒否 |
-| シェルでの実装の書き込み、登録していないツール、サブエージェントの未採取の経路 | 検査外 |
+| シェルのリダイレクトと writers による `vouch/` の外への書き込み | Build の境界が拒否 |
+| writers にないプログラム・`bash -c`・eval などを介したシェルの書き込み、登録していないツール、サブエージェントの未採取の経路 | 検査外 |
 | 任意のプロセスからの stdin の偽装、ハーネス外での監査・成果物の編集 | 検査外。形式と ID の導出が正しい偽のレコードは区別できない |
 | 検査とツール実行の間の競合 | 防がない |
 | Intent を設定していないセッション | 検査しない |

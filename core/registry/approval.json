@@ -6,12 +6,31 @@
     "section": "plan",
     "unit": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}(?![\\s\\S])",
     "risks": ["L", "M", "H"],
-    "design": { "required": "required", "skipped": "not-required" }
+    "design": {
+      "required": "required",
+      "skipped": "not-required"
+    }
   },
   "topics": {
     "acceptance": "acceptance",
     "scope": "scope",
     "units": "plan"
   },
-  "build": ["build", "verify"]
+  "build": ["build", "verify"],
+  "writers": [
+    "cp",
+    "dd",
+    "install",
+    "ln",
+    "mkdir",
+    "mv",
+    "patch",
+    "rm",
+    "rmdir",
+    "rsync",
+    "tee",
+    "touch",
+    "truncate",
+    "unlink"
+  ]
 }

@@ -77,8 +77,8 @@ export {};
  * @typedef {{kind:'open'}|{kind:'approve',gate:string}|{kind:'confirm',target:CheckpointTarget}|{kind:'invalid'}|null} IntentReviewCommand
  * @typedef {(prompt:string)=>IntentReviewCommand} ParseIntentReviewCommand
  * @typedef {(input:import('./contracts.mjs').HookInput,ctx:import('./contracts.mjs').ReadyHookContext)=>Promise<import('./contracts.mjs').HookResult>} ReviewIntent
- * Records explicit review, checkpoint and approval inputs; asks io to apply approval only when the
- * approval chain and every required checkpoint match the current texts.
+ * Records explicit review, checkpoint and approval inputs; asks io to apply approval only for an
+ * approval input whose own record matches it and when every required checkpoint matches the current texts.
  */
 
 /**

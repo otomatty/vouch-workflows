@@ -3,7 +3,15 @@
   "$id": "https://vouch.dev/schemas/approval.json",
   "type": "object",
   "additionalProperties": false,
-  "required": ["$schema", "version", "rules", "plan", "topics", "build"],
+  "required": [
+    "$schema",
+    "version",
+    "rules",
+    "plan",
+    "topics",
+    "build",
+    "writers"
+  ],
   "properties": {
     "$schema": {
       "const": "./approval.schema.json"
@@ -61,6 +69,24 @@
     },
     "build": {
       "const": ["build", "verify"]
+    },
+    "writers": {
+      "const": [
+        "cp",
+        "dd",
+        "install",
+        "ln",
+        "mkdir",
+        "mv",
+        "patch",
+        "rm",
+        "rmdir",
+        "rsync",
+        "tee",
+        "touch",
+        "truncate",
+        "unlink"
+      ]
     }
   }
 }
