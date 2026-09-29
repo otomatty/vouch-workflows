@@ -1,5 +1,7 @@
 # Claude Code 実機記録
 
+このファイルは Windows での採取記録です。2026-09-28 の Linux での採取（Claude Code 2.1.283、Codex 0.153.4）は [linux/README.md](linux/README.md) に記録しています。原文と包装の対応は [inventory.json](../harness/inventory.json) にあります。
+
 ## UserPromptSubmit
 
 - 日付: 2026-09-27

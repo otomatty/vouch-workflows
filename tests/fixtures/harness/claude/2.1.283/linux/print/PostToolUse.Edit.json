@@ -1,0 +1,54 @@
+{
+  "harness": "claude",
+  "version": "2.1.283",
+  "synthetic": false,
+  "provenance": "captured",
+  "source": {
+    "path": "tests/fixtures/captures/claude-2.1.283-linux-print.jsonl",
+    "commit": "8c975f3",
+    "key": "PostToolUse.Edit#1"
+  },
+  "payload": {
+    "session_id": "50d14cd6-cdbc-46cd-bac0-5d43b5a525b0",
+    "transcript_path": "/home/user/vouch-workflows/reports/capture2/claude-print/config/projects/-home-user-vouch-workflows-reports-capture2-claude-print-project/50d14cd6-cdbc-46cd-bac0-5d43b5a525b0.jsonl",
+    "cwd": "/home/user/vouch-workflows/reports/capture2/claude-print/project",
+    "prompt_id": "05c87cd6-5589-4f0e-bb63-bf679aff8b20",
+    "permission_mode": "acceptEdits",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PostToolUse",
+    "tool_name": "Edit",
+    "tool_input": {
+      "file_path": "/home/user/vouch-workflows/reports/capture2/claude-print/project/intent.md",
+      "old_string": "# Capture only",
+      "new_string": "# Capture only (edited)",
+      "replace_all": false
+    },
+    "tool_response": {
+      "filePath": "/home/user/vouch-workflows/reports/capture2/claude-print/project/intent.md",
+      "oldString": "# Capture only",
+      "newString": "# Capture only (edited)",
+      "originalFile": "---\nstatus: draft\n---\n# Capture only\n",
+      "structuredPatch": [
+        {
+          "oldStart": 1,
+          "oldLines": 4,
+          "newStart": 1,
+          "newLines": 4,
+          "lines": [
+            " ---",
+            " status: draft",
+            " ---",
+            "-# Capture only",
+            "+# Capture only (edited)"
+          ]
+        }
+      ],
+      "userModified": false,
+      "replaceAll": false
+    },
+    "tool_use_id": "toolu_vouch_capture_1",
+    "duration_ms": 12
+  }
+}

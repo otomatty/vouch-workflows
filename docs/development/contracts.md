@@ -50,7 +50,7 @@ Q1 の「約25種」は概数です。具体表の全27種を採用します。Q
 
 `tests/fixtures/audit/*.jsonl` は手製のスキーマ例で、`synthetic: true` を付けます。フックから採取した証跡とは扱いません。v2 の台帳 fixture はバイト単位のコピーを保存し、原本との一致を検査します。
 
-Codex の既存実機 payload は元ファイルを変えず、メタデータを外側に付けます。記録に版番号がないため `version: null` とし、TEST-7 の契約実行には未適格と記録します。`emit.ts` の別検証の版番号や payload の `model` は流用しません。Claude Code は実機記録がありません。
+Codex の既存実機 payload は元ファイルを変えず、メタデータを外側に付けます。記録に版番号がないため `version: null` とし、TEST-7 の契約実行には未適格と記録します。`emit.ts` の別検証の版番号や payload の `model` は流用しません。版付きの実機 fixture と契約実行の適格性は、[版付きハーネス fixture](harness-fixtures.md) の一覧で管理します。
 
 ## 実装済みと未実装の境界
 

@@ -1,0 +1,489 @@
+{
+  "v": 1,
+  "kind": "native-cli-observation",
+  "scripted": true,
+  "humanApproval": false,
+  "modelEvaluation": false,
+  "date": "2026-09-28",
+  "commit": "43c45ed",
+  "script": "scripts/check-hook-propagation.mjs",
+  "runs": [
+    {
+      "harness": "claude",
+      "cliVersion": "2.1.283 (Claude Code)",
+      "platform": "linux",
+      "interactive": false,
+      "nodeVersion": "v22.22.2",
+      "observations": [
+        {
+          "case": "allow",
+          "harness": "claude",
+          "interactive": false,
+          "exitCode": 0,
+          "promptRequests": 1,
+          "events": [
+            {
+              "id": "evt_b5b02f960c8281667a0874facab9c1ee65115737565e5757b672d23822c24622",
+              "v": 1,
+              "type": "session.started",
+              "ts": "2026-09-28T14:24:06.277Z",
+              "actor": "hook",
+              "harness": "claude",
+              "intent": "260928-propagation",
+              "session": "f342270d-2a8b-49a3-a2a4-40a7e73aab21"
+            }
+          ],
+          "auditExists": true,
+          "auditUnchanged": true,
+          "output": ""
+        },
+        {
+          "case": "open",
+          "harness": "claude",
+          "interactive": false,
+          "exitCode": 0,
+          "promptRequests": 0,
+          "events": [
+            {
+              "id": "evt_24f7f4c031dfafff5515280fd0898635414c3d8de498dc0b058eaf0615b8697d",
+              "v": 1,
+              "type": "session.started",
+              "ts": "2026-09-28T14:24:07.239Z",
+              "actor": "hook",
+              "harness": "claude",
+              "intent": "260928-propagation",
+              "session": "3b1c235e-8990-47ea-992f-5f9b0aec1b57"
+            },
+            {
+              "id": "evt_b2c38a2f993dd130e31acf7aabeac2051552fa974aa19ddcb1bf815ec7addb49",
+              "v": 1,
+              "type": "gate.opened",
+              "ts": "2026-09-28T14:24:07.372Z",
+              "actor": "hook",
+              "harness": "claude",
+              "intent": "260928-propagation",
+              "session": "3b1c235e-8990-47ea-992f-5f9b0aec1b57",
+              "source": "intent",
+              "revision": {
+                "path": "intent.md",
+                "sha256": "bd369973e7510ebdc60062406f52aba895874a93de8af8d0748593c709779e40"
+              }
+            }
+          ],
+          "auditExists": true,
+          "auditUnchanged": true,
+          "output": "UserPromptSubmit operation blocked by hook:\n[node ${CLAUDE_PROJECT_DIR}/.claude/hooks/vouch-record-intent-review.mjs]: VOUCH-REVIEW-RECORDED: evt_b2c38a2f993dd130e31acf7aabeac2051552fa974aa19ddcb1bf815ec7addb49; draft review opened; no status change"
+        },
+        {
+          "case": "invalid",
+          "harness": "claude",
+          "interactive": false,
+          "exitCode": 0,
+          "promptRequests": 0,
+          "events": [
+            {
+              "id": "evt_c9d87f6ab6c3062d87e59305ed0a7d86dfab76210872c142ba39771719985a0a",
+              "v": 1,
+              "type": "session.started",
+              "ts": "2026-09-28T14:24:08.093Z",
+              "actor": "hook",
+              "harness": "claude",
+              "intent": "260928-propagation",
+              "session": "33de426a-1fbe-4a9e-8ac6-9730eba35c7b"
+            }
+          ],
+          "auditExists": true,
+          "auditUnchanged": true,
+          "output": "UserPromptSubmit operation blocked by hook:\n[node ${CLAUDE_PROJECT_DIR}/.claude/hooks/vouch-record-intent-review.mjs]: VOUCH-REVIEW-COMMAND: exact review or approval input required"
+        },
+        {
+          "case": "corrupt",
+          "harness": "claude",
+          "interactive": false,
+          "exitCode": 0,
+          "promptRequests": 1,
+          "events": [],
+          "auditExists": true,
+          "auditUnchanged": true,
+          "output": ""
+        },
+        {
+          "case": "no-intent",
+          "harness": "claude",
+          "interactive": false,
+          "exitCode": 0,
+          "promptRequests": 1,
+          "events": [],
+          "auditExists": false,
+          "auditUnchanged": true,
+          "output": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "harness": "claude",
+      "cliVersion": "2.1.283 (Claude Code)",
+      "platform": "linux",
+      "interactive": true,
+      "nodeVersion": "v22.22.2",
+      "observations": [
+        {
+          "case": "allow",
+          "harness": "claude",
+          "interactive": true,
+          "exitCode": null,
+          "promptRequests": 2,
+          "events": [
+            {
+              "id": "evt_8b7b97108d7ea22f1897aabf97a022f7db518a44d75c97882cc5eafe36abff03",
+              "v": 1,
+              "type": "session.started",
+              "ts": "2026-09-28T14:24:11.099Z",
+              "actor": "hook",
+              "harness": "claude",
+              "intent": "260928-propagation",
+              "session": "bc1bc372-35a5-4bef-b87c-6dbcc466c349"
+            }
+          ],
+          "auditExists": true,
+          "auditUnchanged": true,
+          "output": "(running SessionStart hook · 0s)\n✢UserPromptSubmit hook · 0s)"
+        },
+        {
+          "case": "open",
+          "harness": "claude",
+          "interactive": true,
+          "exitCode": null,
+          "promptRequests": 0,
+          "events": [
+            {
+              "id": "evt_0d39fc0c6350fd582ce147c28f10bd1203c2d56eecc523f8cb9680164703f36b",
+              "v": 1,
+              "type": "session.started",
+              "ts": "2026-09-28T14:24:16.895Z",
+              "actor": "hook",
+              "harness": "claude",
+              "intent": "260928-propagation",
+              "session": "387b220b-f313-47ba-ba85-5f3eb405218a"
+            },
+            {
+              "id": "evt_7f46ab04f18db6c906efb4accb0b40b32a30abf9e3714cab47fa274eadeaa619",
+              "v": 1,
+              "type": "gate.opened",
+              "ts": "2026-09-28T14:24:17.298Z",
+              "actor": "hook",
+              "harness": "claude",
+              "intent": "260928-propagation",
+              "session": "387b220b-f313-47ba-ba85-5f3eb405218a",
+              "source": "intent",
+              "revision": {
+                "path": "intent.md",
+                "sha256": "bd369973e7510ebdc60062406f52aba895874a93de8af8d0748593c709779e40"
+              }
+            }
+          ],
+          "auditExists": true,
+          "auditUnchanged": true,
+          "output": "(running SessionStart hook · 0s)\n✢UserPromptSubmit hook · 0s)\n● UserPromptSubmit operation blocked by hook:\n[node ${CLAUDE_PROJECT_DIR}/.claude/hooks/vouch-record-intent-review.mjs]: VOUCH-REVIEW-RECORDED:"
+        },
+        {
+          "case": "invalid",
+          "harness": "claude",
+          "interactive": true,
+          "exitCode": null,
+          "promptRequests": 0,
+          "events": [
+            {
+              "id": "evt_3c350b956e85eb4f199ad2a162d6156e2bbbd8b3360c794aa0d7a5c43097862f",
+              "v": 1,
+              "type": "session.started",
+              "ts": "2026-09-28T14:24:22.661Z",
+              "actor": "hook",
+              "harness": "claude",
+              "intent": "260928-propagation",
+              "session": "4166063e-ebc4-40dd-a516-235df2b50ab9"
+            }
+          ],
+          "auditExists": true,
+          "auditUnchanged": true,
+          "output": "(running SessionStart hook · 0s)\n✢UserPromptSubmit hook · 0s)\n● UserPromptSubmit operation blocked by hook:\n[node ${CLAUDE_PROJECT_DIR}/.claude/hooks/vouch-record-intent-review.mjs]: VOUCH-REVIEW-COMMAND: exact review"
+        },
+        {
+          "case": "corrupt",
+          "harness": "claude",
+          "interactive": true,
+          "exitCode": null,
+          "promptRequests": 2,
+          "events": [],
+          "auditExists": true,
+          "auditUnchanged": true,
+          "output": "(running SessionStart hook · 0s)\n✢UserPromptSubmit hook · 0s)"
+        },
+        {
+          "case": "no-intent",
+          "harness": "claude",
+          "interactive": true,
+          "exitCode": null,
+          "promptRequests": 2,
+          "events": [],
+          "auditExists": false,
+          "auditUnchanged": true,
+          "output": "(running SessionStart hook · 0s)\n✢UserPromptSubmit hook · 0s)"
+        }
+      ],
+      "errors": []
+    },
+    {
+      "harness": "codex",
+      "cliVersion": "codex-cli 0.153.4",
+      "platform": "linux",
+      "interactive": false,
+      "nodeVersion": "v22.22.2",
+      "observations": [
+        {
+          "case": "allow",
+          "harness": "codex",
+          "interactive": false,
+          "exitCode": 0,
+          "promptRequests": 1,
+          "events": [
+            {
+              "id": "evt_56bef2753a03be818e302bf8b67ae1205e628249c6fee5efe5e5c94838cfa169",
+              "v": 1,
+              "type": "session.started",
+              "ts": "2026-09-28T14:24:40.928Z",
+              "actor": "hook",
+              "harness": "codex",
+              "intent": "260928-propagation",
+              "session": "01a0e867-52ff-7ed0-86a4-5fd597bb1c0c"
+            }
+          ],
+          "auditExists": true,
+          "auditUnchanged": true,
+          "output": "hook: SessionStart\nhook: SessionStart Completed\nhook: UserPromptSubmit\nhook: UserPromptSubmit Completed"
+        },
+        {
+          "case": "open",
+          "harness": "codex",
+          "interactive": false,
+          "exitCode": 0,
+          "promptRequests": 0,
+          "events": [
+            {
+              "id": "evt_ccfe613fa4ab98be029abd441ad4a3fe7b47acb60c8bd683ee72c027622a4cbd",
+              "v": 1,
+              "type": "session.started",
+              "ts": "2026-09-28T14:24:42.009Z",
+              "actor": "hook",
+              "harness": "codex",
+              "intent": "260928-propagation",
+              "session": "01a0e867-5728-7050-9bd4-453a41cda8dd"
+            },
+            {
+              "id": "evt_d29082a6c58885050e0966458376c3905128725897a8582210b9b0e10e4f1366",
+              "v": 1,
+              "type": "gate.opened",
+              "ts": "2026-09-28T14:24:42.100Z",
+              "actor": "hook",
+              "harness": "codex",
+              "intent": "260928-propagation",
+              "session": "01a0e867-5728-7050-9bd4-453a41cda8dd",
+              "source": "intent",
+              "revision": {
+                "path": "intent.md",
+                "sha256": "bd369973e7510ebdc60062406f52aba895874a93de8af8d0748593c709779e40"
+              }
+            }
+          ],
+          "auditExists": true,
+          "auditUnchanged": true,
+          "output": "hook: SessionStart\nhook: SessionStart Completed\nhook: UserPromptSubmit\nhook: UserPromptSubmit Blocked"
+        },
+        {
+          "case": "invalid",
+          "harness": "codex",
+          "interactive": false,
+          "exitCode": 0,
+          "promptRequests": 0,
+          "events": [
+            {
+              "id": "evt_e49a245ae227b734a947312a45a28d8ce369de8a03ecfc8035b8f5330054bbbd",
+              "v": 1,
+              "type": "session.started",
+              "ts": "2026-09-28T14:24:42.988Z",
+              "actor": "hook",
+              "harness": "codex",
+              "intent": "260928-propagation",
+              "session": "01a0e867-5b0a-7262-a9d0-5bc4cad0e820"
+            }
+          ],
+          "auditExists": true,
+          "auditUnchanged": true,
+          "output": "hook: SessionStart\nhook: SessionStart Completed\nhook: UserPromptSubmit\nhook: UserPromptSubmit Blocked"
+        },
+        {
+          "case": "corrupt",
+          "harness": "codex",
+          "interactive": false,
+          "exitCode": 0,
+          "promptRequests": 1,
+          "events": [],
+          "auditExists": true,
+          "auditUnchanged": true,
+          "output": "hook: SessionStart\nhook: SessionStart Completed\nhook: UserPromptSubmit\nhook: UserPromptSubmit Completed"
+        },
+        {
+          "case": "no-intent",
+          "harness": "codex",
+          "interactive": false,
+          "exitCode": 0,
+          "promptRequests": 1,
+          "events": [],
+          "auditExists": false,
+          "auditUnchanged": true,
+          "output": "hook: SessionStart\nhook: SessionStart Completed\nhook: UserPromptSubmit\nhook: UserPromptSubmit Completed"
+        },
+        {
+          "case": "no-root",
+          "harness": "codex",
+          "interactive": false,
+          "exitCode": 0,
+          "promptRequests": 1,
+          "events": [],
+          "auditExists": false,
+          "auditUnchanged": true,
+          "output": "hook: SessionStart\nhook: SessionStart Failed\nhook: UserPromptSubmit\nhook: UserPromptSubmit Failed"
+        }
+      ],
+      "errors": [
+        "open:PROPAGATION-REASON",
+        "invalid:PROPAGATION-REASON"
+      ]
+    },
+    {
+      "harness": "codex",
+      "cliVersion": "codex-cli 0.153.4",
+      "platform": "linux",
+      "interactive": true,
+      "nodeVersion": "v22.22.2",
+      "observations": [
+        {
+          "case": "allow",
+          "harness": "codex",
+          "interactive": true,
+          "exitCode": null,
+          "promptRequests": 1,
+          "events": [
+            {
+              "id": "evt_afcde0cf3594d8416d3b04fa10fddce576090ba5ac903c57a1be85f47cd97a54",
+              "v": 1,
+              "type": "session.started",
+              "ts": "2026-09-28T14:24:47.219Z",
+              "actor": "hook",
+              "harness": "codex",
+              "intent": "260928-propagation",
+              "session": "01a0e867-6b9a-7ce0-afd6-d7cf1b481d67"
+            }
+          ],
+          "auditExists": true,
+          "auditUnchanged": true,
+          "output": ""
+        },
+        {
+          "case": "open",
+          "harness": "codex",
+          "interactive": true,
+          "exitCode": null,
+          "promptRequests": 0,
+          "events": [
+            {
+              "id": "evt_a412bbab65470c02fb50f64adf9dfe3562d13c5a19208bb20984f99b649e79b2",
+              "v": 1,
+              "type": "session.started",
+              "ts": "2026-09-28T14:24:53.028Z",
+              "actor": "hook",
+              "harness": "codex",
+              "intent": "260928-propagation",
+              "session": "01a0e867-8218-7372-8d4f-8c3e082831ca"
+            },
+            {
+              "id": "evt_f4c9b57d116298c3bfefc60d4ab8667abdddc68bf0df56c2d667aa9415f808e6",
+              "v": 1,
+              "type": "gate.opened",
+              "ts": "2026-09-28T14:24:53.108Z",
+              "actor": "hook",
+              "harness": "codex",
+              "intent": "260928-propagation",
+              "session": "01a0e867-8218-7372-8d4f-8c3e082831ca",
+              "source": "intent",
+              "revision": {
+                "path": "intent.md",
+                "sha256": "bd369973e7510ebdc60062406f52aba895874a93de8af8d0748593c709779e40"
+              }
+            }
+          ],
+          "auditExists": true,
+          "auditUnchanged": true,
+          "output": "• Blocked by hook\n└ VOUCH-REVIEW-RECORDED: evt_f4c9b57d116298c3bfefc60d4ab8667abdddc68bf0df56c2d667aa9415f808e6; draft review opened; no"
+        },
+        {
+          "case": "invalid",
+          "harness": "codex",
+          "interactive": true,
+          "exitCode": null,
+          "promptRequests": 0,
+          "events": [
+            {
+              "id": "evt_4878a8cd9293c74bdb0d0373ede9f101eb69e950395deef7bba47a144129fafd",
+              "v": 1,
+              "type": "session.started",
+              "ts": "2026-09-28T14:24:58.741Z",
+              "actor": "hook",
+              "harness": "codex",
+              "intent": "260928-propagation",
+              "session": "01a0e867-988a-72f0-969b-ca2a243ec520"
+            }
+          ],
+          "auditExists": true,
+          "auditUnchanged": true,
+          "output": "• Blocked by hook\n└ VOUCH-REVIEW-COMMAND: exact review or approval input required   › Ask Codex to do anything   gpt-6-astra default · /home/user/vouch-workflows/reports/propagation-codex-interactive-4d43TM/invalid/project space"
+        },
+        {
+          "case": "corrupt",
+          "harness": "codex",
+          "interactive": true,
+          "exitCode": null,
+          "promptRequests": 1,
+          "events": [],
+          "auditExists": true,
+          "auditUnchanged": true,
+          "output": ""
+        },
+        {
+          "case": "no-intent",
+          "harness": "codex",
+          "interactive": true,
+          "exitCode": null,
+          "promptRequests": 1,
+          "events": [],
+          "auditExists": false,
+          "auditUnchanged": true,
+          "output": ""
+        },
+        {
+          "case": "no-root",
+          "harness": "codex",
+          "interactive": true,
+          "exitCode": null,
+          "promptRequests": 1,
+          "events": [],
+          "auditExists": false,
+          "auditUnchanged": true,
+          "output": "• Hook failed\n└ hook exited with code 127"
+        }
+      ],
+      "errors": []
+    }
+  ]
+}

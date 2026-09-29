@@ -1,0 +1,26 @@
+{
+  "harness": "codex",
+  "version": "0.153.4",
+  "synthetic": false,
+  "provenance": "captured",
+  "source": {
+    "path": "tests/fixtures/captures/codex-0.153.4-linux-exec.jsonl",
+    "commit": "8c975f3",
+    "key": "PostToolUse.apply_patch#1"
+  },
+  "payload": {
+    "session_id": "01a0e853-571e-7581-8375-a05579c9e81f",
+    "turn_id": "01a0e853-5751-7a10-91a1-e1544e20373e",
+    "transcript_path": "/home/user/vouch-workflows/reports/capture/codex-exec/home/sessions/2026/09/28/rollout-2026-09-28T14-02-51-01a0e853-571e-7581-8375-a05579c9e81f.jsonl",
+    "cwd": "/home/user/vouch-workflows/reports/capture/codex-exec/project",
+    "hook_event_name": "PostToolUse",
+    "model": "gpt-6-astra",
+    "permission_mode": "bypassPermissions",
+    "tool_name": "apply_patch",
+    "tool_input": {
+      "command": "*** Begin Patch\n*** Add File: capture.txt\n+Native tool fixture only.\n*** End Patch\n"
+    },
+    "tool_response": "Exit code: 0\nWall time: 0.2 seconds\nOutput:\nSuccess. Updated the following files:\nA capture.txt\n",
+    "tool_use_id": "exec-120c27f9-bc51-49a9-a51e-de0b2ecb05d7"
+  }
+}

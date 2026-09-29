@@ -1,0 +1,20 @@
+{
+  "harness": "claude",
+  "version": "2.1.283",
+  "synthetic": false,
+  "provenance": "captured",
+  "source": {
+    "path": "tests/fixtures/captures/claude-2.1.283-linux-tty.jsonl",
+    "commit": "8c975f3",
+    "key": "UserPromptSubmit#1"
+  },
+  "payload": {
+    "session_id": "13a308d2-daf4-47fd-8324-fd7c362eb753",
+    "transcript_path": "/home/user/vouch-workflows/reports/capture2/claude-tty/config/projects/-home-user-vouch-workflows-reports-capture2-claude-tty-project/13a308d2-daf4-47fd-8324-fd7c362eb753.jsonl",
+    "cwd": "/home/user/vouch-workflows/reports/capture2/claude-tty/project",
+    "prompt_id": "afa98ac3-50e1-4ffc-ad12-97f7882fb95c",
+    "permission_mode": "auto",
+    "hook_event_name": "UserPromptSubmit",
+    "prompt": "Ask the capture question in the isolated fixture project."
+  }
+}

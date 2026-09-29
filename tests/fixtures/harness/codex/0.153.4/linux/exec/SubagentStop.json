@@ -1,0 +1,25 @@
+{
+  "harness": "codex",
+  "version": "0.153.4",
+  "synthetic": false,
+  "provenance": "captured",
+  "source": {
+    "path": "tests/fixtures/captures/codex-0.153.4-linux-exec.jsonl",
+    "commit": "8c975f3",
+    "key": "SubagentStop#1"
+  },
+  "payload": {
+    "session_id": "01a0e853-571e-7581-8375-a05579c9e81f",
+    "turn_id": "01a0e853-5c96-7622-b382-601350a8eb6d",
+    "transcript_path": "/home/user/vouch-workflows/reports/capture/codex-exec/home/sessions/2026/09/28/rollout-2026-09-28T14-02-51-01a0e853-571e-7581-8375-a05579c9e81f.jsonl",
+    "agent_transcript_path": "/home/user/vouch-workflows/reports/capture/codex-exec/home/sessions/2026/09/28/rollout-2026-09-28T14-02-52-01a0e853-5c6e-78a0-aa9b-f9a62ca16de5.jsonl",
+    "cwd": "/home/user/vouch-workflows/reports/capture/codex-exec/project",
+    "hook_event_name": "SubagentStop",
+    "model": "gpt-6-astra",
+    "permission_mode": "bypassPermissions",
+    "stop_hook_active": false,
+    "agent_id": "01a0e853-5c6e-78a0-aa9b-f9a62ca16de5",
+    "agent_type": "default",
+    "last_assistant_message": "Native tool capture completed."
+  }
+}

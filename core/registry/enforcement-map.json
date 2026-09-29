@@ -205,7 +205,7 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "HOOK-2: 他の製品フックは未検証。Claude / Codex SessionStart の実登録では正常記録のみ観測済みで、実機異常系の全保証は未検証。"
+          "claim": "HOOK-2: 他の製品フックは未検証。Linux の配布登録では、破損した監査ログでの fail-open（終了0、ログ不変）を Claude 2.1.283 / Codex 0.153.4 で観測済み。Windows・macOS・他の版は未検証。"
         },
         {
           "status": "implemented",
@@ -226,6 +226,11 @@
           "status": "implemented",
           "path": "tests/hooks/vouch-record-intent-review.test.mjs",
           "claim": "レビュー記録フックの破損ログ・ID競合・リンク・書き込みロックによる例外を終了0と診断で返し、成功を報告せず既存ログを保持することを検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/hook-propagation.test.mjs",
+          "claim": "破損した監査ログのプロジェクトで、配布登録の両フックが終了0で抜け、ログを変更せず、プロンプトが親 CLI からプロバイダーへ届くことを保存した観測で照合する。"
         }
       ]
     },
@@ -237,7 +242,7 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "HOOK-3: 他の製品フックは未検証。Claude / Codex SessionStart の実登録では正常記録のみ観測済みで、実機異常系の全保証は未検証。"
+          "claim": "HOOK-3: 他の製品フックは未検証。Linux の Claude 2.1.283 / Codex 0.153.4 では配布登録の終了0/2の伝播を観測済み。Windows・macOS・他の版の異常系は未検証。"
         },
         {
           "status": "implemented",
@@ -256,12 +261,17 @@
         },
         {
           "status": "pending",
-          "claim": "Codexレビュー記録はWindows対話CLIで確認済み。非対話経路、他の版・OS、実機異常系の全保証は未検証。真正性や状態更新許可は記録成功から導出しない。"
+          "claim": "Codexレビュー記録は Windows 対話 CLI と Linux の exec・対話 CLI で確認済み。Codex 0.153.4 の exec は遮断の理由を表示しない。Windows の非対話経路、他の版、macOS は未検証。真正性や状態更新許可は記録成功から導出しない。"
         },
         {
           "status": "implemented",
           "path": "docs/development/codex-review-smoke.md",
           "claim": "Windows / Codex 0.153.4のworkspace-write対話CLIで変更していない配布登録からsession.started 2件、gate.opened / intent.approvedを各1件観測。ローカル試験プロバイダー要求0件、下書きと配布ファイル不変。スクリプト入力の実機確認であり、人の同意やモデル評価ではない。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/hook-propagation.test.mjs",
+          "claim": "Linux の Claude 2.1.283 / Codex 0.153.4 の非対話・対話 CLI で、変更していない配布登録の終了0（許可、fail-open、Intent 未指定）と終了2（遮断と理由）の親 CLI への伝播を、保存した観測で照合する。Codex exec で理由が表示されない2件は既知の不一致として固定する。スクリプト入力であり、人の同意やモデル評価ではない。"
         }
       ]
     },
@@ -1275,12 +1285,12 @@
         },
         {
           "status": "pending",
-          "claim": "Claude 2.1.280 / Codex 0.153.4 の UserPromptSubmit と SessionStart startup を採取済み。Claude の Write 前後は別途採取済み。Codex のツール系と残りの版付き実機 fixture は未採取。既存 Codex 9件の version:null を維持する。"
+          "claim": "後続フックが読む28種は、Linux の Claude 2.1.283 / Codex 0.153.4 と既存の Windows 採取で版付き実機 fixture を持つ。Windows でのツール系・残り種別、macOS、他の版は未採取。既存 Codex 9件の version:null を維持する。"
         },
         {
           "status": "implemented",
           "path": "tests/registry/captured-fixture.test.mjs",
-          "claim": "Claude Code 2.1.280 の UserPromptSubmit 1件の版・出所・原文との一致を検査する。他の Claude イベントは未採取。"
+          "claim": "Claude Code 2.1.280 の UserPromptSubmit 1件の版・出所・原文との一致を検査する。2.1.283 の採取は harness-inventory.test.mjs で検査する。"
         },
         {
           "status": "implemented",
@@ -1315,7 +1325,17 @@
         {
           "status": "implemented",
           "path": "tests/registry/intent-review.test.mjs",
-          "claim": "Claude 2.1.280 の Write PreToolUse / PostToolUse の採取原本と wrapper のバイト由来・版を照合する。固定応答を使ったネイティブCLIの入力採取で、実モデル評価や人の承認実績ではない。Codexツール採取はポリシー拒否により未完了。"
+          "claim": "Claude 2.1.280 の Write PreToolUse / PostToolUse の採取原本と wrapper のバイト由来・版を照合する。固定応答を使ったネイティブCLIの入力採取で、実モデル評価や人の承認実績ではない。Windows の Codex ツール採取はポリシー拒否で未完了のまま。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/registry/harness-inventory.test.mjs",
+          "claim": "後続フックが読む28種の一覧、各種別の版付き実機 fixture、原文の key 行との一致、採取記録、一覧にない包装がないこと、版不明の旧 Codex 9件が不適格なことを検査する。採取時の拒否・欠落は constraints に記録する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/registry/contract-fixture.test.mjs",
+          "claim": "契約実行は一覧の実機 fixture と、その採取元を保ったまま同じ種別・版から派生した synthetic だけを受け付ける。版不明、未採取の種別、変更したのに synthetic でない入力、採取元のない・一致しない synthetic を TEST-7 で拒否する。runHook() も同じ判定を使う。"
         }
       ]
     },

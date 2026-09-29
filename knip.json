@@ -24,5 +24,6 @@
     "docs/**",
     "dist/**"
   ],
-  "ignoreDependencies": ["@stryker-mutator/command-runner"]
+  "ignoreDependencies": ["@stryker-mutator/command-runner"],
+  "ignoreBinaries": ["script"]
 }

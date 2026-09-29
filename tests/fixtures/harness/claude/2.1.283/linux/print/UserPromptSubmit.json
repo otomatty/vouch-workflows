@@ -1,0 +1,20 @@
+{
+  "harness": "claude",
+  "version": "2.1.283",
+  "synthetic": false,
+  "provenance": "captured",
+  "source": {
+    "path": "tests/fixtures/captures/claude-2.1.283-linux-print.jsonl",
+    "commit": "8c975f3",
+    "key": "UserPromptSubmit#1"
+  },
+  "payload": {
+    "session_id": "50d14cd6-cdbc-46cd-bac0-5d43b5a525b0",
+    "transcript_path": "/home/user/vouch-workflows/reports/capture2/claude-print/config/projects/-home-user-vouch-workflows-reports-capture2-claude-print-project/50d14cd6-cdbc-46cd-bac0-5d43b5a525b0.jsonl",
+    "cwd": "/home/user/vouch-workflows/reports/capture2/claude-print/project",
+    "prompt_id": "05c87cd6-5589-4f0e-bb63-bf679aff8b20",
+    "permission_mode": "acceptEdits",
+    "hook_event_name": "UserPromptSubmit",
+    "prompt": "Exercise the capture tools in the isolated fixture project."
+  }
+}

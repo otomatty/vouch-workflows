@@ -31,7 +31,7 @@ synthetic:true の既存ゲートや承認記録を製品入口は使いませ�
 
 [Claude のフック文書](https://code.claude.com/docs/en/hooks)と[Codex のフック文書](https://learn.chatgpt.com/docs/hooks)を参照し、Windows の実機で使う登録コマンドは終了コードを引き継ぎます。既存 UserPromptSubmit の採取原本を基準に、対象 cwd・明示コマンドなどを変えた契約テストは synthetic とします。
 
-今回の Claude Write の前後イベントは[採取記録](../../tests/fixtures/captures/tool-capture.md)に保存しました。Codex のツール系採取はポリシーで止まったため未完了です。いずれも今回のレビュー記録フックの正例を偽装するためには使いません。
+今回の Claude Write の前後イベントは[採取記録](../../tests/fixtures/captures/tool-capture.md)に保存しました。Codex のツール系採取は、Windows ではポリシーで止まったため未完了です。Linux での採取は後に完了しています（[版付き fixture と伝播の検証](harness-fixtures.md)）。いずれも今回のレビュー記録フックの正例を偽装するためには使いません。
 
 契約・型検査、失敗する先行テスト、実装の順でコミットします。監査の完全な新規 golden、両ハーネスの同文別入力・再送・版変更・親違い・合成証跡・不正入力・パス境界・書き込み失敗を検証します。既存 golden、元仕様、移行元資料、既存実機 fixture は変更しません。追加したフックの配布・登録・doctor を検証し、実機の記録確認と子プロセスの再現テストを分けて報告します。
 
