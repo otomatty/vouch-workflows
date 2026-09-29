@@ -28,6 +28,12 @@ test("expandBraces expands like bash and keeps words without a valid brace expre
     ["x{1..300}y", ["x1y"]],
     ["v{-3..3..2}", ["v-3"]],
     ["{01..10}", ["01"]],
+    ["{1..9..10}", ["1"]],
+    ["{a..z..10}", ["a", "k", "u"]],
+    ["{x1..3}", ["{x1..3}"]],
+    ["{1..3x}", ["{1..3x}"]],
+    ["{ab..c}", ["{ab..c}"]],
+    ["{a..cd}", ["{a..cd}"]],
   ];
   t.plan(cases.length);
   for (const [word, expected] of cases)
@@ -57,6 +63,7 @@ test("uncommented drops comments only where POSIX shells and PowerShell read the
     // PowerShell ends a comment at a carriage return; stripping stops there.
     ["echo ok # x\rrm y", "echo ok \rrm y"],
     ["echo a#b # c", "echo a#b # c"],
+    ["a# x", "a# x"],
     ['echo "a" # x', 'echo "a" # x'],
     ["echo 'a' # x", "echo 'a' # x"],
     ["echo \\ # x", "echo \\ # x"],

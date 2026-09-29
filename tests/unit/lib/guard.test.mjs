@@ -773,7 +773,7 @@ test("guardWrites states each documented reason in one line", async (t) => {
     return result.decision === "deny" ? result.reason : "allow";
   };
   const newline = box.path(`vouch/intents/${intent}/audit/x\ny`);
-  t.plan(8);
+  t.plan(9);
   t.assert.equal(
     await reason("Write", { file_path: box.path(audit), content: "" }),
     `VOUCH-GUARD-AUDIT: Write ${audit}; audit records are appended only by Vouch hooks`,
@@ -814,6 +814,10 @@ test("guardWrites states each documented reason in one line", async (t) => {
   t.assert.equal(
     await reason("Write", { file_path: newline, content: "" }),
     `VOUCH-GUARD-AUDIT: Write vouch/intents/${intent}/audit/x?y; audit records are appended only by Vouch hooks`,
+  );
+  t.assert.equal(
+    await reason("Bash", { command: `touch ${"{a,b}".repeat(9)}` }),
+    `VOUCH-GUARD-UNVERIFIED: Bash ${"{a,b}".repeat(9)}; the brace expansion has too many results to verify`,
   );
 });
 
@@ -1178,6 +1182,7 @@ test("guardWrites judges a Codex move by its source and an update by every appro
 test("guardWrites reads a backslash both as a separator and as the platform does", async (t) => {
   const box = await guardBox(t);
   const auditDir = box.path(`vouch/intents/${intent}/audit`);
+  await symlink(auditDir, box.path("audit-alias"), "junction");
   // Windows climbs out through `..\`; Linux and macOS create a name inside the directory.
   const inside = (/** @type {string} */ reason) =>
     process.platform === "win32" ? "allow" : reason;
@@ -1197,6 +1202,12 @@ test("guardWrites reads a backslash both as a separator and as the platform does
       "Write",
       { file_path: `${box.path("docs")}/..\\notes.md`, content: "" },
       "allow",
+    ],
+    // Read as a separator, the backslash leads through the linked directory.
+    [
+      "Write",
+      { file_path: box.path("audit-alias\\next.jsonl"), content: "" },
+      "VOUCH-GUARD-AUDIT",
     ],
     [
       "Bash",
