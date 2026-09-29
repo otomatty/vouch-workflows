@@ -297,6 +297,11 @@
           "status": "implemented",
           "path": "tests/packaging/approval-native.test.mjs",
           "claim": "Linux の Claude Code 2.1.284 / Codex 0.153.4 の非対話 CLI で、確認・レビュー・承認の入力がプロバイダーに届かず下書きが同じ版の approved になること、承認前の実装の書き込みが拒否されツール結果に理由が返り、承認後に許可されることを保存した観測で照合する。スクリプト入力の観測であり、人の承認やモデル評価ではない。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/vouch-guard-writes-git.test.mjs",
+          "claim": "Git の段の拒否は終了2と stderr の1行の VOUCH-GIT-* / VOUCH-COMMIT-* 理由、許可は終了0で出力なし。DoD コマンドは doctor と同じ JSON の報告と終了0 / 2 を返す（vouch-dod.test.mjs）。"
         }
       ]
     },
@@ -494,6 +499,11 @@
           "status": "implemented",
           "path": "tests/hooks/vouch-record-intent-approval.test.mjs",
           "claim": "確認の再送は記録を増やさず、同じ入力 ID の別の対象への付け替えは競合として記録しない。適用後の承認の再送は何も変えない。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/vouch-guard-writes-git.test.mjs",
+          "claim": "Git の段は記録を作らず、同じ入力の再送が同じ判定を返しファイルを変えないことを検査する。DoD コマンドは実行ごとに1件を記録し、ID は commit と build-log.md の追記の digest から導出する。"
         }
       ]
     },
@@ -608,6 +618,11 @@
           "status": "implemented",
           "path": "tests/hooks/write-guard-performance.test.mjs",
           "claim": "書き込みガード（検査系）のシェル書き込みの判定を、CPU 数 − 1 個の合成負荷の下で20回計測し、起動込みの p95 2秒未満を要求する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/git-guard-performance.test.mjs",
+          "claim": "Git の段（Git を起動しない main への push の拒否）を合成負荷の下で20回計測し、検査系の p95 2秒未満を要求する。Git を起動する経路は Windows の1ケース5秒の制限に収まらないため予算テストにせず、測定を git-guard.md に記録する（pending）。DoD の実行は対象外。"
         }
       ]
     },
@@ -753,6 +768,11 @@
           "status": "implemented",
           "path": "tests/hooks/vouch-record-intent-approval.test.mjs",
           "claim": "checkpoint.confirmed を含む承認の流れを、両ハーネスの新規 golden で全文比較する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/unit/lib/dod.test.mjs",
+          "claim": "hook.check（check: dod）の製品 emit を、コマンド・作業ディレクトリ・結果・所要時間・終了コード・commit・clean・build-log.md の digest を持つ完全なレコードと新規 golden（dod-build-log.md）で検証する。"
         }
       ]
     },
@@ -1492,6 +1512,11 @@
           "status": "implemented",
           "path": "docs/development/intent.md",
           "claim": "Intent 下書きの対象・判断根拠・完了条件と承認未実装の境界を契約化し、契約→テスト→実装の順で自己レビューする。実モデル評価は未実施。"
+        },
+        {
+          "status": "implemented",
+          "path": "docs/development/git-guard.md",
+          "claim": "配布先の製品フックが、Intent のブランチのコミット件名の型と Unit、契約 → テスト（red）→ 実装の順と DoD の証跡を検査する契約を定める。このリポジトリ自身のコミットには配布フックを登録していないため、reviewer の検査は pending のまま。"
         }
       ]
     },
@@ -1600,6 +1625,11 @@
           "status": "implemented",
           "path": "tests/hooks/vouch-record-intent-review.test.mjs",
           "claim": "レビュー記録入口に空・非JSON・必須欠落・型違い・境界外cwd・1MiBを入力し、成功報告と監査書き込みがないことを検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/unit/lib/git-guard.test.mjs",
+          "claim": "Git の段で、他のイベント・ツール、文字列でない command、実行時に決まる宛先や位置、読めないコミット列・計画・監査・変更を検査する。io の不正入力6種は既存のガードの契約テストが検査する。"
         }
       ]
     },
@@ -1633,7 +1663,7 @@
         },
         {
           "status": "pending",
-          "claim": "承認済み計画の遮断は、ファイル編集ツールと、シェルのリダイレクト・writers（cp、mv、tee など）・sed -i に限る。writers にないプログラム・bash -c・eval、登録していないツール、サブエージェントの未採取経路、builder の起動（#8）、commit・push・PR マージの検査（#6）は未実装。人の同意の真正性はハーネスの入力 ID と明示入力の完全一致に依存し、stdin の偽装や登録外の経路での監査の編集は区別できない。"
+          "claim": "承認済み計画の遮断は、ファイル編集ツールと、シェルのリダイレクト・writers（cp、mv、tee など）・sed -i に限る。writers にないプログラム・bash -c・eval、登録していないツール、サブエージェントの未採取経路、builder の起動（#8）、保護対象の枝への push・gh pr merge・コミット順の検査は git-guard.md の範囲で実装済みで、それ以外の経路のマージは検査外。人の同意の真正性はハーネスの入力 ID と明示入力の完全一致に依存し、stdin の偽装や登録外の経路での監査の編集は区別できない。"
         },
         {
           "status": "implemented",
@@ -1684,6 +1714,11 @@
           "status": "implemented",
           "path": "tests/packaging/approval-native.test.mjs",
           "claim": "Linux の Claude Code 2.1.284 / Codex 0.153.4 の非対話 CLI で、確認・レビュー・承認の入力がプロバイダーに届かず下書きが同じ版の approved になること、承認前の実装の書き込みが拒否されツール結果に理由が返り、承認後に許可されることを保存した観測で照合する。スクリプト入力の観測であり、人の承認やモデル評価ではない。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/vouch-guard-writes-git.test.mjs",
+          "claim": "モデルのシェルからの main への push と gh pr merge を拒否し、PR のマージを人に残すことを子プロセスで検査する。"
         }
       ]
     },
@@ -1743,8 +1778,23 @@
           "claim": "共通文書への規則タグの記載を照合する。規則の実行時強制を証明する検査ではない。"
         },
         {
+          "status": "implemented",
+          "path": "tests/unit/lib/git-guard.test.mjs",
+          "claim": "登録したシェルツールの git push が保護対象の枝（build.json の protected、既定 main）を名指す・綴る・既定で選ぶ場合（refspec、HEAD、upstream、--all、削除）と、実行時に決まる宛先を拒否し、dry-run・タグ・他の枝を許可することを偽の Git で検査する。gh pr merge の拒否も含む。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/vouch-guard-writes-git.test.mjs",
+          "claim": "実際の Git リポジトリで、両ハーネスの派生入力の main への push と gh pr merge を Intent の有無に関わらず終了2で拒否し、Intent のブランチへの push を許すことを子プロセスで検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/scenario/git-guard-distribution.test.mjs",
+          "claim": "生成した両配布の登録コマンドが main への push を拒否し、DoD コマンドの起動を書き込み保護が許すことを検査する。"
+        },
+        {
           "status": "pending",
-          "claim": "main push や本番データ操作を遮断する製品フックは未実装。適用範囲と例外の判断は人が行う。"
+          "claim": "本番データの操作は機械的に対象を特定できないため検査しない（判断が要る範囲、git-guard.md）。別名・sh -c・変数を介した Git、登録していないツール、gh api や MCP のマージ、ネイティブ CLI・Windows・macOS での実機確認は未実施。"
         }
       ]
     },
@@ -1760,8 +1810,18 @@
           "claim": "共通文書への規則タグの記載を照合する。規則の実行時強制を証明する検査ではない。"
         },
         {
+          "status": "implemented",
+          "path": "tests/unit/lib/git.test.mjs",
+          "claim": "コードを変えるコミットの型・Unit、test 型以外でのテストファイルの変更・削除、feat / fix の前の証跡付き contract（DoD 合格）と test（DoD 不合格）の規則と、clean・導出 ID・非 synthetic の DoD 記録だけを証跡に数えることを検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/hooks/vouch-guard-writes-commit.test.mjs",
+          "claim": "実際の Git リポジトリで、契約 → 失敗するテスト → 実装の順と DoD コマンドの証跡でコミット・push が通り、別 Unit・別ブランチ・clean でない実行・偽装や synthetic の記録では通らず、テストの改変・削除を含む実装コミットと push を拒否することを検査する。"
+        },
+        {
           "status": "pending",
-          "claim": "テスト保護とコミット順の遮断フック、別コンテキスト検証を実行するエージェントは未実装。"
+          "claim": "test 型のコミットでのテストの変更が妥当か、DoD の不合格が意図した理由かは reviewer と人が判断する。一覧にない命名のテスト、件名を読めないコミット時の早期検査、別コンテキスト検証を実行するエージェント（#8）は未実装。"
         }
       ]
     },
