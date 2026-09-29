@@ -185,7 +185,7 @@ GitHub Actions の CI（Windows / Ubuntu × Node.js 22.19.0 / 24.x）の結果�
 
 同じ読み方のため、PowerShell や Windows の `\` 区切りで監査ログや配布ディレクトリを名指すコマンド（Add-Content、Set-Content、Remove-Item など）を見逃すことも分かりました。再現テストを先にコミットし（`ae1acdf`）、引用符とエスケープを解釈しない生の語でも名指しを探すよう直しました（`9707532`）。
 
-修正後の `da1f919` では、Windows / Node.js 22.19.0 が成功しました。Windows / Node.js 24.x は2件失敗しました。packaging の `NATIVE-NODE`（PowerShell からの node の探索が4秒の打ち切りに達した）と、記録系の p95（承認 200.2ms、セッション開始 206.5ms）です。どちらもガードの変更と関係しない既知の事象で、main の `79f536a` の CI でも同じ Windows / Node.js 24.x で記録の p95（レビュー開始 222.4ms）が失敗しています。予算と打ち切りは変更していません。Windows の CI でのガードの p95 は 166.6ms と 249.6ms で、検査系の2秒の予算内でした。
+修正後の `da1f919` では、Windows / Node.js 22.19.0 が成功しました。Windows / Node.js 24.x は2件失敗しました。packaging の `NATIVE-NODE`（PowerShell からの node の探索が4秒の打ち切りに達した）と、記録系の p95（承認 200.2ms、セッション開始 206.5ms）です。どちらもガードの変更と関係しない既知の事象で、main の `79f536a` の CI でも同じ Windows / Node.js 24.x で記録の p95（レビュー開始 222.4ms）が失敗しています。予算と打ち切りは変更していません。Windows の CI でのガードの p95 は 166.6ms と 249.6ms で、検査系の2秒の予算内でした。その後の `d91e70b` の CI（run 36513641828）は、Windows・Ubuntu × Node.js 22.19.0・24.x の4ジョブすべてが成功しました。
 
 ### レビューとミューテーションで見つかった誤り
 
