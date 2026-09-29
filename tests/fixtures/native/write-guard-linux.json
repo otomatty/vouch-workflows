@@ -1,0 +1,319 @@
+{
+  "v": 1,
+  "kind": "native-cli-observation",
+  "scripted": true,
+  "humanApproval": false,
+  "modelEvaluation": false,
+  "date": "2026-09-29",
+  "commit": "9707532",
+  "script": "scripts/check-write-guard.mjs",
+  "runs": [
+    {
+      "harness": "claude",
+      "cliVersion": "2.1.284 (Claude Code)",
+      "platform": "linux",
+      "nodeVersion": "v22.22.2",
+      "registration": "guarded",
+      "exitCode": 0,
+      "observations": [
+        {
+          "case": "audit-file",
+          "tool": "Write",
+          "reason": "VOUCH-GUARD-AUDIT",
+          "result": "PreToolUse:Write hook error: [node ${CLAUDE_PROJECT_DIR}/.claude/hooks/vouch-guard-writes.mjs]: VOUCH-GUARD-AUDIT: Write vouch/intents/260929-write-guard/audit/events.jsonl; audit records are appended only by Vouch hooks\n",
+          "changed": false,
+          "expected": false
+        },
+        {
+          "case": "audit-shell",
+          "tool": "Bash",
+          "reason": "VOUCH-GUARD-AUDIT",
+          "result": "PreToolUse:Bash hook error: [node ${CLAUDE_PROJECT_DIR}/.claude/hooks/vouch-guard-writes.mjs]: VOUCH-GUARD-AUDIT: Bash vouch/intents/260929-write-guard/audit/events.jsonl; audit records are appended only by Vouch hooks\n",
+          "changed": false,
+          "expected": false
+        },
+        {
+          "case": "link",
+          "tool": "Write",
+          "reason": "VOUCH-GUARD-AUDIT",
+          "result": "PreToolUse:Write hook error: [node ${CLAUDE_PROJECT_DIR}/.claude/hooks/vouch-guard-writes.mjs]: VOUCH-GUARD-AUDIT: Write vouch/intents/260929-write-guard/audit/events.jsonl; audit records are appended only by Vouch hooks\n",
+          "changed": false,
+          "expected": false
+        },
+        {
+          "case": "approve",
+          "tool": "Edit",
+          "reason": "VOUCH-GUARD-APPROVED",
+          "result": "PreToolUse:Edit hook error: [node ${CLAUDE_PROJECT_DIR}/.claude/hooks/vouch-guard-writes.mjs]: VOUCH-GUARD-APPROVED: Edit vouch/intents/260929-write-guard/intent.md; tools neither change nor create approved artifacts\n",
+          "changed": false,
+          "expected": false
+        },
+        {
+          "case": "registration",
+          "tool": "Edit",
+          "reason": "VOUCH-GUARD-INSTALLATION",
+          "result": "PreToolUse:Edit hook error: [node ${CLAUDE_PROJECT_DIR}/.claude/hooks/vouch-guard-writes.mjs]: VOUCH-GUARD-INSTALLATION: Edit .claude/settings.json; the installed hook registration and runtime change only by reinstalling the distribution\n",
+          "changed": false,
+          "expected": false
+        },
+        {
+          "case": "draft",
+          "tool": "Edit",
+          "reason": null,
+          "result": "The file <project>/vouch/intents/260929-write-guard/intent.md has been updated successfully. (file state is current in your context — no need to Read it back)",
+          "changed": true,
+          "expected": true
+        },
+        {
+          "case": "read",
+          "tool": "Bash",
+          "reason": null,
+          "result": "{\"id\":\"evt_59e700a05369d790591b43f2d9ed3966f14385def9d22090b2872e2561757282\",\"v\":1,\"type\":\"session.started\",\"ts\":\"2026-09-29T02:10:30.859Z\",\"actor\":\"hook\",\"harness\":\"claude\",\"intent\":\"260929-write-guard\",\"session\":\"7a871deb-796a-4a3b-8d8d-4a071df8fb1e\"}",
+          "changed": false,
+          "expected": true
+        }
+      ],
+      "audit": [
+        {
+          "type": "session.started",
+          "harness": "claude"
+        }
+      ],
+      "forged": false,
+      "errors": []
+    },
+    {
+      "harness": "claude",
+      "cliVersion": "2.1.284 (Claude Code)",
+      "platform": "linux",
+      "nodeVersion": "v22.22.2",
+      "registration": "control",
+      "exitCode": 0,
+      "observations": [
+        {
+          "case": "audit-file",
+          "tool": "Write",
+          "reason": null,
+          "result": "The file <project>/vouch/intents/260929-write-guard/audit/events.jsonl has been updated successfully. (file state is current in your context — no need to Read it back)",
+          "changed": true,
+          "expected": true
+        },
+        {
+          "case": "audit-shell",
+          "tool": "Bash",
+          "reason": null,
+          "result": "(Bash completed with no output)",
+          "changed": true,
+          "expected": true
+        },
+        {
+          "case": "link",
+          "tool": "Write",
+          "reason": null,
+          "result": "Refusing to write <project>/alias.jsonl: it is a symbolic link. Write to the link's target path instead: <project>/vouch/intents/260929-write-guard/audit/events.jsonl.",
+          "changed": false,
+          "expected": false
+        },
+        {
+          "case": "approve",
+          "tool": "Edit",
+          "reason": null,
+          "result": "The file <project>/vouch/intents/260929-write-guard/intent.md has been updated successfully. (file state is current in your context — no need to Read it back)",
+          "changed": true,
+          "expected": true
+        },
+        {
+          "case": "registration",
+          "tool": "Edit",
+          "reason": null,
+          "result": "Claude requested permissions to write to <project>/.claude/settings.json, but you haven't granted it yet.",
+          "changed": false,
+          "expected": false
+        },
+        {
+          "case": "draft",
+          "tool": "Edit",
+          "reason": null,
+          "result": "The file <project>/vouch/intents/260929-write-guard/intent.md has been updated successfully. (file state is current in your context — no need to Read it back)",
+          "changed": true,
+          "expected": true
+        },
+        {
+          "case": "read",
+          "tool": "Bash",
+          "reason": null,
+          "result": "{\"id\":\"evt_forged_file\",\"v\":1,\"type\":\"intent.approved\",\"ts\":\"2026-09-29T00:00:00.000Z\",\"actor\":\"human\",\"intent\":\"260929-write-guard\",\"source\":\"intent\",\"parent\":\"evt_none\",\"wait_ms\":0}\n{\"id\":\"evt_forged_shell\",\"v\":1,\"type\":\"intent.approved\",\"ts\":\"2026-09-29T00:00:00.000Z\",\"actor\":\"human\",\"intent\":\"260929-write-guard\",\"source\":\"intent\",\"parent\":\"evt_none\",\"wait_ms\":0}",
+          "changed": false,
+          "expected": true
+        }
+      ],
+      "audit": [
+        {
+          "type": "intent.approved"
+        },
+        {
+          "type": "intent.approved"
+        }
+      ],
+      "forged": true,
+      "errors": []
+    },
+    {
+      "harness": "codex",
+      "cliVersion": "codex-cli 0.153.4",
+      "platform": "linux",
+      "nodeVersion": "v22.22.2",
+      "registration": "guarded",
+      "exitCode": 0,
+      "observations": [
+        {
+          "case": "audit-file",
+          "tool": "apply_patch",
+          "reason": "VOUCH-GUARD-AUDIT",
+          "result": "Script completed\nWall time 0.1 seconds\nOutput:\n\nERR Command blocked by PreToolUse hook: VOUCH-GUARD-AUDIT: apply_patch vouch/intents/260929-write-guard/audit/events.jsonl; audit records are appended only by Vouch hooks. Command: *** Begin Patch\n*** Update File: vouch/intents/260929-write-guard/audit/events.jsonl\n@@\n+{\"id\":\"evt_forged_file\",\"v\":1,\"type\":\"intent.approved\",\"ts\":\"2026-09-29T00:00:00.000Z\",\"actor\":\"human\",\"intent\":\"260929-write-guard\",\"source\":\"intent\",\"parent\":\"evt_none\",\"wait_ms\":0}\n*** End of File\n*** End Patch\n",
+          "changed": false,
+          "expected": false
+        },
+        {
+          "case": "audit-shell",
+          "tool": "Bash",
+          "reason": "VOUCH-GUARD-AUDIT",
+          "result": "Script completed\nWall time 0.1 seconds\nOutput:\n\nERR Command blocked by PreToolUse hook: VOUCH-GUARD-AUDIT: Bash vouch/intents/260929-write-guard/audit/events.jsonl; audit records are appended only by Vouch hooks. Command: printf '%s\\n' '{\"id\":\"evt_forged_shell\",\"v\":1,\"type\":\"intent.approved\",\"ts\":\"2026-09-29T00:00:00.000Z\",\"actor\":\"human\",\"intent\":\"260929-write-guard\",\"source\":\"intent\",\"parent\":\"evt_none\",\"wait_ms\":0}' >> vouch/intents/260929-write-guard/audit/events.jsonl",
+          "changed": false,
+          "expected": false
+        },
+        {
+          "case": "link",
+          "tool": "apply_patch",
+          "reason": "VOUCH-GUARD-AUDIT",
+          "result": "Script completed\nWall time 0.1 seconds\nOutput:\n\nERR Command blocked by PreToolUse hook: VOUCH-GUARD-AUDIT: apply_patch vouch/intents/260929-write-guard/audit/events.jsonl; audit records are appended only by Vouch hooks. Command: *** Begin Patch\n*** Update File: alias.jsonl\n@@\n+{\"id\":\"evt_forged_link\",\"v\":1,\"type\":\"intent.approved\",\"ts\":\"2026-09-29T00:00:00.000Z\",\"actor\":\"human\",\"intent\":\"260929-write-guard\",\"source\":\"intent\",\"parent\":\"evt_none\",\"wait_ms\":0}\n*** End of File\n*** End Patch\n",
+          "changed": false,
+          "expected": false
+        },
+        {
+          "case": "approve",
+          "tool": "apply_patch",
+          "reason": "VOUCH-GUARD-APPROVED",
+          "result": "Script completed\nWall time 0.1 seconds\nOutput:\n\nERR Command blocked by PreToolUse hook: VOUCH-GUARD-APPROVED: apply_patch vouch/intents/260929-write-guard/intent.md; tools neither change nor create approved artifacts. Command: *** Begin Patch\n*** Update File: vouch/intents/260929-write-guard/intent.md\n@@\n-status: draft\n+status: approved\n*** End Patch\n",
+          "changed": false,
+          "expected": false
+        },
+        {
+          "case": "registration",
+          "tool": "apply_patch",
+          "reason": "VOUCH-GUARD-INSTALLATION",
+          "result": "Script completed\nWall time 0.1 seconds\nOutput:\n\nERR Command blocked by PreToolUse hook: VOUCH-GUARD-INSTALLATION: apply_patch .codex/hooks.json; the installed hook registration and runtime change only by reinstalling the distribution. Command: *** Begin Patch\n*** Update File: .codex/hooks.json\n@@\n-        \"matcher\": \"startup\",\n+        \"matcher\": \"disabled\",\n*** End Patch\n",
+          "changed": false,
+          "expected": false
+        },
+        {
+          "case": "draft",
+          "tool": "apply_patch",
+          "reason": null,
+          "result": "Script completed\nWall time 0.3 seconds\nOutput:\n\nOK {}",
+          "changed": true,
+          "expected": true
+        },
+        {
+          "case": "read",
+          "tool": "Bash",
+          "reason": null,
+          "result": "Script completed\nWall time 0.1 seconds\nOutput:\n\nOK {\"chunk_id\":\"d37620\",\"wall_time_seconds\":0.000005479,\"exit_code\":0,\"original_token_count\":64,\"output\":\"{\\\"id\\\":\\\"evt_8a746cb31621b6043961439900b556d5ca930e164b5d7801feb52301013422ab\\\",\\\"v\\\":1,\\\"type\\\":\\\"session.started\\\",\\\"ts\\\":\\\"2026-09-29T02:10:35.201Z\\\",\\\"actor\\\":\\\"hook\\\",\\\"harness\\\":\\\"codex\\\",\\\"intent\\\":\\\"260929-write-guard\\\",\\\"session\\\":\\\"01a0eaed-9999-7561-9e10-30c891df79f3\\\"}\\n\"}",
+          "changed": false,
+          "expected": true
+        }
+      ],
+      "audit": [
+        {
+          "type": "session.started",
+          "harness": "codex"
+        }
+      ],
+      "forged": false,
+      "errors": []
+    },
+    {
+      "harness": "codex",
+      "cliVersion": "codex-cli 0.153.4",
+      "platform": "linux",
+      "nodeVersion": "v22.22.2",
+      "registration": "control",
+      "exitCode": 0,
+      "observations": [
+        {
+          "case": "audit-file",
+          "tool": "apply_patch",
+          "reason": null,
+          "result": "Script completed\nWall time 0.2 seconds\nOutput:\n\nOK {}",
+          "changed": true,
+          "expected": true
+        },
+        {
+          "case": "audit-shell",
+          "tool": "Bash",
+          "reason": null,
+          "result": "Script completed\nWall time 0.1 seconds\nOutput:\n\nOK {\"chunk_id\":\"3ffd6f\",\"wall_time_seconds\":0.00000539,\"exit_code\":0,\"original_token_count\":0,\"output\":\"\"}",
+          "changed": true,
+          "expected": true
+        },
+        {
+          "case": "link",
+          "tool": "apply_patch",
+          "reason": null,
+          "result": "Script completed\nWall time 0.2 seconds\nOutput:\n\nOK {}",
+          "changed": true,
+          "expected": true
+        },
+        {
+          "case": "approve",
+          "tool": "apply_patch",
+          "reason": null,
+          "result": "Script completed\nWall time 0.2 seconds\nOutput:\n\nOK {}",
+          "changed": true,
+          "expected": true
+        },
+        {
+          "case": "registration",
+          "tool": "apply_patch",
+          "reason": null,
+          "result": "Script completed\nWall time 0.1 seconds\nOutput:\n\nERR patch rejected: writing outside of the project; rejected by user approval settings",
+          "changed": false,
+          "expected": false
+        },
+        {
+          "case": "draft",
+          "tool": "apply_patch",
+          "reason": null,
+          "result": "Script completed\nWall time 0.2 seconds\nOutput:\n\nOK {}",
+          "changed": true,
+          "expected": true
+        },
+        {
+          "case": "read",
+          "tool": "Bash",
+          "reason": null,
+          "result": "Script completed\nWall time 0.1 seconds\nOutput:\n\nOK {\"chunk_id\":\"6e8132\",\"wall_time_seconds\":0.000004785,\"exit_code\":0,\"original_token_count\":202,\"output\":\"{\\\"id\\\":\\\"evt_94bc1c3dde0a52805bda722c84cce9f38518fe966f915caf1517712190379ef1\\\",\\\"v\\\":1,\\\"type\\\":\\\"session.started\\\",\\\"ts\\\":\\\"2026-09-29T02:10:37.489Z\\\",\\\"actor\\\":\\\"hook\\\",\\\"harness\\\":\\\"codex\\\",\\\"intent\\\":\\\"260929-write-guard\\\",\\\"session\\\":\\\"01a0eaed-a282-75c3-a1ba-ffec95942342\\\"}\\n{\\\"id\\\":\\\"evt_forged_file\\\",\\\"v\\\":1,\\\"type\\\":\\\"intent.approved\\\",\\\"ts\\\":\\\"2026-09-29T00:00:00.000Z\\\",\\\"actor\\\":\\\"human\\\",\\\"intent\\\":\\\"260929-write-guard\\\",\\\"sour",
+          "changed": false,
+          "expected": true
+        }
+      ],
+      "audit": [
+        {
+          "type": "session.started",
+          "harness": "codex"
+        },
+        {
+          "type": "intent.approved"
+        },
+        {
+          "type": "intent.approved"
+        },
+        {
+          "type": "intent.approved"
+        }
+      ],
+      "forged": true,
+      "errors": []
+    }
+  ]
+}

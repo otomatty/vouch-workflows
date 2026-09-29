@@ -159,3 +159,38 @@ HOOK-2 に従い、不正な stdin、`VOUCH_PROJECT_ROOT`・`VOUCH_HARNESS` の�
 registration の編集は、ハーネスが設定として受け付ける内容にします。Claude は `disableAllHooks` を加える Edit、Codex は SessionStart の matcher を変える apply_patch です。存在しないイベント名への書き換えは、Claude が編集後の設定検証で拒否しました。
 
 観測は `tests/fixtures/native/write-guard-linux.json` に保存し、`scripts/lib/write-guard-native.mjs` の純粋関数で packaging テストが照合します。スクリプト入力の観測であり、人の承認やモデル評価ではありません。Windows では起動を拒否し、確認済みとは扱いません。
+
+## 検証記録
+
+2026-09-29 に実装しました。契約は `ef727fd`、失敗する先行テストは `bf47e7c`、実装は `a13288a`、分岐を埋める追加テストは `baa6d53` です。実機確認の契約は `8baef61` と `77f0288`、先行テストは `11febda` と `6450320`、検証スクリプトは `9e01fda` です。
+
+先行テストのうち2点は、実装の途中でテスト側を直しました。locate のテストでハードリンクの元にしたファイル自身もリンク数2になる準備の誤りと、予算ファイルを `recordP95Ms` だけで識別していた構造テストです。後者は検査系の `checkP95Ms` も対象に含めるよう広げ、規則は緩めていません。どちらも実装より前のテストのコミットに含めています。
+
+lib 1ファイル300行の予算に収めるため、領域の分類と承認の判定を `areas.mjs` に分けました。`guard.mjs` は判定の組み立て、`shell.mjs` はシェルの字句です。
+
+### CI で見つかった誤り
+
+最初の push の Windows CI で、単体テスト1件が失敗しました。テストが `cd D:\a\...\audit` のように、引用符なしのバックスラッシュ区切りのパスをシェルのコマンドに入れていたためです。POSIX の字句ではバックスラッシュはエスケープで、実際の bash でも別のパスになります。テストは絶対パスを引用符で囲むよう直しました（`ae1acdf`）。
+
+同じ読み方のため、PowerShell や Windows の `\` 区切りで監査ログや配布ディレクトリを名指すコマンド（Add-Content、Set-Content、Remove-Item など）を見逃すことも分かりました。再現テストを先にコミットし（`ae1acdf`）、引用符とエスケープを解釈しない生の語でも名指しを探すよう直しました（`9707532`）。
+
+### 実機での確認
+
+`9707532` の配布を、Linux / Node.js v22.22.2 で `scripts/check-write-guard.mjs` により確認しました。Claude Code は環境に導入済みの 2.1.284 で、fixture の採取版（2.1.283）とは異なります。Codex は npm の `@openai/codex@0.153.4` をセッションの作業ディレクトリに導入しました。どちらも非対話の1回の起動で、固定応答のループバックのプロバイダーを使い、外部のモデルへの要求は送っていません。観測は `tests/fixtures/native/write-guard-linux.json` にあります。
+
+| ハーネス | 登録 | 結果 |
+| --- | --- | --- |
+| Claude Code 2.1.284 | 変更なし | 拒否の5ケースすべてで理由 ID が返り、対象は不変。draft は反映、read は監査を返した。監査は起動フックの session.started（harness:claude）1件 |
+| Claude Code 2.1.284 | PreToolUse なし | audit-file・audit-shell・approve が書き込まれた。link は CLI が symlink への Write を拒否、registration は acceptEdits でも `.claude/settings.json` への書き込み許可を求めて止まった |
+| Codex 0.153.4 | 変更なし | 拒否の5ケースすべてで理由 ID が返り、対象は不変。draft は反映、read は監査を返した。監査は session.started（harness:codex）1件 |
+| Codex 0.153.4 | PreToolUse なし | audit-file・audit-shell・link・approve が書き込まれた。link は symlink を通して監査ログに届いた。registration は CLI が「writing outside of the project」として拒否した |
+
+モデルへ返った文は、Claude が「PreToolUse:<ツール> hook error: [node ${CLAUDE_PROJECT_DIR}/.claude/hooks/vouch-guard-writes.mjs]: <理由>」、Codex が「Command blocked by PreToolUse hook: <理由>. Command: ...」でした。どちらも CLI の終了コードは0です。
+
+registration の対照は、ハーネス自身の保護を示すだけで、フック設定が安全という意味ではありません。Claude は許可ルールや bypassPermissions があれば書き込み、Claude の文書によると設定の変更はセッション中に読み込まれます。Codex の拒否は、承認方針が never でサンドボックスが workspace-write の exec で観測したものです。
+
+確認していない範囲は次のとおりです。
+
+- Windows と macOS、対話 CLI、他の CLI の版での実機確認。検証スクリプトは Windows で起動を拒否する。
+- サブエージェントのツール呼び出し、NotebookEdit・EnterWorktree・MCP のツール、Codex の write_stdin。
+- Codex で `VOUCH_PROJECT_ROOT` が未設定のときの PreToolUse。UserPromptSubmit では登録コマンドが失敗し、Codex は止まらなかった。
