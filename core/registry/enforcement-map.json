@@ -50,6 +50,11 @@
           "status": "implemented",
           "path": "tests/content/skills.test.mjs",
           "claim": "実在する Skill と診断説明にハーネス固有パスがないことを検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/agents.test.mjs",
+          "claim": "エージェントの原本にハーネス固有パスと {{HARNESS_DIR}} 以外のトークンがないことを検査する。"
         }
       ]
     },
@@ -165,7 +170,7 @@
         {
           "status": "implemented",
           "path": "scripts/package.mjs",
-          "claim": "manifest の対応表によるバイトコピーだけを実装。ハーネス別の内容分岐はない。TOML・トークン変換は後続。"
+          "claim": "manifest の対応表によるコピーとトークン置換に加え、対応表の任意の render（Codex の TOML 変換と Claude のエージェント Markdown）を適用する。package.mjs 自身にハーネス別の内容分岐はなく、変換は harness/<name>/ のファイルにある。"
         },
         {
           "status": "implemented",
@@ -181,6 +186,11 @@
           "status": "implemented",
           "path": "tests/packaging/preflight-race.test.mjs",
           "claim": "一時出力の列挙後に祖先をjunctionへ差し替え、最終事前検査が拒否してリンク先に書かないことを確認する。外部プロセスによる最後の検査後の競合を完全に防ぐ保証ではない。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/render.test.mjs",
+          "claim": "手製の最小パッケージで、render がトークン置換後に適用され返したパスへ書かれること、--check と余分なファイルの検出、対応表の外へのパスと失敗する render で何も書かないことを検査する。"
         }
       ]
     },
@@ -846,7 +856,7 @@
         },
         {
           "status": "pending",
-          "claim": "他の Skill・エージェントは未実装で、全配布文書の frontmatter 検査は未完了。"
+          "claim": "ステージ Skill（Design / Build / Verify）は未実装で、全配布文書の frontmatter 検査は未完了。"
         },
         {
           "status": "implemented",
@@ -862,6 +872,11 @@
           "status": "implemented",
           "path": "tests/content/intent.test.mjs",
           "claim": "Intent 下書きの frontmatter、日英の節・質問カード・判断記録の欄と on-demand Skill を正典に照合する。モデルが適切に記入したことの証明ではない。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/agents.test.mjs",
+          "claim": "3エージェントの原本が workflow.json の役と一対一で、frontmatter が既存スキーマと正規形に合い、ツールの語彙を許可・不許可に漏れなく分け、inputs と操作が登録済みで本文に規則タグ付きで書かれていることを検査する。"
         }
       ]
     },
@@ -875,6 +890,11 @@
           "status": "implemented",
           "path": "tests/content/budgets.test.mjs",
           "claim": "AGENTS.md・オーケストレータ・日英の各 rules テンプレートがそろった状態で行数・常時読み込み予算を検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/budgets.test.mjs",
+          "claim": "core/agents の3エージェントの80行予算も同じテストで検査する。"
         }
       ]
     },
@@ -954,6 +974,11 @@
           "status": "implemented",
           "path": "tests/packaging/project-documents.test.mjs",
           "claim": "Intent と decisions の日英テンプレートを含む文書の全ファイル集合と参照を検査し、利用者の vouch/ 成果物を生成しないことを確認する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/agents.test.mjs",
+          "claim": "生成したエージェントの配布ルート基準パスが両ハーネスの配布で実在し、両ハーネスで本文が同じであることを検査する。"
         }
       ]
     },
@@ -1102,6 +1127,11 @@
           "status": "implemented",
           "path": "tests/packaging/project-documents.test.mjs",
           "claim": "Intent と decisions の日英テンプレートを含む文書の全ファイル集合と参照を検査し、利用者の vouch/ 成果物を生成しないことを確認する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/agents.test.mjs",
+          "claim": "両ハーネスのエージェントの配布集合（.claude/agents の Markdown、.codex/agents の TOML）を検査する。"
         }
       ]
     },
@@ -1145,8 +1175,24 @@
       "mechanisms": ["test"],
       "checks": [
         {
-          "status": "pending",
-          "claim": "DIST-4 の全要件に対する検査は未完了。packaging テスト"
+          "status": "implemented",
+          "path": "harness/codex/agent-toml.mjs",
+          "claim": "原本の Markdown エージェントから Codex の TOML（name、description、sandbox_mode、developer_instructions）を生成し、生成した部分集合だけを読む逆変換で原本をバイト単位で復元する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/agents.test.mjs",
+          "claim": "3エージェントの TOML の全文、tools の edit に応じた sandbox_mode、前文と inputs・tools・disallowed の3行、TOML → Markdown の往復が原本と一致すること、config.toml の max_depth = 1 を検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/agent-convert.test.mjs",
+          "claim": "手製入力で文字列のエスケープ、read-only の sandbox、''' を含む本文の拒否、部分集合外・意味の食い違う TOML の逆変換の拒否を検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "docs/development/agents.md",
+          "claim": "Codex 0.153.4 の非対話 exec が生成した .codex/agents の3役を spawn の役割として一覧した観測を記録する。実モデルによる役割分離の評価ではない。"
         }
       ]
     },
@@ -1836,7 +1882,12 @@
         },
         {
           "status": "pending",
-          "claim": "test 型のコミットでのテストの変更が妥当か、DoD の不合格が意図した理由かは reviewer と人が判断する。一覧にない命名のテスト、件名を読めないコミット時の早期検査、別コンテキスト検証を実行するエージェント（#8）は未実装。"
+          "claim": "test 型のコミットでのテストの変更が妥当か、DoD の不合格が意図した理由かは reviewer と人が判断する。一覧にない命名のテスト、件名を読めないコミット時の早期検査は未実装。別コンテキストで検証する reviewer エージェントは定義済みだが、実モデルが独立性を守るかの評価と、起動するステージ Skill は未実装。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/agents.test.mjs",
+          "claim": "reviewer が成果物・diff・検査結果を入力とし、builder の会話の利用、自分での修正、破壊検査の残置、テストの弱体化を行わない操作として宣言し、builder が worktree と DoD コマンドを使うことを文書構造として検査する。モデルの振る舞いの証明ではない。"
         }
       ]
     },

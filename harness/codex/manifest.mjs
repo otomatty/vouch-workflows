@@ -1,3 +1,5 @@
+import codexAgent from "./agent-toml.mjs";
+
 /** @satisfies {import('../../scripts/package.mjs').PackageManifest} */
 export default {
   tokens: { "{{HARNESS_DIR}}": ".codex" },
@@ -5,6 +7,7 @@ export default {
     { from: "core/AGENTS.md", to: "AGENTS.md" },
     { from: "core/templates", to: ".codex/templates" },
     { from: "core/skills", to: ".agents/skills" },
+    { from: "core/agents", to: ".codex/agents", render: codexAgent },
     {
       from: "harness/codex/installation.json",
       to: ".codex/registry/installation.json",

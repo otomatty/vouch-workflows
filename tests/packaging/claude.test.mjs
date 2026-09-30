@@ -40,11 +40,12 @@ test("Claude distribution reproduces exact source bytes and registers every prod
         ([path]) =>
           !path.startsWith(".claude/skills/") &&
           !path.startsWith(".claude/templates/") &&
+          !path.startsWith(".claude/agents/") &&
           !["AGENTS.md", "CLAUDE.md"].includes(path),
       ),
     ),
     expected,
-    "DIST-2: runtime inventory; Skill inventory is checked separately",
+    "DIST-2: runtime inventory; Skill and agent inventories are checked separately",
   );
   t.assert.deepEqual(files, tree(box.path("second/claude")));
   const settings = JSON.parse(
