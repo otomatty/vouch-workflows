@@ -1,23 +1,39 @@
-import { spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { performance } from "node:perf_hooks";
 import budgets from "../core/registry/budgets.json" with { type: "json" };
 
-const npm = process.env.npm_execpath;
+const npm = process.env.npm_execpath ?? "";
 if (!npm) throw new Error("Run this check with npm run check.");
 const start = performance.now();
-for (const task of ["lint", "typecheck", "test", "package", "package:check"]) {
+/** Run one task within the original shared deadline. @param {string} task @returns {Promise<number>} */
+async function runTask(task) {
   const remaining = budgets.timing.checkTimeoutMs - (performance.now() - start);
   if (remaining <= 0)
     throw new Error("TEST-12: check exceeded its time budget.");
-  const result = spawnSync(process.execPath, [npm, "run", task], {
-    stdio: "inherit",
-    timeout: Math.ceil(remaining),
-    windowsHide: true,
+  return new Promise((done) => {
+    const child = spawn(process.execPath, [npm, "run", task], {
+      stdio: "inherit",
+      timeout: Math.ceil(remaining),
+      windowsHide: true,
+    });
+    child.once("error", (error) => {
+      console.error(`TEST-12: ${task}: ${error.message}`);
+      done(1);
+    });
+    child.once("exit", (code) => {
+      if (child.killed && code === null)
+        console.error(`TEST-12: ${task} exceeded the remaining check budget`);
+      done(code ?? 1);
+    });
   });
-  if (result.error || result.status !== 0) {
-    if (result.error) console.error(`TEST-12: ${result.error.message}`);
-    process.exit(result.status ?? 1);
-  }
+}
+// Both are read-only. Tests and distribution require both results before they start.
+const staticResults = await Promise.all(["lint", "typecheck"].map(runTask));
+const failure = staticResults.find((status) => status !== 0);
+if (failure !== undefined) process.exit(failure);
+for (const task of ["test", "package", "package:check"]) {
+  const status = await runTask(task);
+  if (status !== 0) process.exit(status);
 }
 console.log(
   `Implemented checks passed in ${((performance.now() - start) / 1000).toFixed(1)}s.`,

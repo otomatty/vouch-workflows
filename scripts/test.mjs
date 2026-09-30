@@ -40,8 +40,8 @@ for (const suite of suites) {
   for (const phase of testPhases(suite, tests, availableParallelism())) {
     const flags = [
       "--test",
-      // Node 22 times out the whole file; hookTest enforces five seconds per case.
-      `--test-timeout=${suite === "hooks" ? budgets.timing.checkTimeoutMs : budgets.timing.testTimeoutMs}`,
+      // Node 22 times out the whole file; hookTest enforces five seconds per hook/scenario case.
+      `--test-timeout=${["hooks", "scenario"].includes(suite) ? budgets.timing.checkTimeoutMs : budgets.timing.testTimeoutMs}`,
       `--test-concurrency=${phase.concurrency}`,
       "--import=./tests/helpers/no-network.mjs",
     ];

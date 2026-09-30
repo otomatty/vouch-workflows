@@ -12,12 +12,19 @@ const budget = /-performance\.test\.mjs$/;
 export function testPhases(suite, files, cpus) {
   const budgets =
     suite === "hooks" ? files.filter((file) => budget.test(file)) : [];
+  const native =
+    suite === "packaging"
+      ? files.filter((file) => /[/\\]native-environment\.test\.mjs$/.test(file))
+      : [];
   return [
     {
-      files: files.filter((file) => !budgets.includes(file)),
+      files: files.filter(
+        (file) => !budgets.includes(file) && !native.includes(file),
+      ),
       concurrency: cpus,
       budget: false,
     },
     { files: budgets, concurrency: 1, budget: true },
+    { files: native, concurrency: 1, budget: false },
   ].filter((phase) => phase.files.length > 0);
 }
