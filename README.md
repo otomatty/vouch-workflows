@@ -31,7 +31,7 @@ lockfile を書き換えるときは npm 11.5.0〜11.6.2 を使いません。�
 | コマンド | 内容 |
 | --- | --- |
 | `npm run doctor` | Node.js、Git、固定バージョンの依存の導入状況 |
-| `npm run check` | Lint → 型検査 → テスト → 配布生成・バイト一致。CI と共通の入口 |
+| `npm run check` | Lint・型検査を並列に実行 → テスト → 配布生成・バイト一致。CI と共通の入口 |
 | `npm run lint` | Biome、markdownlint、dependency-cruiser、knip |
 | `npm run format` | JS / JSON の整形と安全な自動修正 |
 | `npm run typecheck` | `.mjs` の JSDoc を TypeScript 6 で検査 |
