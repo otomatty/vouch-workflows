@@ -1,4 +1,8 @@
 import { test } from "node:test";
+
+/** @param {import("node:test").TestContext} t @param {unknown} value @param {string} [message] */
+const ok = (t, value, message) => t.assert.equal(Boolean(value), true, message);
+
 import { newId } from "../../../core/hooks/lib/clock.mjs";
 import { createFileStore } from "../../../core/hooks/lib/fs.mjs";
 import {
@@ -39,9 +43,9 @@ test("freshness compares HEAD, document dates, digests and all mandatory layers"
     (await inspectKnowledge(ctx, "b".repeat(40))).errors.join(),
     /generation/,
   );
-  files.data.set(paths[0], document.replace(date, "2026-09-28"));
+  files.data.set(paths[0] ?? "", document.replace(date, "2026-09-28"));
   t.assert.match((await inspectKnowledge(ctx, head)).errors.join(), /stale/);
-  files.data.delete(paths[1]);
+  files.data.delete(paths[1] ?? "");
   t.assert.match((await inspectKnowledge(ctx, head)).errors.join(), /missing/);
 });
 test("invalid manifests, dates, duplicate and misplaced entries cannot pass", async (t) => {
@@ -54,16 +58,16 @@ test("invalid manifests, dates, duplicate and misplaced entries cannot pass", as
     const { files, ctx } = project();
     if (value?.entries?.length) value.entries.push(value.entries[0]);
     files.data.set("vouch/knowledge/index.json", JSON.stringify(value));
-    t.assert.ok((await inspectKnowledge(ctx, head)).errors.length);
+    ok(t, (await inspectKnowledge(ctx, head)).errors.length);
   }
   const { files, ctx } = project();
   files.data.set("vouch/knowledge/index.json", "broken");
-  t.assert.ok((await inspectKnowledge(ctx, null)).errors.length);
+  ok(t, (await inspectKnowledge(ctx, null)).errors.length);
   for (const stamp of ["2026-02-30", "2026-13-01", "2026-09-28"]) {
     const index = JSON.parse(knowledgeFiles()["vouch/knowledge/index.json"]);
     index.entries[0].updated = stamp;
     files.data.set("vouch/knowledge/index.json", JSON.stringify(index));
-    t.assert.ok((await inspectKnowledge(ctx, head)).errors.length);
+    ok(t, (await inspectKnowledge(ctx, head)).errors.length);
   }
 });
 test("citations verify local file, explicit section, line and pinned generation", async (t) => {
@@ -88,7 +92,8 @@ test("citations verify local file, explicit section, line and pinned generation"
     `${paths[0]}#main@2026-09-26`,
     "unversioned.md",
   ]) {
-    t.assert.ok(
+    ok(
+      t,
       (
         await inspectReferences(
           `<!-- sec:references -->\n[bad](${target})`,
@@ -100,10 +105,9 @@ test("citations verify local file, explicit section, line and pinned generation"
       target,
     );
   }
-  t.assert.ok(
-    (await inspectReferences("# No sources", ctx, head, index)).length,
-  );
-  t.assert.ok(
+  ok(t, (await inspectReferences("# No sources", ctx, head, index)).length);
+  ok(
+    t,
     (
       await inspectReferences(
         "<!-- sec:references -->\nNo links",
@@ -128,7 +132,8 @@ test("citations reject traversal, absolute paths and links using the real filesy
     `${box.path("doc.md")}#main@${date}`,
     `C:/doc.md#main@${date}`,
   ]) {
-    t.assert.ok(
+    ok(
+      t,
       (
         await inspectReferences(
           `<!-- sec:references -->\n[x](${target})`,
@@ -145,7 +150,7 @@ test("external URL checks use only local dated receipts and snapshot digests", a
   const index = (await inspectKnowledge(ctx, head)).index;
   const url = "https://example.com/docs#main";
   const text = `<!-- sec:references -->\n[official](${url})`;
-  t.assert.ok((await inspectReferences(text, ctx, head, index)).length);
+  ok(t, (await inspectReferences(text, ctx, head, index)).length);
   files.data.set("snapshot.md", document);
   const receipt = {
     version: 1,
@@ -168,7 +173,7 @@ test("external URL checks use only local dated receipts and snapshot digests", a
         records: [{ ...receipt.records[0], ...change }],
       }),
     );
-    t.assert.ok((await inspectReferences(text, ctx, head, index)).length);
+    ok(t, (await inspectReferences(text, ctx, head, index)).length);
   }
 });
 test("real question cards require complete fields, two to four options and checked basis references", async (t) => {
@@ -190,7 +195,7 @@ test("real question cards require complete fields, two to four options and check
       "<!-- question:default -->\n<!-- question:default -->",
     ),
   ]) {
-    t.assert.ok((await inspectQuestions(bad, ctx, head, index)).length);
+    ok(t, (await inspectQuestions(bad, ctx, head, index)).length);
   }
   t.assert.deepEqual(
     await inspectQuestions(
@@ -204,4 +209,20 @@ test("real question cards require complete fields, two to four options and check
     ),
     [],
   );
+});
+
+test("knowledge schema and runtime agree on additional fields, types and array minimum", async (t) => {
+  const invalid = [
+    null,
+    {},
+    {
+      ...JSON.parse(knowledgeFiles()["vouch/knowledge/index.json"]),
+      extra: true,
+    },
+  ];
+  for (const value of invalid) {
+    const { files, ctx } = project();
+    files.data.set("vouch/knowledge/index.json", JSON.stringify(value));
+    t.assert.equal((await inspectKnowledge(ctx, head)).index, null);
+  }
 });

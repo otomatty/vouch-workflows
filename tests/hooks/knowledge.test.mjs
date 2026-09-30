@@ -1,5 +1,9 @@
 import { execFileSync } from "node:child_process";
 import { test } from "node:test";
+
+/** @param {import("node:test").TestContext} t @param {unknown} value @param {string} [message] */
+const ok = (t, value, message) => t.assert.equal(Boolean(value), true, message);
+
 import { deriveFixture } from "../helpers/fixtures.mjs";
 import { hookTest } from "../helpers/hook-test.mjs";
 import { artifact, knowledgeFiles, question } from "../helpers/knowledge.mjs";
@@ -63,17 +67,26 @@ for (const harness of /** @type {const} */ (["claude", "codex"])) {
         "<!-- sec:references -->\n[x](../outside.md#main@2026-09-27)",
       );
       t.assert.match(send("vouch citations check", "bad").stderr, /failed/);
+      t.assert.match(send("vouch citations check").stderr, /AUDIT-CONFLICT/);
       const rows = (await box.read(audit))
         .trim()
         .split("\n")
         .map((line) => JSON.parse(line));
-      t.assert.ok(rows.some((r) => r.type === "knowledge.refreshed"));
-      t.assert.ok(
+      ok(
+        t,
+        rows.some((r) => r.type === "knowledge.refreshed"),
+      );
+      ok(
+        t,
         rows.some((r) => r.type === "hook.check" && r.check === "freshness"),
       );
-      t.assert.ok(rows.some((r) => r.type === "hook.denied"));
+      ok(
+        t,
+        rows.some((r) => r.type === "hook.denied"),
+      );
       const validate = validator("audit-event");
-      t.assert.ok(
+      ok(
+        t,
         rows.every((r) => validate(r)),
         JSON.stringify(validate.errors),
       );
