@@ -14,12 +14,12 @@ function files(directory) {
 }
 
 const selected = process.argv[2];
-if (selected && !["unit", "hooks"].includes(selected)) {
+if (selected && !["unit", "hooks", "checks"].includes(selected)) {
   throw new Error(`Unknown suite: ${selected}`);
 }
-const suites = selected
-  ? [selected]
-  : ["content", "registry", "packaging", "scenario", "unit", "hooks"];
+const checks = ["content", "registry", "packaging", "scenario", "unit"];
+const suites =
+  selected === "checks" ? checks : selected ? [selected] : [...checks, "hooks"];
 // A failing suite must not hide the results of later suites; the run still fails.
 /** @type {string[]} */ const failed = [];
 for (const suite of suites) {

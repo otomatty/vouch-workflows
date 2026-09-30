@@ -20,6 +20,7 @@
     "typecheck": "tsc --project tsconfig.json && tsc --project tsconfig.tests.json",
     "test": "node scripts/test.mjs",
     "test:unit": "node scripts/test.mjs unit",
+    "test:checks": "node scripts/test.mjs checks",
     "test:hooks": "node scripts/test.mjs hooks",
     "package": "node scripts/package.mjs",
     "package:check": "node scripts/package.mjs --check",

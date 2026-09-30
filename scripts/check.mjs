@@ -27,11 +27,14 @@ async function runTask(task) {
     });
   });
 }
-// Both are read-only. Tests and distribution require both results before they start.
-const staticResults = await Promise.all(["lint", "typecheck"].map(runTask));
+// These read the project or use isolated sandboxes. Hooks require every result first,
+// keeping static checks and other tiers out of the performance measurements.
+const staticResults = await Promise.all(
+  ["lint", "typecheck", "test:checks"].map(runTask),
+);
 const failure = staticResults.find((status) => status !== 0);
 if (failure !== undefined) process.exit(failure);
-for (const task of ["test", "package", "package:check"]) {
+for (const task of ["test:hooks", "package", "package:check"]) {
   const status = await runTask(task);
   if (status !== 0) process.exit(status);
 }
