@@ -1,4 +1,5 @@
 import { test } from "node:test";
+import * as phases from "../../scripts/lib/test-phases.mjs";
 import { testPhases } from "../../scripts/lib/test-phases.mjs";
 
 const hooks = (/** @type {string} */ name) => `/repo/tests/hooks/${name}`;
@@ -47,4 +48,51 @@ test("native shell lookup runs cold apart from the CPU-parallel packaging files"
     { files: [plain], concurrency: 4, budget: false },
     { files: [native], concurrency: 1, budget: false },
   ]);
+});
+
+test("identical validation settings share a phase without losing files or overlapping native probes", (t) => {
+  t.assert.equal(typeof phases.testGroups, "function");
+  const suites = [
+    { suite: "content", files: ["/repo/tests/content/budgets.test.mjs"] },
+    { suite: "registry", files: ["/repo/tests/registry/schemas.test.mjs"] },
+    {
+      suite: "packaging",
+      files: [
+        "/repo/tests/packaging/native-environment.test.mjs",
+        "/repo/tests/packaging/skills.test.mjs",
+      ],
+    },
+    { suite: "scenario", files: ["/repo/tests/scenario/git.test.mjs"] },
+    { suite: "unit", files: ["/repo/tests/unit/git.test.mjs"] },
+    { suite: "hooks", files: [hooks("git-guard-performance.test.mjs")] },
+  ];
+  const groups = phases.testGroups(suites);
+  t.assert.deepEqual(groups, [
+    {
+      suite: "checks",
+      files: [suites[0].files[0], suites[1].files[0], suites[2].files[1]],
+    },
+    suites[3],
+    suites[4],
+    { suite: "packaging", files: [suites[2].files[0]] },
+    suites[5],
+  ]);
+  t.assert.deepEqual(
+    groups.flatMap((group) => group.files).sort(),
+    suites.flatMap((group) => group.files).sort(),
+  );
+  t.assert.deepEqual(testPhases("checks", groups[0].files, 4), [
+    { files: groups[0].files, concurrency: 4, budget: false },
+  ]);
+  t.assert.deepEqual(testPhases("packaging", groups[3].files, 4), [
+    { files: groups[3].files, concurrency: 1, budget: false },
+  ]);
+});
+
+test("unit and hook selections retain their original coverage and measurement groups", (t) => {
+  t.assert.equal(typeof phases.testGroups, "function");
+  for (const suite of ["unit", "hooks"]) {
+    const selected = [{ suite, files: [`/repo/tests/${suite}/io.test.mjs`] }];
+    t.assert.deepEqual(phases.testGroups(selected), selected);
+  }
 });
