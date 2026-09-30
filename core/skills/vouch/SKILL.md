@@ -1,19 +1,24 @@
 ---
 name: vouch
-description: "Draft a Vouch Intent plan, show intent status and unanswered decisions from artifacts, or diagnose an installation with doctor. Use for Vouch planning, status and setup requests."
+description: "Plan a Vouch Intent, draft its Design, build an approved Intent, verify it into a Review Brief, show status and unanswered decisions, or diagnose an installation with doctor. Use for Vouch workflow, status and setup requests."
 user-invocable: true
 reads: always
 ---
 
 # Vouch
 
-Vouch の配布先を診断する。現在対応している操作は doctor、読み取り専用 status、Intent の下書き作成である。
-引数なしではこの対応範囲を案内する。ask / report / migrate と Build 以降のステージ進行は未実装と伝え、完了したように扱わない。
+Vouch の4ステージ（Intent → Design → Build → Verify）を Skill で進める。現在対応している操作は doctor、読み取り専用 status、Intent と Design の下書き、承認済み Intent の Build、Verify と Review Brief である。
+引数なしではこの対応範囲を案内する。ask / report / migrate と、中断からの自動の再開は未実装と伝え、完了したように扱わない。
 Claude では `/vouch doctor` または `/vouch status`、Codex では `$vouch doctor` または `$vouch status` を指定できる。
 
 ## Intent
 
-新しい要望の計画・指定した Intent の下書き修正は [Intent Skill](../vouch-intent/SKILL.md) を読む。Claude では `/vouch-intent`、Codex では `$vouch-intent` でも指定できる。確認点と承認は人の `vouch confirm` / `vouch review` / `vouch approve` の入力でフックが記録・適用し、モデルは承認も Build 開始も行わない。
+新しい要望の計画・指定した Intent の下書き修正は [Intent Skill](../vouch-intent/SKILL.md) を読む。Claude では `/vouch-intent`、Codex では `$vouch-intent` でも指定できる。確認点と承認は人の `vouch confirm` / `vouch review` / `vouch approve` の入力でフックが記録・適用し、モデルは承認を行わず、承認前に Build を始めない。
+
+## Design・Build・Verify
+
+計画が Design を要求する時は [Design Skill](../vouch-design/SKILL.md)、人の承認が記録・適用された Intent の実装は [Build Skill](../vouch-build/SKILL.md)、Build を終えた Intent の独立した検証と Review Brief・Learn は [Verify Skill](../vouch-verify/SKILL.md) を読む。Claude では `/vouch-design`・`/vouch-build`・`/vouch-verify`、Codex では `$vouch-design`・`$vouch-build`・`$vouch-verify` でも指定できる。
+ステージの位置は成果物の frontmatter・監査ログ・Git から判断し、状態ファイルや自動遷移を作らない。承認前の Build、承認・確認点・PR のマージの代行はしない。[R-PROJECT-1]
 
 ## Knowledge
 

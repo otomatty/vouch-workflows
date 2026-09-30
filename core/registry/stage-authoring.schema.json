@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vouch.dev/schemas/stage-authoring.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "skills",
+    "design_frontmatter",
+    "design_sections",
+    "build_sections",
+    "review_sections",
+    "brief",
+    "diff_kinds",
+    "evidence",
+    "hunks",
+    "review_rounds",
+    "demo",
+    "git"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "skills": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["design", "build", "verify"],
+      "properties": {
+        "design": {
+          "const": "vouch-design"
+        },
+        "build": {
+          "const": "vouch-build"
+        },
+        "verify": {
+          "const": "vouch-verify"
+        }
+      }
+    },
+    "design_frontmatter": {
+      "$ref": "https://vouch.dev/schemas/intent-draft-frontmatter.json"
+    },
+    "design_sections": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z-]*$"
+      }
+    },
+    "build_sections": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z-]*$"
+      }
+    },
+    "review_sections": {
+      "type": "array",
+      "minItems": 9,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z-]*$"
+      },
+      "maxItems": 9
+    },
+    "brief": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["deferred", "defaults", "unresolved"],
+      "properties": {
+        "deferred": {
+          "type": "string",
+          "pattern": "^[a-z][a-z-]*$"
+        },
+        "defaults": {
+          "type": "string",
+          "pattern": "^[a-z][a-z-]*$"
+        },
+        "unresolved": {
+          "type": "string",
+          "pattern": "^[a-z][a-z-]*$"
+        }
+      }
+    },
+    "diff_kinds": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "flowchart",
+          "sequenceDiagram",
+          "classDiagram",
+          "erDiagram",
+          "stateDiagram-v2"
+        ]
+      }
+    },
+    "evidence": {
+      "const": ["test", "log", "shot", "commit"]
+    },
+    "hunks": {
+      "const": ["core", "plumbing", "tests", "generated", "rename"]
+    },
+    "review_rounds": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "demo": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "git": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z-]*$"
+      }
+    }
+  }
+}

@@ -855,10 +855,6 @@
           "claim": "Skill/agent frontmatterのスキーマと受理・拒否例を検査する。実文書の解析・照合は未実装。"
         },
         {
-          "status": "pending",
-          "claim": "ステージ Skill（Design / Build / Verify）は未実装で、全配布文書の frontmatter 検査は未完了。"
-        },
-        {
           "status": "implemented",
           "path": "tests/content/skills.test.mjs",
           "claim": "実在する vouch Skill の flat scalar frontmatter を解析し、重複キー・未対応構文の拒否と既存 Ajv スキーマとの一致を検査する。"
@@ -877,6 +873,11 @@
           "status": "implemented",
           "path": "tests/content/agents.test.mjs",
           "claim": "3エージェントの原本が workflow.json の役と一対一で、frontmatter が既存スキーマと正規形に合い、ツールの語彙を許可・不許可に漏れなく分け、inputs と操作が登録済みで本文に規則タグ付きで書かれていることを検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/stages.test.mjs",
+          "claim": "Design / Build / Verify の3つのステージ Skill が on-demand・user-invocable で、stage-authoring.json の skills と一致し、日英テンプレートと正典の registry を参照することを検査する。モデルが従うことの証明ではない。"
         }
       ]
     },
@@ -906,12 +907,17 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "git / rules.md の DoD コマンドを使う後続 Skill の許可コマンド検査は未実装。"
+          "claim": "DoD のコマンドは rules.md の表を参照し Skill に書き写さないため、Skill 側の検査は書き写しがないことに限る。実際のモデルが許可外のコマンドを実行しないかの評価は未実施。"
         },
         {
           "status": "implemented",
           "path": "tests/content/skills.test.mjs",
           "claim": "今回の doctor Skill が指示する shell フェンス内のコマンドを、登録済み Node 手動入口と照合する。git / DoD コマンドを指示する Skill は未実装。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/skills.test.mjs",
+          "claim": "すべての Skill の shell フェンスの行が、runtime.json の commands の node 入口か、stage-authoring.json の git サブコマンドであること、保護対象の枝・強制への push と他のプログラム・連結を拒否することを検査する。"
         }
       ]
     },
@@ -922,10 +928,6 @@
       "mechanisms": ["test"],
       "checks": [
         {
-          "status": "pending",
-          "claim": "Intent / Design / Build / Review と判断依頼等の日英テンプレートは未実装。"
-        },
-        {
           "status": "implemented",
           "path": "tests/content/project-documents.test.mjs",
           "claim": "ja/en rules の節 ID・順序が project-documents.json と一致することを検査する。Intent / Design / Build / Review テンプレートは未実装。"
@@ -934,6 +936,11 @@
           "status": "implemented",
           "path": "tests/content/intent.test.mjs",
           "claim": "Intent 下書きの frontmatter、日英の節・質問カード・判断記録の欄と on-demand Skill を正典に照合する。モデルが適切に記入したことの証明ではない。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/stages.test.mjs",
+          "claim": "design / build-log / review の日英テンプレートが stage-authoring.json の節 ID を同じ順で持ち、Brief の §6・§7・§8 の印、証拠の書式、hunk の分類をそろえることを検査する。"
         }
       ]
     },
@@ -957,10 +964,6 @@
       "mechanisms": ["test"],
       "checks": [
         {
-          "status": "pending",
-          "claim": "今後追加するステージ Skill・成果物テンプレートのリンク検査は未実装。"
-        },
-        {
           "status": "implemented",
           "path": "tests/packaging/skills.test.mjs",
           "claim": "Skill 配布の正確なファイル集合、両ハーネスでの同内容、相対リンクと配布ルート基準パスの実在を検査する。"
@@ -979,6 +982,16 @@
           "status": "implemented",
           "path": "tests/packaging/agents.test.mjs",
           "claim": "生成したエージェントの配布ルート基準パスが両ハーネスの配布で実在し、両ハーネスで本文が同じであることを検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/skills.test.mjs",
+          "claim": "Design / Build / Verify の Skill を含む両ハーネスの配布で、相対リンクと配布ルート基準パスが実在し、本文が同じであることを検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/project-documents.test.mjs",
+          "claim": "design / build-log / review の日英テンプレートを含む配布の全ファイル集合と参照の実在を検査する。"
         }
       ]
     },
@@ -990,12 +1003,17 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "DOC-7 の全要件に対する検査は未完了。content テスト"
+          "claim": "知識レイヤーの基準図（components、data）はテンプレートを持たず、explorer が作る文書の図の検査は未実装。図の内容や描画結果の評価は別途。"
         },
         {
           "status": "implemented",
           "path": "tests/content/intent.test.mjs",
           "claim": "Intent テンプレートの日英両方に、必須ユーザーフローと brownfield 影響範囲の Mermaid 記入枠が台帳どおりの種類・条件・数であることを検査する。内容や描画結果の評価は別途。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/stages.test.mjs",
+          "claim": "design と review の日英テンプレートに diagrams.json の図が種類・条件・数どおりにあり、diff_kinds の図が3色の classDef を原文で持ち、テンプレートに他の色コードがないことを検査する。"
         }
       ]
     },
@@ -1007,7 +1025,7 @@
       "checks": [
         {
           "status": "pending",
-          "claim": "実ハーネスによる doctor/status の発見・選択・返答の評価、後続のステージ Skill のレビューは未実施。"
+          "claim": "実ハーネスによる doctor / status / ステージ Skill の発見・選択・返答のモデル評価は未実施。"
         },
         {
           "status": "implemented",
@@ -1023,6 +1041,11 @@
           "status": "implemented",
           "path": "docs/development/intent.md",
           "claim": "Intent 下書きの対象・判断根拠・完了条件と承認未実装の境界を契約化し、契約→テスト→実装の順で自己レビューする。実モデル評価は未実施。"
+        },
+        {
+          "status": "implemented",
+          "path": "docs/development/stages.md",
+          "claim": "Design / Build / Verify の対象・開始条件・完了条件・根拠と、承認・確認点・PR マージを代行しない境界を契約化し、契約→テスト→実装の順で自己レビューした。モデル評価は未実施。"
         }
       ]
     },
@@ -1770,6 +1793,11 @@
           "status": "implemented",
           "path": "tests/hooks/vouch-guard-writes-git.test.mjs",
           "claim": "モデルのシェルからの main への push と gh pr merge を拒否し、PR のマージを人に残すことを子プロセスで検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/stages.test.mjs",
+          "claim": "新規 design.md が draft に限られ、Design Skill が人の vouch confirm design、Build Skill が人の vouch approve を条件にすることを文書構造として検査する。承認前の書き込みの遮断は既存の Build 開始の境界が担う。"
         }
       ]
     },
@@ -1882,12 +1910,17 @@
         },
         {
           "status": "pending",
-          "claim": "test 型のコミットでのテストの変更が妥当か、DoD の不合格が意図した理由かは reviewer と人が判断する。一覧にない命名のテスト、件名を読めないコミット時の早期検査は未実装。別コンテキストで検証する reviewer エージェントは定義済みだが、実モデルが独立性を守るかの評価と、起動するステージ Skill は未実装。"
+          "claim": "test 型のコミットでのテストの変更が妥当か、DoD の不合格が意図した理由かは reviewer と人が判断する。一覧にない命名のテスト、件名を読めないコミット時の早期検査は未実装。reviewer を別コンテキストで起動する Verify Skill は定義済みだが、実モデルが独立性・破壊検査・往復の上限を守るかの評価は未実施。"
         },
         {
           "status": "implemented",
           "path": "tests/content/agents.test.mjs",
           "claim": "reviewer が成果物・diff・検査結果を入力とし、builder の会話の利用、自分での修正、破壊検査の残置、テストの弱体化を行わない操作として宣言し、builder が worktree と DoD コマンドを使うことを文書構造として検査する。モデルの振る舞いの証明ではない。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/stages.test.mjs",
+          "claim": "Build Skill が vouch-builder と DoD コマンドを、Verify Skill が vouch-reviewer と往復の上限を参照し、Brief が破壊検査と未解決の指摘の節を持つことを文書構造として検査する。モデルの振る舞いの証明ではない。"
         }
       ]
     },
@@ -1910,6 +1943,11 @@
           "status": "implemented",
           "path": "tests/hooks/vouch-record-intent-approval.test.mjs",
           "claim": "question.asked / question.defaulted と gate.approved が監査にあっても、確認点・承認に数えないことを検査する。質問イベントの記録は未実装。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/content/stages.test.mjs",
+          "claim": "Review Brief の §7 に未回答のまま既定案で進めた判断依頼の表、§6 に先送りした判断依頼の表があることを日英で検査する。既定適用の実記録は未実装。"
         }
       ]
     },

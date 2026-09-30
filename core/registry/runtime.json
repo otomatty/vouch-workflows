@@ -75,6 +75,8 @@
     "registry/runtime.schema.json",
     "registry/session-start-hook.schema.json",
     "registry/skill-frontmatter.schema.json",
+    "registry/stage-authoring.json",
+    "registry/stage-authoring.schema.json",
     "registry/workflow.json",
     "registry/workflow.schema.json",
     "registry/write-guard.json",
