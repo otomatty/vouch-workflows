@@ -2,7 +2,7 @@
 
 Claude Code と Codex 向けの開発ワークフロー。仕様書は [docs/README.md](docs/README.md) から参照できます。
 
-レジストリ、入出力スキーマ、JSDoc の契約、共通ランタイムと、Claude / Codex のセッション開始を記録する最初の製品フックを実装しています。両ハーネスの登録設定と配布生成、配布先を読み取り検査する doctor も実装しました。doctor と読み取り専用 status の共通 Skill、配布先の AGENTS.md、日英の rules テンプレートも実装しました。Intent の下書き Skill と日英 intent / decisions テンプレートも追加しました。人の明示入力による確認点と承認の記録、確認点がそろった時の approved への更新、承認済み計画のない実装の書き込み（ファイル編集ツールと、シェルのリダイレクト・既定の書き込みコマンド）の遮断を実装し、範囲と限界を[承認の境界](docs/development/approval-boundary.md)に記載しています。他のフック・Skill 操作・エージェントは未実装です。ハーネスのツールから監査ログ・フック設定・承認済み成果物への書き込みを遮る PreToolUse のガードは実装済みで、検査できる範囲と限界を[書き込み保護](docs/development/write-guard.md)に記載しています。[レジストリ契約](docs/development/contracts.md)、[共通ランタイム](docs/development/runtime.md)、[セッション開始の検証記録](docs/development/session-start.md)、[Claude 配布の契約](docs/development/claude-distribution.md)、[Codex 配布の契約](docs/development/codex-distribution.md)、[doctor の契約](docs/development/doctor.md)に範囲を記載しています。既知の Windows の記録系 p95 時間予算は未達です。測定環境ごとの結果を検証記録に分けて残しています。
+レジストリ、入出力スキーマ、JSDoc の契約、共通ランタイムと、Claude / Codex のセッション開始を記録する最初の製品フックを実装しています。両ハーネスの登録設定と配布生成、配布先を読み取り検査する doctor も実装しました。doctor と読み取り専用 status の共通 Skill、配布先の AGENTS.md、日英の rules テンプレートも実装しました。Intent の下書き Skill と日英 intent / decisions テンプレートも追加しました。人の明示入力による確認点と承認の記録、確認点がそろった時の approved への更新、承認済み計画のない実装の書き込み（ファイル編集ツールと、シェルのリダイレクト・既定の書き込みコマンド）の遮断を実装し、範囲と限界を[承認の境界](docs/development/approval-boundary.md)に記載しています。知識の配置・世代管理、鮮度・引用・判断依頼カードの検査を [知識レイヤーの契約](docs/development/knowledge.md)に追加しました。必要時の調査は Knowledge / explorer Skill を使います。他のフック・Skill 操作・エージェントは未実装です。ハーネスのツールから監査ログ・フック設定・承認済み成果物への書き込みを遮る PreToolUse のガードは実装済みで、検査できる範囲と限界を[書き込み保護](docs/development/write-guard.md)に記載しています。[レジストリ契約](docs/development/contracts.md)、[共通ランタイム](docs/development/runtime.md)、[セッション開始の検証記録](docs/development/session-start.md)、[Claude 配布の契約](docs/development/claude-distribution.md)、[Codex 配布の契約](docs/development/codex-distribution.md)、[doctor の契約](docs/development/doctor.md)に範囲を記載しています。既知の Windows の記録系 p95 時間予算は未達です。測定環境ごとの結果を検証記録に分けて残しています。
 
 ## 開発環境
 
@@ -31,7 +31,7 @@ lockfile を書き換えるときは npm 11.5.0〜11.6.2 を使いません。�
 | コマンド | 内容 |
 | --- | --- |
 | `npm run doctor` | Node.js、Git、固定バージョンの依存の導入状況 |
-| `npm run check` | Lint → 型検査 → テスト → 配布生成・バイト一致。CI と共通の入口 |
+| `npm run check` | Lint・型・非フック検査を並列に実行 → フック検査 → 配布生成・バイト一致。CI と共通の入口 |
 | `npm run lint` | Biome、markdownlint、dependency-cruiser、knip |
 | `npm run format` | JS / JSON の整形と安全な自動修正 |
 | `npm run typecheck` | `.mjs` の JSDoc を TypeScript 6 で検査 |
@@ -58,4 +58,4 @@ status は成果物と監査を根拠に現在地・確認点・未回答の判�
 
 Intent Skill の実ハーネスでの発見・選択・生成結果の評価は未実施です。現在の自動テストは契約・文書構造・配布を検査します。
 
-Build の機械的なガードとして、登録したシェルツールからの `main` への push と `gh pr merge`、Intent のブランチでのコードを変えるコミットの型と Unit、`test` 型以外でのテストファイルの変更・削除、契約（DoD 合格）→ テスト（DoD 不合格）→ 実装の順序の違反と、実装を含むブランチでコードを変えた最後のコミットに DoD 合格（green）の証跡がない push を PreToolUse のガードが遮ります。DoD は配布先で `node .claude/hooks/vouch-dod.mjs`（Codex は `.codex`）が `vouch/rules.md` の表のコマンドを実行し、出力・結果・所要時間を build-log.md と監査に記録します。本番データの操作など判断が要る範囲との区別、検査できる経路と限界は [Git 操作の検査と DoD](docs/development/git-guard.md) に記載しています。この機能のため、所有者の判断で lib の行数予算を 3,000 行から 3,500 行に引き上げました。
+Build の機械的なガードとして、登録したシェルツールからの `main` への push と `gh pr merge`、Intent のブランチでのコードを変えるコミットの型と Unit、`test` 型以外でのテストファイルの変更・削除、契約（DoD 合格）→ テスト（DoD 不合格）→ 実装の順序の違反と、実装を含むブランチでコードを変えた最後のコミットに DoD 合格（green）の証跡がない push を PreToolUse のガードが遮ります。DoD は配布先で `node .claude/hooks/vouch-dod.mjs`（Codex は `.codex`）が `vouch/rules.md` の表のコマンドを実行し、出力・結果・所要時間を build-log.md と監査に記録します。本番データの操作など判断が要る範囲との区別、検査できる経路と限界は [Git 操作の検査と DoD](docs/development/git-guard.md) に記載しています。現在の[コーディング規則](docs/development/coding-rules.md)は、責務ごとの分割と依存方向を基準にし、ファイル単位の上限を維持しています。

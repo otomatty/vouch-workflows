@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { cp } from "node:fs/promises";
-import { test } from "node:test";
 import guard from "../../core/registry/write-guard.json" with { type: "json" };
+import { hookTest as test } from "../helpers/hook-test.mjs";
 import { packageRun, tree } from "../helpers/packaging.mjs";
 import { sandbox, sessionFor } from "../helpers/runtime.mjs";
 import {

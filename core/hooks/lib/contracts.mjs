@@ -58,11 +58,12 @@
 /** @typedef {AuditCommon & {type:'aside.asked',intent:string,question:string}} AsideAsked */
 /** @typedef {AuditCommon & {type:'aside.answered',intent:string,question:string,parent:string,duration_ms:number}} AsideAnswered */
 /** @typedef {{target:string,command:string,cwd:string,result:'pass'|'fail',duration_ms:number,exit_code?:number}} DodCommand `exit_code` is absent when the command did not run to an exit. */
-/** @typedef {AuditCommon & {type:'hook.check',actor:'hook',check:Check,result:'pass'|'fail',duration_ms:number,missing?:number,stale?:number} & ({commit?:never,clean?:never,commands?:never,output?:never}|{check:'dod',commit?:string,clean:boolean,commands:DodCommand[],output:{path:'build-log.md',sha256:string}})} HookCheck */
-/** @typedef {AuditCommon & {type:'hook.denied',actor:'hook',check:Check,result:'fail',reason:string,duration_ms:number}} HookDenied */
+/** @typedef {{sha256:string,generation?:string,head?:string}} KnowledgeObservation */
+/** @typedef {AuditCommon & {knowledge?:KnowledgeObservation,type:'hook.check',actor:'hook',check:Check,result:'pass'|'fail',duration_ms:number,missing?:number,stale?:number} & ({commit?:never,clean?:never,commands?:never,output?:never}|{check:'dod',commit?:string,clean:boolean,commands:DodCommand[],output:{path:'build-log.md',sha256:string}})} HookCheck */
+/** @typedef {AuditCommon & {knowledge?:KnowledgeObservation,type:'hook.denied',actor:'hook',check:Check,result:'fail',reason:string,duration_ms:number}} HookDenied */
 /** @typedef {AuditCommon & {type:'review.requested',intent:string,iteration:number,harness:Harness}} ReviewRequested */
 /** @typedef {AuditCommon & {type:'review.completed',intent:string,iteration:number,harness:Harness,findings:number,sabotage:{tried:number,caught:number},parent:string,duration_ms:number}} ReviewCompleted */
-/** @typedef {AuditCommon & {type:'knowledge.refreshed',scope:'diff'|'full',duration_ms:number}} KnowledgeRefreshed */
+/** @typedef {AuditCommon & {knowledge?:KnowledgeObservation,type:'knowledge.refreshed',scope:'diff'|'full',duration_ms:number}} KnowledgeRefreshed */
 /** @typedef {AuditCommon & {type:'session.started',session:string}} SessionStarted */
 /** @typedef {AuditCommon & {type:'session.resumed',session:string,duration_ms:number}} SessionResumed */
 /** @typedef {AuditCommon & {type:'session.compacted',session:string}} SessionCompacted */

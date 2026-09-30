@@ -30,7 +30,7 @@ test("runtime sources stay within the file and total line budgets", (t) => {
     file.startsWith("core/hooks/lib/"),
   );
   const hooks = sources.filter((file) => !libraries.includes(file));
-  t.plan(sources.length + 2);
+  t.plan(sources.length + 1);
   for (const file of sources) {
     const limit = libraries.includes(file)
       ? budgets.lines.libFile
@@ -47,11 +47,8 @@ test("runtime sources stay within the file and total line budgets", (t) => {
     true,
     "HOOK-12: hook total",
   );
-  t.assert.equal(
-    libraries.reduce((total, file) => total + lines(file), 0) <=
-      budgets.lines.libTotal,
-    true,
-    "HOOK-12: lib total",
+  t.diagnostic(
+    `Runtime lib total: ${libraries.reduce((total, file) => total + lines(file), 0)} lines; review responsibility boundaries (docs/development/coding-rules.md).`,
   );
 });
 

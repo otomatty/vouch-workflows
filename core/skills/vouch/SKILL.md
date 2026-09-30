@@ -15,6 +15,10 @@ Claude では `/vouch doctor` または `/vouch status`、Codex では `$vouch d
 
 新しい要望の計画・指定した Intent の下書き修正は [Intent Skill](../vouch-intent/SKILL.md) を読む。Claude では `/vouch-intent`、Codex では `$vouch-intent` でも指定できる。確認点と承認は人の `vouch confirm` / `vouch review` / `vouch approve` の入力でフックが記録・適用し、モデルは承認も Build 開始も行わない。
 
+## Knowledge
+
+知識の調査・鮮度・引用・判断依頼の検査は必要時に [Knowledge / explorer Skill](../vouch-knowledge/SKILL.md) を読む。フックは鮮度と形式を検査し、explorer が再走査範囲を判断する。
+
 ## Status
 
 利用者が現在地・確認点・未回答の判断依頼を求めた時に、[status の説明](references/status.md)を読む。doctor で前提を確認した上で、成果物と監査の記録を根拠付きで示す。状態の更新や作業の再開は行わない。

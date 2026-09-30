@@ -7,6 +7,9 @@ import inputSchema from "../../registry/hook-input.schema.json" with {
 import resultSchema from "../../registry/hook-result.schema.json" with {
   type: "json",
 };
+import knowledgeSchema from "../../registry/knowledge-index.schema.json" with {
+  type: "json",
+};
 
 /**
  * This evaluator supports only the vocabulary used by these three registries.
@@ -22,6 +25,7 @@ import resultSchema from "../../registry/hook-result.schema.json" with {
  * @property {string[]} [required]
  * @property {boolean} [additionalProperties]
  * @property {Schema} [items]
+ * @property {number} [minItems]
  * @property {number} [minLength]
  * @property {string} [pattern]
  * @property {number} [minimum]
@@ -44,6 +48,7 @@ const keywords = new Set([
   "additionalProperties",
   "items",
   "minLength",
+  "minItems",
   "pattern",
   "minimum",
   "oneOf",
@@ -169,6 +174,12 @@ function matches(schema, value) {
   }
   if (
     Array.isArray(value) &&
+    schema.minItems !== undefined &&
+    value.length < schema.minItems
+  )
+    return false;
+  if (
+    Array.isArray(value) &&
     schema.items &&
     !value.every((item) => matches(/** @type {Schema} */ (schema.items), item))
   )
@@ -187,7 +198,7 @@ function matches(schema, value) {
   return true;
 }
 
-for (const schema of [inputSchema, auditSchema, resultSchema])
+for (const schema of [inputSchema, auditSchema, resultSchema, knowledgeSchema])
   assertSupportedSchema(schema);
 
 /** @param {string} text @returns {import('./contracts.mjs').HookInput|null} */
@@ -216,4 +227,9 @@ export function isAuditEvent(value) {
 /** @param {unknown} value @returns {value is import('./contracts.mjs').HookResult} */
 export function isHookResult(value) {
   return matches(resultSchema, value);
+}
+
+/** @param {unknown} value @returns {value is import("./knowledge.mjs").Index} */
+export function isKnowledgeIndex(value) {
+  return matches(knowledgeSchema, value);
 }
