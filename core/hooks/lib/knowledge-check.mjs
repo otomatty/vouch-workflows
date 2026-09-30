@@ -58,7 +58,16 @@ export async function checkKnowledge(input, ctx, suppliedGit) {
       return text;
     },
   };
-  const git = suppliedGit ?? readGit(ctx.projectRoot);
+  const originalGit = suppliedGit ?? readGit(ctx.projectRoot);
+  /** @type {import('./runtime-contracts.mjs').GitPort} */
+  const git = async (...args) => {
+    const text = await originalGit(...args);
+    observed.push([
+      `git:${JSON.stringify(args)}`,
+      text === null ? null : sha256Hex(Buffer.from(text)),
+    ]);
+    return text;
+  };
   const head = (await git("rev-parse", "--verify", "HEAD"))?.trim() ?? null;
   const { index, errors } = await inspectKnowledge(ctx, head);
   const citation = input.prompt === "vouch citations check";
@@ -78,12 +87,12 @@ export async function checkKnowledge(input, ctx, suppliedGit) {
         continue;
       }
       errors.push(
-        ...(await inspectReferences(text, ctx, head, index)).map(
+        ...(await inspectReferences(text, ctx, head, index, false, git)).map(
           (e) => `${name}: ${e}`,
         ),
       );
       if (name === "decisions.md")
-        errors.push(...(await inspectQuestions(text, ctx, head, index)));
+        errors.push(...(await inspectQuestions(text, ctx, head, index, git)));
     }
   }
   const end = previous?.ts ?? ctx.now();

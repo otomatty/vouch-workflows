@@ -5,8 +5,8 @@ import { inspectReferences } from "./citation.mjs";
 import { filled, section } from "./knowledge.mjs";
 /** @typedef {import("./knowledge.mjs").Context} Context
  * @typedef {import("./knowledge.mjs").Index} Index */
-/** @param {string} text @param {Context} ctx @param {string|null} head @param {Index|null} index */
-export async function inspectQuestions(text, ctx, head, index) {
+/** @param {string} text @param {Context} ctx @param {string|null} head @param {Index|null} index @param {import('./runtime-contracts.mjs').GitPort} [git] */
+export async function inspectQuestions(text, ctx, head, index, git) {
   /** @type {string[]} */ const errors = [];
   const cards = [
     ...text.matchAll(
@@ -43,7 +43,14 @@ export async function inspectQuestions(text, ctx, head, index) {
       if (cells.length !== 4 || !cells.every(filled))
         errors.push(`incomplete option: ${id}`);
       errors.push(
-        ...(await inspectReferences(cells[3] ?? "", ctx, head, index, true)),
+        ...(await inspectReferences(
+          cells[3] ?? "",
+          ctx,
+          head,
+          index,
+          true,
+          git,
+        )),
       );
     }
     errors.push(
@@ -53,6 +60,7 @@ export async function inspectQuestions(text, ctx, head, index) {
         head,
         index,
         true,
+        git,
       )),
     );
   }
