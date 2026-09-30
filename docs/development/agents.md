@@ -4,7 +4,7 @@
 
 [Issue #8](https://github.com/otomatty/vouch-workflows/issues/8) の契約と検証記録です。決定記録 §5（4ステージと3エージェント）、§8（V-3 / V-4：reviewer は builder の証拠を鵜呑みにせず自分で再現する）、§9（独立検証、リスク階層、破壊検査）、§12（知識の再走査は explorer）、§13（その場しのぎの検出）、§15（配布物とハーネスの対応表）、§18 Q3（品質層 × リスク階層）に従います。§18 の決定と Q1〜Q6 は変えません。実装ルールは STR-3、STR-6、DOC-1、DOC-2、DOC-6、DIST-1〜DIST-4 です。
 
-workflow.json の3役（builder / reviewer / explorer）だけを定義し、役割を増やしません。エージェントは判断を担うモデルへの指示であり、フックの代わりに記録・遮断・承認をしません。エージェントを起動するステージ Skill（Build / Verify）と、`review.requested` / `review.completed`・`knowledge.refreshed` を記録するフック、知識レイヤーの形式と鮮度・引用の検査（[Issue #7](https://github.com/otomatty/vouch-workflows/issues/7)）は今回の対象外です。
+workflow.json の3役（builder / reviewer / explorer）だけを定義し、役割を増やしません。エージェントは判断を担うモデルへの指示であり、フックの代わりに記録・遮断・承認をしません。エージェントを起動するステージ Skill（Build / Verify）と、`review.requested` / `review.completed` を記録するフックは今回の対象外です。知識レイヤーの形式と鮮度・引用の検査は [Issue #7](https://github.com/otomatty/vouch-workflows/issues/7)（[知識レイヤーの契約](knowledge.md)）で実装済みで、explorer はそれに従います。
 
 ## 原本の形式
 
@@ -68,7 +68,7 @@ disallowed のツール以外の項目は操作の ID です。
 
 - builder は Unit ごとに専用の git worktree で作業します。worktree の HEAD が承認済み intent.md を含む Intent のブランチから分かれていることを確かめ、他の Unit の worktree や親のチェックアウトに書きません。Claude では定義の `isolation: worktree` がサブエージェントに一時 worktree を与えます。Claude の既定ではこの worktree は既定のブランチから作られるため、builder は Intent のブランチから Unit のブランチを作って切り替えます。Codex には同じ仕組みがないため、builder が `git worktree add` で作ります（§15 の表）。
 - reviewer は builder と別のコンテキストで起動し、入力は成果物・diff・検査結果だけです（§9 図6）。DoD のコマンドを自分で実行し、AC の振る舞いを自分で再現した出力を証拠にします。build-log.md の出力は主張として読み、証拠として引き写しません。別ハーネスでの実行を推奨します。
-- explorer は読み取りの調査と `vouch/knowledge/` の更新だけを行います。コード・テスト・Intent の成果物は変えません。知識レイヤーの形式と鮮度検査は #7 の後続で、今回は観測した commit と参照元を書くことだけを求めます。
+- explorer は読み取りの調査と `vouch/knowledge/` の更新だけを行います。コード・テスト・Intent の成果物は変えません。配置・索引（index.json の generation・digest・更新日）・外部資料の記録（external.json）は vouch-knowledge Skill と knowledge-index.schema.json に従います。鮮度・引用の検査と knowledge.refreshed の記録は人の明示入力でフックが行い、explorer はそれを済ませたことにしません。
 
 ### 品質層と破壊検査
 
@@ -133,5 +133,6 @@ reviewer は指摘を review.md の R-n として、再現手順・期待・観�
 
 - 実際のモデルによる役割分離の評価（builder の worktree 隔離、reviewer の独立した再現と破壊検査、explorer の書き込み範囲）は別 Issue の結果として扱います。
 - reviewer と builder の往復の上限回数は未定義です。決定と registry への登録、`review.*` を記録するフックは後続です。
-- 3役を起動する Build / Verify の Skill、知識レイヤーの形式と鮮度・引用の検査（#7）は未実装です。
+- 3役を起動する Build / Verify の Skill は未実装です。
+- #7 のマージ（`65fa8c8`）を取り込んだ際、explorer の本文を知識レイヤーの契約に合わせました。vouch-knowledge Skill（Knowledge / explorer）とエージェントの explorer の起動経路の整理は、Build / Verify の Skill と合わせて後続で行います。
 - Claude の worktree は既定のブランチから作られるため、builder の本文で Intent のブランチへの切り替えを求めています。worktree の基点の設定を配布に含めるかは後続で判断します。

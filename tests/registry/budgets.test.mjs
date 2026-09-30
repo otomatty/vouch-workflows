@@ -22,3 +22,13 @@ test("budgets reject an invalid coverage percentage", (t) => {
   t.plan(1);
   t.assert.equal(validate(invalid), false, "REG-5");
 });
+
+test("coding rules keep per-file limits and reject the retired aggregate lib cap", (t) => {
+  const validate = new Ajv2020({ strict: true }).compile(schema);
+  t.assert.equal(
+    validate({ ...budgets, lines: { ...budgets.lines, libTotal: 4000 } }),
+    false,
+  );
+  t.assert.equal(budgets.lines.libFile, 300);
+  t.assert.equal(budgets.lines.hookFile, 150);
+});

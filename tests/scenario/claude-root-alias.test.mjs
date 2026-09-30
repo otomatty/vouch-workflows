@@ -3,9 +3,9 @@ import { realpathSync } from "node:fs";
 import { cp, mkdir, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
-import { test } from "node:test";
 import { pathToFileURL } from "node:url";
 import { assertGolden } from "../helpers/golden.mjs";
+import { hookTest as test } from "../helpers/hook-test.mjs";
 import { packageRun } from "../helpers/packaging.mjs";
 import { fakeClock, sandbox, sessionFor } from "../helpers/runtime.mjs";
 

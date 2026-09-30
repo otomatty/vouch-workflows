@@ -131,6 +131,8 @@ async function push(git, ctx) {
     /^## (?:No commits yet on )?(\S+?)(?:\.{3}[^/\s]*\/(\S+))?(?: |$)/.exec(
       `${`${status}`.split("\0", 1)}`,
     ) ?? [];
+  if (current && !head)
+    return ["VOUCH-GIT-PUSH", shown, "the destination cannot be verified"];
   names.push(head, targets.includes("") ? upstream : "");
   const main = names.find(
     (name) => name === "*" || build.protected.includes(name),

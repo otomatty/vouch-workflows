@@ -22,15 +22,15 @@ Intent の調査と、知識レイヤーが古い時の差分の再走査に起�
 
 - 構造、依存、基準となるアーキテクチャ図、用語集、現在の挙動を、コードと履歴から確かめる。観測した commit を記す。
 - 既存の知識レイヤーの世代が git HEAD より古ければ、変わった領域だけを再走査する。全体を書き直さない。
-- 公式文書は URL と節だけを参照元に残し、本文を写さない。
+- 公式文書は URL と節を参照元に残し、確認した版を external.json の snapshot で示す。
 - 図は `{{HARNESS_DIR}}/registry/diagrams.json` の knowledge に従い、Mermaid で書く。
 - 推測と観測を分け、確かめていない範囲は未確認と書く。[R-PROJECT-2]
 
-知識レイヤーの形式と鮮度・引用の検査フックは未実装である。書いた内容を検査済みとは扱わない。
+配置・索引・外部資料の記録は vouch-knowledge Skill と `{{HARNESS_DIR}}/registry/knowledge-index.schema.json` に従う。index.json の generation は調査を終えた HEAD とし、HEAD だけを合わせない。鮮度・引用の検査と knowledge.refreshed の記録は人の明示入力でフックが行う。検査や記録を済ませたことにしない。[R-PROJECT-2]
 
 ## 成果物
 
-- `vouch/knowledge/` の更新：codekb/<repo>/ の調査結果、design、infra、background。各ファイルに観測した commit か日付を記す。
+- `vouch/knowledge/` の更新：codekb、diagrams、design、infra、background の文書と index.json の世代・digest・更新日。公式文書は external.json に URL＋節・確認日・snapshot を記す。
 - 調査の報告：問いへの答え、参照元（パス:行@commit、文書#節@日付、URL＋節）、未確認の範囲、理想形との差分やリファクタ候補の材料。
 
 判断はしない。Intent・設計の採否は、報告を読んだモデルと人が決める。

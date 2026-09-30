@@ -3,7 +3,7 @@ import { readdirSync } from "node:fs";
 import { availableParallelism } from "node:os";
 import { resolve } from "node:path";
 import budgets from "../core/registry/budgets.json" with { type: "json" };
-import { testPhases } from "./lib/test-phases.mjs";
+import { testGroups, testPhases } from "./lib/test-phases.mjs";
 
 /** @param {string} directory */
 function files(directory) {
@@ -14,16 +14,18 @@ function files(directory) {
 }
 
 const selected = process.argv[2];
-if (selected && !["unit", "hooks"].includes(selected)) {
+if (selected && !["unit", "hooks", "checks"].includes(selected)) {
   throw new Error(`Unknown suite: ${selected}`);
 }
-const suites = selected
-  ? [selected]
-  : ["content", "registry", "packaging", "scenario", "unit", "hooks"];
+const checks = ["content", "registry", "packaging", "scenario", "unit"];
+const suites =
+  selected === "checks" ? checks : selected ? [selected] : [...checks, "hooks"];
 // A failing suite must not hide the results of later suites; the run still fails.
 /** @type {string[]} */ const failed = [];
-for (const suite of suites) {
-  const tests = files(`tests/${suite}`);
+const groups = testGroups(
+  suites.map((suite) => ({ suite, files: files(`tests/${suite}`) })),
+);
+for (const { suite, files: tests } of groups) {
   if (tests.length === 0) {
     if (selected) throw new Error(`No tests implemented for ${suite}.`);
     console.log(`No ${suite} tests yet.`);
@@ -40,8 +42,8 @@ for (const suite of suites) {
   for (const phase of testPhases(suite, tests, availableParallelism())) {
     const flags = [
       "--test",
-      // Node 22 times out the whole file; hookTest enforces five seconds per case.
-      `--test-timeout=${suite === "hooks" ? budgets.timing.checkTimeoutMs : budgets.timing.testTimeoutMs}`,
+      // Node 22 times out the whole file; hookTest enforces five seconds per hook/scenario case.
+      `--test-timeout=${["hooks", "scenario"].includes(suite) ? budgets.timing.checkTimeoutMs : budgets.timing.testTimeoutMs}`,
       `--test-concurrency=${phase.concurrency}`,
       "--import=./tests/helpers/no-network.mjs",
     ];

@@ -1,9 +1,9 @@
 import { spawnSync } from "node:child_process";
 import { cp } from "node:fs/promises";
 import { resolve } from "node:path";
-import { test } from "node:test";
 import { pathToFileURL } from "node:url";
 import { assertGolden } from "../helpers/golden.mjs";
+import { hookTest as test } from "../helpers/hook-test.mjs";
 import { packageRun } from "../helpers/packaging.mjs";
 import { isContractFixture, readJson } from "../helpers/registry.mjs";
 import { fakeClock, sandbox, sessionFor } from "../helpers/runtime.mjs";

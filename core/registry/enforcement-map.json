@@ -558,14 +558,19 @@
     },
     "R-HOOK-12": {
       "rule_id": "HOOK-12",
-      "source": "docs/spec/vouch-implementation-rules.html#s4",
-      "requirement": "行数予算：フック1本 ≤ 150 行、フック合計 ≤ 1,500 行、lib 合計 ≤ 3,000 行、lib 1ファイル ≤ 300 行（空行・コメント込み）",
+      "source": "docs/development/coding-rules.md",
+      "requirement": "責務単位に分割し、フック1本150行・合計1,500行、lib1ファイル300行を守る。lib合計は計測・レビューに用い、固定上限にしない。",
       "mechanisms": ["test"],
       "checks": [
         {
           "status": "implemented",
           "path": "tests/content/budgets.test.mjs",
-          "claim": "フック・libの1ファイルと合計行数を予算表で検査する。"
+          "claim": "ファイル単位とフック合計の予算を検査し、lib合計を診断表示する。"
+        },
+        {
+          "status": "implemented",
+          "path": ".dependency-cruiser.cjs",
+          "claim": "知識の機能別検査から実行・監査モジュールや製品フックへの依存を拒否する。"
         }
       ]
     },
@@ -1780,8 +1785,18 @@
           "claim": "共通文書への規則タグの記載を照合する。規則の実行時強制を証明する検査ではない。"
         },
         {
+          "status": "implemented",
+          "path": "tests/hooks/knowledge.test.mjs",
+          "claim": "明示 UserPromptSubmit の knowledge / citations コマンドで知識の鮮度・参照先・判断依頼欄を検査し、knowledge.refreshed / hook.check / hook.denied と観測版への束縛を両ハーネスの派生入力で確認する。登録外の編集を自動検査するものではない。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/unit/lib/knowledge.test.mjs",
+          "claim": "HEAD・文書更新日・digest、参照先の欠損・世代・行・節・境界、外部URLのローカル確認記録、判断依頼の必須欄を検査する。"
+        },
+        {
           "status": "pending",
-          "claim": "引用・証拠・判断依頼の形式検査フックと意味の妥当性のモデル評価は未実装。"
+          "claim": "根拠の意味、図と再走査範囲の妥当性、実モデルによる explorer / reviewer 評価、今回追加した知識操作のネイティブCLIと人の実操作は未検証。"
         }
       ]
     },

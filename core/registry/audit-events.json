@@ -174,7 +174,8 @@
           "commit",
           "clean",
           "commands",
-          "output"
+          "output",
+          "knowledge"
         ]
       },
       "measures": ["duration_ms", "missing", "stale"],
@@ -183,7 +184,7 @@
     "hook.denied": {
       "fields": {
         "required": ["check", "result", "reason", "duration_ms"],
-        "optional": []
+        "optional": ["knowledge"]
       },
       "measures": ["duration_ms"],
       "pairs_with": []
@@ -220,7 +221,7 @@
     "knowledge.refreshed": {
       "fields": {
         "required": ["scope", "duration_ms"],
-        "optional": []
+        "optional": ["knowledge"]
       },
       "measures": ["duration_ms"],
       "pairs_with": []
