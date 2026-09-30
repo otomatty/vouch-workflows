@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "skills": {
+    "design": "vouch-design",
+    "build": "vouch-build",
+    "verify": "vouch-verify"
+  },
+  "design_frontmatter": {
+    "status": "draft"
+  },
+  "design_sections": [
+    "summary",
+    "ideal",
+    "alternatives",
+    "diagrams",
+    "contract",
+    "threats",
+    "units",
+    "references"
+  ],
+  "build_sections": [
+    "summary",
+    "units",
+    "verification",
+    "environment",
+    "findings",
+    "references",
+    "dod"
+  ],
+  "review_sections": [
+    "conclusion",
+    "behavior",
+    "claims",
+    "walkthrough",
+    "reading-guide",
+    "questions",
+    "references",
+    "sabotage",
+    "limitations"
+  ],
+  "brief": {
+    "deferred": "questions",
+    "defaults": "references",
+    "unresolved": "sabotage"
+  },
+  "diff_kinds": ["flowchart", "classDiagram", "stateDiagram-v2"],
+  "evidence": ["test", "log", "shot", "commit"],
+  "hunks": ["core", "plumbing", "tests", "generated", "rename"],
+  "review_rounds": 3,
+  "demo": "demo.sh",
+  "git": ["diff", "log", "merge", "push", "show", "status", "worktree"]
+}
