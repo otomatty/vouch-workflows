@@ -56,7 +56,14 @@ H は Design・各 Unit の確認点・11層がそろった計画で進む。人
 
 ## 取り込みと終了条件
 
-Unit が終わったら、次の Unit を始める前に Unit のブランチを Intent のブランチへ早送りで取り込む。早送りできない、または作業ツリーの変更で取り込めない時は、build-log.md の DoD 記録や監査ログを編集せずに止め、状況を返す。[R-PROJECT-3]
+DoD は build-log.md と監査ログに追記するがコミットはせず、早送りの取り込みはコミットだけを運ぶ。Unit の最後の DoD の後、DoD が追記したこの2つのファイルだけを、内容を変えずに Unit のブランチへ記録のコミットにする。件名は build.json の型に従い、`vouch/` だけを変えるコミットにする。[R-PROJECT-3]
+
+```sh
+git add "vouch/intents/<Intent>/build-log.md" "vouch/intents/<Intent>/audit/events.jsonl"
+git commit -m "chore(<Unit>): record DoD results"
+```
+
+その後、次の Unit を始める前に Unit のブランチを Intent のブランチへ早送りで取り込む。早送りできない、または作業ツリーの変更（セッションのフックが Intent のチェックアウトの監査ログに追記した分を含む）で取り込めない時は、build-log.md の DoD 記録や監査ログを編集せずに止め、状況を返す。[R-PROJECT-3]
 
 ```sh
 git merge --ff-only "<Unit のブランチ>"

@@ -258,12 +258,22 @@ test("stage Skills connect to the human confirmation, approval, DoD and review-r
   /** @param {string} stage */
   const skill = (stage) =>
     readFileSync(`core/skills/${stages.skills[stage]}/SKILL.md`, "utf8");
-  t.plan(8);
+  t.plan(9);
   t.assert.match(skill("design"), /`vouch confirm design`/);
   t.assert.match(
     skill("build"),
     /^git merge --ff-only /m,
     "Units run one at a time so DoD records never conflict",
+  );
+  const build = skill("build");
+  t.assert.equal(
+    build.search(/^git commit /m) >= 0 &&
+      build.search(
+        /^git add "vouch\/intents\/<Intent>\/build-log\.md" "vouch\/intents\/<Intent>\/audit\/events\.jsonl"$/m,
+      ) >= 0 &&
+      build.search(/^git commit /m) < build.search(/^git merge --ff-only /m),
+    true,
+    "the last DoD records are committed on the Unit branch before the fast-forward",
   );
   t.assert.match(
     skill("build"),

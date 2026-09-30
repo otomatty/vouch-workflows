@@ -39,7 +39,7 @@ design.md の frontmatter は `status: draft` のままです。承認フック�
 | hunks | 読むべき箇所の分類 core / plumbing / tests / generated / rename | §6、§14 |
 | review_rounds | reviewer → builder の往復の上限（3） | §5・§9（値は下記） |
 | demo | Intent フォルダ内の再現用スクリプト名 demo.sh | §14、§18 Q5 |
-| git | Skill のコードフェンスに書ける git のサブコマンド | DOC-3 |
+| git | Skill のコードフェンスに書ける git のサブコマンド（add、commit、diff、log、merge、push、show、status、worktree） | DOC-3 |
 
 ファイル名は project-documents.json の artifacts（design.md、build-log.md、review.md）と同じ名前のテンプレートを使い、ここで重複定義しません。図の種類・条件・数は diagrams.json、品質層・破壊検査数・依存監査は quality-layers.json、確認点は workflow.json と approval.json、検証環境の既定は workflow.json の verification（local Playwright、services compose、ci demo.sh）が正典です。数と一覧を Skill やテンプレートに書き写しません（STR-5）。
 
@@ -137,7 +137,7 @@ diff_kinds の図は diagrams.json の diff の classDef 3行（added 緑、chan
 - 自動テストは文書の構造・正典との一致・配布だけを検査します。モデルが Skill に従うか（未承認で Build しない、承認を代行しない、reviewer が独立に再現する、往復を上限で止める）は評価スイートの結果で、ここでは実施済みとしません。
 - 機械的な遮断は既存のフックの範囲に限られます（承認前の実装の書き込み、main への push、`gh pr merge`、コミットの型と順序、監査への書き込み）。Skill の文章は新しい遮断を加えません。
 - question.asked / question.answered / question.defaulted、review.requested / review.completed、unit.started / unit.completed、stage.started / stage.completed、learn.recorded を記録するフックは未実装です。Skill はこれらを自分で書かず、Brief には監査にある記録だけを引きます。
-- Unit ごとの worktree で DoD を実行すると、build-log.md と監査はその worktree に追記されます。並列に進めた Unit のブランチはこれらの追記が衝突し、監査は手で統合できません。このため Build Skill は Unit を依存順に1つずつ進め、前の Unit を早送り（`git merge --ff-only`）で取り込んだ Intent のブランチから次の Unit の worktree を作ります。§5 の「Unit ごとに worktree で並列」は、フックが Unit ごとの記録を統合する仕組みができるまで行いません。早送りできない時や作業ツリーの変更で取り込めない時は、記録を編集せずに止めます。
+- Unit ごとの worktree で DoD を実行すると、build-log.md と監査はその worktree に追記されます。並列に進めた Unit のブランチはこれらの追記が衝突し、監査は手で統合できません。DoD は追記をコミットしないため、Build Skill は Unit の最後の DoD の後に build-log.md と監査ログだけを内容を変えずに記録のコミット（`chore(<Unit>)`、`vouch/` だけの変更）にしてから早送りします。このため Build Skill は Unit を依存順に1つずつ進め、前の Unit を早送り（`git merge --ff-only`）で取り込んだ Intent のブランチから次の Unit の worktree を作ります。§5 の「Unit ごとに worktree で並列」は、フックが Unit ごとの記録を統合する仕組みができるまで行いません。早送りできない時や作業ツリーの変更で取り込めない時は、記録を編集せずに止めます。セッションのフックは Intent のチェックアウト（VOUCH_PROJECT_ROOT）の監査ログに追記するため、そのチェックアウトに未コミットの監査の追記があると早送りは拒否されます。この場合の統合は未解決で、Skill は止まって状況を返します。
 - worktree は Intent のブランチのコミットから作られ、未コミットの承認を引き継ぎません。Build Skill は最初の Unit の前に、approved の intent.md・decisions.md・採択した design.md・監査ログが承認コミットとして Intent のブランチにあることを確かめます。DoD コマンドは worktree の中の配布（`{{HARNESS_DIR}}/hooks/`）を使うため、配布をコミットしていないプロジェクトの worktree では起動できないことは未検証の制限です。
 
 ## 実装・検証結果
@@ -170,3 +170,5 @@ PR（otomatty/vouch-workflows#29）への Devin のレビューは Build Skill �
 content テストに、Build Skill の `git merge --ff-only` と承認コミットの確認を加えました。
 
 GitHub Actions では Windows の2ジョブが `npm run check` の90秒予算（TEST-12）を超えました。Node.js 22.19.0 は main の `41da839`・`65fa8c8` でも同じ理由で失敗しており、この PR の変更ではありません。Node.js 24.x は main で88秒の成功だったものが、この PR の追加で `package:check` の開始時に予算に達しました。予算は変えずに、この PR が足した実行を減らしました。評価素材と registry の検査を既存の content・registry のテストファイルへ移し（新しいテストの子プロセスを3から1へ）、テンプレートの配布のバイト一致は Intent のテストの既存の配布生成1回で全テンプレートを検査するようにして、配布生成を1回減らしました。検査の内容は減らしていません。
+
+その後の CodeRabbit のレビュー（Major）は、DoD が build-log.md と監査ログに追記した記録がコミットされず、早送りの取り込みで Intent のブランチへ移らないことを指摘しました。手順を読んで再現を確かめ、Unit の最後の DoD の後に2つのファイルだけを記録のコミットにする手順と、その順序の content テストを加えました。stage-authoring.json の git に add と commit を加えています。

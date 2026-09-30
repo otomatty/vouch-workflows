@@ -48,5 +48,15 @@
   "hunks": ["core", "plumbing", "tests", "generated", "rename"],
   "review_rounds": 3,
   "demo": "demo.sh",
-  "git": ["diff", "log", "merge", "push", "show", "status", "worktree"]
+  "git": [
+    "add",
+    "commit",
+    "diff",
+    "log",
+    "merge",
+    "push",
+    "show",
+    "status",
+    "worktree"
+  ]
 }
