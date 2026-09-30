@@ -2,6 +2,14 @@
 module.exports = {
   forbidden: [
     {
+      name: "STR-2-knowledge-inspection-direction",
+      severity: "error",
+      from: {
+        path: "^core/hooks/lib/(knowledge|freshness|citation|questions)\\.mjs$",
+      },
+      to: { path: "^core/hooks/(?:lib/knowledge-check\\.mjs|[^/]+\\.mjs)$" },
+    },
+    {
       name: "STR-2-no-cycles",
       severity: "error",
       from: {},

@@ -29,3 +29,13 @@ check は HEAD と generation、全 entry の存在・digest・更新日を比�
 status / reviewer は knowledge.refreshed、hook.check の freshness / citation / format、hook.denied.reason を監査から読み、Brief の参照元・警告、§6 の保留、§7 の未回答と既定へ反映する。フックは承認済み Brief を書き換えない。実機 payload の派生テスト、手製入力、実モデル評価、人の実承認を区別する。
 
 knowledge 検査の3イベントは任意の `knowledge` 観測（generation / head / sha256）を持つ。sha256 は検査中に読んだ path とバイト digest の順序付き集合の digest。同一入力の再送は元の時刻と所要時間を保ち、読んだ版が変われば監査の ID 衝突として拒否する。過去の成功を現在の成功として再利用しない。
+
+## 実装と検証記録
+
+2026-09-30、契約 → 失敗する先行テスト → 実装の順で追加した。更新されたコーディング規則は [責務と依存の規則](coding-rules.md)を参照する。鮮度、引用、判断依頼、共通形式、検査・監査の組み立てを別モジュールへ分割し、既存コードの改行を詰める変更は残していない。
+
+Linux / Node.js 24.19.0 で `npm run check` が34.0秒で成功。Lint・型検査、content 33件、registry 63件、packaging 37件、scenario 17件、unit 239件、hooks 90件（負荷テスト8件を含む）の計479件、配布生成・バイト一致を確認した。lib の行99.97% / 分岐98.80% / 関数100%、フック入口は行・分岐100%。知識検査は実際の Git HEAD と6文書を読む20プロセスを3負荷ワーカーの下で測り、p95 62.9ms、2秒予算内だった。
+
+Claude Code 2.1.280 / Codex 0.153.4 の採取済み UserPromptSubmit から作った synthetic 入力で、正常・欠損・古い世代・境界外・リンク、監査イベント3種、同一入力の再送と内容変更時の衝突を検証した。これを新操作の実機採取・モデルの再走査評価・人の実承認とは扱わない。今回、Windows / macOS / Node.js 22 の全体検証、新操作をネイティブ CLI で実行する確認、実モデルによる explorer / reviewer 評価は未実施。元仕様、移行元資料、既存 fixture / golden は変更していない。
+
+これらは明示した知識検査コマンドの実行時フックであり、任意のツールによる全成果物の編集を自動検査するものではない。Skill は成果物を引き渡す前に検査を行い、意味の妥当性は reviewer / 人に残す。監査の永続化エラーは既存 io の契約に従って終了0と診断を返し、成功とは報告しない。
