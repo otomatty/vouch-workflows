@@ -2,7 +2,7 @@
 
 risk: 未評価 · units: 未記入 · files: 未記入（`core` / `plumbing` / `tests` / `generated` / `rename` の数）
 
-これは記入用の Review Brief で、PR の本文になる。未記入の欄は検証・承認を意味しない。1〜4節にコードを書かない。PR のマージはリスク階層にかかわらず人が行う。[R-PROJECT-1]
+これは記入用の Review Brief で、PR の本文になる。未記入の欄は検証・承認を意味しない。1〜4節に実装コードを書かない。4節の Mermaid 図は置く。PR のマージはリスク階層にかかわらず人が行う。[R-PROJECT-1]
 
 <!-- sec:conclusion -->
 ## 1. 結論

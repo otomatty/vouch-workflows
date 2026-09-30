@@ -45,14 +45,19 @@ export function allowedCommand(line, allowed) {
   if (node) return allowed.commands.includes(node[1] ?? "");
   const git = /^git ([a-z-]+)(?: |$)/.exec(line);
   if (!git?.[1] || !allowed.git.includes(git[1])) return false;
-  if (/[;&|`$]|\b(?:bun|npx|curl|gh)\b/.test(line)) return false;
+  if (/[;&|`$]|[<>]\s*\(|\b(?:bun|npx|curl|gh)\b/.test(line)) return false;
   const words = line.split(/\s+/);
   return !(
     git[1] === "push" &&
     words.some(
       (word) =>
-        allowed.protected.some((name) => word.split(":").includes(name)) ||
-        /^(?:-f|--force(?:-with-lease)?|--mirror|--all)$/.test(word),
+        word.startsWith("+") ||
+        /^(?:-f|--force(?:-with-lease)?(?:=.*)?|--mirror|--all)$/.test(word) ||
+        word
+          .split(":")
+          .some((ref) =>
+            allowed.protected.includes(ref.replace(/^refs\/heads\//, "")),
+          ),
     )
   );
 }

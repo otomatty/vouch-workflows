@@ -2,7 +2,7 @@
 
 risk: Unassessed · units: Unfilled · files: Unfilled (counts of `core` / `plumbing` / `tests` / `generated` / `rename`)
 
-This is a Review Brief to fill in, and it becomes the PR description. Unfilled entries do not establish validation or approval. Sections 1 to 4 contain no code. People merge the PR at every risk tier. [R-PROJECT-1]
+This is a Review Brief to fill in, and it becomes the PR description. Unfilled entries do not establish validation or approval. Sections 1 to 4 contain no implementation code; section 4 keeps its Mermaid diagram. People merge the PR at every risk tier. [R-PROJECT-1]
 
 <!-- sec:conclusion -->
 ## 1. Conclusion

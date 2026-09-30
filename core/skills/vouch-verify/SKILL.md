@@ -37,7 +37,7 @@ builder の修正後、reviewer を新しいコンテキストで起動し直し
 ## Review Brief
 
 review.md（名前は `{{HARNESS_DIR}}/registry/project-documents.json`）を、日本語は `{{HARNESS_DIR}}/templates/ja/review.md`、英語は `{{HARNESS_DIR}}/templates/en/review.md` から作る。節は stage-authoring.json の review_sections の9節を固定の順で使う。
-1〜4節にコードを書かない。主張には証拠（stage-authoring.json の evidence の書式）と参照元を付け、builder の証拠と reviewer の再現が食い違う行を人が見るべき箇所として示す。[R-PROJECT-2]
+1〜4節に実装コードを書かない（4節の Mermaid 図は置く）。主張には証拠（stage-authoring.json の evidence の書式）と参照元を付け、builder の証拠と reviewer の再現が食い違う行を人が見るべき箇所として示す。[R-PROJECT-2]
 図は `{{HARNESS_DIR}}/registry/diagrams.json` の review を使い、主フローの sequence 図を置く。UI の変更は Before / After の画像、設計の変更は design.md の差分図を引く。該当しない図は不適用の理由を残す。
 読むべき箇所ガイドは hunk を stage-authoring.json の hunks に分ける。5分版を置き、H は15分版で人が読むコアロジックの hunk を示す。
 §6 は先送りした判断依頼を優先度順に並べ、カード本体は decisions.md に置く。記録に答えがあるものは載せない。
