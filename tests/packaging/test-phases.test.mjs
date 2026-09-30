@@ -79,9 +79,9 @@ test("identical validation settings share a phase without losing files or overla
       suite: "checks",
       files: [content, registry, skills],
     },
-    scenario,
     unit,
     { suite: "packaging", files: [native] },
+    scenario,
     hook,
   ]);
   t.assert.deepEqual(
