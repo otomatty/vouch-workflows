@@ -52,40 +52,51 @@ test("native shell lookup runs cold apart from the CPU-parallel packaging files"
 
 test("identical validation settings share a phase without losing files or overlapping native probes", (t) => {
   t.assert.equal(typeof phases.testGroups, "function");
+  const content = "/repo/tests/content/budgets.test.mjs";
+  const registry = "/repo/tests/registry/schemas.test.mjs";
+  const native = "/repo/tests/packaging/native-environment.test.mjs";
+  const skills = "/repo/tests/packaging/skills.test.mjs";
+  const scenario = {
+    suite: "scenario",
+    files: ["/repo/tests/scenario/git.test.mjs"],
+  };
+  const unit = { suite: "unit", files: ["/repo/tests/unit/git.test.mjs"] };
+  const hook = {
+    suite: "hooks",
+    files: [hooks("git-guard-performance.test.mjs")],
+  };
   const suites = [
-    { suite: "content", files: ["/repo/tests/content/budgets.test.mjs"] },
-    { suite: "registry", files: ["/repo/tests/registry/schemas.test.mjs"] },
-    {
-      suite: "packaging",
-      files: [
-        "/repo/tests/packaging/native-environment.test.mjs",
-        "/repo/tests/packaging/skills.test.mjs",
-      ],
-    },
-    { suite: "scenario", files: ["/repo/tests/scenario/git.test.mjs"] },
-    { suite: "unit", files: ["/repo/tests/unit/git.test.mjs"] },
-    { suite: "hooks", files: [hooks("git-guard-performance.test.mjs")] },
+    { suite: "content", files: [content] },
+    { suite: "registry", files: [registry] },
+    { suite: "packaging", files: [native, skills] },
+    scenario,
+    unit,
+    hook,
   ];
   const groups = phases.testGroups(suites);
   t.assert.deepEqual(groups, [
     {
       suite: "checks",
-      files: [suites[0].files[0], suites[1].files[0], suites[2].files[1]],
+      files: [content, registry, skills],
     },
-    suites[3],
-    suites[4],
-    { suite: "packaging", files: [suites[2].files[0]] },
-    suites[5],
+    scenario,
+    unit,
+    { suite: "packaging", files: [native] },
+    hook,
   ]);
   t.assert.deepEqual(
     groups.flatMap((group) => group.files).sort(),
     suites.flatMap((group) => group.files).sort(),
   );
-  t.assert.deepEqual(testPhases("checks", groups[0].files, 4), [
-    { files: groups[0].files, concurrency: 4, budget: false },
+  const sharedFiles =
+    groups.find(({ suite }) => suite === "checks")?.files ?? [];
+  const nativeFiles =
+    groups.find(({ suite }) => suite === "packaging")?.files ?? [];
+  t.assert.deepEqual(testPhases("checks", sharedFiles, 4), [
+    { files: [content, registry, skills], concurrency: 4, budget: false },
   ]);
-  t.assert.deepEqual(testPhases("packaging", groups[3].files, 4), [
-    { files: groups[3].files, concurrency: 1, budget: false },
+  t.assert.deepEqual(testPhases("packaging", nativeFiles, 4), [
+    { files: [native], concurrency: 1, budget: false },
   ]);
 });
 
