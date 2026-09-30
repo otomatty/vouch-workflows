@@ -37,11 +37,12 @@ test("Codex distribution reproduces exact source bytes and registers every produ
         ([path]) =>
           !path.startsWith(".agents/skills/") &&
           !path.startsWith(".codex/templates/") &&
+          !path.startsWith(".codex/agents/") &&
           !["AGENTS.md", "CLAUDE.md"].includes(path),
       ),
     ),
     expected,
-    "DIST-2: runtime inventory; Skill inventory is checked separately",
+    "DIST-2: runtime inventory; Skill and agent inventories are checked separately",
   );
   t.assert.equal(packageRun(["--out", box.path("dist"), "--check"]).status, 0);
   const settings = JSON.parse(await box.read("dist/codex/.codex/hooks.json"));
