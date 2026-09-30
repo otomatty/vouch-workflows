@@ -106,3 +106,32 @@ reviewer は指摘を review.md の R-n として、再現手順・期待・観�
 ## 検証の区別
 
 自動テストは原本・生成物・往復の構造を検査します。実際の Claude / Codex が生成物をエージェントとして読み込むことはテストでは保証しません。実機で読み込みを観測した場合は、下の記録に版と手順を分けて残します。実際のモデルが役割を守るか（worktree の隔離、reviewer の独立性、破壊検査の実施）の評価は別 Issue の結果として扱い、ここでは実施済みとしません。
+
+## 実装
+
+契約は `dc604e0`、実装前のテストは `0111c7d` です。実装前は、変換モジュールがないことによる3ファイルの読み込み失敗と、render が未対応のため変換後のパスに書かれない2件の失敗を確認しました。
+
+- `scripts/lib/agents.mjs`：語彙（`TOOLS`）、inputs の許可集合（`INPUTS`、project-documents.json から導出）、正規形だけを受け付ける `parseAgent` と、その逆の `renderAgent`。
+- `harness/claude/agent-markdown.mjs`、`harness/codex/agent-toml.mjs`：上の変換と `fromToml`。
+- `scripts/package.mjs`：対応表の `render` を1か所で適用します（137行）。変換後のパスも対応表の配布先の内側に限り、外なら `PACKAGE-PATH` で書き込み前に止まります。
+- `core/agents/.gitkeep` を削除し、3つの原本を置きました（builder 57行、reviewer 60行、explorer 47行）。
+
+生成は Claude 84ファイル、Codex 84ファイル、計168ファイルです（エージェントは各3ファイル）。原本の frontmatter スキーマ、既存の fixture・golden・元仕様は変更していません。既存の Claude / Codex の配布テストには、Skill と同じく agents 配下を新しいテストで検査するための除外を1行ずつ加えました。検査内容は減らしていません。
+
+## 実機での読み込みの観測
+
+2026-09-30、Linux / Node.js v22.22.2 で、生成した配布を空白を含む一時プロジェクトへコピーし、隔離した設定領域と、全要求に固定の短い応答を返すループバックのプロバイダーで各 CLI を1回起動しました。外部のモデルへの要求は送っていません。実ユーザーの設定は変更していません。
+
+| CLI | 起動 | 観測 |
+| --- | --- | --- |
+| Claude Code 2.1.285 | `claude -p --output-format stream-json --verbose --settings <project>/.claude/settings.json` | init の agents に `vouch-builder`・`vouch-explorer`・`vouch-reviewer`。要求の Agent ツールの説明に各 description と、builder・reviewer は `Read, Grep, Glob, Edit, Write, Bash`、explorer はそれに `WebFetch, WebSearch` を加えた Tools |
+| Codex CLI 0.153.4（npm の `@openai/codex`） | プロジェクトを trusted にした隔離 CODEX_HOME で `codex exec --skip-git-repo-check -C <project>` | 配布の config.toml による `sandbox: workspace-write`。要求の multi_agent_v1 ツールの agent_type の説明に、3役が Available roles として各 description 付きで並ぶ |
+
+これは生成物が各 CLI にエージェントとして読み込まれることの観測です。サブエージェントを実際に起動した時の disallowedTools・isolation・developer_instructions・sandbox_mode の適用、Codex の対話 CLI、Windows、他の版は確認していません。観測は手元の一時スクリプトで行い、再実行用のスクリプトや fixture は追加していません。
+
+## 残件
+
+- 実際のモデルによる役割分離の評価（builder の worktree 隔離、reviewer の独立した再現と破壊検査、explorer の書き込み範囲）は別 Issue の結果として扱います。
+- reviewer と builder の往復の上限回数は未定義です。決定と registry への登録、`review.*` を記録するフックは後続です。
+- 3役を起動する Build / Verify の Skill、知識レイヤーの形式と鮮度・引用の検査（#7）は未実装です。
+- Claude の worktree は既定のブランチから作られるため、builder の本文で Intent のブランチへの切り替えを求めています。worktree の基点の設定を配布に含めるかは後続で判断します。

@@ -1,5 +1,7 @@
 /** Distribution data; replacements apply only to Markdown, without harness branches.
- * @typedef {{files:{from:string,to:string}[],tokens?:Record<string,string>}} PackageManifest
+ * A render converts each mapped file after replacement, e.g. an agent to TOML.
+ * @typedef {(name:string,text:string)=>[string,string]} Render
+ * @typedef {{files:{from:string,to:string,render?:Render}[],tokens?:Record<string,string>}} PackageManifest
  */
 import {
   existsSync,
@@ -93,8 +95,7 @@ for (const name of manifests) {
     const to = inside(inside(output, name), mapping.to);
     if (!existsSync(from)) throw new Error(`PACKAGE-MISSING: ${mapping.from}`);
     for (const file of files(from)) {
-      const target = resolve(to, relative(from, file));
-      if (expected.has(target)) throw new Error(`PACKAGE-DUPLICATE: ${target}`);
+      let target = resolve(to, relative(from, file));
       let bytes = readFileSync(file);
       if (file.endsWith(".md")) {
         let text = bytes.toString("utf8");
@@ -104,6 +105,13 @@ for (const name of manifests) {
           throw new Error(`PACKAGE-TOKEN: ${file}`);
         bytes = Buffer.from(text);
       }
+      if (mapping.render) {
+        const name = relative(from, file).replaceAll("\\", "/");
+        const [path, text] = mapping.render(name, bytes.toString("utf8"));
+        target = inside(to, path);
+        bytes = Buffer.from(text);
+      }
+      if (expected.has(target)) throw new Error(`PACKAGE-DUPLICATE: ${target}`);
       expected.set(target, bytes);
     }
   }
