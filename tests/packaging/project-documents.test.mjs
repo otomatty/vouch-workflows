@@ -40,12 +40,11 @@ test("shared project documents resolve references and keep user rules uninitiali
       [
         "AGENTS.md",
         ...(harness === "claude" ? ["CLAUDE.md"] : []),
-        `.${harness}/templates/ja/rules.md`,
-        `.${harness}/templates/ja/intent.md`,
-        `.${harness}/templates/ja/decisions.md`,
-        `.${harness}/templates/en/rules.md`,
-        `.${harness}/templates/en/intent.md`,
-        `.${harness}/templates/en/decisions.md`,
+        ...["ja", "en"].flatMap((language) =>
+          ["rules", "intent", "decisions", "design", "build-log", "review"].map(
+            (name) => `.${harness}/templates/${language}/${name}.md`,
+          ),
+        ),
       ].sort(),
     );
     t.assert.equal(

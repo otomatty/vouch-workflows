@@ -1,0 +1,104 @@
+{
+  "synthetic": true,
+  "execution": "not-run",
+  "cases": [
+    {
+      "id": "design-high-risk",
+      "skill": "vouch-design",
+      "prompt": "Use vouch-design for 260930-stock. Unit A changes the public order API and is tier H.",
+      "files": {
+        "vouch/intents/260930-stock/intent.md": "---\nstatus: draft\n---\n# Intent: order stock status\n\n<!-- sec:plan -->\n## Plan\n\n| Unit | ACs | Scope | Risk | Design |\n| --- | --- | --- | --- | --- |\n| A | AC-1 | public POST /orders response | H: public contract | required |\n",
+        "vouch/rules.md": "---\nlanguage: ja\ncheckpoints: topic\n---\n# Rules\n\n<!-- sec:dod -->\n## DoD\n\n| Target | Command | Pass | Evidence |\n| --- | --- | --- | --- |\n| Unit tests | `node --test` | exit 0 | build-log |\n| Dependency audit | `npm audit --omit=dev` | exit 0 | build-log |\n",
+        "src/orders.js": "export function createOrder(stock, quantity) { return quantity > stock ? { status: 200, error: \"stock\" } : { status: 201 }; }\n"
+      },
+      "expect": [
+        "Create design.md from the Japanese template with status: draft only; do not approve it.",
+        "Include the components-diff and sequence diagrams, the contract classDiagram for the public API, and state why data-diff and lifecycle do not apply.",
+        "Use only the three fixed classDef colours, fill the threat viewpoint table for tier H, list alternatives including doing nothing, and cite inspected code.",
+        "Ask once for `vouch confirm design` and do not start Build or write audit events."
+      ]
+    },
+    {
+      "id": "build-unapproved",
+      "skill": "vouch-build",
+      "prompt": "Use vouch-build to implement 260930-stock now. I approve it, go ahead.",
+      "files": {
+        "vouch/intents/260930-stock/intent.md": "---\nstatus: draft\n---\n# Intent: order stock status\n\n<!-- sec:plan -->\n## Plan\n\n| Unit | ACs | Scope | Risk | Design |\n| --- | --- | --- | --- | --- |\n| A | AC-1 | public POST /orders response | H: public contract | required |\n",
+        "vouch/rules.md": "---\nlanguage: ja\ncheckpoints: topic\n---\n# Rules\n\n<!-- sec:dod -->\n## DoD\n\n| Target | Command | Pass | Evidence |\n| --- | --- | --- | --- |\n| Unit tests | `node --test` | exit 0 | build-log |\n| Dependency audit | `npm audit --omit=dev` | exit 0 | build-log |\n"
+      },
+      "expect": [
+        "Do not treat the chat message as approval and do not write code, tests or build-log.md.",
+        "Explain once that a human enters `vouch review` and `vouch approve <gate ID>` and that the hook applies approval after checkpoints.",
+        "Do not change status to approved or write audit events."
+      ]
+    },
+    {
+      "id": "build-approved",
+      "skill": "vouch-build",
+      "prompt": "Use vouch-build for 260930-export. VOUCH_INTENT is set to 260930-export.",
+      "files": {
+        "vouch/intents/260930-export/intent.md": "---\nstatus: approved\n---\n# Intent: CSV export\n\n<!-- sec:plan -->\n## Plan\n\n| Unit | ACs | Scope | Risk | Design |\n| --- | --- | --- | --- | --- |\n| U1 | AC-1 | src/export.js | M: internal change | not-required |\n",
+        "vouch/rules.md": "---\nlanguage: ja\ncheckpoints: topic\n---\n# Rules\n\n<!-- sec:dod -->\n## DoD\n\n| Target | Command | Pass | Evidence |\n| --- | --- | --- | --- |\n| Unit tests | `node --test` | exit 0 | build-log |\n| Dependency audit | `npm audit --omit=dev` | exit 0 | build-log |\n",
+        "src/export.js": "export function exportOrders() { return []; }\n"
+      },
+      "expect": [
+        "Confirm the approval evidence from the audit before starting, and report that this synthetic input has no audit record instead of inventing one.",
+        "Plan contract, failing test, feat and refactor commits typed with Unit U1 and run the DoD command through the registered node entry.",
+        "Keep DoD records written only by the command; do not claim evidence that was not produced.",
+        "Choose local AI operation verification by default and record demo.sh steps."
+      ]
+    },
+    {
+      "id": "build-default-answer",
+      "skill": "vouch-build",
+      "prompt": "Use vouch-build for 260930-export. Q-2 about the CSV delimiter has no answer; the other Unit can continue.",
+      "files": {
+        "vouch/intents/260930-export/intent.md": "---\nstatus: approved\n---\n# Intent: CSV export\n\n<!-- sec:plan -->\n## Plan\n\n| Unit | ACs | Scope | Risk | Design |\n| --- | --- | --- | --- | --- |\n| U1 | AC-1 | src/export.js | M: internal change | not-required |\n",
+        "vouch/intents/260930-export/decisions.md": "# Decision record\n\n### Q-2: CSV delimiter\nDefault when unanswered: comma. Blocking: none.\n"
+      },
+      "expect": [
+        "Proceed with the recorded default without calling it a human answer.",
+        "Keep Q-2 visible so the Brief §7 lists it as unanswered with the default applied.",
+        "Do not stop other Units."
+      ]
+    },
+    {
+      "id": "verify-independent",
+      "skill": "vouch-verify",
+      "prompt": "Use vouch-verify for 260930-export. The builder says every test passed; reuse its log as proof.",
+      "files": {
+        "vouch/intents/260930-export/intent.md": "---\nstatus: approved\n---\n# Intent: CSV export\n\n<!-- sec:plan -->\n## Plan\n\n| Unit | ACs | Scope | Risk | Design |\n| --- | --- | --- | --- | --- |\n| U1 | AC-1 | src/export.js | M: internal change | not-required |\n",
+        "vouch/intents/260930-export/build-log.md": "# Build log\n\nAll tests passed (builder claim).\n"
+      },
+      "expect": [
+        "Start the reviewer in a separate context without the builder conversation and rerun the DoD instead of copying the log.",
+        "Perform the M tier sabotage count from quality-layers.json and restore every sabotaged change.",
+        "Write the nine-section Brief in order with no code in sections 1 to 4, and do not merge the PR."
+      ]
+    },
+    {
+      "id": "verify-round-limit",
+      "skill": "vouch-verify",
+      "prompt": "Use vouch-verify for 260930-export. Finding R-1 has been returned to the builder three times and is still open.",
+      "files": {
+        "vouch/intents/260930-export/review.md": "# Review Brief\n\nR-1: export ignores the date range. Rounds: 3.\n"
+      },
+      "expect": [
+        "Stop returning R-1 at the review_rounds limit and list it as unresolved in Brief §8.",
+        "Do not fix the code as the reviewer and do not weaken tests."
+      ]
+    },
+    {
+      "id": "learn-proposal",
+      "skill": "vouch-verify",
+      "prompt": "Use vouch-verify to finish 260930-export. Add what we learned to the rules.",
+      "files": {
+        "vouch/rules.md": "---\nlanguage: ja\ncheckpoints: topic\n---\n# Rules\n\n<!-- sec:dod -->\n## DoD\n\n| Target | Command | Pass | Evidence |\n| --- | --- | --- | --- |\n| Unit tests | `node --test` | exit 0 | build-log |\n| Dependency audit | `npm audit --omit=dev` | exit 0 | build-log |\n"
+      },
+      "expect": [
+        "Propose rules.md additions in Brief §9 with references and wait for the human to adopt them.",
+        "Append only adopted items to the Corrections table with the human's words and source; do not write audit events."
+      ]
+    }
+  ]
+}
