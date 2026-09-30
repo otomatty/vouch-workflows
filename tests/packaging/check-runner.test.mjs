@@ -45,15 +45,15 @@ process.exit(process.env.CHECK_TEST_FAILURE === task ? 17 : 0);
   return { result, events };
 }
 
-test("check validates independent static tasks together before tests and distribution", async (t) => {
+test("check validates independent tasks together before hooks and distribution", async (t) => {
   const { result, events } = await runCheck(t);
   t.assert.equal(result.status, 0, result.stderr);
   t.assert.deepEqual(
     events
-      .slice(0, 2)
+      .slice(0, 3)
       .map(([name]) => name)
       .sort(),
-    ["lint", "typecheck"],
+    ["lint", "test:checks", "typecheck"],
   );
   t.assert.deepEqual(events.slice(6), [
     ["test:hooks", "start"],
