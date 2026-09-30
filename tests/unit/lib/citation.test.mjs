@@ -18,8 +18,26 @@ import {
 } from "../../helpers/knowledge.mjs";
 import { sandbox } from "../../helpers/runtime.mjs";
 
+/** Read-only Git double; no child process in unit tests.
+ * @param {Record<string,string|null>} [overrides] */
+function committedGit(overrides = {}) {
+  const answers = {
+    [`ls-tree -z --full-tree ${head} -- :(literal)src/main.mjs`]: `100644 blob ${"f".repeat(40)}\tsrc/main.mjs\0`,
+    [`show ${head}:src/main.mjs`]: "one\ntwo\n",
+    ...overrides,
+  };
+  /** @type {string[][]} */ const calls = [];
+  /** @type {import('../../../core/hooks/lib/runtime-contracts.mjs').GitPort} */
+  const read = async (...args) => {
+    calls.push(args);
+    return answers[args.join(" ")] ?? null;
+  };
+  return { read, calls };
+}
+
 test("citations verify local file, explicit section, line and pinned generation", async (t) => {
   const { ctx, files } = project();
+  const git = committedGit();
   const index = (await inspectKnowledge(ctx, head)).index;
   t.assert.deepEqual(await inspectReferences(artifact, ctx, head, index), []);
   files.data.set("src/main.mjs", "one\ntwo\n");
@@ -29,6 +47,8 @@ test("citations verify local file, explicit section, line and pinned generation"
       ctx,
       head,
       index,
+      false,
+      git.read,
     ),
     [],
   );
@@ -48,6 +68,8 @@ test("citations verify local file, explicit section, line and pinned generation"
           ctx,
           head,
           index,
+          false,
+          git.read,
         )
       ).length,
       target,
@@ -64,6 +86,110 @@ test("citations verify local file, explicit section, line and pinned generation"
         index,
       )
     ).length,
+  );
+});
+
+test("code citations check committed regular files and lines rather than worktree additions", async (t) => {
+  const { ctx, files } = project();
+  files.data.set("src/main.mjs", "one\ntwo\nthree\n");
+  files.data.set("src/untracked.mjs", "untracked\n");
+  const git = committedGit();
+  const inspect = (/** @type {string} */ target) =>
+    inspectReferences(`[x](${target})`, ctx, head, null, true, git.read);
+  t.assert.deepEqual(await inspect(`src/main.mjs:2@${head}`), []);
+  t.assert.equal((await inspect(`src/main.mjs:3@${head}`)).length > 0, true);
+  t.assert.equal(
+    (await inspect(`src/untracked.mjs:1@${head}`)).length > 0,
+    true,
+  );
+  t.assert.deepEqual(git.calls[0], [
+    "ls-tree",
+    "-z",
+    "--full-tree",
+    head,
+    "--",
+    ":(literal)src/main.mjs",
+  ]);
+  t.assert.deepEqual(git.calls[1], ["show", `${head}:src/main.mjs`]);
+  const before = git.calls.length;
+  t.assert.equal(
+    (await inspect(`src/main.mjs:1@${"b".repeat(40)}`)).length > 0,
+    true,
+  );
+  t.assert.equal(
+    git.calls.length,
+    before,
+    "stale SHA is refused before reading Git",
+  );
+  for (const overrides of [
+    { [`ls-tree -z --full-tree ${head} -- :(literal)src/main.mjs`]: null },
+    { [`ls-tree -z --full-tree ${head} -- :(literal)src/main.mjs`]: "" },
+    {
+      [`ls-tree -z --full-tree ${head} -- :(literal)src/main.mjs`]: `120000 blob ${"f".repeat(40)}\tsrc/main.mjs\0`,
+    },
+    {
+      [`ls-tree -z --full-tree ${head} -- :(literal)src/main.mjs`]: `040000 tree ${"f".repeat(40)}\tsrc/main.mjs\0`,
+    },
+    { [`show ${head}:src/main.mjs`]: null },
+  ]) {
+    t.assert.equal(
+      (
+        await inspectReferences(
+          `[x](src/main.mjs:1@${head})`,
+          ctx,
+          head,
+          null,
+          true,
+          committedGit(overrides).read,
+        )
+      ).length > 0,
+      true,
+    );
+  }
+});
+
+test("knowledge citations require an indexed path and matching bytes even through aliases or code syntax", async (t) => {
+  const { ctx, files } = project();
+  const index = (await inspectKnowledge(ctx, head)).index;
+  files.data.set("vouch/knowledge/codekb/extra.md", document);
+  files.data.set("./vouch/knowledge/codekb/extra.md", document);
+  for (const target of [
+    `vouch/knowledge/codekb/extra.md#main@${date}`,
+    `./vouch/knowledge/codekb/extra.md#main@${date}`,
+    `vouch/knowledge/codekb/extra.md:1@${head}`,
+  ])
+    t.assert.equal(
+      (
+        await inspectReferences(
+          `[x](${target})`,
+          ctx,
+          head,
+          index,
+          true,
+          committedGit().read,
+        )
+      ).length > 0,
+      true,
+    );
+  files.data.set(paths[0], `${document}changed without updating the index\n`);
+  t.assert.equal(
+    (await inspectReferences(artifact, ctx, head, index)).length > 0,
+    true,
+  );
+  files.data.set("ordinary.md", document);
+  t.assert.deepEqual(
+    await inspectReferences(
+      `[x](ordinary.md#main@${date})`,
+      ctx,
+      head,
+      index,
+      true,
+    ),
+    [],
+  );
+  t.assert.equal(
+    (await inspectReferences(artifact, ctx, head, null)).length > 0,
+    true,
   );
 });
 test("citations reject traversal, absolute paths and links using the real filesystem boundary", async (t) => {

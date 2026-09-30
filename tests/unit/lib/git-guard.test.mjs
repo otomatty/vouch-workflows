@@ -168,7 +168,7 @@ test("pushes of the current or default branch resolve it through Git", async (t)
     ["git push origin HEAD", upstreamMain, false],
     ["git push", {}, false],
     ["git push -u origin HEAD", {}, false],
-    ["git push", { [branch]: null }, false],
+    ["git push", { [branch]: null }, true],
   ];
   t.plan(cases.length);
   for (const [command, overrides, deny] of cases) {
@@ -184,6 +184,23 @@ test("pushes of the current or default branch resolve it through Git", async (t)
       `${command} ${JSON.stringify(overrides)}`,
     );
   }
+});
+
+test("an unreadable current push destination denies even without an Intent", async (t) => {
+  for (const scope of [intent, ""])
+    for (const value of [null, "", "not a branch record\0"])
+      for (const command of ["git push", "git push origin HEAD"]) {
+        const git = fakeGit({ [branch]: value });
+        const result = await guardGit(
+          bash(command),
+          context(undefined, { intent: scope }),
+          git.execute,
+        );
+        t.assert.match(
+          reason(result),
+          /^VOUCH-GIT-PUSH: .*; the destination cannot be verified$/,
+        );
+      }
 });
 
 test("dry runs, tags and other branches push without a protected destination", async (t) => {

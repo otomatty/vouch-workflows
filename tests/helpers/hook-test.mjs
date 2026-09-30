@@ -7,9 +7,11 @@ import budgets from "../../core/registry/budgets.json" with { type: "json" };
  * Keep the five-second case limit explicit, including synchronous child calls.
  * @param {string} name
  * @param {(t:import('node:test').TestContext)=>void|Promise<void>} fn
+ * @param {import('node:test').TestContext} [parent] Grouping only; each leaf retains the case limit.
  */
-export function hookTest(name, fn) {
-  return test(name, { timeout: budgets.timing.testTimeoutMs }, async (t) => {
+export function hookTest(name, fn, parent) {
+  const run = parent ? parent.test.bind(parent) : test;
+  return run(name, { timeout: budgets.timing.testTimeoutMs }, async (t) => {
     const started = performance.now();
     await fn(t);
     const elapsed = performance.now() - started;
