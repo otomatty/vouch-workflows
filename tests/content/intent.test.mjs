@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 import { assertGolden } from "../helpers/golden.mjs";
 import { packageRun, tree } from "../helpers/packaging.mjs";
@@ -86,20 +86,32 @@ test("Intent authoring templates match their complete rendering goldens", async 
       );
 });
 
-test("Intent template distribution preserves the canonical bytes for both harnesses", async (t) => {
+test("every template distribution preserves the canonical bytes for both harnesses", async (t) => {
   const box = await sandbox(t, { git: false });
   const result = packageRun(["--out", box.path("dist")]);
-  t.plan(9);
+  const names = ["ja", "en"].flatMap((language) =>
+    readdirSync(`core/templates/${language}`)
+      .filter((name) => name.endsWith(".md"))
+      .map((name) => `${language}/${name.replace(/\.md$/, "")}`),
+  );
+  t.plan(2 + names.length * 2);
   t.assert.equal(result.status, 0, result.stderr);
+  t.assert.equal(names.length >= 12, true, "rules, Intent and stage templates");
   for (const harness of ["claude", "codex"]) {
     const installed = tree(box.path(`dist/${harness}`));
-    for (const language of ["ja", "en"])
-      for (const artifact of ["intent", "decisions"])
-        t.assert.equal(
-          installed[`.${harness}/templates/${language}/${artifact}.md`],
-          Buffer.from(template(language, artifact)).toString("base64"),
-          `STR-4: ${harness}/${language}/${artifact}`,
-        );
+    for (const name of names) {
+      const [language = "", artifact = ""] = name.split("/");
+      t.assert.equal(
+        installed[`.${harness}/templates/${name}.md`],
+        Buffer.from(
+          template(language, artifact).replaceAll(
+            "{{HARNESS_DIR}}",
+            `.${harness}`,
+          ),
+        ).toString("base64"),
+        `STR-4: ${harness}/${name}`,
+      );
+    }
   }
 });
 

@@ -1,9 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 import { assertGolden } from "../helpers/golden.mjs";
-import { packageRun, tree } from "../helpers/packaging.mjs";
 import { readJson, validator } from "../helpers/registry.mjs";
-import { sandbox } from "../helpers/runtime.mjs";
 import { frontmatter } from "../helpers/skills.mjs";
 
 const stages = readJson("core/registry/stage-authoring.json");
@@ -216,28 +214,6 @@ test("stage templates match their complete rendering goldens", async (t) => {
       await assertGolden(t, `${name}-${language}.md`, template(language, name));
 });
 
-test("stage template distribution preserves the canonical bytes for both harnesses", async (t) => {
-  const box = await sandbox(t, { git: false });
-  const result = packageRun(["--out", box.path("dist")]);
-  t.plan(1 + 2 * languages.length * artifacts.length);
-  t.assert.equal(result.status, 0, result.stderr);
-  for (const harness of ["claude", "codex"]) {
-    const installed = tree(box.path(`dist/${harness}`));
-    for (const language of languages)
-      for (const { name } of artifacts)
-        t.assert.equal(
-          installed[`.${harness}/templates/${language}/${name}.md`],
-          Buffer.from(
-            template(language, name).replaceAll(
-              "{{HARNESS_DIR}}",
-              `.${harness}`,
-            ),
-          ).toString("base64"),
-          `STR-4: ${harness}/${language}/${name}`,
-        );
-  }
-});
-
 test("stage Skills are on-demand, user-invocable and name their canonical inputs", (t) => {
   const agents = { build: "vouch-builder", verify: "vouch-reviewer" };
   t.plan(artifacts.length * 6 + 2);
@@ -282,8 +258,18 @@ test("stage Skills connect to the human confirmation, approval, DoD and review-r
   /** @param {string} stage */
   const skill = (stage) =>
     readFileSync(`core/skills/${stages.skills[stage]}/SKILL.md`, "utf8");
-  t.plan(6);
+  t.plan(8);
   t.assert.match(skill("design"), /`vouch confirm design`/);
+  t.assert.match(
+    skill("build"),
+    /^git merge --ff-only /m,
+    "Units run one at a time so DoD records never conflict",
+  );
+  t.assert.match(
+    skill("build"),
+    /承認コミットを先に作る/,
+    "worktrees start from the committed approval",
+  );
   t.assert.match(skill("build"), /`vouch approve <ゲート ID>`/);
   t.assert.match(
     skill("build"),
@@ -298,4 +284,60 @@ test("stage Skills connect to the human confirmation, approval, DoD and review-r
     true,
     "Decision §18 Q5: verification defaults",
   );
+});
+
+test("stage evaluation material is synthetic input rather than a model execution result", (t) => {
+  const suite = readJson("tests/eval/stages/cases.json");
+  const skills = Object.values(
+    readJson("core/registry/stage-authoring.json").skills,
+  );
+  t.plan(5 + suite.cases.length * 3);
+  t.assert.equal(suite.synthetic, true);
+  t.assert.equal(suite.execution, "not-run");
+  t.assert.deepEqual(
+    suite.cases.map((/** @type {{id:string}} */ c) => c.id),
+    [
+      "design-high-risk",
+      "build-unapproved",
+      "build-approved",
+      "build-default-answer",
+      "verify-independent",
+      "verify-round-limit",
+      "learn-proposal",
+    ],
+  );
+  t.assert.equal(
+    new Set(suite.cases.map((/** @type {{id:string}} */ c) => c.id)).size,
+    suite.cases.length,
+  );
+  t.assert.deepEqual(
+    [
+      ...new Set(suite.cases.map((/** @type {{skill:string}} */ c) => c.skill)),
+    ].sort(),
+    [...skills].sort(),
+    "every stage Skill has evaluation input",
+  );
+  for (const c of suite.cases) {
+    t.assert.equal(skills.includes(c.skill), true);
+    t.assert.equal(
+      typeof c.prompt === "string" &&
+        c.prompt.length > 0 &&
+        c.expect.length > 0 &&
+        c.expect.every(
+          (/** @type {unknown} */ value) =>
+            typeof value === "string" && value.length > 0,
+        ),
+      true,
+    );
+    t.assert.equal(
+      Object.entries(c.files).every(
+        ([path, value]) =>
+          !path.startsWith("/") &&
+          !path.includes("..") &&
+          typeof value === "string",
+      ),
+      true,
+      "Input validation only; no Skill response or file mutation was evaluated",
+    );
+  }
 });

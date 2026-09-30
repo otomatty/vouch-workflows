@@ -25,7 +25,8 @@ build-log.md（名前は `{{HARNESS_DIR}}/registry/project-documents.json`）が
 
 ## Unit の進め方
 
-計画の表の依存順に Unit を進める。依存のない Unit は並列にしてよい。各 Unit は `vouch-builder` エージェントに Intent と Unit ID を渡して起動し、builder は専用の worktree と Unit のブランチで作業する。builder の定義にない権限を与えない。
+worktree は Intent のブランチのコミットから作られ、未コミットの変更を引き継がない。最初の Unit の前に、approved の intent.md、decisions.md、採択した design.md と監査ログが Intent のブランチにコミットされていることを `git status` で確かめ、なければ承認コミットを先に作る。承認コミットは内容を変えずにコミットするだけで、監査ログを編集しない。[R-PROJECT-3]
+計画の表の依存順に Unit を1つずつ進める。各 Unit の DoD は、その worktree の build-log.md と監査ログに追記する。並列に進めた Unit のブランチはこれらの追記が衝突し、記録は手で統合できないため、前の Unit を取り込んだ後の Intent のブランチから次の Unit を始める。各 Unit は `vouch-builder` エージェントに Intent と Unit ID を渡して起動し、builder は専用の worktree と Unit のブランチで作業する。builder の定義にない権限を与えない。
 
 ```sh
 git worktree add "<Unit の worktree>" -b "<Unit のブランチ>" "<Intent のブランチ>"
@@ -55,10 +56,10 @@ H は Design・各 Unit の確認点・11層がそろった計画で進む。人
 
 ## 取り込みと終了条件
 
-Unit が終わったら、依存順に Unit のブランチを Intent のブランチへ取り込む。build-log.md の DoD 記録や監査ログが衝突したら、それらを編集せずに止め、状況を返す。[R-PROJECT-3]
+Unit が終わったら、次の Unit を始める前に Unit のブランチを Intent のブランチへ早送りで取り込む。早送りできない、または作業ツリーの変更で取り込めない時は、build-log.md の DoD 記録や監査ログを編集せずに止め、状況を返す。[R-PROJECT-3]
 
 ```sh
-git merge --no-ff "<Unit のブランチ>"
+git merge --ff-only "<Unit のブランチ>"
 ```
 
 すべての Unit で、コードを変えた最後のコミットに DoD 合格の記録があり、AC の証拠か未実施の理由がそろったら [Verify Skill](../vouch-verify/SKILL.md) へ渡す。builder の会話は渡さない。
