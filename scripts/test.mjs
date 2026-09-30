@@ -3,7 +3,7 @@ import { readdirSync } from "node:fs";
 import { availableParallelism } from "node:os";
 import { resolve } from "node:path";
 import budgets from "../core/registry/budgets.json" with { type: "json" };
-import { testPhases } from "./lib/test-phases.mjs";
+import { testGroups, testPhases } from "./lib/test-phases.mjs";
 
 /** @param {string} directory */
 function files(directory) {
@@ -22,8 +22,10 @@ const suites =
   selected === "checks" ? checks : selected ? [selected] : [...checks, "hooks"];
 // A failing suite must not hide the results of later suites; the run still fails.
 /** @type {string[]} */ const failed = [];
-for (const suite of suites) {
-  const tests = files(`tests/${suite}`);
+const groups = testGroups(
+  suites.map((suite) => ({ suite, files: files(`tests/${suite}`) })),
+);
+for (const { suite, files: tests } of groups) {
   if (tests.length === 0) {
     if (selected) throw new Error(`No tests implemented for ${suite}.`);
     console.log(`No ${suite} tests yet.`);
