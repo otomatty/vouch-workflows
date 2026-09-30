@@ -27,3 +27,5 @@ check は HEAD と generation、全 entry の存在・digest・更新日を比�
 外部 URL は https と節 fragment を要求する。explorer が通常の許可されたハーネス経路で公式資料を確認し、`vouch/knowledge/external.json` に version:1 と records（url / checked / snapshot / sha256）を保存する。checked は実在する現在以前の UTC 日付、snapshot は root 内の文書、sha256 はそのバイト。記録の日付が索引 entries の最新 updated より古ければ再確認を求める。フックはローカル記録と snapshot の存在・digest だけを検査し、URL の到達性・公式性・内容の意味は保証しない。
 
 status / reviewer は knowledge.refreshed、hook.check の freshness / citation / format、hook.denied.reason を監査から読み、Brief の参照元・警告、§6 の保留、§7 の未回答と既定へ反映する。フックは承認済み Brief を書き換えない。実機 payload の派生テスト、手製入力、実モデル評価、人の実承認を区別する。
+
+knowledge 検査の3イベントは任意の `knowledge` 観測（generation / head / sha256）を持つ。sha256 は検査中に読んだ path とバイト digest の順序付き集合の digest。同一入力の再送は元の時刻と所要時間を保ち、読んだ版が変われば監査の ID 衝突として拒否する。過去の成功を現在の成功として再利用しない。
