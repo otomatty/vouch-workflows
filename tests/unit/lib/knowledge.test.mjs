@@ -3,13 +3,11 @@ import { test } from "node:test";
 /** @param {import("node:test").TestContext} t @param {unknown} value @param {string} [message] */
 const ok = (t, value, message) => t.assert.equal(Boolean(value), true, message);
 
+import { inspectReferences } from "../../../core/hooks/lib/citation.mjs";
 import { newId } from "../../../core/hooks/lib/clock.mjs";
+import { inspectKnowledge } from "../../../core/hooks/lib/freshness.mjs";
 import { createFileStore } from "../../../core/hooks/lib/fs.mjs";
-import {
-  inspectKnowledge,
-  inspectQuestions,
-  inspectReferences,
-} from "../../../core/hooks/lib/knowledge.mjs";
+import { inspectQuestions } from "../../../core/hooks/lib/questions.mjs";
 import {
   artifact,
   citation,
