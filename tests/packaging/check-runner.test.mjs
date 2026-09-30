@@ -14,11 +14,11 @@ import { appendFileSync, readFileSync } from 'node:fs';
 const task = process.argv[3];
 const write = (event) => appendFileSync('events.jsonl', JSON.stringify([task, event]) + '\\n');
 write('start');
-if (['lint', 'typecheck'].includes(task)) {
+if (['lint', 'typecheck', 'test:checks'].includes(task)) {
   let together = false;
   for (let i = 0; i < 30; i++) {
     const text = readFileSync('events.jsonl', 'utf8');
-    if (text.includes('["lint","start"]') && text.includes('["typecheck","start"]')) { together = true; break; }
+    if (text.includes('["lint","start"]') && text.includes('["typecheck","start"]') && text.includes('["test:checks","start"]')) { together = true; break; }
     await new Promise((done) => setTimeout(done, 10));
   }
   if (!together) process.exit(23);
@@ -55,9 +55,9 @@ test("check validates independent static tasks together before tests and distrib
       .sort(),
     ["lint", "typecheck"],
   );
-  t.assert.deepEqual(events.slice(4), [
-    ["test", "start"],
-    ["test", "end"],
+  t.assert.deepEqual(events.slice(6), [
+    ["test:hooks", "start"],
+    ["test:hooks", "end"],
     ["package", "start"],
     ["package", "end"],
     ["package:check", "start"],
@@ -65,13 +65,13 @@ test("check validates independent static tasks together before tests and distrib
   ]);
 });
 
-test("failure of either static validator blocks tests and distribution", async (t) => {
-  for (const failure of ["lint", "typecheck"]) {
+test("failure of any independent validator blocks hooks and distribution", async (t) => {
+  for (const failure of ["lint", "typecheck", "test:checks"]) {
     const { result, events } = await runCheck(t, failure);
     t.assert.equal(result.status, 17, result.stderr);
     t.assert.equal(
       events.some(([task]) =>
-        ["test", "package", "package:check"].includes(task),
+        ["test:hooks", "package", "package:check"].includes(task),
       ),
       false,
     );
