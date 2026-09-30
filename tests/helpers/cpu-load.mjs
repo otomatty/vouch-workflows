@@ -4,7 +4,7 @@ import { availableParallelism } from "node:os";
 import { resolve } from "node:path";
 import { performance } from "node:perf_hooks";
 import { pathToFileURL } from "node:url";
-import { sandbox } from "./runtime.mjs";
+import { checkFixture, sandbox, sessionFor } from "./runtime.mjs";
 
 /**
  * HOOK-13 load (docs/development/hook-startup.md): CPU count - 1 background processes, at
@@ -17,6 +17,12 @@ export async function cpuLoad(t) {
   const started = performance.now();
   const box = await sandbox(t);
   const signal = box.path("stop");
+  const fixture = sessionFor(box.root);
+  checkFixture(fixture);
+  const prepared = JSON.stringify({
+    harness: fixture.harness,
+    payload: fixture.payload,
+  });
   const workers = Array.from(
     { length: Math.max(1, availableParallelism() - 1) },
     () =>
@@ -27,6 +33,7 @@ export async function cpuLoad(t) {
           resolve("tests/helpers/load-worker.mjs"),
           box.root,
           signal,
+          prepared,
         ],
         { stdio: ["ignore", "pipe", "inherit"], windowsHide: true },
       ),

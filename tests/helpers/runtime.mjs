@@ -1,18 +1,29 @@
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { isAbsolute, join, relative, resolve } from "node:path";
-import { performance } from "node:perf_hooks";
-import { pathToFileURL } from "node:url";
 import { contractReference, deriveFixture } from "./fixtures.mjs";
+import { defaultTestInstant, executeHook } from "./hook-process.mjs";
 import { readJson, validator } from "./registry.mjs";
 
 // Filesystem-only tests do not compile schemas. Preparation precedes hook timing.
 /** @type {ReturnType<typeof validator>|undefined} */
 let validateFixture;
 
+/** Validate captured provenance and derived payload once before starting a process.
+ * @param {import('../../core/hooks/lib/contracts.mjs').HarnessFixture} fixture */
+export function checkFixture(fixture) {
+  // Throws TEST-7 unless an inventoried capture of this kind and version exists.
+  contractReference(fixture);
+  validateFixture ??= validator("harness-fixture");
+  if (!validateFixture(fixture))
+    throw new Error(
+      "TEST-7: changed payload must be marked synthetic with matching capture version",
+    );
+}
+
 /** @param {string} [instant] @returns {import('../../core/hooks/lib/runtime-contracts.mjs').Clock} */
-export function fakeClock(instant = "2026-09-27T00:00:00.000Z") {
+export function fakeClock(instant = defaultTestInstant) {
   return {
     now: () => instant,
     newId: (session, identity) => `test-${JSON.stringify([session, identity])}`,
@@ -117,53 +128,6 @@ export function promptFor(root) {
  * @param {{root:string,raw?:string,intent?:string,instant?:string,coverage?:boolean,configuredHarness?:'claude'|'codex',moduleLog?:string}} options
  */
 export function runHook(mode, fixture, options) {
-  // Throws TEST-7 unless an inventoried capture of this kind and version exists.
-  contractReference(fixture);
-  validateFixture ??= validator("harness-fixture");
-  if (!validateFixture(fixture))
-    throw new Error(
-      "TEST-7: changed payload must be marked synthetic with matching capture version",
-    );
-  const started = performance.now();
-  const product = /^vouch-[a-z-]+$/.test(mode);
-  /** @type {NodeJS.ProcessEnv} */ const env = {
-    ...process.env,
-    VOUCH_PROJECT_ROOT: options.root,
-    VOUCH_HARNESS: options.configuredHarness ?? fixture.harness,
-    VOUCH_GENERATION: "test",
-    VOUCH_INTENT: options.intent ?? "",
-    VOUCH_TEST_TIME: options.instant ?? fakeClock().now(),
-  };
-  if (options.coverage === false) delete env.NODE_V8_COVERAGE;
-  if (options.moduleLog) env.VOUCH_TEST_MODULE_LOG = options.moduleLog;
-  const result = spawnSync(
-    process.execPath,
-    product
-      ? [
-          "--disable-warning=ExperimentalWarning",
-          `--import=${pathToFileURL(resolve("tests/helpers/fixed-clock.mjs")).href}`,
-          ...(options.moduleLog
-            ? [
-                `--import=${pathToFileURL(resolve("tests/helpers/module-probe.mjs")).href}`,
-              ]
-            : []),
-          resolve(`core/hooks/${mode}.mjs`),
-        ]
-      : [resolve("tests/fixtures/runtime/driver.mjs"), mode],
-    {
-      cwd: options.root,
-      input: options.raw ?? JSON.stringify(fixture.payload),
-      encoding: "utf8",
-      windowsHide: true,
-      timeout: 4000,
-      env,
-    },
-  );
-  if (result.error) throw result.error;
-  return {
-    exitCode: result.status,
-    stdout: result.stdout,
-    stderr: result.stderr,
-    durationMs: performance.now() - started,
-  };
+  checkFixture(fixture);
+  return executeHook(mode, fixture.payload, fixture.harness, options);
 }
