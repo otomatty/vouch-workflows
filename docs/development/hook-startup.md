@@ -218,7 +218,7 @@ PowerShell の名前付き Node の検査は、他の packaging ファイルが�
 
 負荷ワーカーは測定後の stop ファイルで終了する。複数のケースに分けた全20回の途中で負荷が終了しないよう、異常終了時の残留を防ぐ寿命は全体の90秒とする。ケースの5秒制限と p95 の閾値を変更するものではない。
 
-同じ5秒・カバレッジなしの設定を使う content / registry / packaging の通常ファイルは、CPU 数を上限とする一つの実行段階にまとめる。各ファイルを一度ずつ検査し、scenario のケース制限、unit のカバレッジ、hooks のカバレッジと負荷測定は独立した段階で維持する。PowerShell の cold 起動は通常の検査と unit が終わった後、hooks の前に単独で実行する。ケース・ファイルの削除や再試行をせず、階層ごとのランナー起動と段階の間の待ち時間を減らす。
+同じ5秒・カバレッジなしの設定を使う content / registry / packaging の通常ファイルは、CPU 数を上限とする一つの実行段階にまとめる。各ファイルを一度ずつ検査し、scenario のケース制限、unit のカバレッジ、hooks のカバレッジと負荷測定は独立した段階で維持する。PowerShell の cold 起動は通常の検査と unit が終わった後、scenario の前に単独で実行する。元の packaging → scenario と同じく、実行環境の preflight を確認してからシナリオを起動する。ケース・ファイルの削除や再試行をせず、階層ごとのランナー起動と段階の間の待ち時間を減らす。
 
 - runner の一時的な遅れで、20回のうち数回が200msを超えると失敗します。頻度は下がりましたが、なくなってはいません。これをさらに減らすには、有料の larger runner のような環境の変更が必要です。予算の判定を変える方法は、Issue #2 の条件で禁止されています。
 - packaging の `isolated shell resolves named node and reports its real version` は、PowerShell の最初の起動（通常2.0〜2.4秒）が遅れると、`probeNode` の 4000ms に達して失敗します。1ケース5秒（TEST-12）の中での打ち切りのため、HOOK-13 とは別の扱いが必要です。
