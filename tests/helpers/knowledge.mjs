@@ -1,4 +1,5 @@
-import { sha256Hex } from "../../core/hooks/lib/clock.mjs";
+import { newId, sha256Hex } from "../../core/hooks/lib/clock.mjs";
+import { memoryFiles } from "./runtime.mjs";
 export const head = "a".repeat(40);
 export const date = "2026-09-27";
 export const paths = [
@@ -48,3 +49,17 @@ U1 continues.
 <!-- question:answer -->
 Unanswered.
 `;
+
+export function knowledgeProject(initial = knowledgeFiles()) {
+  const files = memoryFiles(initial);
+  const ctx = {
+    ...files,
+    projectRoot: "/project",
+    harness: /** @type {const} */ ("claude"),
+    intent: "test",
+    generation: "ignored",
+    now: () => `${date}T12:00:00Z`,
+    newId,
+  };
+  return { files, ctx };
+}
