@@ -137,4 +137,24 @@ diff_kinds の図は diagrams.json の diff の classDef 3行（added 緑、chan
 - 自動テストは文書の構造・正典との一致・配布だけを検査します。モデルが Skill に従うか（未承認で Build しない、承認を代行しない、reviewer が独立に再現する、往復を上限で止める）は評価スイートの結果で、ここでは実施済みとしません。
 - 機械的な遮断は既存のフックの範囲に限られます（承認前の実装の書き込み、main への push、`gh pr merge`、コミットの型と順序、監査への書き込み）。Skill の文章は新しい遮断を加えません。
 - question.asked / question.answered / question.defaulted、review.requested / review.completed、unit.started / unit.completed、stage.started / stage.completed、learn.recorded を記録するフックは未実装です。Skill はこれらを自分で書かず、Brief には監査にある記録だけを引きます。
-- Unit ごとの worktree で DoD を実行すると、build-log.md と監査はその worktree に追記されます。Unit のブランチを Intent のブランチへ取り込む時のこれらのファイルの統合は検証していません。Skill は衝突したら DoD 記録と監査を編集せずに止め、状況を返します。
+- Unit ごとの worktree で DoD を実行すると、build-log.md と監査はその worktree に追記されます。Unit のブランチを Intent のブランチへ取り込む時のこれらのファイルの統合は検証していません。Skill は衝突したら DoD 記録と監査を編集せずに止め、状況を返します。DoD コマンドは worktree の中の配布（`{{HARNESS_DIR}}/hooks/`）を使うため、配布をコミットしていないプロジェクトの worktree では起動できないことも未検証の制限です。
+
+## 実装・検証結果
+
+2026-09-30 に実装しました。契約（registry・スキーマ・この文書）は `bdc27d5`、先行テストは `0ffb59a` です。先行テストの時点では、registry の5件が成功し、Skill とテンプレートがないことによる content・packaging の13件が失敗することを確認してから、Skill・テンプレートを追加しました。
+
+- Skill：vouch-design 41行、vouch-build 66行、vouch-verify 61行（予算200行）。オーケストレータは41行、AGENTS.md は35行です。オーケストレータ・AGENTS.md・vouch-intent の「Build 以降は未実装」の記述を、新しい Skill への案内に置き換えました。
+- テンプレート：design 151行、build-log 61行、review 127行（日英同じ行数）。新規6件の golden は UPDATE_GOLDEN=1 を明示して追加しました。既存の golden、fixture、元仕様、移行元資料、フック・lib、package.json / lockfile は変更していません。
+- skills.test.mjs の許可コマンドの検査を、node の登録入口だけから、stage-authoring.json の git サブコマンドを加えた許可リストに広げました。保護対象の枝への push、強制 push、連結・パイプ、他のプログラムを拒否する負例を加えています。
+- enforcement-map は DOC-1・DOC-3・DOC-4・DOC-6・DOC-7・DOC-8・R-PROJECT-1・5・6 の実装済みの根拠を追加し、残る範囲（モデル評価、知識レイヤーの基準図、質問・レビューのイベント記録）を pending に残しました。
+
+| 検査 | Linux / Node.js v22.22.2 |
+| --- | --- |
+| `npm run check` | 成功、51.1秒（予算90秒） |
+| Lint（Biome・markdownlint・dependency-cruiser・knip）・型検査 | 成功 |
+| テスト（scripts/test.mjs の段ごと） | 168 / 242 / 5 / 17 / 84 / 14件、計530件が成功、失敗0 |
+| 配布の生成と `package:check` | Claude 107、Codex 107、計214ファイルで成功 |
+
+Windows と Node.js 24 は、この環境では実行していません。CI の結果は PR で確認します。
+
+実ハーネスでの Skill の発見・選択、モデルが Skill に従うか（未承認で Build しない、reviewer の独立性、往復の上限、Learn の採択待ち）の評価は実施していません。tests/eval/stages の7件は評価の入力で、実行結果ではありません。

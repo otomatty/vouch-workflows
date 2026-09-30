@@ -133,6 +133,6 @@ reviewer は指摘を review.md の R-n として、再現手順・期待・観�
 
 - 実際のモデルによる役割分離の評価（builder の worktree 隔離、reviewer の独立した再現と破壊検査、explorer の書き込み範囲）は別 Issue の結果として扱います。
 - reviewer と builder の往復の上限回数は未定義です。決定と registry への登録、`review.*` を記録するフックは後続です。
-- 3役を起動する Build / Verify の Skill は未実装です。
+- 3役を起動する Build / Verify の Skill は [Issue #9](https://github.com/otomatty/vouch-workflows/issues/9) で追加しました（[Design・Build・Verify の Skill と日英成果物](stages.md)）。往復の上限は stage-authoring.json の review_rounds（既定 3）に置きました。
 - #7 のマージ（`65fa8c8`）を取り込んだ際、explorer の本文を知識レイヤーの契約に合わせました。vouch-knowledge Skill（Knowledge / explorer）とエージェントの explorer の起動経路の整理は、Build / Verify の Skill と合わせて後続で行います。
 - Claude の worktree は既定のブランチから作られるため、builder の本文で Intent のブランチへの切り替えを求めています。worktree の基点の設定を配布に含めるかは後続で判断します。
