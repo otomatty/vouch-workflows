@@ -1,7 +1,7 @@
 import { execFileSync, spawnSync } from "node:child_process";
 import { cp } from "node:fs/promises";
 import { join } from "node:path";
-import { test } from "node:test";
+import { hookTest as test } from "../helpers/hook-test.mjs";
 import { packageRun } from "../helpers/packaging.mjs";
 import { validator } from "../helpers/registry.mjs";
 import { sandbox } from "../helpers/runtime.mjs";

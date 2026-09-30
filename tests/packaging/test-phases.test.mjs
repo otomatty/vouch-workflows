@@ -39,3 +39,12 @@ test("other tiers and hooks without budget files keep one CPU-parallel phase", (
     { files: plain, concurrency: 2, budget: false },
   ]);
 });
+
+test("native shell lookup runs cold apart from the CPU-parallel packaging files", (t) => {
+  const native = "/repo/tests/packaging/native-environment.test.mjs";
+  const plain = "/repo/tests/packaging/skills.test.mjs";
+  t.assert.deepEqual(testPhases("packaging", [native, plain], 4), [
+    { files: [plain], concurrency: 4, budget: false },
+    { files: [native], concurrency: 1, budget: false },
+  ]);
+});
