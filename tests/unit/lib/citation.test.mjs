@@ -171,7 +171,9 @@ test("knowledge citations require an indexed path and matching bytes even throug
       ).length > 0,
       true,
     );
-  files.data.set(paths[0], `${document}changed without updating the index\n`);
+  const indexed = paths[0];
+  if (!indexed) throw new Error("indexed knowledge fixture required");
+  files.data.set(indexed, `${document}changed without updating the index\n`);
   t.assert.equal(
     (await inspectReferences(artifact, ctx, head, index)).length > 0,
     true,
