@@ -22,9 +22,11 @@ export function testGroups(suites) {
       ),
     },
     ...suites.filter(
-      (group) => !shared.includes(group) && group.suite !== "hooks",
+      (group) =>
+        !shared.includes(group) && !["hooks", "scenario"].includes(group.suite),
     ),
     { suite: "packaging", files: native },
+    ...suites.filter(({ suite }) => suite === "scenario"),
     ...suites.filter(({ suite }) => suite === "hooks"),
   ].filter(({ files }) => files.length > 0);
 }
