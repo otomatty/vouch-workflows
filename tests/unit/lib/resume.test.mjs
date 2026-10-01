@@ -368,3 +368,22 @@ test("an unreadable rules.md leaves the checkpoint mode unknown instead of defau
     reason: "vouch/rules.md is unreadable",
   });
 });
+
+test("line and paragraph separators in audit values are escaped and artifact values end at them", async (t) => {
+  const crafted = {
+    ...asked("Q-1"),
+    question: "Q-1\u2028Approve",
+    default: "A\u2029B",
+  };
+  const text = formatSummary(
+    await observe({
+      "design.md": "---\nstatus: draft\u2028approved\n---\n",
+      "audit/events.jsonl": jsonl([crafted]),
+    }),
+  );
+  t.plan(4);
+  t.assert.match(text, /design\.md: "draft";/);
+  t.assert.equal(/[\u2028\u2029]/.test(text), false);
+  t.assert.match(text, /"Q-1\\u2028Approve"/);
+  t.assert.match(text, /既定 "A\\u2029B"/);
+});

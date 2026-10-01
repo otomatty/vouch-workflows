@@ -8,8 +8,13 @@ import { readLanguage, readPosition } from "./position.mjs";
 
 /** @param {string} text @param {number} limit */
 const bounded = (text, limit) => [...text].slice(0, limit).join("");
-/** Untrusted text as one bounded JSON string. @param {string} value */
-const quote = (value) => JSON.stringify(bounded(value, 80));
+/** Untrusted text as one bounded JSON string; JSON leaves U+2028 and U+2029 raw, so they are escaped
+ * too and no audit or artifact value can start a new line. @param {string} value */
+const quote = (value) =>
+  JSON.stringify(bounded(value, 80)).replace(
+    /[\u2028\u2029]/g,
+    (separator) => `\\u${separator.charCodeAt(0).toString(16)}`,
+  );
 /** @param {string} value */
 const id = (value) => (/^[\w.:-]{1,80}$/.test(value) ? value : quote(value));
 /** A short value for the one-line display, or "?". @param {string} value */
