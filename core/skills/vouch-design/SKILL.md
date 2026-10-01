@@ -8,7 +8,7 @@ reads: on-demand
 # Design の下書き
 
 Design が必要な Intent の design.md を、差分図と契約を主にしたレビュー可能な下書きにする。根拠は決定記録 §5・§13・§14・§18 Q2 / Q4。
-採択は人の `vouch confirm design` をフックが design.md の内容に結び付けて記録する。この Skill は採択・承認・Build をしない。[R-PROJECT-1]
+採択は人の `vouch confirm design` などの確認をフックが design.md の内容に結び付けて記録する。この Skill は採択・承認・Build をしない。[R-PROJECT-1]
 
 ## 対象と出力
 
@@ -36,6 +36,7 @@ intent.md が draft のうちに行う。Design の確認点は Intent 承認の
 ## 確認と終了条件
 
 下書き、図ごとの適用・不適用、契約、代替案、未確定の Q-n、参照元を報告する。
-採択の依頼は1回だけにする。人が `vouch confirm design` を入力するとフックが記録する。その後に design.md を変えたら、その確認は古くなり、人に確認し直してもらう。ファイルの存在、無回答、既定適用、構造化質問の回答は確認ではない。[R-PROJECT-1]
+採択の依頼は1回だけにする。確認の単位は vouch/rules.md の checkpoints で決まる（`{{HARNESS_DIR}}/registry/workflow.json` の既定は topic）。topic は `vouch confirm design` で design.md 全体、unit は Design が必要な Unit ごとに `vouch confirm design unit <Unit ID>`、section は design_sections の節ごとに `vouch confirm design section <節 ID>` を人が入力し、フックが記録する。
+unit の確認は共通の節とその Unit の units 節の行に結び付くので、units 節の表の1列目には intent.md の計画と同じ Unit ID を1行ずつ書く。確認した部分を後で変えたら、その確認は古くなり、人に確認し直してもらう。ファイルの存在、無回答、既定適用、構造化質問の回答は確認ではない。[R-PROJECT-1]
 Intent の承認は [Intent Skill](../vouch-intent/SKILL.md) の案内に従い、人の `vouch review` と `vouch approve <ゲート ID>` でフックが記録・適用する。モデルは approved に変更しない。
 監査ログは作成・追記・編集しない。記録の有無は監査ログを読んで示す。[R-PROJECT-3]

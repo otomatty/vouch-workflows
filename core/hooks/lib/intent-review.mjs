@@ -30,7 +30,7 @@ export function parseIntentReviewCommand(prompt) {
   if (prompt.startsWith(commands.confirmPrefix)) {
     const match = targets.exec(prompt.slice(commands.confirmPrefix.length));
     if (!match) return { kind: "invalid" };
-    const [, topic, unit, section] = match;
+    const [, topic, unit, section, designUnit, designSection] = match;
     return {
       kind: "confirm",
       target: topic
@@ -42,7 +42,11 @@ export function parseIntentReviewCommand(prompt) {
           }
         : unit
           ? { checkpoint: "unit", unit }
-          : { checkpoint: "section", section: `${section}` },
+          : section
+            ? { checkpoint: "section", section }
+            : designUnit
+              ? { checkpoint: "design", unit: designUnit }
+              : { checkpoint: "design", section: `${designSection}` },
     };
   }
   const words = [

@@ -172,3 +172,15 @@ content テストに、Build Skill の `git merge --ff-only` と承認コミッ�
 GitHub Actions では Windows の2ジョブが `npm run check` の90秒予算（TEST-12）を超えました。Node.js 22.19.0 は main の `41da839`・`65fa8c8` でも同じ理由で失敗しており、この PR の変更ではありません。Node.js 24.x は main で88秒の成功だったものが、この PR の追加で `package:check` の開始時に予算に達しました。予算は変えずに、この PR が足した実行を減らしました。評価素材と registry の検査を既存の content・registry のテストファイルへ移し（新しいテストの子プロセスを3から1へ）、テンプレートの配布のバイト一致は Intent のテストの既存の配布生成1回で全テンプレートを検査するようにして、配布生成を1回減らしました。検査の内容は減らしていません。
 
 その後の CodeRabbit のレビュー（Major）は、DoD が build-log.md と監査ログに追記した記録がコミットされず、早送りの取り込みで Intent のブランチへ移らないことを指摘しました。手順を読んで再現を確かめ、Unit の最後の DoD の後に2つのファイルだけを記録のコミットにする手順と、その順序の content テストを加えました。stage-authoring.json の git に add と commit を加えています。
+
+### design.md の確認の粒度（Issue #9 の残り）
+
+PR #29 の後、[承認の境界](approval-boundary.md)には「unit / section の design は design.md の節の契約がまだないため（#9）、design.md 全体への1回の確認とする」という先送りが残っていました。design_sections ができたので、未決事項の記録 Q2 の B（Unit ごとに Design 1回）と C（design.md の見出しごとに1回）を design.md にも適用しました。契約（`intent-review.json` の `design unit <Unit ID>`・`design section <節 ID>`、`approval.json` の design_units、型、この文書と承認の境界）、失敗する先行テスト、実装の順にコミットしています。
+
+- topic は従来どおり `vouch confirm design` の1回です。既存の確認の記録と digest は変わりません。
+- unit は Design が required の Unit（H を含む）ごとに `vouch confirm design unit <Unit ID>` が要ります。digest は status を draft にした design.md から、units 節の表のほかの Unit の行を除いたバイト列です。共通の部分を変えるとすべての Unit が、ある Unit の行を変えるとその Unit だけが再確認になります。
+- section は design_sections の8節ごとに `vouch confirm design section <節 ID>` が要ります。
+- 監査イベントのスキーマは design の checkpoint に unit / section を既に許していたため変えていません。unit と section の両方を持つ design の記録は対象がなく、確認に数えません。
+- テンプレートと golden は変えていません。Design Skill と Intent Skill の確認の案内に新しい対象を加えました。
+
+先行テストの時点では、registry の検査が成功し、checkpoints・intent-review の単体テストと Skill の content テストの9件が失敗することを確かめてから実装しました。

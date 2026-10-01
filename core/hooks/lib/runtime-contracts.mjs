@@ -58,6 +58,8 @@ export {};
  * A match also occurs for synthetic data; provenance and consent need future hooks.
  * @typedef {{status:'draft'|'approved',revision:import('./contracts.mjs').IntentRevision}} IntentSnapshot
  * @typedef {(text:string)=>IntentSnapshot|null} SnapshotIntent
+ * @typedef {(text:string)=>{status:'draft'|'approved',text:string}|null} DraftText The text with its
+ * status line read as draft; null without the single-status frontmatter that snapshots require.
  * @typedef {(input:import('./contracts.mjs').HookInput,harness:import('./contracts.mjs').Harness)=>import('./contracts.mjs').Submission|null} IdentifySubmission
  * @typedef {object} ApprovalComparisonInput
  * @property {unknown} gate
