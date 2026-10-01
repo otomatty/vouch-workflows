@@ -31,11 +31,42 @@ function records(text) {
   return result;
 }
 
-/** @param {import('./runtime-contracts.mjs').FileStore} files @param {string} intent */
-export function createIntentAuditStore(files, intent) {
+/** @type {import('./runtime-contracts.mjs').ScanAudit} */
+export function scanAudit(text) {
+  /** @type {import('./runtime-contracts.mjs').AuditScan} */
+  const scan = { events: [], invalid: [], duplicates: [] };
+  if (!text) return scan;
+  const lines = text.split("\n");
+  const ids = new Set();
+  // The element after a final newline is empty; any other last element lacks its newline.
+  lines.forEach((line, index) => {
+    if (index === lines.length - 1 && line === "") return;
+    /** @type {unknown} */ let event;
+    try {
+      event = index === lines.length - 1 ? undefined : JSON.parse(line);
+    } catch {
+      event = undefined;
+    }
+    if (!isAuditEvent(event)) scan.invalid.push(index + 1);
+    else if (ids.has(event.id)) scan.duplicates.push(event.id);
+    else {
+      ids.add(event.id);
+      scan.events.push(event);
+    }
+  });
+  return scan;
+}
+
+/** @param {string} intent */
+export function intentHome(intent) {
   if (!/^[a-z0-9][a-z0-9_-]{0,127}$/.test(intent))
     throw new Error("AUDIT-SCOPE: invalid configured intent");
-  return createAuditStore(files, `vouch/intents/${intent}/audit/events.jsonl`);
+  return `vouch/intents/${intent}`;
+}
+
+/** @param {import('./runtime-contracts.mjs').FileStore} files @param {string} intent */
+export function createIntentAuditStore(files, intent) {
+  return createAuditStore(files, `${intentHome(intent)}/audit/events.jsonl`);
 }
 
 /** @param {import('./contracts.mjs').AuditStore|undefined} store @param {string} id */

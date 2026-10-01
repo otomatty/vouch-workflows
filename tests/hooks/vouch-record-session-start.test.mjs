@@ -1,4 +1,7 @@
 import { symlink } from "node:fs/promises";
+import operations from "../../core/registry/operations.json" with {
+  type: "json",
+};
 import { assertGolden } from "../helpers/golden.mjs";
 import { hookTest as test } from "../helpers/hook-test.mjs";
 import { validator } from "../helpers/registry.mjs";
@@ -21,7 +24,11 @@ test("session startup emits a complete registered event matching the golden", as
   const event = JSON.parse(log);
   t.plan(7);
   t.assert.equal(result.exitCode, 0);
-  t.assert.equal(result.stdout, "");
+  t.assert.match(
+    result.stdout,
+    new RegExp(`^${operations.labels.ja.summary}\n`),
+    "resume summary",
+  );
   t.assert.equal(result.stderr, "");
   t.assert.equal(validator("audit-event")(event), true);
   t.assert.equal(event.type, "session.started");
@@ -110,7 +117,7 @@ test("explicit intent scope separates logs and never trusts a payload intent", a
   t.assert.notEqual(a.id, b.id);
 });
 
-test("unscoped startup and unrelated events are side effect free no-ops", async (t) => {
+test("unscoped startup and unrelated events record nothing; summarized sources only print", async (t) => {
   const box = await sandbox(t);
   const fixture = sessionFor(box.root);
   const cases = [
@@ -124,8 +131,19 @@ test("unscoped startup and unrelated events are side effect free no-ops", async 
   t.plan(cases.length * 3 + 1);
   for (const item of cases) {
     const result = runHook(hook, item.fixture, item.options);
+    const source = /** @type {{source?:string}} */ (item.fixture.payload)
+      .source;
     t.assert.equal(result.exitCode, 0);
-    t.assert.equal(result.stdout, "");
+    if (
+      item.options.intent &&
+      operations.resume.sources.claude.includes(String(source)) &&
+      source !== "startup"
+    )
+      t.assert.match(
+        result.stdout,
+        new RegExp(`^${operations.labels.ja.summary}\n`),
+      );
+    else t.assert.equal(result.stdout, "");
     t.assert.equal(result.stderr, "");
   }
   await t.assert.rejects(box.read(path), { code: "ENOENT" });

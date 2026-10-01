@@ -2,6 +2,9 @@ import { spawnSync } from "node:child_process";
 import { cp } from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import operations from "../../core/registry/operations.json" with {
+  type: "json",
+};
 import { assertGolden } from "../helpers/golden.mjs";
 import { hookTest as test } from "../helpers/hook-test.mjs";
 import { packageRun } from "../helpers/packaging.mjs";
@@ -53,7 +56,10 @@ test("copied Claude registration records and replays a scoped synthetic startup"
       },
     );
     t.assert.equal(result.status, 0, result.stderr);
-    t.assert.equal(result.stdout, "");
+    t.assert.match(
+      result.stdout,
+      new RegExp(`^${operations.labels.ja.summary}\n`),
+    );
     t.assert.equal(result.stderr, "");
     await assertGolden(
       t,

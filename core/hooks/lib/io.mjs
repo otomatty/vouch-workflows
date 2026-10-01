@@ -1,12 +1,14 @@
+import operations from "../../registry/operations.json" with { type: "json" };
+import workflow from "../../registry/workflow.json" with { type: "json" };
 import { approvedText } from "./approval.mjs";
 import { createIntentAuditStore } from "./audit.mjs";
-import { readContext, readDoctorContext } from "./env.mjs";
+import { readContext, readDoctorContext, readIntent } from "./env.mjs";
 import { createFileStore, descriptorWriter, readDescriptor } from "./fs.mjs";
 import { isHookResult, parseInput } from "./validation.mjs";
 
 /**
  * Process boundary. Fail open on malformed input, implementation or persistence errors.
- * stdout stays empty until a separate harness-specific output adapter is defined.
+ * stdout carries only an allowed result's plain-text context, after its events are durable.
  * @param {import('./contracts.mjs').HookMain} main
  * @param {import('./runtime-contracts.mjs').RuntimeOptions} [options]
  * @returns {Promise<void>}
@@ -82,7 +84,8 @@ export async function run(main, options = {}) {
     if (result.decision === "deny") {
       stderr.write(`${result.reason}\n`);
       code = 2;
-    }
+    } else if (result.context)
+      (options.stdout ?? descriptorWriter(1)).write(`${result.context}\n`);
   } catch (error) {
     try {
       stderr.write(
@@ -134,4 +137,45 @@ export async function runDoctor(main, entryUrl, options = {}) {
     return;
   }
   finish(report.ok ? 0 : 2);
+}
+
+/** Harness display wiring: one line on stdout and exit 0, also when the observation fails.
+ * Reads only; the project root and harness come from the entry's installed location.
+ * @param {import('./runtime-contracts.mjs').StatuslineMain} main
+ * @param {string} entryUrl
+ * @param {import('./runtime-contracts.mjs').StatuslineOptions} [options]
+ */
+export async function runStatusline(main, entryUrl, options = {}) {
+  const stdout = options.stdout ?? process.stdout;
+  /** @type {string} */ let line;
+  try {
+    const environment = options.environment ?? readDoctorContext(entryUrl);
+    const files =
+      options.files ?? (await createFileStore(environment.projectRoot));
+    const harness = /(?:^|\/)\.codex$/.test(environment.installationRoot)
+      ? "codex"
+      : "claude";
+    line = await main(
+      files,
+      options.intent === undefined ? readIntent() : options.intent,
+      harness,
+    );
+  } catch (error) {
+    const code =
+      error instanceof Error
+        ? (/^[A-Z][A-Z0-9-]+(?=:)/.exec(error.message)?.[0] ?? "ERROR")
+        : "ERROR";
+    line = `Vouch: ${operations.labels[/** @type {'ja'|'en'} */ (workflow.defaults.language)].unavailable} (${code})`;
+  }
+  try {
+    stdout.write(`${line}\n`);
+  } catch {
+    /* A closed display stream has no one to tell. */
+  }
+  (
+    options.finish ??
+    ((code) => {
+      process.exitCode = code;
+    })
+  )(0);
 }

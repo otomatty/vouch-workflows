@@ -1,5 +1,8 @@
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
+import operations from "../../core/registry/operations.json" with {
+  type: "json",
+};
 import runtime from "../../core/registry/runtime.json" with { type: "json" };
 import { packageRun, tree } from "../helpers/packaging.mjs";
 import { sandbox } from "../helpers/runtime.mjs";
@@ -51,10 +54,14 @@ test("Codex distribution reproduces exact source bytes and registers every produ
     "SessionStart",
     "UserPromptSubmit",
     "PreToolUse",
+    "Stop",
   ]);
   const [registration] = settings.hooks.SessionStart;
   t.assert.equal(settings.hooks.SessionStart.length, 1);
-  t.assert.equal(registration.matcher, "startup");
+  t.assert.equal(
+    registration.matcher,
+    operations.resume.sources.codex.join("|"),
+  );
   t.assert.equal(registration.hooks.length, 1);
   const [command] = registration.hooks;
   t.assert.deepEqual(Object.keys(command).sort(), [
@@ -71,7 +78,7 @@ test("Codex distribution reproduces exact source bytes and registers every produ
           [
             ...[
               text,
-              ...["UserPromptSubmit", "PreToolUse"].map(
+              ...["UserPromptSubmit", "PreToolUse", "Stop"].map(
                 (event) =>
                   settings.hooks[event][0].hooks[0][
                     text === command.command ? "command" : "commandWindows"

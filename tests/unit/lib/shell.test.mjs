@@ -217,16 +217,31 @@ test("readsOnly refuses writers, unknown programs, write options and smuggled op
   for (const text of cases) t.assert.equal(reading(text), false, text);
 });
 
-test("readsOnly accepts node only for the installed doctor as its single argument", (t) => {
+test("readsOnly accepts node only for an installed command with literal word arguments", (t) => {
   const doctor = (/** @type {string} */ word) =>
-    word === "install/hooks/vouch-doctor.mjs";
-  t.plan(3);
-  t.assert.equal(reading("node install/hooks/vouch-doctor.mjs", doctor), true);
+    word === "install/hooks/vouch-question.mjs";
+  t.plan(12);
   t.assert.equal(
-    reading("node install/hooks/vouch-doctor.mjs extra", doctor),
-    false,
+    reading("node install/hooks/vouch-question.mjs", doctor),
+    true,
   );
-  t.assert.equal(reading("node --eval x", doctor), false);
+  t.assert.equal(
+    reading("node install/hooks/vouch-question.mjs ask Q-1", doctor),
+    true,
+  );
+  for (const text of [
+    "node install/hooks/vouch-question.mjs ask $Q",
+    'node install/hooks/vouch-question.mjs ask "$Q"',
+    `node install/hooks/vouch-question.mjs ask $${"{Q}"}`,
+    "node install/hooks/vouch-question.mjs ask Q-{1,2}",
+    "node install/hooks/vouch-question.mjs ask ~",
+    "node install/hooks/vouch-question.mjs ask Q-1*",
+    "node install/hooks/vouch-question.mjs ask ../x",
+    "node install/hooks/vouch-question.mjs --eval x",
+    "node install/hooks/vouch-question.mjs ask Q-1 > out",
+    "node --eval x",
+  ])
+    t.assert.equal(reading(text, doctor), false, text);
 });
 
 test("parseShell reads process substitution inside a word as bash does", (t) => {

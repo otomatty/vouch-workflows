@@ -15,7 +15,7 @@
 
 フックの stdin・stderr と組み込みモジュールの読込は [記録フックの起動費用](hook-startup.md)で定めます。`run()` は不正入力なら main を呼びません。未知のトップレベル入力フィールドを取り除き、`tool_input` のキーは各ツールの入力として保持します。1 MiB 以上は拒否します。パスの字句上の `../` だけでは判定せず、解決先と実在する祖先を検査します。root と同じディレクトリを指す別の綴り（8.3 短縮名・junction・subst・記号リンク）の扱いは [root の別名と包含判定](root-alias.md)で定めます。
 
-`HookMain` の返値は内部用です。正常時の stdout は空、遮断理由は stderr に出します。内部のイベントや `decision: allow` をハーネス向け JSON として直接出力しません。再開要約などのハーネス固有 JSON は後続のアダプタで定義します。
+`HookMain` の返値は内部用です。正常時の stdout は、許可した結果の `context`（平文）をイベントの追記が成功した後に書く場合を除いて空で、遮断理由は stderr に出します。内部のイベントや `decision: allow` をハーネス向け JSON として直接出力しません。`context` は SessionStart の再開要約に使います（[再開・ask・report](resume.md)）。
 
 監査先は `RuntimeOptions.audit` で明示するか、設定元の `VOUCH_INTENT` から構成します。context と記録処理は同じストアを使います。入力のパスやイベントの intent 名から書き込み先を作りません。events を返す main に監査先がなければエラーにし、記録に成功したように見せません。
 

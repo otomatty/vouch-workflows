@@ -89,11 +89,17 @@ test("Skill command allowlist rejects unregistered entries, other programs and p
   };
   const accepted = [
     'node "{{HARNESS_DIR}}/hooks/vouch-dod.mjs"',
+    'node "{{HARNESS_DIR}}/hooks/vouch-question.mjs" ask <Q-n>',
+    'node "{{HARNESS_DIR}}/hooks/vouch-question.mjs" default <Q-n>',
     "git status --short",
     'git push -u origin "<Intent のブランチ>"',
   ];
   const rejected = [
     'node "{{HARNESS_DIR}}/hooks/vouch-guard-writes.mjs"',
+    'node "{{HARNESS_DIR}}/hooks/vouch-statusline.mjs"',
+    'node "{{HARNESS_DIR}}/hooks/vouch-question.mjs" ask Q-1; rm -rf .',
+    'node "{{HARNESS_DIR}}/hooks/vouch-question.mjs" ask <$(id)>',
+    'node "{{HARNESS_DIR}}/hooks/vouch-report.mjs" > report.json',
     "git reset --hard",
     "git push origin main",
     "git push origin HEAD:main",

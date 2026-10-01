@@ -21,7 +21,7 @@
         "properties": {
           "id": {
             "type": "string",
-            "pattern": "^(?:DOCTOR|DOD)-[A-Z]+$"
+            "pattern": "^(?:DOCTOR|DOD|QUESTION|REPORT)-[A-Z]+$"
           },
           "ok": {
             "type": "boolean"
@@ -29,6 +29,109 @@
           "detail": {
             "type": "string",
             "minLength": 1
+          }
+        }
+      }
+    },
+    "report": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "intent",
+        "path",
+        "events",
+        "invalid",
+        "duplicates",
+        "types",
+        "unpaired"
+      ],
+      "properties": {
+        "intent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "events": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "invalid": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "duplicates": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "types": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["count", "synthetic", "measures"],
+            "properties": {
+              "count": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "synthetic": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "measures": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["n", "sum", "min", "max", "missing", "examples"],
+                  "properties": {
+                    "n": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "sum": {
+                      "type": "number"
+                    },
+                    "min": {
+                      "type": "number"
+                    },
+                    "max": {
+                      "type": "number"
+                    },
+                    "missing": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "examples": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "unpaired": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
           }
         }
       }

@@ -74,3 +74,5 @@ Linux / Node.js 22.20.0 は既存 Docker イメージでネットワークなし
 次の実装は Intent Skill と日英の intent.md / decisions.md テンプレートです。契約・先行テストから進め、承認が未実装の間に Skill の文言だけで承認済みへ進めない境界を定めます。引数なしの再開、ask / report / migrate、他のステージ Skill・エージェント、残り26種類のイベント記録と各検査フック、statusline、ミューテーション CI は未実装です。Windows の性能未達も残っています。
 
 後続の Intent 下書き Skill と日英 intent / decisions テンプレートを追加しました。現在の範囲は [Intent 下書き](intent.md) を参照してください。上の検証値は status 追加時点の記録です。
+
+引数なしの再開、ask、report、判断依頼の記録、SessionStart の再開要約と Claude の statusline を追加しました。現在地の観測は status と同じ根拠を実行時関数で読み、状態キャッシュは作りません。範囲は [再開・ask・report](resume.md) を参照してください。

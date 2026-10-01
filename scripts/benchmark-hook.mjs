@@ -13,6 +13,7 @@ import { isAbsolute, join, relative, resolve } from "node:path";
 import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
 import budgets from "../core/registry/budgets.json" with { type: "json" };
+import operations from "../core/registry/operations.json" with { type: "json" };
 
 // Developer-only alternating measurements. The contract test remains the budget gate.
 // --load keeps CPU-count - 1 background workers spawning no-op hooks, like a parallel suite.
@@ -203,6 +204,10 @@ try {
   for (let i = 0; i < budgets.timing.samples; i++)
     for (const mode of modes) {
       const { args, env, input } = execution(root, mode, i);
+      // A startup with a configured Intent prints its resume summary (docs/development/resume.md).
+      const summarizes =
+        args.includes(hook("vouch-record-session-start")) &&
+        Boolean(env.VOUCH_INTENT);
       const started = performance.now();
       const result = spawnSync(process.execPath, args, {
         cwd: root,
@@ -217,7 +222,10 @@ try {
         mode === "review"
           ? result.status === 2 && /VOUCH-REVIEW-RECORDED/.test(result.stderr)
           : result.status === 0 && !result.stderr;
-      if (result.error || !expected || result.stdout)
+      const output = summarizes
+        ? result.stdout.startsWith(`${operations.labels.ja.summary}\n`)
+        : !result.stdout;
+      if (result.error || !expected || !output)
         throw new Error(
           `Benchmark failed: ${result.error?.message ?? result.stderr}`,
         );

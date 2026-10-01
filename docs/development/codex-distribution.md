@@ -88,3 +88,5 @@ project の SessionStart 登録から、時刻 `2026-09-27T11:14:07.113Z`、sess
 元仕様・移行元資料・旧 Codex fixture・既存 Claude golden に差分はありません。新規 golden は Codex の session と harness、初回時刻保持を固定する目的で `UPDATE_GOLDEN=1` を明示して生成しました。検査対応表には実装済みの範囲を追加し、他イベント・実機異常系・全体配布などの pending は残しています。
 
 次は記録フックの性能変動を切り分け、起動・検証・I/O のどこで予算を超えるか確認します。その後、doctor の配布・設定検査を整備します。非対話 Codex、他の版・Windows シェル、残り26イベント、Skill・エージェント・テンプレート、TOML 変換、移行、ワークフロー全体のシナリオ、ミューテーションは未完了です。
+
+後続の変更で、SessionStart は Intent がある時の startup / resume に再開要約を stdout へ出し、Stop の登録を加えました。範囲は [再開・ask・report](resume.md) を参照してください。上の空 stdout の記述は当時の契約です。

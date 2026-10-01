@@ -4,6 +4,7 @@ import {
   createIntentAuditStore,
   findEvent,
   listEvents,
+  scanAudit,
 } from "../../../core/hooks/lib/audit.mjs";
 import { readJson } from "../../helpers/registry.mjs";
 import { memoryFiles } from "../../helpers/runtime.mjs";
@@ -243,4 +244,37 @@ test("audit lists every validated record in file order as detached copies", asyn
   t.assert.deepEqual(await audit.list(), []);
   files.data.set("audit", "");
   t.assert.deepEqual(await audit.list(), []);
+});
+
+test("the audit scan keeps every readable record and names damaged lines and repeated IDs", (t) => {
+  const record = /** @type {Record<string,unknown>} */ ({ ...event() });
+  delete record.synthetic;
+  const other = { ...record, id: "other" };
+  t.plan(5);
+  t.assert.deepEqual(scanAudit(null), {
+    events: [],
+    invalid: [],
+    duplicates: [],
+  });
+  t.assert.deepEqual(scanAudit(""), {
+    events: [],
+    invalid: [],
+    duplicates: [],
+  });
+  t.assert.deepEqual(
+    scanAudit(
+      `${JSON.stringify(record)}\nnot json\n{"id":"x"}\n\n${JSON.stringify(record)}\n${JSON.stringify(other)}\n`,
+    ),
+    { events: [record, other], invalid: [2, 3, 4], duplicates: [record.id] },
+  );
+  t.assert.deepEqual(scanAudit(JSON.stringify(record)), {
+    events: [],
+    invalid: [1],
+    duplicates: [],
+  });
+  t.assert.deepEqual(
+    scanAudit(`${JSON.stringify(record)}\r\n`).invalid,
+    [],
+    "like the store, JSON whitespace around a record is accepted",
+  );
 });

@@ -24,9 +24,10 @@ test("product hooks have a single run(main) entry and registered literal event t
   );
   for (const { name } of hooks) {
     const command = runtime.commands.includes(name);
+    const statusline = runtime.statusline.includes(name);
     t.assert.match(
       name,
-      command
+      command || statusline
         ? /^vouch-[a-z-]+\.mjs$/
         : /^vouch-[a-z]+-[a-z]+(?:-[a-z]+)*\.mjs$/,
       "STR-1; DIST-5 command",
@@ -44,7 +45,13 @@ test("product hooks have a single run(main) entry and registered literal event t
     );
     t.assert.deepEqual(
       effects.map((node) => node.getText(source)),
-      [command ? "runDoctor(main, import.meta.url);" : "run(main);"],
+      [
+        command
+          ? "runDoctor(main, import.meta.url);"
+          : statusline
+            ? "runStatusline(main, import.meta.url);"
+            : "run(main);",
+      ],
       "HOOK-2",
     );
     /** @type {string[]} */ const types = [];

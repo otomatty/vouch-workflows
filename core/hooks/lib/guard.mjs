@@ -198,7 +198,7 @@ export async function guardWrites(input, ctx, entry) {
         }
       const [entry] = args;
       const home = scope.installation;
-      if (program === "node" && args.length === 1 && home && cwd !== null) {
+      if (program === "node" && entry !== undefined && home && cwd !== null) {
         const at = await ctx.locate(/** @type {string} */ (entry), cwd);
         const spelled = at.inside && split(at.inside).map(normalizeSegment);
         if (

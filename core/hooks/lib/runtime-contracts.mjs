@@ -181,6 +181,75 @@ export {};
  */
 
 /**
+ * Resume, ask, questions, report and statusline (docs/development/resume.md). Observation only:
+ * these functions never decide the next step, approve, confirm, answer or apply a default on their own.
+ * @typedef {{events:AuditEvent[],invalid:number[],duplicates:string[]}} AuditScan Registered events in
+ * file order; `invalid`: 1-based lines that are not one registered event (a line without its final
+ * newline included); `duplicates`: IDs repeated after their first record, which alone is kept.
+ * @typedef {(text:string|null)=>AuditScan} ScanAudit Unlike the store, a damaged line never hides the rest.
+ * @typedef {{stage:import('./contracts.mjs').Stage,path:string,present:boolean,status:string|null,unreadable?:true}} ArtifactObservation
+ * `status`: the raw single frontmatter value, never interpreted; null when absent or unreadable.
+ * `unreadable`: present but not readable (a link, a non-regular file, invalid UTF-8).
+ * @typedef {{path:string,events:number,synthetic:number,invalid:number[],duplicates:string[],unreadable?:true}} AuditObservation
+ * Synthetic records are counted, never used as evidence. Invalid lines, repeated IDs or an unreadable
+ * log make every claim partial; an unreadable log is never read as an empty one.
+ * @typedef {{state:'unknown',reason:string}|{state:'observed',required:string[],missing:string[]}} CheckpointObservation
+ * Described targets; `missing` lacks a confirmation of the current content.
+ * @typedef {'none'|'evidence'|'declared'} ApprovalObservation `declared`: approved without matching evidence.
+ * @typedef {{question:string,event:string,default?:string}} OpenQuestion Asked, neither answered nor defaulted.
+ * @typedef {{question:string,event:string,choice:string,defaulted:string}} DefaultedQuestion A default the
+ * model applied while no person answered.
+ * @typedef {object} Position
+ * @property {string} intent
+ * @property {'ja'|'en'} language rules.md language, else the workflow default.
+ * @property {ArtifactObservation[]} artifacts In workflow stage order.
+ * @property {AuditObservation} audit
+ * @property {CheckpointObservation} checkpoints
+ * @property {ApprovalObservation} approval
+ * @property {OpenQuestion[]} unanswered
+ * @property {DefaultedQuestion[]} defaulted
+ * @property {string[]} uncertain IDs of question records whose pairing cannot be established.
+ * @typedef {{readText:(path:string)=>Promise<string|null>,newId:NewId}} PositionReader
+ * @typedef {(reader:PositionReader,intent:string)=>Promise<Position>} ReadPosition Unreadable files are
+ * observations, not errors.
+ * @typedef {(position:Position)=>string} FormatPosition Untrusted strings are quoted and bounded.
+ * @typedef {{options:string[],default?:string,sha256:string}} QuestionCard Option IDs in table order; no default
+ * means blocking. `sha256` digests the card without its answer section, so recording an answer keeps it.
+ * @typedef {(text:string|null,question:string)=>QuestionCard|{error:string}} ReadQuestionCard
+ * @typedef {{intent:string|null,args:string[],now:() => string}} QuestionPorts
+ * @typedef {(files:FileStore,environment:DoctorEnvironment,git:GitStatus,ports?:QuestionPorts)=>Promise<DoctorReport>} RunQuestion
+ * `ask <Q-n>` records question.asked from the decisions.md card and its digest, refusing a changed card;
+ * `default <Q-n>` records question.defaulted
+ * with the recorded default while no answer exists. Neither answers, confirms or approves.
+ * @typedef {(input:import('./contracts.mjs').HookInput,ctx:import('./contracts.mjs').ReadyHookContext)=>Promise<import('./contracts.mjs').HookResult|null>} PromptRecorder
+ * null: the prompt is not this recorder's input. A question has one answer record whose identity derives
+ * from the question, so a concurrent second answer conflicts in the store instead of appending.
+ * @typedef {(input:import('./contracts.mjs').HookInput,ctx:import('./contracts.mjs').ReadyHookContext)=>Promise<import('./contracts.mjs').HookResult>} RecordAsideAnswer
+ * Stop of the turn whose submission recorded aside.asked appends aside.answered; it never blocks.
+ * @typedef {{n:number,sum:number,min:number,max:number,missing:number,examples:string[]}} MeasureSummary
+ * Over nonsynthetic records only; `missing` counts records without the field.
+ * @typedef {{count:number,synthetic:number,measures:Record<string,MeasureSummary>}} TypeSummary
+ * @typedef {object} AuditReport
+ * @property {string} intent
+ * @property {string} path
+ * @property {number} events Readable records, synthetic included.
+ * @property {number[]} invalid
+ * @property {string[]} duplicates
+ * @property {Record<string,TypeSummary>} types
+ * @property {Record<string,string[]>} unpaired Start records of a pair without any recorded end, by type.
+ * @typedef {{intent:string|null}} ReportPorts
+ * @typedef {(files:FileStore,environment:DoctorEnvironment,git:GitStatus,ports?:ReportPorts)=>Promise<DoctorReport & {report?:AuditReport}>} RunReport
+ * Measured values only; nothing is estimated or filled in.
+ * @typedef {(files:FileStore,intent:string|null,harness:import('./contracts.mjs').Harness)=>Promise<string>} StatuslineMain
+ * @typedef {object} StatuslineOptions
+ * @property {DoctorEnvironment} [environment]
+ * @property {FileStore} [files]
+ * @property {string|null} [intent]
+ * @property {{write:(text:string)=>unknown}} [stdout]
+ * @property {(code:0)=>void} [finish]
+ */
+
+/**
  * FileStore awaits both synchronous native operations and asynchronous test ports.
  * The native CLI driver blocks only its own process; it does not cache metadata.
  * Every update retains validation, owned locking, fsync, close, and atomic rename.

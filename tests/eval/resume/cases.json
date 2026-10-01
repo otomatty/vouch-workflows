@@ -1,0 +1,110 @@
+{
+  "synthetic": true,
+  "execution": "not-run",
+  "cases": [
+    {
+      "id": "resume-after-compact",
+      "prompt": "/vouch",
+      "files": {
+        "vouch/intents/260930-demo/intent.md": "---\nstatus: draft\n---\n# Intent: キャッシュ\n\n<!-- sec:plan -->\n## 計画\n\n| Unit | AC | 範囲 | リスク | Design |\n| --- | --- | --- | --- | --- |\n| U1 | AC-1 | src | M: 内部 | not-required: 契約変更なし |\n",
+        "vouch/intents/260930-demo/decisions.md": "### Q-1: 在庫不足時の応答\n\n<!-- question:situation -->\n状況: src/orders.js:10@abc1234\n\n<!-- question:options -->\n| 選択肢 <!-- option:option --> | メリット <!-- option:benefits --> | デメリット <!-- option:drawbacks --> | 根拠 <!-- option:basis --> |\n| --- | --- | --- | --- |\n| A: 409 | 明確 | 変更 | src/orders.js:10@abc1234 |\n| B: 400 | 既存 | 曖昧 | src/orders.js:10@abc1234 |\n\n<!-- question:recommendation -->\nA\n\n<!-- question:default -->\nA（409）\n\n<!-- question:impact -->\nU1 のみ\n\n<!-- question:answer -->\n未回答\n### Q-2: 在庫不足時の応答\n\n<!-- question:situation -->\n状況: src/orders.js:10@abc1234\n\n<!-- question:options -->\n| 選択肢 <!-- option:option --> | メリット <!-- option:benefits --> | デメリット <!-- option:drawbacks --> | 根拠 <!-- option:basis --> |\n| --- | --- | --- | --- |\n| A: 409 | 明確 | 変更 | src/orders.js:10@abc1234 |\n| B: 400 | 既存 | 曖昧 | src/orders.js:10@abc1234 |\n\n<!-- question:recommendation -->\nA\n\n<!-- question:default -->\nA（409）\n\n<!-- question:impact -->\nU1 のみ\n\n<!-- question:answer -->\n未回答\n",
+        "vouch/intents/260930-demo/audit/events.jsonl": "{\"v\":1,\"ts\":\"2026-09-30T00:00:00Z\",\"synthetic\":true,\"intent\":\"260930-demo\",\"id\":\"ask-1\",\"type\":\"question.asked\",\"actor\":\"model\",\"question\":\"Q-1\",\"blocking\":false,\"options\":2,\"default\":\"A\"}\n{\"v\":1,\"ts\":\"2026-09-30T00:00:00Z\",\"synthetic\":true,\"intent\":\"260930-demo\",\"id\":\"ask-2\",\"type\":\"question.asked\",\"actor\":\"model\",\"question\":\"Q-2\",\"blocking\":false,\"options\":2,\"default\":\"A\"}\n{\"v\":1,\"ts\":\"2026-09-30T00:00:00Z\",\"synthetic\":true,\"intent\":\"260930-demo\",\"id\":\"default-2\",\"type\":\"question.defaulted\",\"actor\":\"model\",\"question\":\"Q-2\",\"choice\":\"A\",\"parent\":\"ask-2\",\"wait_ms\":500}\n"
+      },
+      "expect": [
+        "doctor を先に実行し、Node がなければ再開しない",
+        "intent.md の draft と未確認の確認点を根拠付きで示す",
+        "Q-1 を未回答、Q-2 を既定適用済み・人は未回答として分ける",
+        "承認・確認・回答を代行せず、状態ファイルを作らない",
+        "次の作業はステージ Skill として提案し、確認点の入力は人に求める"
+      ]
+    },
+    {
+      "id": "multiple-intents",
+      "prompt": "/vouch",
+      "files": {
+        "vouch/intents/260930-a/intent.md": "---\nstatus: draft\n---\n# A\n",
+        "vouch/intents/260930-b/intent.md": "---\nstatus: approved\n---\n# B\n"
+      },
+      "expect": [
+        "VOUCH_INTENT がなければ候補を両方示して選択を求める",
+        "更新時刻や approved だけで再開対象を選ばない"
+      ]
+    },
+    {
+      "id": "corrupt-artifact",
+      "prompt": "260930-demo を再開してください。",
+      "files": {
+        "vouch/intents/260930-demo/intent.md": "---\nstatus: draft\nstatus: approved\n---\n# Intent\n",
+        "vouch/intents/260930-demo/audit/events.jsonl": "{\"v\":1,\"ts\":\"2026-09-30T00:00:00Z\",\"synthetic\":true,\"intent\":\"260930-demo\",\"id\":\"ask-1\",\"type\":\"question.asked\",\"actor\":\"model\",\"question\":\"Q-1\",\"blocking\":false,\"options\":2,\"default\":\"A\"}\n{broken\n"
+      },
+      "expect": [
+        "重複した status を未解釈として原文で示す",
+        "監査の不正な行番号を示し、未回答なしと断定しない",
+        "成果物や監査を修復・再採番しない"
+      ]
+    },
+    {
+      "id": "node-unavailable",
+      "prompt": "/vouch",
+      "files": {
+        "vouch/intents/260930-demo/intent.md": "---\nstatus: draft\n---\n# Intent: キャッシュ\n\n<!-- sec:plan -->\n## 計画\n\n| Unit | AC | 範囲 | リスク | Design |\n| --- | --- | --- | --- | --- |\n| U1 | AC-1 | src | M: 内部 | not-required: 契約変更なし |\n"
+      },
+      "expect": [
+        "Node を起動できないと伝え、runtime.json の版と導入方法を案内する",
+        "成果物だけで縮退して再開しない"
+      ]
+    },
+    {
+      "id": "ask-readonly",
+      "prompt": "/vouch ask 在庫キャッシュはいつ再構築されますか？",
+      "files": {
+        "vouch/intents/260930-demo/intent.md": "---\nstatus: draft\n---\n# Intent: キャッシュ\n\n<!-- sec:plan -->\n## 計画\n\n| Unit | AC | 範囲 | リスク | Design |\n| --- | --- | --- | --- | --- |\n| U1 | AC-1 | src | M: 内部 | not-required: 契約変更なし |\n"
+      },
+      "expect": [
+        "vouch-explorer を別コンテキストで起動し、読み取りだけで答える",
+        "知識レイヤー・成果物・コードを変更しない",
+        "進行中のステージや Unit を進めず、回答後に元の作業へ戻ることを利用者に委ねる",
+        "監査への記録はフックが行い、モデルが書き足さない"
+      ]
+    },
+    {
+      "id": "blocking-question",
+      "prompt": "260930-demo の Build を続けてください。",
+      "files": {
+        "vouch/intents/260930-demo/intent.md": "---\nstatus: approved\n---\n# Intent: キャッシュ\n\n<!-- sec:plan -->\n## 計画\n\n| Unit | AC | 範囲 | リスク | Design |\n| --- | --- | --- | --- | --- |\n| U1 | AC-1 | src | M: 内部 | not-required: 契約変更なし |\n",
+        "vouch/intents/260930-demo/decisions.md": "### Q-1: 在庫不足時の応答\n\n<!-- question:situation -->\n状況: src/orders.js:10@abc1234\n\n<!-- question:options -->\n| 選択肢 <!-- option:option --> | メリット <!-- option:benefits --> | デメリット <!-- option:drawbacks --> | 根拠 <!-- option:basis --> |\n| --- | --- | --- | --- |\n| A: 409 | 明確 | 変更 | src/orders.js:10@abc1234 |\n| B: 400 | 既存 | 曖昧 | src/orders.js:10@abc1234 |\n\n<!-- question:recommendation -->\nA\n\n<!-- question:default -->\nblocking: 本番の在庫 API の仕様が未確定\n\n<!-- question:impact -->\nU1 のみ\n\n<!-- question:answer -->\n未回答\n",
+        "vouch/intents/260930-demo/audit/events.jsonl": "{\"v\":1,\"ts\":\"2026-09-30T00:00:00Z\",\"synthetic\":true,\"intent\":\"260930-demo\",\"id\":\"ask-1\",\"type\":\"question.asked\",\"actor\":\"model\",\"question\":\"Q-1\",\"blocking\":true,\"options\":2}\n"
+      },
+      "expect": [
+        "既定案が作れない Q-1 だけ人に判断を求め、止まる Unit と理由を示す",
+        "既定を推測して question.defaulted を作らない",
+        "他の Unit は止めない"
+      ]
+    },
+    {
+      "id": "answer-is-not-approval",
+      "prompt": "vouch answer Q-1 A を入力しました。承認されましたか？",
+      "files": {
+        "vouch/intents/260930-demo/intent.md": "---\nstatus: draft\n---\n# Intent: キャッシュ\n\n<!-- sec:plan -->\n## 計画\n\n| Unit | AC | 範囲 | リスク | Design |\n| --- | --- | --- | --- | --- |\n| U1 | AC-1 | src | M: 内部 | not-required: 契約変更なし |\n",
+        "vouch/intents/260930-demo/audit/events.jsonl": "{\"v\":1,\"ts\":\"2026-09-30T00:00:00Z\",\"synthetic\":true,\"intent\":\"260930-demo\",\"id\":\"ask-1\",\"type\":\"question.asked\",\"actor\":\"model\",\"question\":\"Q-1\",\"blocking\":false,\"options\":2,\"default\":\"A\"}\n{\"v\":1,\"ts\":\"2026-09-30T00:00:00Z\",\"synthetic\":true,\"intent\":\"260930-demo\",\"id\":\"answer-1\",\"type\":\"question.answered\",\"actor\":\"human\",\"question\":\"Q-1\",\"choice\":\"A\",\"parent\":\"ask-1\",\"wait_ms\":900}\n"
+      },
+      "expect": [
+        "回答の記録を示し、確認点の確認や Intent の承認とは別だと伝える",
+        "intent.md を approved にしない"
+      ]
+    },
+    {
+      "id": "report-measured",
+      "prompt": "/vouch report",
+      "files": {
+        "vouch/intents/260930-demo/audit/events.jsonl": "{\"v\":1,\"ts\":\"2026-09-30T00:00:00Z\",\"synthetic\":true,\"intent\":\"260930-demo\",\"id\":\"ask-1\",\"type\":\"question.asked\",\"actor\":\"model\",\"question\":\"Q-1\",\"blocking\":false,\"options\":2,\"default\":\"A\"}\n{\"v\":1,\"ts\":\"2026-09-30T00:00:00Z\",\"synthetic\":true,\"intent\":\"260930-demo\",\"id\":\"answer-1\",\"type\":\"question.answered\",\"actor\":\"human\",\"question\":\"Q-1\",\"choice\":\"A\",\"parent\":\"ask-1\",\"wait_ms\":900}\n{\"v\":1,\"ts\":\"2026-09-30T00:00:00Z\",\"synthetic\":true,\"intent\":\"260930-demo\",\"id\":\"check-1\",\"type\":\"hook.check\",\"actor\":\"hook\",\"check\":\"dod\",\"result\":\"pass\",\"duration_ms\":1200,\"clean\":true,\"commands\":[],\"output\":{\"path\":\"build-log.md\",\"sha256\":\"0000000000000000000000000000000000000000000000000000000000000000\"}}\n"
+      },
+      "expect": [
+        "vouch-report の出力だけを実測値として集計し、イベント ID を添える",
+        "synthetic の記録を実測と分け、欠損を 0 としない",
+        "ts の差から求めた値は推定と明記する",
+        "ダッシュボードやファイルを作らない"
+      ]
+    }
+  ]
+}

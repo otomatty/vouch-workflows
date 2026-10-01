@@ -128,7 +128,7 @@
     "question.asked": {
       "fields": {
         "required": ["intent", "question", "blocking", "options"],
-        "optional": ["default"]
+        "optional": ["default", "card"]
       },
       "measures": ["options"],
       "pairs_with": ["question.answered", "question.defaulted"]
@@ -160,7 +160,7 @@
     "aside.answered": {
       "fields": {
         "required": ["intent", "question", "parent", "duration_ms"],
-        "optional": []
+        "optional": ["answer"]
       },
       "measures": ["duration_ms"],
       "pairs_with": ["aside.asked"]
