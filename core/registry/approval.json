@@ -16,6 +16,7 @@
     "scope": "scope",
     "units": "plan"
   },
+  "design_units": "units",
   "build": ["build", "verify"],
   "writers": [
     "cp",

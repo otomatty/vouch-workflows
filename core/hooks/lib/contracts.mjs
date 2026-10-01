@@ -37,7 +37,8 @@
  * @typedef {{path:'intent.md',sha256:string}} IntentRevision
  * @typedef {{hook_event_name:'UserPromptSubmit',field:'prompt_id'|'turn_id',id:string,prompt_sha256:string}} Submission
  * @typedef {({harness:'claude',submission:Submission & {field:'prompt_id'}}|{harness:'codex',submission:Submission & {field:'turn_id'}}) & {session:string,revision:IntentRevision}} IntentApprovalEvidence
- * `content` digests the confirmed part only: an intent.md section or Unit row, or the normalized design.md.
+ * `content` digests the confirmed part only: an intent.md section or Unit row, or the normalized design.md,
+ * one of its sections, or it without the other Units' rows.
  * @typedef {{path:'intent.md'|'design.md',sha256:string}} CheckpointContent
  * @typedef {({harness:'claude',submission:Submission & {field:'prompt_id'}}|{harness:'codex',submission:Submission & {field:'turn_id'}}) & {session:string,content:CheckpointContent}} CheckpointEvidence
  */
@@ -48,7 +49,7 @@
 /** @typedef {AuditCommon & {type:'stage.completed',intent:string,parent:string,duration_ms:number} & ({stage:'build',loop_iterations:number,tests:number}|{stage:Exclude<Stage,'build'>,loop_iterations?:number,tests?:number})} StageCompleted */
 /** @typedef {AuditCommon & {type:'unit.started',intent:string,unit:string,risk:Risk}} UnitStarted */
 /** @typedef {AuditCommon & {type:'unit.completed',intent:string,unit:string,risk:Risk,parent:string,duration_ms:number,files_changed:number,lines_changed:number}} UnitCompleted */
-/** @typedef {AuditCommon & {type:'checkpoint.confirmed',intent:string,actor:'human'} & ({checkpoint:'acceptance'|'scope'|'units'|'design',section?:string}|{checkpoint:'unit',unit:string}|{checkpoint:'section',section:string}) & ({content?:never,submission?:never}|CheckpointEvidence)} CheckpointConfirmed */
+/** @typedef {AuditCommon & {type:'checkpoint.confirmed',intent:string,actor:'human'} & ({checkpoint:'acceptance'|'scope'|'units'|'design',section?:string}|{checkpoint:'design',unit:string}|{checkpoint:'unit',unit:string}|{checkpoint:'section',section:string}) & ({content?:never,submission?:never}|CheckpointEvidence)} CheckpointConfirmed */
 /** @typedef {AuditCommon & {type:'gate.opened',intent:string,source:'intent'|'pr'} & ({revision?:never}|{revision:IntentRevision,source:'intent',actor:'hook',harness:Harness,session:string})} GateOpened */
 /** @typedef {AuditCommon & {type:'gate.approved',intent:string,actor:'human',source:'intent'|'pr',parent:string,wait_ms:number}} GateApproved */
 /** @typedef {AuditCommon & {type:'gate.rejected',intent:string,actor:'human',source:'intent'|'pr',parent:string,wait_ms:number,reason:string}} GateRejected */

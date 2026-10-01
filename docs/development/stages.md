@@ -16,13 +16,13 @@
 
 | 場面 | 人の操作 | 記録・適用 | Skill がすること |
 | --- | --- | --- | --- |
-| 設計の採択（確認点） | `vouch confirm design` | UserPromptSubmit フックが design.md の内容に結び付けた checkpoint.confirmed を記録（既存） | design.md の下書きと採択の依頼を1回だけ示す。採択を代行せず、確認後に design.md を変えたら再確認が要ることを示す |
+| 設計の採択（確認点） | rules.md の checkpoints が topic なら `vouch confirm design`、unit なら `vouch confirm design unit <Unit ID>`、section なら `vouch confirm design section <節 ID>` | UserPromptSubmit フックが design.md の対象の内容に結び付けた checkpoint.confirmed を記録 | design.md の下書きと採択の依頼を1回だけ示す。採択を代行せず、確認後に design.md を変えたら再確認が要ることを示す |
 | Intent 承認 | `vouch review` → `vouch approve <ゲート ID>` | 確認点がそろった時だけフックが intent.md を approved にする（既存） | Build の Skill は approved と承認の証跡を確認してから始める。未承認なら実装せず入力の案内を1回だけ返す |
 | Build 中の先送りできない判断 | 構造化質問への回答 | 回答は decisions.md に人の言葉で残す。質問イベントの記録フックは未実装 | 未回答なら既定案で進め、Brief §7 に「Q-n 未回答・既定 X」を載せる。既定案を作れない時だけ止まる範囲を示して止まる |
 | PR 承認 | 人が Brief を読んで PR をマージ | Git（`gh pr merge` と main への push はガードが拒否、既存） | Brief を PR 本文として用意する。マージしない。L でも自動マージしない |
 | Learn | rules.md への追記案を採用するか | 人の採択の言葉を decisions.md に残す | 採択された案だけを rules.md の Corrections に追記する。採択前の案は Brief §9 に提案として残す |
 
-design.md の frontmatter は `status: draft` のままです。承認フックは intent.md だけを approved にし、design の採択は checkpoint.confirmed（内容の SHA-256）が証跡です。unit / section の粒度でも design は design.md 全体への1回の確認とする既存の契約（approval-boundary.md）を変えません。節 ID を追加しても確認の単位は変わりません。
+design.md の frontmatter は `status: draft` のままです。承認フックは intent.md だけを approved にし、design の採択は checkpoint.confirmed（内容の SHA-256）が証跡です。確認の単位は rules.md の checkpoints で決まります（[承認の境界](approval-boundary.md)）。topic は design.md 全体に1回、unit は Design が required の Unit ごと（共通の節とその Unit の行）、section は design_sections の節ごとです。§18 Q2 が選べるとした B・C の粒度を design.md にも適用するため、design_sections の節 ID と units 節の表の1列目（Unit ID）が確認の対象を決めます。
 
 ## 正典 stage-authoring.json
 
@@ -110,7 +110,7 @@ diff_kinds の図は diagrams.json の diff の classDef 3行（added 緑、chan
 
 | Skill | 入力 | 出力 | 完了条件 |
 | --- | --- | --- | --- |
-| vouch-design | 下書きの intent.md（Design が required）、decisions.md、知識レイヤー、コード | design.md の下書き | 差分図・契約・代替案・（H の）脅威観点と参照元を書き、`vouch confirm design` の案内を1回返した時。採択は人 |
+| vouch-design | 下書きの intent.md（Design が required）、decisions.md、知識レイヤー、コード | design.md の下書き | 差分図・契約・代替案・（H の）脅威観点と参照元を書き、rules.md の checkpoints に合う `vouch confirm design`（unit / section の対象を含む）の案内を1回返した時。採択は人 |
 | vouch-build | approved の intent.md と承認の証跡、採択済みの design.md、rules.md | Unit ごとの型付きコミット、build-log.md、demo.sh | すべての Unit の DoD が green で、AC の証拠がそろった時。または止まる範囲を示した時 |
 | vouch-verify | 成果物・diff・監査・build-log.md（builder の会話は渡さない） | review.md（Brief）、Learn の追記案 | reviewer が独立に再現・破壊検査を終え、指摘を往復の上限まで戻し、Brief を PR 本文として用意した時。マージは人 |
 
