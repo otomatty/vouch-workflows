@@ -33,7 +33,7 @@
 
 Vouch のステージごとに、所属する v2 ステージの印から観測を1つ求める。全て完了かスキップで完了が1つ以上なら completed、全てスキップなら skipped、全て未着手なら pending、それ以外は active、所属がなければ absent。verify に対応する v2 ステージはない。観測は移行レポート §2 に記し、成果物の status には使わない。intent.md / design.md は進捗にかかわらず `status: draft` で書く。v2 の `[x]`・`GATE_APPROVED` から Vouch の承認・確認点を作らない。
 
-チェックボックスが1つもない、未知のステージ名・印、`aidlc-state.md` の欠損は MIGRATE-STATE として `apply` を拒否する。
+チェックボックスが1つもない、未知のステージ名・印、厳密な形式に合わないチェックボックス状の行（`- [xx] …`、`* [x] …` など）、`aidlc-state.md` の欠損は MIGRATE-STATE として `apply` を拒否する。読めた行だけで進捗を作らない。
 
 ## 元ファイル → 行き先
 
@@ -46,7 +46,7 @@ Vouch のステージごとに、所属する v2 ステージの印から観測�
 `audit/*.md` のシャードを `---` の行で区切り、各ブロックを1件の記録にする。区切りの前のファイル見出しだけのブロックは記録しない。時刻はブロックの最初の `**Timestamp**:`、種別は `**Event**:`、その他の `**名前**: 値` をフィールドとして読む。全シャードを時刻・パス・順で並べてから変換する。
 
 - 全記録に `original_type`（v2 名、Event がなければ `UNTYPED`）、`raw`（ブロックの原文）、`source_path`（`元のパス#L行`）を付ける。`actor` は記録したフック（`hook`）とし、元の主体は raw に残す。ID は Intent・出所・原文から決め、再実行で同じ記録になる。
-- 時刻が欠損・不正なら同じシャードの直前（なければ直後）の時刻を使い `estimated: true` を付ける。シャードに有効な時刻が1つもなければ MIGRATE-AUDIT として `apply` を拒否する。
+- 時刻が欠損・不正なら同じシャードの直前（なければ直後）の時刻を使い `estimated: true` を付ける。シャードに有効な時刻が1つもない、または記録が1つもない（見出しだけ）時は MIGRATE-AUDIT として `apply` を拒否する。
 - 変換は `audit-migration.json` の候補のうち、必須値を復元できる3種に限る。STAGE_STARTED は Vouch ステージごとに最初の1件を `stage.started` に、STAGE_COMPLETED は観測が completed のステージで最後の1件を、変換済みの開始を親として `stage.completed`（所要時間は時刻差で `estimated: true`）にする。build は loop_iterations / tests を復元できないため変換しない。RULE_LEARNED は `learn.recorded`（rules_added 1）にする。
 - それ以外は `legacy.<NAME>` に原文を保存する。intent / unit の risk、session、Q-n と選択肢、gate のソース、review の harness、sensor の検査種別、codekb の更新の範囲など、必須の意味や値を復元できないためである。`GATE_APPROVED` から Intent 承認を推測しない。
 - `estimated` の記録は report で実測から除き、件数だけを示す。
@@ -61,15 +61,15 @@ codekb は §8 に repo ごとのファイル数と `reverse-engineering-timesta
 
 ## 移行レポートと承認
 
-`apply` は Intent のフォルダに `migration.md`（`rules.md` の language、なければ既定 ja）を書く。frontmatter は `status: draft`、`source`、`intent`、`files`。§1 結論、§2 進捗、§3 全件表、§4 行き先のないファイル、§5 監査の変換、§6 人の決定の候補、§7 規約、§8 codekb、§9 推測しなかったことを持つ。生成は決定的で、同じ移行元なら同じバイトになる。
+`apply` は Intent のフォルダに `migration.md`（`rules.md` の language、なければ既定 ja）を書く。frontmatter は `status: draft`、`source`、`intent`、`files`、`blocks`（監査ブロック数）。§1 結論、§2 進捗、§3 全件表、§4 行き先のないファイル、§5 監査の変換、§6 人の決定の候補、§7 規約、§8 codekb、§9 推測しなかったことを持つ。生成は決定的で、同じ移行元なら同じバイトになる。
 
-人は `vouch migrate approve <migration.md の sha256>` を入力する。UserPromptSubmit のフックは、設定した Intent（`VOUCH_INTENT`）の migration.md が `status: draft` で digest が一致し、プロンプトの識別子がある時だけ `migration.completed`（actor human、files_migrated、revision、submission）を記録し、モデルへは送らない。digest が違う・レポートがない・形式が違う時は理由を返して記録しない。移行の承認は Intent の承認ではない。
+人は `vouch migrate approve <migration.md の sha256>` を入力する。UserPromptSubmit のフックは、設定した Intent（`VOUCH_INTENT`）の migration.md が `status: draft` でその Intent を名指し、digest が一致し、プロンプトの識別子があり、apply の結果が残っている時だけ `migration.completed`（actor human、files_migrated、revision、submission）を記録し、モデルへは送らない。apply の結果とは、§3 の全件表の行数が `files` と一致して各行の archive のコピーが通常ファイルとして存在すること、監査に `source` 由来の移行記録が `blocks` と同数あることである（VOUCH-MIGRATE-UNAPPLIED）。手で書いた移行レポートはこれを満たさない。digest が違う・レポートがない・形式が違う時も理由を返して記録しない。移行の承認は Intent の承認ではない。
 
 ## 再実行・部分失敗・衝突
 
 - 書き込みは「なければ作る、同じなら何もしない」に限る。`apply` は全ての書き込み先を先に検査し、1つでも異なる内容があれば MIGRATE-TARGET で何も書かない。
 - archive → 監査 → 移行レポートの順に書く。途中で失敗しても、再実行は書けた分を同一として飛ばし、残りを書く。監査の追記は1回の原子的な置換である。
-- Intent のフォルダに移行レポートがないのに成果物がある、または監査にこの移行が作らない記録がある場合は、別の Intent と衝突しているとして拒否する。移行レポートが一致していれば、承認やその後の作業の記録があっても再実行できる。
+- Intent のフォルダに移行レポートがないのに成果物（この record が行き先に含まないものも含め、project-documents.json の全成果物と decisions.md）がある、または監査にこの移行が作らない記録がある場合は、別の Intent と衝突しているとして拒否する。移行レポートが一致していれば、承認やその後の作業の記録があっても再実行できる。
 - 結果の JSON は全ファイル数、archive 済み・同一、監査ブロック・変換・legacy・推定の数を返す。数の合計は元ファイル数・ブロック数と一致する。
 
 ## 検査の対応
@@ -91,5 +91,9 @@ Linux / Node.js 22.22.0 で `npm run check` が69.3秒（予算90秒）で成功
 - archive は書き込みガードの保護対象ではない。ツールからの `vouch/archive/aidlc-v2/` への書き込みを遮る検査は未実装で、再実行の衝突検出と移行レポートの digest で変更を検出する。
 - space の `knowledge/`（チーム知識）とフレームワーク側の memory は移行元に含めない。space の `memory/` にある org.md / phases は affirm されていない既定として落とす。
 - `_` を含む space・record 名は書き込みガードが登録コマンドの引数として通さないため、人が端末で実行する。
-- 承認のフックは移行レポートの digest と形式だけを検査し、archive や成果物の完全性は apply / plan の結果に依存する。
+- 承認のフックは archive のコピーの存在と移行記録の件数を検査するが、コピーのバイトや元ファイルとの一致は再検査しない（毎回の承認で全ファイルを読まないため）。archive は書き込みガードの対象外なので、意図的に作ったコピーは区別できない。バイトの一致は apply の MIGRATE-VERIFY と再実行の衝突検出が担う。
 - 監査の変換は3種に限る。sensor の結果、codekb の更新、review の要求なども legacy として原文で残り、Vouch の計測には数えない。
+
+### PR #34 のレビュー修正
+
+2026-10-01、レビューの指摘4件を再現するテストを追加してから修正した。承認は apply の結果（archive のコピーと移行記録の件数）を要求し、手で書いた移行レポートでは記録しない。所有権の検査は record が行き先に含まない成果物も対象にする。形式の合わないチェックボックス状の行と記録のない監査シャードは問題として拒否する。移行レポートの codekb の節は、行き先の規則と同じ正規表現で repo を判定する。移行レポートの frontmatter に `blocks` を加えたため、この PR で追加した golden を更新した。

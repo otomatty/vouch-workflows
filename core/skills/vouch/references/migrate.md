@@ -35,7 +35,7 @@ apply は全ファイルを `vouch/archive/aidlc-v2/` へバイト単位で複�
 
 ## 承認
 
-書き終えたら plan を再実行し、artifacts の有無と status、brief.sha256 を確かめる。人には、移行レポートと書いた成果物を読み、`vouch migrate approve <brief.sha256>` を入力するよう伝える。フックが migration.completed を記録した時だけ移行は完了である。これは Intent の承認ではない。承認や入力を代行しない。[R-PROJECT-1]
+書き終えたら plan を再実行し、artifacts の有無と status、brief.sha256 を確かめる。人には、移行レポートと書いた成果物を読み、`vouch migrate approve <brief.sha256>` を入力するよう伝える。フックは archive のコピーと移行記録の件数を確かめてから migration.completed を記録し、その時だけ移行は完了である。apply を実行していなければ VOUCH-MIGRATE-UNAPPLIED で拒否される。これは Intent の承認ではない。承認や入力を代行しない。[R-PROJECT-1]
 
 ## 返す内容
 

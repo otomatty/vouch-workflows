@@ -10,6 +10,11 @@ const rules = {
   record: /** @type {Rule[]} */ (migration.record),
   space: /** @type {Rule[]} */ (migration.space),
 };
+// A codekb repo exactly as the space routing rule names it, so the report never lists one it archives only.
+const codekbRepo = new RegExp(
+  rules.space.find((rule) => rule.to.some((to) => to.includes("$1")))?.match ??
+    "(?!)",
+);
 
 /**
  * Every matching rule adds its destinations until a final one; `contains` tests the lines of the text,
@@ -64,7 +69,7 @@ export function readCodekb(entries) {
   /** @type {Map<string,import('./migration-contracts.mjs').CodekbObservation>} */
   const repos = new Map();
   for (const [origin, text] of entries) {
-    const repo = /^codekb\/([^/]+)\//.exec(origin)?.[1];
+    const repo = codekbRepo.exec(origin)?.[1];
     if (!repo) continue;
     const entry = repos.get(repo) ?? {
       repo,

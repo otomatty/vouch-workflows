@@ -86,19 +86,15 @@ export async function runMigrate(
   const shards = inRecord.filter((file) =>
     new RegExp(migration.audit.shard).test(file.origin),
   );
-  const audit = convertAudit(
-    shards.flatMap((file) =>
-      file.text === null ? [] : readShard(file.path, file.text),
-    ),
-    intent,
-    progress,
-  );
-  const auditProblems = [
-    ...shards
-      .filter((file) => file.text === null)
-      .map((file) => `${file.path}: invalid UTF-8`),
-    ...audit.problems,
-  ];
+  /** @type {string[]} */ const auditProblems = [];
+  const blocks = shards.flatMap((file) => {
+    const read = file.text === null ? null : readShard(file.path, file.text);
+    if (read === null) auditProblems.push(`${file.path}: invalid UTF-8`);
+    else if (read.length === 0) auditProblems.push(`${file.path}: no records`);
+    return read ?? [];
+  });
+  const audit = convertAudit(blocks, intent, progress);
+  auditProblems.push(...audit.problems);
   const stamp = state.fields[migration.affirmation.state];
   const affirmed = audit.events.find(
     (event) => event.original_type === migration.affirmation.event,
@@ -158,11 +154,15 @@ export async function runMigrate(
   const brief = Buffer.from(renderBrief(payload), "utf8");
 
   // Every target is absent or identical; anything else refuses the whole apply before a write.
+  // Ownership looks at every Intent document, not only the ones this record names.
   const conflicts = await findConflicts(files, {
     home,
     migrated,
     events: audit.events,
-    artifacts,
+    artifacts: await observeArtifacts(files, home, [
+      ...Object.values(documents.artifacts),
+      documents.decisions,
+    ]),
     current,
     brief,
   });

@@ -31,7 +31,12 @@ export function readState(text) {
       return;
     }
     const row = /^- \[(.)\] ([a-z][a-z0-9-]*)(?:\s|$)/.exec(line);
-    if (!row) return;
+    // Anything shaped like a checkbox that the strict form rejects is a problem, never skipped.
+    if (!row) {
+      if (/^\s*[-*+]\s*\[/.test(line))
+        problems.push(`line ${index + 1}: unreadable checkbox`);
+      return;
+    }
     const [, mark = "", slug = ""] = row;
     const state = Object.hasOwn(marks, mark) ? marks[mark] : undefined;
     if (!state) problems.push(`line ${index + 1}: unknown checkbox [${mark}]`);

@@ -3,6 +3,7 @@ status: draft
 source: aidlc/spaces/default/intents/250615-widget
 intent: 250615-widget
 files: 26
+blocks: 13
 ---
 
 # Migration report: 250615-widget

@@ -203,6 +203,7 @@ export function renderBrief(payload) {
     `source: ${payload.source}`,
     `intent: ${payload.intent}`,
     `files: ${payload.files.length}`,
+    `blocks: ${payload.audit.blocks}`,
     "---",
     "",
     `# ${labels.title}: ${payload.intent}`,

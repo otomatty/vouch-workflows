@@ -7,19 +7,47 @@ import { validator } from "../../helpers/registry.mjs";
 import { memoryFiles } from "../../helpers/runtime.mjs";
 
 const validate = validator("audit-event");
+const source = "aidlc/spaces/default/intents/250615-widget";
 const brief = `---
 status: draft
-source: aidlc/spaces/default/intents/250615-widget
+source: ${source}
 intent: ${intent}
-files: 26
+files: 1
+blocks: 1
 ---
 
 # 移行レポート: ${intent}
+
+<!-- sec:files -->
+## 3. 元ファイル → 行き先（全件）
+
+| 元ファイル | バイト | 行き先 |
+| --- | --- | --- |
+| \`${source}/aidlc-state.md\` | 5 | \`migration.md#progress\` |
+
+<!-- sec:unmapped -->
 `;
 const digest = sha256Hex(Buffer.from(brief));
+const migrated = {
+  id: "evt_migrated",
+  v: 1,
+  type: "legacy.SESSION_STARTED",
+  ts: "2025-06-15T10:30:00Z",
+  actor: "hook",
+  intent,
+  original_type: "SESSION_STARTED",
+  raw: "## Session Start",
+  source_path: `${source}/audit/host.md#L3`,
+};
+/** The files an apply leaves: the report, the archive copy and the converted audit. */
+const applied = {
+  [`${home}/migration.md`]: brief,
+  [`vouch/archive/aidlc-v2/${source}/aidlc-state.md`]: "state",
+  [`${home}/audit/events.jsonl`]: `${JSON.stringify(migrated)}\n`,
+};
 
 /** @param {Record<string,string>} [initial] */
-function prompt(initial = { [`${home}/migration.md`]: brief }) {
+function prompt(initial = applied) {
   const files = memoryFiles(initial);
   /** @param {string} text @param {{harness?:'claude'|'codex',submission?:string|null,scope?:string|null,instant?:string}} [shape] */
   const submit = (text, shape = {}) => {
@@ -72,7 +100,7 @@ test("a person's approval of the current report records migration.completed and 
     harness: "claude",
     intent,
     session: "s-1",
-    files_migrated: 26,
+    files_migrated: 1,
     revision: { path: "migration.md", sha256: digest },
     submission: {
       hook_event_name: "UserPromptSubmit",
@@ -107,7 +135,56 @@ test("other prompts and an unconfigured Intent are not this recorder's input", a
   );
 });
 
-test("malformed, unidentified, missing, approved and stale reports are refused without a record", async (t) => {
+/** Reports that no apply produced: no archive copy, no or other audit records, a foreign Intent
+ * or source, or a table that does not match its count. */
+function unappliedCases() {
+  /** @param {string} text @param {Record<string,string>} [rest] */
+  const with_ = (text, rest = {}) => [
+    prompt({ ...applied, [`${home}/migration.md`]: text, ...rest }),
+    `vouch migrate approve ${sha256Hex(Buffer.from(text))}`,
+  ];
+  const {
+    [`vouch/archive/aidlc-v2/${source}/aidlc-state.md`]: _,
+    ...unarchived
+  } = applied;
+  const { [`${home}/audit/events.jsonl`]: __, ...unaudited } = applied;
+  return [
+    [
+      prompt(unarchived),
+      `vouch migrate approve ${digest}`,
+      {},
+      "VOUCH-MIGRATE-UNAPPLIED",
+    ],
+    [
+      prompt(unaudited),
+      `vouch migrate approve ${digest}`,
+      {},
+      "VOUCH-MIGRATE-UNAPPLIED",
+    ],
+    [
+      ...with_(brief.replace("files: 1", "files: 2")),
+      {},
+      "VOUCH-MIGRATE-UNAPPLIED",
+    ],
+    [
+      ...with_(brief.replace("blocks: 1", "blocks: 2")),
+      {},
+      "VOUCH-MIGRATE-UNAPPLIED",
+    ],
+    [
+      ...with_(brief.replaceAll(source, "notes/elsewhere")),
+      {},
+      "VOUCH-MIGRATE-UNAPPLIED",
+    ],
+    [
+      ...with_(brief.replace(`intent: ${intent}`, "intent: 250615-other")),
+      {},
+      "VOUCH-MIGRATE-BRIEF",
+    ],
+  ];
+}
+
+test("malformed, unidentified, missing, approved, stale and unapplied reports are refused without a record", async (t) => {
   const approved = brief.replace("status: draft", "status: approved");
   const cases = [
     [prompt(), `vouch migrate approve`, {}, "VOUCH-MIGRATE-COMMAND"],
@@ -126,14 +203,17 @@ test("malformed, unidentified, missing, approved and stale reports are refused w
     ],
     [prompt({}), `vouch migrate approve ${digest}`, {}, "VOUCH-MIGRATE-BRIEF"],
     [
-      prompt({ [`${home}/migration.md`]: approved }),
+      prompt({ ...applied, [`${home}/migration.md`]: approved }),
       `vouch migrate approve ${sha256Hex(Buffer.from(approved))}`,
       {},
       "VOUCH-MIGRATE-BRIEF",
     ],
     [
-      prompt({ [`${home}/migration.md`]: brief.replace("files: 26\n", "") }),
-      `vouch migrate approve ${sha256Hex(Buffer.from(brief.replace("files: 26\n", "")))}`,
+      prompt({
+        ...applied,
+        [`${home}/migration.md`]: brief.replace("files: 1\n", ""),
+      }),
+      `vouch migrate approve ${sha256Hex(Buffer.from(brief.replace("files: 1\n", "")))}`,
       {},
       "VOUCH-MIGRATE-BRIEF",
     ],
@@ -143,6 +223,7 @@ test("malformed, unidentified, missing, approved and stale reports are refused w
       {},
       "VOUCH-MIGRATE-CHANGED",
     ],
+    ...unappliedCases(),
   ];
   t.plan(cases.length * 2);
   for (const [project, text, shape, code] of cases) {

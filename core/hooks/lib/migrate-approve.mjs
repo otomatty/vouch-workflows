@@ -9,22 +9,67 @@ import { sha256Hex } from "./clock.mjs";
 /** @param {string} reason @returns {import('./contracts.mjs').HookResult} */
 const deny = (reason) => ({ decision: "deny", reason });
 
-/** @param {string} text @returns {{status:string,files:number}|null} */
+/** @typedef {{status:string,source:string,intent:string,files:number,blocks:number}} Front */
+
+/** The report's single frontmatter values; null when any is missing, repeated or malformed.
+ * @param {string} text @returns {Front|null} */
 function frontmatter(text) {
   const front = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(text)?.[1];
   /** @param {string} key */
-  const values = (key) =>
-    [
+  const value = (key) => {
+    const found = [
       ...(front ?? "").matchAll(new RegExp(`^${key}:[ \\t]*(.*?)\\r?$`, "gm")),
     ].map((match) => match[1] ?? "");
-  const [status, files] = [values("status"), values("files")];
-  if (
-    status.length !== 1 ||
-    files.length !== 1 ||
-    !/^\d{1,9}$/.test(files[0] ?? "")
-  )
-    return null;
-  return { status: status[0] ?? "", files: Number(files[0]) };
+    return found.length === 1 ? (found[0] ?? null) : null;
+  };
+  const [status, source, intent, files, blocks] = [
+    "status",
+    "source",
+    "intent",
+    "files",
+    "blocks",
+  ].map(value);
+  if (!status || !source || !intent || !files || !blocks) return null;
+  if (!/^\d{1,9}$/.test(files) || !/^\d{1,9}$/.test(blocks)) return null;
+  return {
+    status,
+    source,
+    intent,
+    files: Number(files),
+    blocks: Number(blocks),
+  };
+}
+
+/**
+ * Why the report does not describe an applied migration; null when its every source file has an
+ * archive copy and the audit holds exactly its converted blocks. A hand-written report fails here.
+ * @param {import('./contracts.mjs').ReadyHookContext} ctx @param {string} text @param {Front} front
+ * @param {import('./contracts.mjs').AuditEvent[]} events
+ */
+async function unapplied(ctx, text, front, events) {
+  if (!new RegExp(migration.source.record).test(front.source))
+    return `source ${front.source} is not a v2 record`;
+  const table =
+    text.split("<!-- sec:files -->")[1]?.split("<!-- sec:")[0] ?? "";
+  const paths = [
+    ...table.matchAll(/^\| `(aidlc\/spaces\/[^`|\\]+)` \| \d+ \|/gm),
+  ].map((match) => match[1] ?? "");
+  if (paths.length === 0 || paths.length !== front.files)
+    return `the file table lists ${paths.length} of ${front.files} files`;
+  for (const path of paths) {
+    const copy = await ctx.locate(`${migration.archive}/${path}`);
+    if (copy.kind !== "file" || copy.links !== 1)
+      return `${migration.archive}/${path} is not archived`;
+  }
+  const blocks = events.filter(
+    (event) =>
+      !event.synthetic &&
+      event.original_type !== undefined &&
+      event.source_path?.startsWith(`${front.source}/`),
+  ).length;
+  return blocks === front.blocks
+    ? null
+    : `the audit holds ${blocks} of ${front.blocks} migrated blocks`;
 }
 
 /** @type {import('./runtime-contracts.mjs').PromptRecorder} */
@@ -55,9 +100,14 @@ export async function approveMigration(input, ctx) {
   const path = `${intentHome(intent)}/${migration.brief}`;
   const text = await ctx.readText(path);
   const front = text === null ? null : frontmatter(text);
-  if (text === null || front?.status !== "draft")
+  if (
+    text === null ||
+    !front ||
+    front.status !== "draft" ||
+    front.intent !== intent
+  )
     return deny(
-      `VOUCH-MIGRATE-BRIEF: ${path} must exist with status: draft and one files count`,
+      `VOUCH-MIGRATE-BRIEF: ${path} must exist with status: draft, this Intent and one source, files and blocks value`,
     );
   const current = sha256Hex(Buffer.from(text, "utf8"));
   if (current !== digest)
@@ -69,7 +119,13 @@ export async function approveMigration(input, ctx) {
     intent,
     JSON.stringify(["migration.completed", intent, digest]),
   );
-  const previous = (await listEvents(ctx.audit)).find((item) => item.id === id);
+  const events = await listEvents(ctx.audit);
+  const missing = await unapplied(ctx, text, front, events);
+  if (missing)
+    return deny(
+      `VOUCH-MIGRATE-UNAPPLIED: ${missing}; run apply for this record before approving`,
+    );
+  const previous = events.find((item) => item.id === id);
   return {
     decision: "deny",
     reason: `VOUCH-MIGRATE-RECORDED: ${id}; ${migration.brief} ${digest}; not an Intent approval`,

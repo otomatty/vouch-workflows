@@ -165,7 +165,7 @@ test("expected artifacts are the Intent documents the destinations name, plus th
   t.assert.deepEqual(expectedArtifacts([]), ["intent.md", "decisions.md"]);
 });
 
-test("codekb observations read the scan date and commit without trusting a short commit", (t) => {
+test("codekb observations read the scan date and commit without trusting a short commit, for routed repos only", (t) => {
   const stamp = (/** @type {string} */ commit) =>
     `# Reverse Engineering Timestamp\n\n## Run Record\n\n- Date: 2026-07-27\n- Commit: ${commit}\n`;
   t.plan(3);
@@ -177,6 +177,7 @@ test("codekb observations read the scan date and commit without trusting a short
         stamp("fixture (no repository)"),
       ],
       ["codekb/api/a.md", null],
+      ["codekb/UPPER/x.md", null],
       ["memory/team.md", null],
     ]),
     [

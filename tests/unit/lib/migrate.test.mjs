@@ -211,7 +211,7 @@ test("apply archives byte for byte, converts the audit, writes the Brief and lea
   );
   t.assert.match(
     brief,
-    /^---\nstatus: draft\nsource: aidlc\/spaces\/default\/intents\/250615-widget\nintent: 250615-widget\nfiles: 26\n---\n/,
+    /^---\nstatus: draft\nsource: aidlc\/spaces\/default\/intents\/250615-widget\nintent: 250615-widget\nfiles: 26\nblocks: 13\n---\n/,
   );
   t.assert.equal(check(report, "MIGRATE-VERIFY")?.ok, true);
 });

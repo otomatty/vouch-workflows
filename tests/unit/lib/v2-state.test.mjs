@@ -201,3 +201,29 @@ test("unreadable checkboxes are problems, never guessed progress", (t) => {
     "pending",
   );
 });
+
+test("checkbox-shaped lines the strict form rejects are problems, so a valid row cannot hide them", (t) => {
+  const state = readState(
+    [
+      "## Stage Progress",
+      "- [x] intent-capture — EXECUTE",
+      "- [xx] user-stories — EXECUTE",
+      "* [x] domain-design — EXECUTE",
+      "-[x] units-generation",
+      "- [x] Requirements-Analysis — EXECUTE",
+      "- **Project**: not a checkbox",
+      "",
+    ].join("\n"),
+  );
+  t.plan(2);
+  t.assert.deepEqual(state.problems, [
+    "line 3: unreadable checkbox",
+    "line 4: unreadable checkbox",
+    "line 5: unreadable checkbox",
+    "line 6: unreadable checkbox",
+  ]);
+  t.assert.deepEqual(
+    state.rows.map((row) => row.slug),
+    ["intent-capture"],
+  );
+});
