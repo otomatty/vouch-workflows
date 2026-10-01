@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "ask": {
+    "prefixes": ["/vouch ask ", "$vouch ask "],
+    "questionChars": 2000,
+    "answerChars": 4000
+  },
+  "answer": {
+    "prefix": "vouch answer ",
+    "pattern": "^(Q-[1-9]\\d{0,5}) ([A-Z])(?![\\s\\S])"
+  },
+  "question": {
+    "operations": ["ask", "default"],
+    "pattern": "^Q-[1-9]\\d{0,5}$"
+  },
+  "resume": {
+    "sources": {
+      "claude": ["startup", "resume", "clear", "compact"],
+      "codex": ["startup", "resume"]
+    },
+    "items": 8
+  },
+  "statusline": {
+    "chars": 160
+  },
+  "report": {
+    "common_measures": ["tokens.in", "tokens.out"],
+    "examples": 3
+  },
+  "labels": {
+    "ja": {
+      "summary": "Vouch 再開要約（観測のみ。次の作業はモデルが判断する。承認・確認・回答は人の明示入力をフックが記録した時だけ成立する）",
+      "intent": "Intent",
+      "artifacts": "成果物",
+      "absent": "なし",
+      "present": "あり（frontmatter status なし）",
+      "evidence": "承認の証跡あり",
+      "no_evidence": "approved の宣言のみ・承認の証跡なし",
+      "checkpoints": "確認点",
+      "unknown": "不明",
+      "missing": "未確認",
+      "unanswered": "未回答の判断依頼",
+      "defaulted": "既定適用（人は未回答）",
+      "uncertain": "対応が不確実",
+      "none": "なし",
+      "audit": "監査",
+      "partial": "一部のみ読めた。未回答なしと断定しない",
+      "unreadable": "読めない",
+      "more": "ほか",
+      "next": "再開は /vouch（Codex は $vouch）で根拠を確認してから進める",
+      "unset": "Intent 未指定（VOUCH_INTENT）",
+      "unavailable": "表示できません",
+      "line_checkpoints": "確認",
+      "line_unanswered": "未回答",
+      "line_defaulted": "既定",
+      "line_no_evidence": "証跡なし",
+      "line_partial": "監査一部"
+    },
+    "en": {
+      "summary": "Vouch resume summary (observation only. The model decides the next step. Approval, confirmation and answers exist only when a hook recorded the person's explicit input)",
+      "intent": "Intent",
+      "artifacts": "Artifacts",
+      "absent": "absent",
+      "present": "present (no frontmatter status)",
+      "evidence": "approval evidence recorded",
+      "no_evidence": "declared approved without approval evidence",
+      "checkpoints": "Checkpoints",
+      "unknown": "unknown",
+      "missing": "unconfirmed",
+      "unanswered": "Unanswered questions",
+      "defaulted": "Default applied (not answered by a person)",
+      "uncertain": "Uncertain pairing",
+      "none": "none",
+      "audit": "Audit",
+      "partial": "partly readable; do not conclude that nothing is unanswered",
+      "unreadable": "unreadable",
+      "more": "more",
+      "next": "Resume with /vouch (Codex: $vouch) and check the evidence before continuing",
+      "unset": "Intent not set (VOUCH_INTENT)",
+      "unavailable": "unavailable",
+      "line_checkpoints": "checks",
+      "line_unanswered": "open",
+      "line_defaulted": "defaulted",
+      "line_no_evidence": "no evidence",
+      "line_partial": "audit partial"
+    }
+  }
+}

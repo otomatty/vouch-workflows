@@ -160,7 +160,7 @@
     "aside.answered": {
       "fields": {
         "required": ["intent", "question", "parent", "duration_ms"],
-        "optional": []
+        "optional": ["answer"]
       },
       "measures": ["duration_ms"],
       "pairs_with": ["aside.asked"]

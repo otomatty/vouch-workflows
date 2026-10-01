@@ -7,6 +7,7 @@
     "vouch-record-session-start.mjs"
   ],
   "commands": ["vouch-doctor.mjs", "vouch-dod.mjs"],
+  "statusline": [],
   "files": [
     "hooks/lib/approval.mjs",
     "hooks/lib/areas.mjs",
@@ -66,6 +67,8 @@
     "registry/intent-review.json",
     "registry/intent-review.schema.json",
     "registry/knowledge-index.schema.json",
+    "registry/operations.json",
+    "registry/operations.schema.json",
     "registry/project-documents.json",
     "registry/project-documents.schema.json",
     "registry/quality-layers.json",

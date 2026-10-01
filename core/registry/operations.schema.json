@@ -1,0 +1,282 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vouch.dev/schemas/operations.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "ask",
+    "answer",
+    "question",
+    "resume",
+    "statusline",
+    "report",
+    "labels"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "ask": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["prefixes", "questionChars", "answerChars"],
+      "properties": {
+        "prefixes": {
+          "const": ["/vouch ask ", "$vouch ask "]
+        },
+        "questionChars": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8000
+        },
+        "answerChars": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8000
+        }
+      }
+    },
+    "answer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["prefix", "pattern"],
+      "properties": {
+        "prefix": {
+          "const": "vouch answer "
+        },
+        "pattern": {
+          "const": "^(Q-[1-9]\\d{0,5}) ([A-Z])(?![\\s\\S])"
+        }
+      }
+    },
+    "question": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operations", "pattern"],
+      "properties": {
+        "operations": {
+          "const": ["ask", "default"]
+        },
+        "pattern": {
+          "const": "^Q-[1-9]\\d{0,5}$"
+        }
+      }
+    },
+    "resume": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sources", "items"],
+      "properties": {
+        "sources": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["claude", "codex"],
+          "properties": {
+            "claude": {
+              "type": "array",
+              "items": {
+                "enum": ["startup", "resume", "clear", "compact"]
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            },
+            "codex": {
+              "type": "array",
+              "items": {
+                "enum": ["startup", "resume", "clear"]
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            }
+          }
+        },
+        "items": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        }
+      }
+    },
+    "statusline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["chars"],
+      "properties": {
+        "chars": {
+          "type": "integer",
+          "minimum": 40,
+          "maximum": 400
+        }
+      }
+    },
+    "report": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["common_measures", "examples"],
+      "properties": {
+        "common_measures": {
+          "const": ["tokens.in", "tokens.out"]
+        },
+        "examples": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 20
+        }
+      }
+    },
+    "labels": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ja", "en"],
+      "properties": {
+        "ja": {
+          "$ref": "#/$defs/labels"
+        },
+        "en": {
+          "$ref": "#/$defs/labels"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "labels": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "summary",
+        "intent",
+        "artifacts",
+        "absent",
+        "present",
+        "evidence",
+        "no_evidence",
+        "checkpoints",
+        "unknown",
+        "missing",
+        "unanswered",
+        "defaulted",
+        "uncertain",
+        "none",
+        "audit",
+        "partial",
+        "unreadable",
+        "more",
+        "next",
+        "unset",
+        "unavailable",
+        "line_checkpoints",
+        "line_unanswered",
+        "line_defaulted",
+        "line_no_evidence",
+        "line_partial"
+      ],
+      "properties": {
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "intent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "artifacts": {
+          "type": "string",
+          "minLength": 1
+        },
+        "absent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "present": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence": {
+          "type": "string",
+          "minLength": 1
+        },
+        "no_evidence": {
+          "type": "string",
+          "minLength": 1
+        },
+        "checkpoints": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unknown": {
+          "type": "string",
+          "minLength": 1
+        },
+        "missing": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unanswered": {
+          "type": "string",
+          "minLength": 1
+        },
+        "defaulted": {
+          "type": "string",
+          "minLength": 1
+        },
+        "uncertain": {
+          "type": "string",
+          "minLength": 1
+        },
+        "none": {
+          "type": "string",
+          "minLength": 1
+        },
+        "audit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "partial": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unreadable": {
+          "type": "string",
+          "minLength": 1
+        },
+        "more": {
+          "type": "string",
+          "minLength": 1
+        },
+        "next": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unset": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unavailable": {
+          "type": "string",
+          "minLength": 1
+        },
+        "line_checkpoints": {
+          "type": "string",
+          "minLength": 1
+        },
+        "line_unanswered": {
+          "type": "string",
+          "minLength": 1
+        },
+        "line_defaulted": {
+          "type": "string",
+          "minLength": 1
+        },
+        "line_no_evidence": {
+          "type": "string",
+          "minLength": 1
+        },
+        "line_partial": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

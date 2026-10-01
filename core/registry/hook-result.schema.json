@@ -17,6 +17,10 @@
           "items": {
             "$ref": "https://vouch.dev/schemas/audit-event.json"
           }
+        },
+        "context": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": ["decision"],

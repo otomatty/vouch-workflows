@@ -57,7 +57,7 @@
 /** @typedef {AuditCommon & {type:'question.answered',intent:string,actor:'human',question:string,choice:string,parent:string,wait_ms:number}} QuestionAnswered */
 /** @typedef {AuditCommon & {type:'question.defaulted',intent:string,question:string,choice:string,parent:string,wait_ms:number}} QuestionDefaulted */
 /** @typedef {AuditCommon & {type:'aside.asked',intent:string,question:string}} AsideAsked */
-/** @typedef {AuditCommon & {type:'aside.answered',intent:string,question:string,parent:string,duration_ms:number}} AsideAnswered */
+/** @typedef {AuditCommon & {type:'aside.answered',intent:string,question:string,parent:string,duration_ms:number,answer?:string}} AsideAnswered `answer`: the bounded final message of the asking turn when the harness supplied it. */
 /** @typedef {{target:string,command:string,cwd:string,result:'pass'|'fail',duration_ms:number,exit_code?:number}} DodCommand `exit_code` is absent when the command did not run to an exit. */
 /** @typedef {{sha256:string,generation?:string,head?:string}} KnowledgeObservation */
 /** @typedef {AuditCommon & {knowledge?:KnowledgeObservation,type:'hook.check',actor:'hook',check:Check,result:'pass'|'fail',duration_ms:number,missing?:number,stale?:number} & ({commit?:never,clean?:never,commands?:never,output?:never}|{check:'dod',commit?:string,clean:boolean,commands:DodCommand[],output:{path:'build-log.md',sha256:string}})} HookCheck */
@@ -101,11 +101,13 @@
 /**
  * Complete audit records, not raw stdin or a harness-specific stdout response.
  * `deny` requires a nonempty reason. io.run appends validated records, then reports
- * denial on stderr with exit 2. Harness-specific stdout adapters are separate.
+ * denial on stderr with exit 2.
+ * `context` is plain text io.run writes to stdout after the append succeeds; harnesses add SessionStart
+ * stdout to the model's context. It carries observations, never instructions or approvals.
  * `approve` asks io.run, after the append succeeds, to turn the configured Intent's draft of
  * that revision into approved; any other current text fails the run instead (docs/development/approval-boundary.md).
  * @typedef {{sha256:string}} ApproveTransition
- * @typedef {{decision:'allow',reason?:string,events?:AuditEvent[]}|{decision:'deny',reason:string,events?:AuditEvent[],approve?:ApproveTransition}} HookResult
+ * @typedef {{decision:'allow',reason?:string,events?:AuditEvent[],context?:string}|{decision:'deny',reason:string,events?:AuditEvent[],approve?:ApproveTransition}} HookResult
  * @typedef {{exitCode:0,stdout:JsonValue,stderr:string}|{exitCode:2,stdout:JsonValue,stderr:string}} HookProcessResult
  */
 

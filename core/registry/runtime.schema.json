@@ -8,6 +8,7 @@
     "nodeMinimum",
     "hooks",
     "commands",
+    "statusline",
     "files",
     "gitTimeoutMs"
   ],
@@ -33,6 +34,14 @@
       "uniqueItems": true
     },
     "commands": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^vouch-[a-z-]+\\.mjs$"
+      },
+      "uniqueItems": true
+    },
+    "statusline": {
       "type": "array",
       "items": {
         "type": "string",

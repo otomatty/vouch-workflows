@@ -2037,6 +2037,10 @@
         "question": {
           "type": "string",
           "minLength": 1
+        },
+        "answer": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [
