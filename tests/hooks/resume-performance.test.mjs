@@ -1,3 +1,6 @@
+import { appendFile } from "node:fs/promises";
+import { join } from "node:path";
+import { newId } from "../../core/hooks/lib/clock.mjs";
 import budgets from "../../core/registry/budgets.json" with { type: "json" };
 import { cpuLoad } from "../helpers/cpu-load.mjs";
 import { deriveFixture } from "../helpers/fixtures.mjs";
@@ -37,8 +40,10 @@ async function project(t) {
 
 /**
  * @param {import('node:test').TestContext} t @param {string} hook @param {string} capture
+ * @param {{prepare?:(i:number,box:{root:string},payload:Record<string,unknown>)=>Promise<Record<string,unknown>>,
+ * after?:(box:{read:(path:string)=>Promise<string>})=>Promise<void>}} [steps] Untimed per-sample setup and a final check.
  */
-async function measure(t, hook, capture) {
+async function measure(t, hook, capture, steps = {}) {
   const box = await project(t);
   const fixture = deriveFixture(
     readJson(
@@ -47,7 +52,7 @@ async function measure(t, hook, capture) {
     { cwd: box.root },
   );
   /** @type {number[]} */ const times = [];
-  t.plan(budgets.timing.samples * 2 + 1);
+  t.plan(budgets.timing.samples * 2 + 1 + (steps.after ? 1 : 0));
   // HOOK-13 condition: CPU count - 1 processes keep starting no-op hooks meanwhile.
   const load = await cpuLoad(t);
   t.diagnostic(
@@ -55,11 +60,18 @@ async function measure(t, hook, capture) {
   );
   try {
     for (let i = 0; i < budgets.timing.samples; i++) {
-      const result = runHook(hook, fixture, {
-        root: box.root,
-        intent,
-        coverage: false,
-      });
+      const payload = steps.prepare
+        ? await steps.prepare(i, box, fixture.payload)
+        : fixture.payload;
+      const result = runHook(
+        hook,
+        { ...fixture, payload: /** @type {never} */ (payload) },
+        {
+          root: box.root,
+          intent,
+          coverage: false,
+        },
+      );
       t.assert.equal(result.exitCode, 0);
       t.assert.equal(result.stderr, "");
       times.push(result.durationMs);
@@ -67,6 +79,7 @@ async function measure(t, hook, capture) {
   } finally {
     await load.stop();
   }
+  await steps.after?.(box);
   // Raw samples in execution order, so a cold or contended tail is visible in CI logs.
   t.diagnostic(`record samples ${times.map((ms) => ms.toFixed(1)).join(" ")}`);
   const value = p95(times);
@@ -83,5 +96,42 @@ async function measure(t, hook, capture) {
 test("the resume summary of a populated Intent stays below the record p95 budget", (t) =>
   measure(t, "vouch-record-session-start", "SessionStart.resume"));
 
-test("the Stop recorder stays below the record p95 budget", (t) =>
-  measure(t, "vouch-record-aside-answer", "Stop"));
+test("the Stop recorder appending each answer stays below the record p95 budget", (t) =>
+  measure(t, "vouch-record-aside-answer", "Stop", {
+    // Each sample's turn has a fresh unanswered ask, so every run takes the locked append path.
+    prepare: async (i, box, payload) => {
+      const session = String(payload.session_id);
+      const turn = `timing-${i}`;
+      await appendFile(
+        join(box.root, auditPath),
+        `${JSON.stringify({
+          id: newId(
+            session,
+            JSON.stringify([
+              "aside.asked",
+              "claude",
+              intent,
+              "prompt_id",
+              turn,
+            ]),
+          ),
+          v: 1,
+          type: "aside.asked",
+          ts: "2026-09-27T00:00:00.000Z",
+          actor: "human",
+          harness: "claude",
+          intent,
+          session,
+          question: "why?",
+        })}\n`,
+      );
+      return { ...payload, prompt_id: turn };
+    },
+    after: async (box) => {
+      const answered = (await box.read(auditPath))
+        .trim()
+        .split("\n")
+        .filter((line) => JSON.parse(line).type === "aside.answered");
+      t.assert.equal(answered.length, budgets.timing.samples);
+    },
+  }));

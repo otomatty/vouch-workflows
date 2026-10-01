@@ -14,7 +14,9 @@
 - 確認点は承認の境界と同じ `missingCheckpoints` で、現在の内容の確認だけを数えます。
 - intent.md の approved は、`findApproval` が同じ版の承認の連鎖を見つけた時だけ「証跡あり」、それ以外は「宣言のみ」と示します。
 - 判断依頼は question.asked を起点に question.answered / question.defaulted の parent で対応付けます。同じ Q 番号の複数の問い、親が存在しない・Q 番号が食い違う記録は「対応が不確実」にします。既定適用は人の回答と分けます。synthetic と別 Intent の記録は数えません。
-- 監査は `scanAudit` で行ごとに読み、不正な行（最後の改行がない行を含む）の行番号と重複 ID を示し、読めた記録で観測を続けます。不正な行か重複 ID があれば一部しか読めない観測とし、「未回答なし」と断定しません。
+- 監査は `scanAudit` で行ごとに読み、不正な行（最後の改行がない行を含む）の行番号と重複 ID を示し、読めた記録で観測を続けます。不正な行か重複 ID がある時、監査ログ自体を読めない時は一部しか読めない観測とし、「未回答なし」と断定しません。読めない監査ログを空のログとは扱いません。
+- 成果物・rules.md・監査ログの読み取りが失敗しても（リンク、通常ファイル以外、不正な UTF-8）、観測を中断せず「読めない」として示します。rules.md を読めない時は確認点の粒度を既定にせず不明とします。startup の session.started の記録はこれに左右されません。
+- 監査に由来する Q 番号・既定・選択も引用・制限して表示し、statusline では短い識別子以外を `?` にします。
 
 観測を受けて作業を選ぶのはモデル、承認・確認・回答は人の明示入力です。Skill の [再開の説明](../../core/skills/vouch/references/resume.md) は doctor を先に実行し、Node がなければ再開しません。
 
@@ -51,7 +53,7 @@ Stop フックは遮断しません。対応する ask がない回、記録済�
 
 `vouch-statusline.mjs` は Claude の `statusLine` から起動され、1行（上限160文字）を出して常に終了0です。表示は Intent、frontmatter のあるステージの宣言値（宣言のみの approved は「証跡なし」）、Intent が承認前なら確認点の数、未回答と既定適用の Q-n、監査が一部しか読めない時（不正な行・重複 ID）の注記です。上限を超える時は Intent とステージの部分から縮め、監査の注記は切りません。Intent が未指定なら未指定と出し、候補から選びません。プロジェクトの root は入口の配布位置から決め、読み取り以外をしません。
 
-登録は `node "${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/vouch-statusline.mjs"` です。Codex の TUI のステータス行は組み込み項目の選択だけで、任意のコマンドを登録できないため、Codex には statusline を配りません。
+登録は `node .claude/hooks/vouch-statusline.mjs` です。シェル固有の展開を使わないため、Claude が Git Bash・PowerShell のどちらで起動しても同じに動きます。Codex の TUI のステータス行は組み込み項目の選択だけで、任意のコマンドを登録できないため、Codex には statusline を配りません。
 
 ## 検証
 
@@ -68,7 +70,7 @@ Stop フックは遮断しません。対応する ask がない回、記録済�
 
 ## 限界と未実装
 
-- SessionStart の平文 stdout がコンテキストに入ること、`statusLine` の起動時に `CLAUDE_PROJECT_DIR` があるかは、この環境で実際の CLI により確認していません。`:-.` により、変数がなければ作業ディレクトリからの相対パスで起動します。プロジェクトの settings.json の statusLine は利用者個人の設定より優先されます。
+- SessionStart の平文 stdout がコンテキストに入ること、`statusLine` がプロジェクトのルートを作業ディレクトリとして起動されることは、この環境で実際の CLI により確認していません。作業ディレクトリが別だと入口の相対パスが見つからず、行は表示されません。プロジェクトの settings.json の statusLine は利用者個人の設定より優先されます。
 - startup で監査が壊れている時は session.started の追記が失敗し、fail-open のため要約も出ません。resume / compact では要約が出ます。
 - ask の読み取り専用は Skill の指示によるもので、書き込みガードは脇質問の回を区別しません（監査・登録・承認済み成果物への書き込みは従来どおり拒否します）。aside.answered の answer は回の最後の返答そのもので、答え以外の文を含むことがあります。
 - 判断依頼の記録には利用者のモデルがコマンドを実行する必要があり、実行しなかった問いは監査に現れません。Brief の作成時に decisions.md と監査の食い違いとして扱います。

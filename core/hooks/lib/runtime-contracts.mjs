@@ -187,10 +187,12 @@ export {};
  * file order; `invalid`: 1-based lines that are not one registered event (a line without its final
  * newline included); `duplicates`: IDs repeated after their first record, which alone is kept.
  * @typedef {(text:string|null)=>AuditScan} ScanAudit Unlike the store, a damaged line never hides the rest.
- * @typedef {{stage:import('./contracts.mjs').Stage,path:string,present:boolean,status:string|null}} ArtifactObservation
+ * @typedef {{stage:import('./contracts.mjs').Stage,path:string,present:boolean,status:string|null,unreadable?:true}} ArtifactObservation
  * `status`: the raw single frontmatter value, never interpreted; null when absent or unreadable.
- * @typedef {{path:string,events:number,synthetic:number,invalid:number[],duplicates:string[]}} AuditObservation
- * Synthetic records are counted, never used as evidence. Nonempty `invalid` makes every claim partial.
+ * `unreadable`: present but not readable (a link, a non-regular file, invalid UTF-8).
+ * @typedef {{path:string,events:number,synthetic:number,invalid:number[],duplicates:string[],unreadable?:true}} AuditObservation
+ * Synthetic records are counted, never used as evidence. Invalid lines, repeated IDs or an unreadable
+ * log make every claim partial; an unreadable log is never read as an empty one.
  * @typedef {{state:'unknown',reason:string}|{state:'observed',required:string[],missing:string[]}} CheckpointObservation
  * Described targets; `missing` lacks a confirmation of the current content.
  * @typedef {'none'|'evidence'|'declared'} ApprovalObservation `declared`: approved without matching evidence.

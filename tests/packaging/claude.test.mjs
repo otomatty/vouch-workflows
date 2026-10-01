@@ -61,7 +61,7 @@ test("Claude distribution reproduces exact source bytes and registers every prod
   ]);
   t.assert.deepEqual(settings.statusLine, {
     type: "command",
-    command: `node "\${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/${runtime.statusline[0]}"`,
+    command: `node .claude/hooks/${runtime.statusline[0]}`,
   });
   t.assert.deepEqual(settings.env, { VOUCH_HARNESS: "claude" });
   t.assert.deepEqual(Object.keys(settings.hooks), [

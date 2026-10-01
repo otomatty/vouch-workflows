@@ -12,6 +12,14 @@ const bounded = (text, limit) => [...text].slice(0, limit).join("");
 const quote = (value) => JSON.stringify(bounded(value, 80));
 /** @param {string} value */
 const id = (value) => (/^[\w.:-]{1,80}$/.test(value) ? value : quote(value));
+/** A short value for the one-line display, or "?". @param {string} value */
+const token = (value) => (/^[\w.-]{1,24}$/.test(value) ? value : "?");
+/** Invalid lines, a repeated ID (which hides its later record) or an unreadable log leave the rest
+ * inconclusive. @param {import('./runtime-contracts.mjs').AuditObservation} audit */
+const partialAudit = (audit) =>
+  audit.invalid.length > 0 ||
+  audit.duplicates.length > 0 ||
+  Boolean(audit.unreadable);
 
 /** @type {import('./runtime-contracts.mjs').FormatPosition} */
 export function formatSummary(position) {
@@ -25,8 +33,7 @@ export function formatSummary(position) {
       : labels.none;
   };
   const { audit, checkpoints } = position;
-  // A repeated ID hides its later record, so nothing can be concluded from the rest either.
-  const partial = audit.invalid.length > 0 || audit.duplicates.length > 0;
+  const partial = partialAudit(audit);
   const approval = {
     none: "",
     evidence: ` (${labels.evidence})`,
@@ -35,12 +42,13 @@ export function formatSummary(position) {
   const artifacts = position.artifacts.map((item) => {
     const name = item.path.split("/").at(-1);
     if (!item.present) return `${name}: ${labels.absent}`;
+    if (item.unreadable) return `${name}: ${labels.unreadable}`;
     if (item.status === null) return `${name}: ${labels.present}`;
     return `${name}: ${quote(item.status)}${item.stage === "intent" ? approval : ""}`;
   });
   const unanswered = position.unanswered.map(
     (q) =>
-      `${q.question} (${id(q.event)}${q.default ? `, ${labels.line_defaulted} ${q.default}` : ""})`,
+      `${id(q.question)} (${id(q.event)}${q.default ? `, ${labels.line_defaulted} ${id(q.default)}` : ""})`,
   );
   return [
     labels.summary,
@@ -50,11 +58,11 @@ export function formatSummary(position) {
       ? `${labels.checkpoints}: ${labels.missing}: ${checkpoints.missing.join(", ") || labels.none} (${checkpoints.required.length - checkpoints.missing.length}/${checkpoints.required.length})`
       : `${labels.checkpoints}: ${labels.unknown} (${quote(checkpoints.reason)})`,
     `${labels.unanswered}: ${unanswered.length || !partial ? list(unanswered) : labels.unknown}`,
-    `${labels.defaulted}: ${list(position.defaulted.map((d) => `${d.question} → ${d.choice} (${id(d.event)}, ${id(d.defaulted)})`))}`,
+    `${labels.defaulted}: ${list(position.defaulted.map((d) => `${id(d.question)} → ${id(d.choice)} (${id(d.event)}, ${id(d.defaulted)})`))}`,
     ...(position.uncertain.length
       ? [`${labels.uncertain}: ${list(position.uncertain.map(id))}`]
       : []),
-    `${labels.audit}: ${audit.path}, ${audit.events} (synthetic ${audit.synthetic})${partial ? `; ${labels.partial}` : ""}${audit.invalid.length ? ` (L${audit.invalid.join(", L")})` : ""}${audit.duplicates.length ? `; duplicate ${list(audit.duplicates.map(id))}` : ""}`,
+    `${labels.audit}: ${audit.path}, ${audit.unreadable ? labels.unreadable : `${audit.events} (synthetic ${audit.synthetic})`}${partial ? `; ${labels.partial}` : ""}${audit.invalid.length ? ` (L${audit.invalid.join(", L")})` : ""}${audit.duplicates.length ? `; duplicate ${list(audit.duplicates.map(id))}` : ""}`,
     labels.next,
   ].join("\n");
 }
@@ -62,20 +70,19 @@ export function formatSummary(position) {
 /** @type {import('./runtime-contracts.mjs').FormatPosition} */
 export function formatStatusline(position) {
   const labels = operations.labels[position.language];
-  const token = (/** @type {string} */ value) =>
-    /^[\w.-]{1,24}$/.test(value) ? value : "?";
   const stages = position.artifacts
     .filter((item) => item.present)
     .map((item) =>
-      item.status === null
-        ? item.stage
-        : `${item.stage}:${token(item.status)}${item.stage === "intent" && position.approval === "declared" ? `(${labels.line_no_evidence})` : ""}`,
+      item.unreadable
+        ? `${item.stage}:?`
+        : item.status === null
+          ? item.stage
+          : `${item.stage}:${token(item.status)}${item.stage === "intent" && position.approval === "declared" ? `(${labels.line_no_evidence})` : ""}`,
     )
     .join(" ");
   const { checkpoints } = position;
-  const partial =
-    position.audit.invalid.length > 0 || position.audit.duplicates.length > 0;
-  const open = position.unanswered.map((q) => q.question).join(" ");
+  const partial = partialAudit(position.audit);
+  const open = position.unanswered.map((q) => token(q.question)).join(" ");
   const head = [`Vouch ${position.intent}`, stages].filter(Boolean).join(" | ");
   const tail = [
     position.approval === "none"
@@ -83,7 +90,7 @@ export function formatStatusline(position) {
       : "",
     open || !partial ? `${labels.line_unanswered} ${open || 0}` : "",
     position.defaulted.length
-      ? `${labels.line_defaulted} ${position.defaulted.map((d) => d.question).join(" ")}`
+      ? `${labels.line_defaulted} ${position.defaulted.map((d) => token(d.question)).join(" ")}`
       : "",
   ]
     .filter(Boolean)

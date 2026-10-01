@@ -123,41 +123,30 @@ test("the installed Claude statusLine command prints the explicit Intent's line 
   const { root, settings } = await installed(t, "claude");
   t.assert.deepEqual(settings.statusLine, {
     type: "command",
-    command: `node "\${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/vouch-statusline.mjs"`,
+    command: "node .claude/hooks/vouch-statusline.mjs",
   });
-  const direct = node(root, ".claude/hooks/vouch-statusline.mjs");
-  t.assert.deepEqual(
-    [direct.status, direct.stdout],
-    [0, `Vouch ${intent} | 確認 ? | 未回答 0\n`],
-  );
-  if (process.platform === "win32") {
-    // Windows runs the same entry directly; the POSIX expansion below is the shell's.
-    t.assert.equal(direct.stderr, "");
-    t.assert.equal(direct.stdout.split("\n").length, 2);
-    return;
-  }
-  const shell = (/** @type {Record<string,string>} */ env) =>
-    spawnSync("/bin/sh", ["-c", settings.statusLine.command], {
+  // The platform shell: /bin/sh on POSIX, cmd.exe on Windows; no shell-specific expansion is needed.
+  /** @param {Record<string,string>} env */
+  const shell = (env) =>
+    spawnSync(settings.statusLine.command, {
       cwd: root,
+      shell: true,
       encoding: "utf8",
+      windowsHide: true,
       timeout: 4000,
       env: { ...process.env, VOUCH_INTENT: intent, ...env },
     });
-  const fromEnv = shell({ CLAUDE_PROJECT_DIR: root });
-  const env = { ...process.env };
-  delete env.CLAUDE_PROJECT_DIR;
-  const fromCwd = spawnSync("/bin/sh", ["-c", settings.statusLine.command], {
-    cwd: root,
-    encoding: "utf8",
-    timeout: 4000,
-    env: { ...env, VOUCH_INTENT: intent },
-  });
+  const shown = shell({});
   t.assert.deepEqual(
-    [fromEnv.stdout, fromCwd.stdout],
-    [direct.stdout, direct.stdout],
+    [shown.status, shown.stdout, shown.stderr],
+    [0, `Vouch ${intent} | 確認 ? | 未回答 0\n`, ""],
+  );
+  t.assert.deepEqual(
+    node(root, ".claude/hooks/vouch-statusline.mjs").stdout,
+    shown.stdout,
   );
   t.assert.equal(
-    shell({ CLAUDE_PROJECT_DIR: root, VOUCH_INTENT: "" }).stdout,
+    shell({ VOUCH_INTENT: "" }).stdout,
     "Vouch: Intent 未指定（VOUCH_INTENT）\n",
   );
 });

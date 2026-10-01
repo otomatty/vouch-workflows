@@ -93,35 +93,47 @@ function pairQuestions(events, intent) {
   };
 }
 
+/** A read that fails (a link, a non-regular file, bad UTF-8) is an observation, never an abort.
+ * @param {import('./runtime-contracts.mjs').PositionReader} reader @param {string} path */
+async function attempt(reader, path) {
+  try {
+    return { text: await reader.readText(path), unreadable: false };
+  } catch {
+    return { text: null, unreadable: true };
+  }
+}
+
 /** @type {import('./runtime-contracts.mjs').ReadPosition} */
 export async function readPosition(reader, intent) {
   const home = intentHome(intent);
   const path = `${home}/${documents.audit}`;
-  const scan = scanAudit(await reader.readText(path));
-  const rules = await reader.readText(approvals.rules);
+  const log = await attempt(reader, path);
+  const scan = scanAudit(log.text);
+  const rules = await attempt(reader, approvals.rules);
   const stages = /** @type {import('./contracts.mjs').Stage[]} */ (
     workflow.stages
   );
-  const texts = await Promise.all(
+  const reads = await Promise.all(
     stages.map((stage) =>
-      reader.readText(`${home}/${documents.artifacts[stage]}`),
+      attempt(reader, `${home}/${documents.artifacts[stage]}`),
     ),
   );
+  const texts = reads.map((read) => read.text);
   const [text = null, design = null] = texts;
   /** @type {import('./runtime-contracts.mjs').CheckpointObservation} */
   let checkpoints = {
     state: "unknown",
-    reason: `${documents.artifacts.intent} is absent`,
+    reason: `${documents.artifacts.intent} is ${reads[0]?.unreadable ? "unreadable" : "absent"}`,
   };
   if (text !== null) {
     const reading = readPlan(text);
-    const mode = readCheckpointMode(rules);
+    const mode = rules.unreadable ? null : readCheckpointMode(rules.text);
     if ("error" in reading)
       checkpoints = { state: "unknown", reason: `plan ${reading.error}` };
     else if (!mode)
       checkpoints = {
         state: "unknown",
-        reason: `${approvals.rules} must set one supported checkpoints mode`,
+        reason: `${approvals.rules} ${rules.unreadable ? "is unreadable" : "must set one supported checkpoints mode"}`,
       };
     else {
       const required = requiredCheckpoints(mode, reading.plan);
@@ -142,12 +154,15 @@ export async function readPosition(reader, intent) {
   const status = frontmatterValue(text, "status");
   return {
     intent,
-    language: readLanguage(rules),
+    language: readLanguage(rules.text),
     artifacts: stages.map((stage, index) => ({
       stage,
       path: `${home}/${documents.artifacts[stage]}`,
-      present: texts[index] !== null,
+      present: texts[index] !== null || Boolean(reads[index]?.unreadable),
       status: frontmatterValue(texts[index] ?? null, "status"),
+      ...(reads[index]?.unreadable
+        ? { unreadable: /** @type {const} */ (true) }
+        : {}),
     })),
     audit: {
       path,
@@ -155,6 +170,7 @@ export async function readPosition(reader, intent) {
       synthetic: scan.events.filter((event) => event.synthetic).length,
       invalid: scan.invalid,
       duplicates: scan.duplicates,
+      ...(log.unreadable ? { unreadable: /** @type {const} */ (true) } : {}),
     },
     checkpoints,
     approval:
