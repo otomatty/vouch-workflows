@@ -13,7 +13,11 @@
       "wait_ms",
       "harness",
       "tokens",
-      "synthetic"
+      "synthetic",
+      "original_type",
+      "raw",
+      "source_path",
+      "estimated"
     ]
   },
   "events": {
@@ -269,7 +273,7 @@
     "migration.completed": {
       "fields": {
         "required": ["files_migrated"],
-        "optional": []
+        "optional": ["revision", "submission"]
       },
       "measures": ["files_migrated"],
       "pairs_with": []

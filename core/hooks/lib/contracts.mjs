@@ -28,6 +28,10 @@
  * @property {number} [duration_ms]
  * @property {number} [wait_ms]
  * @property {true} [synthetic]
+ * @property {string} [original_type] Migrated records only: the v2 event name, or UNTYPED for a block without one.
+ * @property {string} [raw] Migrated records only: the original block text, never rewritten.
+ * @property {string} [source_path] Migrated records only: the project-relative v2 file and first line (`path#Ln`).
+ * @property {true} [estimated] A time or duration derived from neighbouring records, never a measurement.
  */
 
 /** @typedef {AuditBase & ({harness:'claude',tokens?:Tokens}|{harness?:Harness,tokens?:never})} AuditCommon */
@@ -71,7 +75,8 @@
 /** @typedef {AuditCommon & {type:'session.compacted',session:string}} SessionCompacted */
 /** @typedef {AuditCommon & {type:'session.ended',session:string,parent:string,duration_ms:number}} SessionEnded */
 /** @typedef {AuditCommon & {type:'learn.recorded',intent:string,rules_added:number}} LearnRecorded */
-/** @typedef {AuditCommon & {type:'migration.completed',files_migrated:number}} MigrationCompleted */
+/** `revision` binds the person's `vouch migrate approve` to the migration.md bytes it named.
+ * @typedef {AuditCommon & {type:'migration.completed',files_migrated:number} & ({revision?:never,submission?:never}|{actor:'human',revision:{path:'migration.md',sha256:string},submission:Submission,harness:Harness,session:string})} MigrationCompleted */
 /** @typedef {AuditCommon & {type:`legacy.${string}`,original_type:string,raw:string,source_path:string}} LegacyEvent */
 /** @typedef {IntentCreated|IntentApproved|IntentCompleted|StageStarted|StageCompleted|UnitStarted|UnitCompleted|CheckpointConfirmed|GateOpened|GateApproved|GateRejected|QuestionAsked|QuestionAnswered|QuestionDefaulted|AsideAsked|AsideAnswered|HookCheck|HookDenied|ReviewRequested|ReviewCompleted|KnowledgeRefreshed|SessionStarted|SessionResumed|SessionCompacted|SessionEnded|LearnRecorded|MigrationCompleted|LegacyEvent} AuditEvent */
 /**

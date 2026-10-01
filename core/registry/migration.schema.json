@@ -1,0 +1,595 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vouch.dev/schemas/migration.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "source",
+    "archive",
+    "brief",
+    "operations",
+    "approve",
+    "checkboxes",
+    "stages",
+    "artifacts",
+    "record",
+    "space",
+    "audit",
+    "affirmation",
+    "codekb",
+    "labels"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "version": {
+      "const": 1
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["record", "state", "space"],
+      "properties": {
+        "record": {
+          "type": "string",
+          "minLength": 1
+        },
+        "state": {
+          "const": "aidlc-state.md"
+        },
+        "space": {
+          "const": ["codekb", "memory"]
+        }
+      }
+    },
+    "archive": {
+      "const": "vouch/archive/aidlc-v2"
+    },
+    "brief": {
+      "const": "migration.md"
+    },
+    "operations": {
+      "const": ["plan", "apply"]
+    },
+    "approve": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["prefix", "pattern"],
+      "properties": {
+        "prefix": {
+          "const": "vouch migrate approve "
+        },
+        "pattern": {
+          "const": "^[a-f0-9]{64}(?![\\s\\S])"
+        }
+      }
+    },
+    "checkboxes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "-", "?", "R", "S", " "],
+      "properties": {
+        "x": {
+          "enum": ["completed", "active", "pending", "skipped"]
+        },
+        "-": {
+          "enum": ["completed", "active", "pending", "skipped"]
+        },
+        "?": {
+          "enum": ["completed", "active", "pending", "skipped"]
+        },
+        "R": {
+          "enum": ["completed", "active", "pending", "skipped"]
+        },
+        "S": {
+          "enum": ["completed", "active", "pending", "skipped"]
+        },
+        " ": {
+          "enum": ["completed", "active", "pending", "skipped"]
+        }
+      }
+    },
+    "stages": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9-]*$"
+      },
+      "additionalProperties": {
+        "enum": ["intent", "design", "build", "verify", null]
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "drafts"],
+      "properties": {
+        "required": {
+          "const": ["intent.md", "decisions.md"]
+        },
+        "drafts": {
+          "const": ["intent.md", "design.md"]
+        }
+      }
+    },
+    "record": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/rule"
+      }
+    },
+    "space": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/rule"
+      }
+    },
+    "audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["shard", "actor", "untyped", "convert", "decisions"],
+      "properties": {
+        "shard": {
+          "type": "string",
+          "minLength": 1
+        },
+        "actor": {
+          "const": "hook"
+        },
+        "untyped": {
+          "const": "UNTYPED"
+        },
+        "convert": {
+          "const": ["STAGE_STARTED", "STAGE_COMPLETED", "RULE_LEARNED"]
+        },
+        "decisions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]*$"
+          }
+        }
+      }
+    },
+    "affirmation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "event"],
+      "properties": {
+        "state": {
+          "const": "Practices Affirmed Timestamp"
+        },
+        "event": {
+          "const": "PRACTICES_AFFIRMED"
+        }
+      }
+    },
+    "codekb": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["timestamp"],
+      "properties": {
+        "timestamp": {
+          "const": "reverse-engineering-timestamp.md"
+        }
+      }
+    },
+    "labels": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ja", "en"],
+      "properties": {
+        "ja": {
+          "$ref": "#/$defs/labels"
+        },
+        "en": {
+          "$ref": "#/$defs/labels"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "destination": {
+      "type": "string",
+      "pattern": "^(?:(?:intent|design|decisions|migration)\\.md(?:#[a-z][a-z-]*)?|build-log\\.md(?:#[a-z][a-z-]*)?|review\\.md(?:#[a-z][a-z-]*)?|audit/events\\.jsonl|vouch/rules\\.md|vouch/knowledge/(?:background|design|infra)/|vouch/knowledge/codekb/\\$1/)$"
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["match", "to"],
+      "properties": {
+        "match": {
+          "type": "string",
+          "minLength": 1
+        },
+        "to": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/destination"
+          }
+        },
+        "note": {
+          "enum": [
+            "diary",
+            "operation",
+            "bootstrap",
+            "history",
+            "transient",
+            "default"
+          ]
+        },
+        "final": {
+          "const": true
+        },
+        "contains": {
+          "type": "string",
+          "minLength": 1
+        },
+        "affirmed": {
+          "const": true
+        }
+      }
+    },
+    "labels": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "lead",
+        "conclusion",
+        "item",
+        "value",
+        "source",
+        "files",
+        "files_value",
+        "blocks",
+        "blocks_value",
+        "decision_count",
+        "affirmed",
+        "progress",
+        "stage",
+        "observed",
+        "v2_stages",
+        "artifact",
+        "units",
+        "draft",
+        "table",
+        "file",
+        "bytes",
+        "destinations",
+        "archive_only",
+        "unmapped",
+        "reason",
+        "audit",
+        "event",
+        "count",
+        "converted",
+        "legacy",
+        "estimated",
+        "decisions",
+        "decisions_note",
+        "record",
+        "time",
+        "origin",
+        "rules",
+        "rules_note",
+        "treatment",
+        "knowledge",
+        "knowledge_note",
+        "repo",
+        "scanned",
+        "commit",
+        "generation",
+        "verifiable",
+        "unverifiable",
+        "limits",
+        "none",
+        "yes",
+        "no",
+        "limit_items",
+        "notes",
+        "progress_values"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lead": {
+          "type": "string",
+          "minLength": 1
+        },
+        "conclusion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "item": {
+          "type": "string",
+          "minLength": 1
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "files": {
+          "type": "string",
+          "minLength": 1
+        },
+        "files_value": {
+          "type": "string",
+          "minLength": 1
+        },
+        "blocks": {
+          "type": "string",
+          "minLength": 1
+        },
+        "blocks_value": {
+          "type": "string",
+          "minLength": 1
+        },
+        "decision_count": {
+          "type": "string",
+          "minLength": 1
+        },
+        "affirmed": {
+          "type": "string",
+          "minLength": 1
+        },
+        "progress": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage": {
+          "type": "string",
+          "minLength": 1
+        },
+        "observed": {
+          "type": "string",
+          "minLength": 1
+        },
+        "v2_stages": {
+          "type": "string",
+          "minLength": 1
+        },
+        "artifact": {
+          "type": "string",
+          "minLength": 1
+        },
+        "units": {
+          "type": "string",
+          "minLength": 1
+        },
+        "draft": {
+          "type": "string",
+          "minLength": 1
+        },
+        "table": {
+          "type": "string",
+          "minLength": 1
+        },
+        "file": {
+          "type": "string",
+          "minLength": 1
+        },
+        "bytes": {
+          "type": "string",
+          "minLength": 1
+        },
+        "destinations": {
+          "type": "string",
+          "minLength": 1
+        },
+        "archive_only": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unmapped": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "audit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "event": {
+          "type": "string",
+          "minLength": 1
+        },
+        "count": {
+          "type": "string",
+          "minLength": 1
+        },
+        "converted": {
+          "type": "string",
+          "minLength": 1
+        },
+        "legacy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "estimated": {
+          "type": "string",
+          "minLength": 1
+        },
+        "decisions": {
+          "type": "string",
+          "minLength": 1
+        },
+        "decisions_note": {
+          "type": "string",
+          "minLength": 1
+        },
+        "record": {
+          "type": "string",
+          "minLength": 1
+        },
+        "time": {
+          "type": "string",
+          "minLength": 1
+        },
+        "origin": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rules": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rules_note": {
+          "type": "string",
+          "minLength": 1
+        },
+        "treatment": {
+          "type": "string",
+          "minLength": 1
+        },
+        "knowledge": {
+          "type": "string",
+          "minLength": 1
+        },
+        "knowledge_note": {
+          "type": "string",
+          "minLength": 1
+        },
+        "repo": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scanned": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "generation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "verifiable": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unverifiable": {
+          "type": "string",
+          "minLength": 1
+        },
+        "limits": {
+          "type": "string",
+          "minLength": 1
+        },
+        "none": {
+          "type": "string",
+          "minLength": 1
+        },
+        "yes": {
+          "type": "string",
+          "minLength": 1
+        },
+        "no": {
+          "type": "string",
+          "minLength": 1
+        },
+        "limit_items": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "notes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "diary",
+            "operation",
+            "bootstrap",
+            "history",
+            "transient",
+            "default",
+            "unaffirmed",
+            "unmatched"
+          ],
+          "properties": {
+            "diary": {
+              "type": "string",
+              "minLength": 1
+            },
+            "operation": {
+              "type": "string",
+              "minLength": 1
+            },
+            "bootstrap": {
+              "type": "string",
+              "minLength": 1
+            },
+            "history": {
+              "type": "string",
+              "minLength": 1
+            },
+            "transient": {
+              "type": "string",
+              "minLength": 1
+            },
+            "default": {
+              "type": "string",
+              "minLength": 1
+            },
+            "unaffirmed": {
+              "type": "string",
+              "minLength": 1
+            },
+            "unmatched": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "progress_values": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["completed", "active", "pending", "skipped", "absent"],
+          "properties": {
+            "completed": {
+              "type": "string",
+              "minLength": 1
+            },
+            "active": {
+              "type": "string",
+              "minLength": 1
+            },
+            "pending": {
+              "type": "string",
+              "minLength": 1
+            },
+            "skipped": {
+              "type": "string",
+              "minLength": 1
+            },
+            "absent": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    }
+  }
+}

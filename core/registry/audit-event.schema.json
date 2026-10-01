@@ -74,6 +74,21 @@
         "synthetic": {
           "const": true
         },
+        "original_type": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "raw": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "estimated": {
+          "const": true
+        },
         "risk": {
           "enum": ["L", "M", "H"]
         }
@@ -94,6 +109,37 @@
               "harness": {
                 "const": "claude"
               }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["estimated"],
+            "properties": {
+              "estimated": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw", "source_path"],
+            "properties": {
+              "original_type": {},
+              "raw": {},
+              "source_path": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["source_path"],
+            "properties": {
+              "source_path": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw"],
+            "properties": {
+              "original_type": {},
+              "raw": {}
             }
           }
         }
@@ -169,6 +215,21 @@
           "additionalProperties": false
         },
         "synthetic": {
+          "const": true
+        },
+        "original_type": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "raw": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "estimated": {
           "const": true
         },
         "source": {
@@ -314,6 +375,37 @@
               "submission": {}
             }
           }
+        },
+        {
+          "if": {
+            "required": ["estimated"],
+            "properties": {
+              "estimated": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw", "source_path"],
+            "properties": {
+              "original_type": {},
+              "raw": {},
+              "source_path": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["source_path"],
+            "properties": {
+              "source_path": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw"],
+            "properties": {
+              "original_type": {},
+              "raw": {}
+            }
+          }
         }
       ]
     },
@@ -389,6 +481,21 @@
         "synthetic": {
           "const": true
         },
+        "original_type": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "raw": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "estimated": {
+          "const": true
+        },
         "ai_work_ms": {
           "type": "integer",
           "minimum": 0
@@ -430,6 +537,37 @@
               "harness": {
                 "const": "claude"
               }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["estimated"],
+            "properties": {
+              "estimated": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw", "source_path"],
+            "properties": {
+              "original_type": {},
+              "raw": {},
+              "source_path": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["source_path"],
+            "properties": {
+              "source_path": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw"],
+            "properties": {
+              "original_type": {},
+              "raw": {}
             }
           }
         }
@@ -506,6 +644,21 @@
         },
         "synthetic": {
           "const": true
+        },
+        "original_type": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "raw": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "estimated": {
+          "const": true
         }
       },
       "required": ["id", "v", "type", "ts", "actor", "intent", "stage"],
@@ -524,6 +677,37 @@
               "harness": {
                 "const": "claude"
               }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["estimated"],
+            "properties": {
+              "estimated": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw", "source_path"],
+            "properties": {
+              "original_type": {},
+              "raw": {},
+              "source_path": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["source_path"],
+            "properties": {
+              "source_path": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw"],
+            "properties": {
+              "original_type": {},
+              "raw": {}
             }
           }
         }
@@ -601,6 +785,21 @@
         "synthetic": {
           "const": true
         },
+        "original_type": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "raw": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "estimated": {
+          "const": true
+        },
         "loop_iterations": {
           "type": "integer",
           "minimum": 0
@@ -653,6 +852,37 @@
             "properties": {
               "loop_iterations": {},
               "tests": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["estimated"],
+            "properties": {
+              "estimated": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw", "source_path"],
+            "properties": {
+              "original_type": {},
+              "raw": {},
+              "source_path": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["source_path"],
+            "properties": {
+              "source_path": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw"],
+            "properties": {
+              "original_type": {},
+              "raw": {}
             }
           }
         }
@@ -730,6 +960,21 @@
         "synthetic": {
           "const": true
         },
+        "original_type": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "raw": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "estimated": {
+          "const": true
+        },
         "risk": {
           "enum": ["L", "M", "H"]
         }
@@ -750,6 +995,37 @@
               "harness": {
                 "const": "claude"
               }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["estimated"],
+            "properties": {
+              "estimated": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw", "source_path"],
+            "properties": {
+              "original_type": {},
+              "raw": {},
+              "source_path": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["source_path"],
+            "properties": {
+              "source_path": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw"],
+            "properties": {
+              "original_type": {},
+              "raw": {}
             }
           }
         }
@@ -827,6 +1103,21 @@
         "synthetic": {
           "const": true
         },
+        "original_type": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "raw": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "estimated": {
+          "const": true
+        },
         "risk": {
           "enum": ["L", "M", "H"]
         },
@@ -868,6 +1159,37 @@
               "harness": {
                 "const": "claude"
               }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["estimated"],
+            "properties": {
+              "estimated": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw", "source_path"],
+            "properties": {
+              "original_type": {},
+              "raw": {},
+              "source_path": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["source_path"],
+            "properties": {
+              "source_path": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw"],
+            "properties": {
+              "original_type": {},
+              "raw": {}
             }
           }
         }
@@ -943,6 +1265,21 @@
           "additionalProperties": false
         },
         "synthetic": {
+          "const": true
+        },
+        "original_type": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "raw": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "estimated": {
           "const": true
         },
         "checkpoint": {
@@ -1149,6 +1486,37 @@
               }
             }
           }
+        },
+        {
+          "if": {
+            "required": ["estimated"],
+            "properties": {
+              "estimated": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw", "source_path"],
+            "properties": {
+              "original_type": {},
+              "raw": {},
+              "source_path": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["source_path"],
+            "properties": {
+              "source_path": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw"],
+            "properties": {
+              "original_type": {},
+              "raw": {}
+            }
+          }
         }
       ]
     },
@@ -1224,6 +1592,21 @@
         "synthetic": {
           "const": true
         },
+        "original_type": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "raw": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "estimated": {
+          "const": true
+        },
         "source": {
           "enum": ["intent", "pr"]
         },
@@ -1279,6 +1662,37 @@
               "actor": {
                 "const": "hook"
               }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["estimated"],
+            "properties": {
+              "estimated": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw", "source_path"],
+            "properties": {
+              "original_type": {},
+              "raw": {},
+              "source_path": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["source_path"],
+            "properties": {
+              "source_path": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw"],
+            "properties": {
+              "original_type": {},
+              "raw": {}
             }
           }
         }
@@ -1356,6 +1770,21 @@
         "synthetic": {
           "const": true
         },
+        "original_type": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "raw": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "estimated": {
+          "const": true
+        },
         "source": {
           "enum": ["intent", "pr"]
         }
@@ -1386,6 +1815,37 @@
               "harness": {
                 "const": "claude"
               }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["estimated"],
+            "properties": {
+              "estimated": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw", "source_path"],
+            "properties": {
+              "original_type": {},
+              "raw": {},
+              "source_path": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["source_path"],
+            "properties": {
+              "source_path": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw"],
+            "properties": {
+              "original_type": {},
+              "raw": {}
             }
           }
         }
@@ -1463,6 +1923,21 @@
         "synthetic": {
           "const": true
         },
+        "original_type": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "raw": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "estimated": {
+          "const": true
+        },
         "source": {
           "enum": ["intent", "pr"]
         },
@@ -1498,6 +1973,37 @@
               "harness": {
                 "const": "claude"
               }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["estimated"],
+            "properties": {
+              "estimated": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw", "source_path"],
+            "properties": {
+              "original_type": {},
+              "raw": {},
+              "source_path": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["source_path"],
+            "properties": {
+              "source_path": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw"],
+            "properties": {
+              "original_type": {},
+              "raw": {}
             }
           }
         }
@@ -1575,6 +2081,21 @@
         "synthetic": {
           "const": true
         },
+        "original_type": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "raw": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "estimated": {
+          "const": true
+        },
         "question": {
           "type": "string",
           "minLength": 1
@@ -1647,6 +2168,37 @@
             "required": ["default"],
             "properties": {
               "default": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["estimated"],
+            "properties": {
+              "estimated": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw", "source_path"],
+            "properties": {
+              "original_type": {},
+              "raw": {},
+              "source_path": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["source_path"],
+            "properties": {
+              "source_path": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw"],
+            "properties": {
+              "original_type": {},
+              "raw": {}
             }
           }
         }
@@ -1724,6 +2276,21 @@
         "synthetic": {
           "const": true
         },
+        "original_type": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "raw": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "estimated": {
+          "const": true
+        },
         "question": {
           "type": "string",
           "minLength": 1
@@ -1760,6 +2327,37 @@
               "harness": {
                 "const": "claude"
               }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["estimated"],
+            "properties": {
+              "estimated": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw", "source_path"],
+            "properties": {
+              "original_type": {},
+              "raw": {},
+              "source_path": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["source_path"],
+            "properties": {
+              "source_path": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw"],
+            "properties": {
+              "original_type": {},
+              "raw": {}
             }
           }
         }
@@ -1837,6 +2435,21 @@
         "synthetic": {
           "const": true
         },
+        "original_type": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "raw": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "estimated": {
+          "const": true
+        },
         "question": {
           "type": "string",
           "minLength": 1
@@ -1873,6 +2486,37 @@
               "harness": {
                 "const": "claude"
               }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["estimated"],
+            "properties": {
+              "estimated": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw", "source_path"],
+            "properties": {
+              "original_type": {},
+              "raw": {},
+              "source_path": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["source_path"],
+            "properties": {
+              "source_path": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw"],
+            "properties": {
+              "original_type": {},
+              "raw": {}
             }
           }
         }
@@ -1950,6 +2594,21 @@
         "synthetic": {
           "const": true
         },
+        "original_type": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "raw": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "estimated": {
+          "const": true
+        },
         "question": {
           "type": "string",
           "minLength": 1
@@ -1971,6 +2630,37 @@
               "harness": {
                 "const": "claude"
               }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["estimated"],
+            "properties": {
+              "estimated": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw", "source_path"],
+            "properties": {
+              "original_type": {},
+              "raw": {},
+              "source_path": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["source_path"],
+            "properties": {
+              "source_path": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw"],
+            "properties": {
+              "original_type": {},
+              "raw": {}
             }
           }
         }
@@ -2048,6 +2738,21 @@
         "synthetic": {
           "const": true
         },
+        "original_type": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "raw": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "estimated": {
+          "const": true
+        },
         "question": {
           "type": "string",
           "minLength": 1
@@ -2083,6 +2788,37 @@
               "harness": {
                 "const": "claude"
               }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["estimated"],
+            "properties": {
+              "estimated": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw", "source_path"],
+            "properties": {
+              "original_type": {},
+              "raw": {},
+              "source_path": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["source_path"],
+            "properties": {
+              "source_path": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw"],
+            "properties": {
+              "original_type": {},
+              "raw": {}
             }
           }
         }
@@ -2158,6 +2894,21 @@
           "additionalProperties": false
         },
         "synthetic": {
+          "const": true
+        },
+        "original_type": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "raw": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "estimated": {
           "const": true
         },
         "check": {
@@ -2334,6 +3085,37 @@
               }
             }
           }
+        },
+        {
+          "if": {
+            "required": ["estimated"],
+            "properties": {
+              "estimated": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw", "source_path"],
+            "properties": {
+              "original_type": {},
+              "raw": {},
+              "source_path": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["source_path"],
+            "properties": {
+              "source_path": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw"],
+            "properties": {
+              "original_type": {},
+              "raw": {}
+            }
+          }
         }
       ]
     },
@@ -2409,6 +3191,21 @@
         "synthetic": {
           "const": true
         },
+        "original_type": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "raw": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "estimated": {
+          "const": true
+        },
         "check": {
           "enum": ["contract", "dod", "freshness", "citation", "format"]
         },
@@ -2465,6 +3262,37 @@
               "harness": {
                 "const": "claude"
               }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["estimated"],
+            "properties": {
+              "estimated": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw", "source_path"],
+            "properties": {
+              "original_type": {},
+              "raw": {},
+              "source_path": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["source_path"],
+            "properties": {
+              "source_path": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw"],
+            "properties": {
+              "original_type": {},
+              "raw": {}
             }
           }
         }
@@ -2542,6 +3370,21 @@
         "synthetic": {
           "const": true
         },
+        "original_type": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "raw": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "estimated": {
+          "const": true
+        },
         "iteration": {
           "type": "integer",
           "minimum": 1
@@ -2572,6 +3415,37 @@
               "harness": {
                 "const": "claude"
               }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["estimated"],
+            "properties": {
+              "estimated": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw", "source_path"],
+            "properties": {
+              "original_type": {},
+              "raw": {},
+              "source_path": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["source_path"],
+            "properties": {
+              "source_path": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw"],
+            "properties": {
+              "original_type": {},
+              "raw": {}
             }
           }
         }
@@ -2649,6 +3523,21 @@
         "synthetic": {
           "const": true
         },
+        "original_type": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "raw": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "estimated": {
+          "const": true
+        },
         "iteration": {
           "type": "integer",
           "minimum": 1
@@ -2702,6 +3591,37 @@
               "harness": {
                 "const": "claude"
               }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["estimated"],
+            "properties": {
+              "estimated": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw", "source_path"],
+            "properties": {
+              "original_type": {},
+              "raw": {},
+              "source_path": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["source_path"],
+            "properties": {
+              "source_path": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw"],
+            "properties": {
+              "original_type": {},
+              "raw": {}
             }
           }
         }
@@ -2779,6 +3699,21 @@
         "synthetic": {
           "const": true
         },
+        "original_type": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "raw": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "estimated": {
+          "const": true
+        },
         "scope": {
           "enum": ["diff", "full"]
         },
@@ -2818,6 +3753,37 @@
               "harness": {
                 "const": "claude"
               }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["estimated"],
+            "properties": {
+              "estimated": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw", "source_path"],
+            "properties": {
+              "original_type": {},
+              "raw": {},
+              "source_path": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["source_path"],
+            "properties": {
+              "source_path": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw"],
+            "properties": {
+              "original_type": {},
+              "raw": {}
             }
           }
         }
@@ -2894,6 +3860,21 @@
         },
         "synthetic": {
           "const": true
+        },
+        "original_type": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "raw": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "estimated": {
+          "const": true
         }
       },
       "required": ["id", "v", "type", "ts", "actor", "session"],
@@ -2912,6 +3893,37 @@
               "harness": {
                 "const": "claude"
               }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["estimated"],
+            "properties": {
+              "estimated": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw", "source_path"],
+            "properties": {
+              "original_type": {},
+              "raw": {},
+              "source_path": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["source_path"],
+            "properties": {
+              "source_path": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw"],
+            "properties": {
+              "original_type": {},
+              "raw": {}
             }
           }
         }
@@ -2988,6 +4000,21 @@
         },
         "synthetic": {
           "const": true
+        },
+        "original_type": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "raw": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "estimated": {
+          "const": true
         }
       },
       "required": ["id", "v", "type", "ts", "actor", "session", "duration_ms"],
@@ -3006,6 +4033,37 @@
               "harness": {
                 "const": "claude"
               }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["estimated"],
+            "properties": {
+              "estimated": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw", "source_path"],
+            "properties": {
+              "original_type": {},
+              "raw": {},
+              "source_path": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["source_path"],
+            "properties": {
+              "source_path": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw"],
+            "properties": {
+              "original_type": {},
+              "raw": {}
             }
           }
         }
@@ -3082,6 +4140,21 @@
         },
         "synthetic": {
           "const": true
+        },
+        "original_type": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "raw": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "estimated": {
+          "const": true
         }
       },
       "required": ["id", "v", "type", "ts", "actor", "session"],
@@ -3100,6 +4173,37 @@
               "harness": {
                 "const": "claude"
               }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["estimated"],
+            "properties": {
+              "estimated": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw", "source_path"],
+            "properties": {
+              "original_type": {},
+              "raw": {},
+              "source_path": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["source_path"],
+            "properties": {
+              "source_path": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw"],
+            "properties": {
+              "original_type": {},
+              "raw": {}
             }
           }
         }
@@ -3176,6 +4280,21 @@
         },
         "synthetic": {
           "const": true
+        },
+        "original_type": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "raw": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "estimated": {
+          "const": true
         }
       },
       "required": [
@@ -3203,6 +4322,37 @@
               "harness": {
                 "const": "claude"
               }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["estimated"],
+            "properties": {
+              "estimated": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw", "source_path"],
+            "properties": {
+              "original_type": {},
+              "raw": {},
+              "source_path": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["source_path"],
+            "properties": {
+              "source_path": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw"],
+            "properties": {
+              "original_type": {},
+              "raw": {}
             }
           }
         }
@@ -3280,6 +4430,21 @@
         "synthetic": {
           "const": true
         },
+        "original_type": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "raw": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "estimated": {
+          "const": true
+        },
         "rules_added": {
           "type": "integer",
           "minimum": 0
@@ -3301,6 +4466,37 @@
               "harness": {
                 "const": "claude"
               }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["estimated"],
+            "properties": {
+              "estimated": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw", "source_path"],
+            "properties": {
+              "original_type": {},
+              "raw": {},
+              "source_path": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["source_path"],
+            "properties": {
+              "source_path": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw"],
+            "properties": {
+              "original_type": {},
+              "raw": {}
             }
           }
         }
@@ -3378,9 +4574,59 @@
         "synthetic": {
           "const": true
         },
+        "original_type": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "raw": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "estimated": {
+          "const": true
+        },
         "files_migrated": {
           "type": "integer",
           "minimum": 0
+        },
+        "revision": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "const": "migration.md"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+            }
+          },
+          "required": ["path", "sha256"],
+          "additionalProperties": false
+        },
+        "submission": {
+          "type": "object",
+          "properties": {
+            "hook_event_name": {
+              "const": "UserPromptSubmit"
+            },
+            "field": {
+              "enum": ["prompt_id", "turn_id"]
+            },
+            "id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "prompt_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+            }
+          },
+          "required": ["hook_event_name", "field", "id", "prompt_sha256"],
+          "additionalProperties": false
         }
       },
       "required": ["id", "v", "type", "ts", "actor", "files_migrated"],
@@ -3399,6 +4645,147 @@
               "harness": {
                 "const": "claude"
               }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["estimated"],
+            "properties": {
+              "estimated": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw", "source_path"],
+            "properties": {
+              "original_type": {},
+              "raw": {},
+              "source_path": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["source_path"],
+            "properties": {
+              "source_path": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw"],
+            "properties": {
+              "original_type": {},
+              "raw": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["submission"],
+            "properties": {
+              "submission": {}
+            }
+          },
+          "then": {
+            "required": ["revision"],
+            "properties": {
+              "revision": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["harness", "submission"],
+            "properties": {
+              "harness": {
+                "const": "claude"
+              },
+              "submission": {}
+            }
+          },
+          "then": {
+            "properties": {
+              "submission": {
+                "type": "object",
+                "properties": {
+                  "field": {
+                    "const": "prompt_id"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["harness", "submission"],
+            "properties": {
+              "harness": {
+                "const": "codex"
+              },
+              "submission": {}
+            }
+          },
+          "then": {
+            "properties": {
+              "submission": {
+                "type": "object",
+                "properties": {
+                  "field": {
+                    "const": "turn_id"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["revision"],
+            "properties": {
+              "revision": {}
+            }
+          },
+          "then": {
+            "required": ["harness", "session", "submission", "actor"],
+            "properties": {
+              "harness": {},
+              "session": {},
+              "submission": {},
+              "actor": {
+                "const": "human"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["estimated"],
+            "properties": {
+              "estimated": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw", "source_path"],
+            "properties": {
+              "original_type": {},
+              "raw": {},
+              "source_path": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["source_path"],
+            "properties": {
+              "source_path": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw"],
+            "properties": {
+              "original_type": {},
+              "raw": {}
             }
           }
         }
@@ -3477,6 +4864,9 @@
         "synthetic": {
           "const": true
         },
+        "estimated": {
+          "const": true
+        },
         "original_type": {
           "type": "string",
           "pattern": "^[A-Z][A-Z0-9_]*$"
@@ -3515,6 +4905,37 @@
               "harness": {
                 "const": "claude"
               }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["estimated"],
+            "properties": {
+              "estimated": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw", "source_path"],
+            "properties": {
+              "original_type": {},
+              "raw": {},
+              "source_path": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["source_path"],
+            "properties": {
+              "source_path": {}
+            }
+          },
+          "then": {
+            "required": ["original_type", "raw"],
+            "properties": {
+              "original_type": {},
+              "raw": {}
             }
           }
         }
