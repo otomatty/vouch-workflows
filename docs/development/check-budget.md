@@ -60,4 +60,21 @@
 | `npm run check` | 成功、42.0秒（予算90秒）。表示は `Implemented checks passed in 42.0s (budget 90s).` |
 | 追加したテスト | registry 2件、packaging 3件（`time-budgets.test.mjs`）、check-runner の予算の表示の検査が成功 |
 
-Windows の値（150秒）を使う経路は、`checkBudgetMs` のテストと CI の Windows ジョブで確認します。
+Windows の値（150秒）を使う経路は、`checkBudgetMs` のテストと CI の Windows ジョブで確認しました。
+
+### CI
+
+実装（`4178661`）の push と、その後の workflow_dispatch 3回、計4回の CI を実行しました。値は `npm run check` のステップの所要時間（秒）で、括弧内は予算に対する余裕です。Windows Node 22 の push の回のログは `Implemented checks passed in 96.7s (budget 150s).`、Windows Node 24 は `85.9s (budget 150s)` でした。
+
+| run | Ubuntu / 22.19.0 | Ubuntu / 24.x | Windows / 22.19.0 | Windows / 24.x |
+| --- | --- | --- | --- | --- |
+| 36794941936（push） | 成功 30（60） | 成功 47（43） | 成功 98（52） | 成功 87（63） |
+| 36795182225 | 成功 49（41） | 成功 47（43） | 成功 94（56） | 成功 90（60） |
+| 36795398808 | 成功 50（40） | 失敗 39：HOOK-13 | 成功 93（57） | 失敗 90：HOOK-13 |
+| 36795652546 | 成功 47（43） | 成功 46（44） | 成功 95（55） | 失敗 39：1ケース5秒 |
+
+- check 全体の予算（TEST-12）の超過は16ジョブで0件です。変更前の予算（90秒）では、Windows Node 22 の4回（93〜98秒）はすべて打ち切られていました。
+- 成功時の余裕は、Ubuntu が40〜60秒、Windows Node 22 が52〜57秒、Windows Node 24 が60〜63秒です。
+- 残る失敗3件は、この Issue で変えない予算によるものです。
+  - HOOK-13 の p95 超過2件：Ubuntu Node 24 の承認の適用 240.9ms、Windows Node 24 の open の記録 202.7ms です。runner の遅れによるもので、[Issue #27](https://github.com/otomatty/vouch-workflows/issues/27) で扱います。Windows Node 24 は、予算テストの段を最後まで終えた後に失敗しました（90秒）。
+  - 1ケース5秒の超過1件（Windows Node 24、39秒）：scenario の `copied codex registrations confirm, apply the approval and then admit implementation writes` が5000msで打ち切られました。同じ回の packaging では、PowerShell の最初の起動が `probeNode` の 4000ms に達し、`native-environment.test.mjs` の2件が失敗しました（[hook-startup.md](hook-startup.md) の残る課題）。どちらも静的検査の段で起き、hooks・配布は始まっていません。

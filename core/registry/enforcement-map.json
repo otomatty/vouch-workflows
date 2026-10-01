@@ -1624,7 +1624,7 @@
         },
         {
           "status": "pending",
-          "claim": "元資料の CI の全体 ≤ 90 s は Windows で未達。2026-09-29〜10-01 の成功時の check は Ubuntu 15〜52秒、Windows 30〜91秒で、Windows Node 22 は約100秒かかり90秒で打ち切られた。所有者の判断で Windows の予算を150秒にした（docs/development/check-budget.md）。"
+          "claim": "元資料の CI の全体 ≤ 90 s は Windows で未達。2026-09-29〜10-01 の成功時の check は Ubuntu 15〜52秒、Windows 30〜91秒で、Windows Node 22 は約100秒かかり90秒で打ち切られた。所有者の判断で Windows の予算を150秒にした後の CI 4回（16ジョブ）は Ubuntu 30〜50秒、Windows 87〜98秒で、全体予算の超過は0件（docs/development/check-budget.md）。"
         },
         {
           "status": "implemented",
