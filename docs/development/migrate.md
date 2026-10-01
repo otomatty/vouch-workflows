@@ -16,7 +16,7 @@
 
 ## 移行元と archive
 
-移行元は `aidlc/spaces/<space>/intents/<YYMMDD>-<label>/` の record（`migration.json` の `source.record`）と、同じ space の `codekb/`・`memory/` である。Intent 名は既定で record のディレクトリ名、`plan <record> <intent>` で別名を指定できる。名前は Vouch の Intent 名の規則（`audit.mjs` の `intentHome`）に従う。
+移行元は `aidlc/spaces/<space>/intents/<YYMMDD>-<label>/` の record（`migration.json` の `source.record`）と、同じ space の `codekb/`・`memory/` である。コマンドは `plan <space> <YYMMDD-label> [<intent>]`（apply も同じ）で、パスではなく語で受け取る。書き込みガードは登録したコマンドに英数字と `-` の語だけを許すため（[再開・ask・report](resume.md)）、パスを渡す形にはしない。`_` を含む space・record 名はガードを通らないので、人が端末で実行する。Intent 名は既定で record のディレクトリ名で、3語目で別名を指定できる。名前は Vouch の Intent 名の規則（`audit.mjs` の `intentHome`）に従う。
 
 全ファイルを `vouch/archive/aidlc-v2/<プロジェクト root からの元のパス>` へバイト単位で複製する。複製先が既に同じバイトなら書かず、異なれば衝突として何も書かない。リンク・通常ファイル以外・境界外は欠損として扱い、移行しない。原本は読むだけで、`apply` の前後で全ファイルの digest が変わらないことと、archive が原本と一致することを検査する。
 
@@ -69,5 +69,27 @@ codekb は §8 に repo ごとのファイル数と `reverse-engineering-timesta
 
 - 書き込みは「なければ作る、同じなら何もしない」に限る。`apply` は全ての書き込み先を先に検査し、1つでも異なる内容があれば MIGRATE-TARGET で何も書かない。
 - archive → 監査 → 移行レポートの順に書く。途中で失敗しても、再実行は書けた分を同一として飛ばし、残りを書く。監査の追記は1回の原子的な置換である。
-- Intent のフォルダに移行レポートがないのに成果物がある、または監査にこの移行以外の記録だけがある場合は、別の Intent と衝突しているとして拒否する。
+- Intent のフォルダに移行レポートがないのに成果物がある、または監査にこの移行が作らない記録がある場合は、別の Intent と衝突しているとして拒否する。移行レポートが一致していれば、承認やその後の作業の記録があっても再実行できる。
 - 結果の JSON は全ファイル数、archive 済み・同一、監査ブロック・変換・legacy・推定の数を返す。数の合計は元ファイル数・ブロック数と一致する。
+
+## 検査の対応
+
+コマンドの checks は MIGRATE-ARGS（操作と語の形）、MIGRATE-SOURCE（record の有無）、MIGRATE-FILES（リンク・通常ファイル以外・読めないファイル）、MIGRATE-STATE（チェックボックス）、MIGRATE-AUDIT（UTF-8 と時刻）、MIGRATE-TARGET（衝突）、apply の時だけ MIGRATE-WRITE と MIGRATE-VERIFY を返す。不合格の check があれば終了2で、apply は書き込まない。
+
+ファイルの読み書きは fs.mjs の FileStore を通す。今回、正確なバイトの読み取り（readBytes）、同じバイトなら書かず異なれば FS-CONFLICT とする作成（createBytes、既存の更新ロック・fsync・原子的な rename を共用）、リンクを辿らない直下の一覧（list）を追加した。fs.mjs の行数上限を保つため、パスの分類（locate）を locate.mjs に分け、その検査は locate.test.mjs に移した。
+
+## 実装と検証記録
+
+2026-10-01、契約 → 失敗する先行テスト → 実装の順でコミットした。状態の読み取り（v2-state.mjs）、監査の分割と変換（v2-audit.mjs）、行き先の規則（migrate-plan.mjs）、移行レポート（migrate-brief.mjs）、ファイルの収集・衝突・照合（migrate-files.mjs）、コマンドの組み立て（migrate.mjs）、人の承認（migrate-approve.mjs）を分けた。
+
+入力の区別は次のとおり。15種の状態 fixture、監査サンプル、inception / construction / re の成果物、memory の3層は `docs/aidlc-v2-reference/` の原本をそのまま読む。2つ目の監査シャード、`## Review` 付録、質問ファイル、日誌、operation、バイナリ、未対応のファイルは手製の入力である。各状態の進捗の期待値は fixture のチェックボックスから手で求めた。UserPromptSubmit の承認は Claude Code 2.1.283 / Codex 0.153.4 の採取済み入力から作った synthetic 入力で検証した。実際の v2 利用者の record の移行、モデルによる成果物・決定・規約の書き換えの評価、人の実承認は未実施である。
+
+Linux / Node.js 22.22.0 で `npm run check` が69.3秒（予算90秒）で成功した。content・registry・packaging 182件、unit 337件、scenario 27件（2相）、hooks 103件と負荷測定16件の計665件、配布272ファイルの生成と一致を確認した。lib のカバレッジは行99.98% / 分岐97.44% / 関数100%、フック入口は100%。全件の apply は1回あたり約90ms（Linux、archive の fsync を含む）で、15種の状態は状態ファイルと監査サンプルだけの record で apply し、全成果物を含む record は代表の状態で検証した。Windows / macOS の結果は CI で確認する。
+
+## 残る制限
+
+- archive は書き込みガードの保護対象ではない。ツールからの `vouch/archive/aidlc-v2/` への書き込みを遮る検査は未実装で、再実行の衝突検出と移行レポートの digest で変更を検出する。
+- space の `knowledge/`（チーム知識）とフレームワーク側の memory は移行元に含めない。space の `memory/` にある org.md / phases は affirm されていない既定として落とす。
+- `_` を含む space・record 名は書き込みガードが登録コマンドの引数として通さないため、人が端末で実行する。
+- 承認のフックは移行レポートの digest と形式だけを検査し、archive や成果物の完全性は apply / plan の結果に依存する。
+- 監査の変換は3種に限る。sensor の結果、codekb の更新、review の要求なども legacy として原文で残り、Vouch の計測には数えない。
