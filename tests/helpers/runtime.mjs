@@ -77,6 +77,31 @@ export function memoryFiles(initial = {}) {
     readText: async (path) => data.get(path) ?? null,
     updateText,
     writeText: async (path, text) => updateText(path, () => text),
+    readBytes: async (path) => {
+      const text = data.get(path);
+      return text === undefined ? null : Buffer.from(text, "utf8");
+    },
+    createBytes: async (path, bytes) => {
+      const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+      const before = data.get(path);
+      if (before === text) return false;
+      if (before !== undefined)
+        throw new Error("FS-CONFLICT: different existing content");
+      data.set(path, text);
+      return true;
+    },
+    list: async (path) => {
+      const prefix = `${path}/`;
+      const names = new Map();
+      for (const key of data.keys())
+        if (key.startsWith(prefix)) {
+          const [name = "", ...rest] = key.slice(prefix.length).split("/");
+          names.set(name, rest.length ? "directory" : "file");
+        }
+      return names.size
+        ? [...names].sort().map(([name, kind]) => ({ name, kind }))
+        : null;
+    },
     // Keys are root-relative; the memory store has no links, aliases or outside paths.
     locate: async (path) => {
       const inside = path.replaceAll("\\", "/").replace(/^\.\/?/, "");

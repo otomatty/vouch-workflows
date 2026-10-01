@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { link, readFile, rm, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { createFileStore } from "../../../core/hooks/lib/fs.mjs";
 import { runMigrate } from "../../../core/hooks/lib/migrate.mjs";
@@ -12,8 +12,8 @@ import {
   intent,
   ports,
   record,
-  states,
   v2Files,
+  where,
   writeTree,
 } from "../../helpers/migrate.mjs";
 import { validator } from "../../helpers/registry.mjs";
@@ -39,7 +39,7 @@ const check = (report, id) => report.checks.find((item) => item.id === id);
 test("plan reads every source file, routes it and changes nothing", async (t) => {
   const { box, migrate } = await project(t);
   const before = await digests(box.root, ".");
-  const report = await migrate("plan", record);
+  const report = await migrate("plan", ...where);
   const plan = report.migration;
   t.plan(12);
   t.assert.equal(
@@ -55,13 +55,13 @@ test("plan reads every source file, routes it and changes nothing", async (t) =>
       .filter((file) => file.to.length === 0)
       .map((file) => [file.origin, file.note]),
     [
-      ["memory/org.md", "default"],
-      ["memory/phases/inception.md", "default"],
-      ["memory/team.md", "unaffirmed"],
       ["inception/requirements-analysis/memory.md", "diary"],
       ["notes/extra.md", "unmatched"],
       ["operation/deployment-pipeline/cd-config.md", "operation"],
       ["runtime-graph.json", "transient"],
+      ["memory/org.md", "default"],
+      ["memory/phases/inception.md", "default"],
+      ["memory/team.md", "unaffirmed"],
     ],
   );
   t.assert.deepEqual(
@@ -155,7 +155,7 @@ test("plan reads every source file, routes it and changes nothing", async (t) =>
 test("apply archives byte for byte, converts the audit, writes the Brief and leaves the source unchanged", async (t) => {
   const { box, migrate } = await project(t);
   const source = await digests(box.root, "aidlc");
-  const report = await migrate("apply", record);
+  const report = await migrate("apply", ...where);
   const records = (await box.read(`${home}/audit/events.jsonl`))
     .trim()
     .split("\n")
@@ -218,9 +218,9 @@ test("apply archives byte for byte, converts the audit, writes the Brief and lea
 
 test("a rerun of a completed apply writes nothing and reports every file as unchanged", async (t) => {
   const { box, migrate } = await project(t);
-  const first = await migrate("apply", record);
+  const first = await migrate("apply", ...where);
   const after = await digests(box.root, ".");
-  const second = await migrate("apply", record);
+  const second = await migrate("apply", ...where);
   t.plan(4);
   t.assert.equal(second.ok, true, JSON.stringify(second.checks));
   t.assert.deepEqual(second.migration?.writes, {
@@ -235,6 +235,7 @@ test("a rerun of a completed apply writes nothing and reports every file as unch
 
 test("a partial failure is completed by the next apply without duplicating anything", async (t) => {
   const { box, store } = await project(t);
+  t.plan(7);
   let calls = 0;
   /** @type {import('../../../core/hooks/lib/runtime-contracts.mjs').FileStore} */
   const failing = {
@@ -245,7 +246,7 @@ test("a partial failure is completed by the next apply without duplicating anyth
     },
   };
   await t.assert.rejects(
-    runMigrate(failing, environment, git, ports("apply", record)),
+    runMigrate(failing, environment, git, ports("apply", ...where)),
     /FS-DISK/,
   );
   const partial = await digests(box.root, "vouch");
@@ -258,19 +259,18 @@ test("a partial failure is completed by the next apply without duplicating anyth
     },
   };
   await t.assert.rejects(
-    runMigrate(auditFailing, environment, git, ports("apply", record)),
+    runMigrate(auditFailing, environment, git, ports("apply", ...where)),
     /FS-DISK: audit/,
   );
   const resumed = await runMigrate(
     store,
     environment,
     git,
-    ports("apply", record),
+    ports("apply", ...where),
   );
   const records = (await box.read(`${home}/audit/events.jsonl`))
     .trim()
     .split("\n");
-  t.plan(5);
   t.assert.equal(
     Object.keys(partial).length,
     3,
@@ -285,226 +285,4 @@ test("a partial failure is completed by the next apply without duplicating anyth
   });
   t.assert.equal(records.length, 13);
   t.assert.equal(new Set(records.map((line) => JSON.parse(line).id)).size, 13);
-});
-
-test("conflicting targets refuse the whole apply before any write", async (t) => {
-  t.plan(8);
-  const cases = [
-    {
-      name: "a different archive copy",
-      prepare: (/** @type {Record<string,string>} */ files) => ({
-        ...files,
-        [archive(`${record}/aidlc-state.md`)]: "changed\n",
-      }),
-    },
-    {
-      name: "another Intent with the same name",
-      prepare: (/** @type {Record<string,string>} */ files) => ({
-        ...files,
-        [`${home}/intent.md`]: "---\nstatus: draft\n---\n",
-      }),
-    },
-    {
-      name: "another Intent's audit",
-      prepare: (/** @type {Record<string,string>} */ files) => ({
-        ...files,
-        [`${home}/audit/events.jsonl`]: `${JSON.stringify({ id: "evt_other", v: 1, type: "session.started", ts: "2026-09-30T00:00:00Z", actor: "hook", session: "s" })}\n`,
-      }),
-    },
-    {
-      name: "a changed migration report",
-      prepare: (/** @type {Record<string,string>} */ files) => ({
-        ...files,
-        [`${home}/migration.md`]: "---\nstatus: draft\n---\n# edited\n",
-      }),
-    },
-  ];
-  for (const item of cases) {
-    const { box, migrate } = await project(
-      t,
-      /** @type {Record<string,Buffer|string>} */ (
-        item.prepare(
-          /** @type {Record<string,string>} */ (
-            /** @type {unknown} */ (v2Files())
-          ),
-        )
-      ),
-    );
-    const before = await digests(box.root, "vouch");
-    const report = await migrate("apply", record);
-    t.assert.deepEqual(
-      [report.ok, check(report, "MIGRATE-TARGET")?.ok],
-      [false, false],
-      item.name,
-    );
-    t.assert.deepEqual(
-      await digests(box.root, "vouch"),
-      before,
-      `${item.name}: nothing written`,
-    );
-  }
-});
-
-test("a source changed after its migration conflicts with the archive", async (t) => {
-  const { box, migrate } = await project(t);
-  await migrate("apply", record);
-  await writeFile(box.path(`${record}/notes/extra.md`), "# Changed\n");
-  const report = await migrate("apply", record);
-  t.plan(2);
-  t.assert.equal(report.ok, false);
-  t.assert.match(
-    check(report, "MIGRATE-TARGET")?.detail ?? "",
-    /vouch\/archive\/aidlc-v2\/aidlc\/spaces\/default\/intents\/250615-widget\/notes\/extra\.md/,
-  );
-});
-
-test("missing, corrupted, linked and timeless sources are refused and named", async (t) => {
-  t.plan(10);
-  const files = v2Files();
-  const { migrate: absent } = await project(t, {});
-  const missing = await absent("apply", record);
-  t.assert.deepEqual(
-    [missing.ok, check(missing, "MIGRATE-SOURCE")?.ok],
-    [false, false],
-  );
-  const { [`${record}/aidlc-state.md`]: _, ...stateless } = files;
-  const { box: noState, migrate: withoutState } = await project(t, stateless);
-  const noStateReport = await withoutState("apply", record);
-  t.assert.deepEqual(
-    [noStateReport.ok, check(noStateReport, "MIGRATE-STATE")?.detail],
-    [false, "aidlc-state.md is missing"],
-  );
-  t.assert.deepEqual(
-    await digests(noState.root, "vouch"),
-    {},
-    "nothing is written",
-  );
-  const { migrate: corrupted } = await project(t, {
-    ...files,
-    [`${record}/aidlc-state.md`]: await readFile(
-      "docs/aidlc-v2-reference/tests/fixtures/state-corrupted.md",
-    ),
-  });
-  const corruptedReport = await corrupted("apply", record);
-  t.assert.deepEqual(
-    [corruptedReport.ok, check(corruptedReport, "MIGRATE-STATE")?.detail],
-    [false, "no stage checkboxes"],
-  );
-  const { box: linked, migrate: withLink } = await project(t);
-  await link(
-    box(linked, `${record}/notes/extra.md`),
-    box(linked, `${record}/notes/hard.md`),
-  );
-  const linkReport = await withLink("apply", record);
-  t.assert.deepEqual(
-    [linkReport.ok, check(linkReport, "MIGRATE-FILES")?.ok],
-    [false, false],
-  );
-  t.assert.match(
-    check(linkReport, "MIGRATE-FILES")?.detail ?? "",
-    /notes\/extra\.md|notes\/hard\.md/,
-  );
-  const { migrate: timeless } = await project(t, {
-    ...files,
-    [`${record}/audit/broken.md`]: "## A\n**Event**: SESSION_STARTED\n",
-  });
-  const timelessReport = await timeless("apply", record);
-  t.assert.deepEqual(
-    [timelessReport.ok, check(timelessReport, "MIGRATE-AUDIT")?.detail],
-    [false, `${record}/audit/broken.md: no valid timestamp`],
-  );
-  const { box: unreadable, migrate: withDirectoryState } = await project(
-    t,
-    stateless,
-  );
-  await rm(unreadable.path(`${record}/aidlc-state.md`), { force: true });
-  await writeTree(unreadable.root, {
-    [`${record}/aidlc-state.md/inner.md`]: "x",
-  });
-  const directoryReport = await withDirectoryState("plan", record);
-  t.assert.equal(check(directoryReport, "MIGRATE-STATE")?.ok, false);
-  const usage = await absent("migrate", record);
-  t.assert.deepEqual(
-    [usage.ok, usage.checks.map((item) => item.id)],
-    [false, ["MIGRATE-ARGS"]],
-  );
-  const badIntent = await absent("plan", record, "Bad Name");
-  t.assert.equal(check(badIntent, "MIGRATE-ARGS")?.ok, false);
-});
-
-/** @param {{path:(path:string)=>string}} sandboxed @param {string} path */
-function box(sandboxed, path) {
-  return sandboxed.path(path);
-}
-
-test("an explicit Intent name, the rules language and affirmation evidence shape the result", async (t) => {
-  const files = v2Files("state-brownfield-feature.md");
-  const { box: root, migrate } = await project(t, {
-    ...files,
-    "vouch/rules.md": "---\nlanguage: en\ncheckpoints: topic\n---\n# Rules\n",
-  });
-  const report = await migrate("apply", record, "250820-saved-search");
-  t.plan(5);
-  t.assert.equal(report.ok, true, JSON.stringify(report.checks));
-  t.assert.deepEqual(
-    [
-      report.migration?.intent,
-      report.migration?.language,
-      report.migration?.affirmation,
-    ],
-    [
-      "250820-saved-search",
-      "en",
-      "aidlc-state.md: Practices Affirmed Timestamp 2025-08-20T09:30:00Z",
-    ],
-  );
-  t.assert.deepEqual(
-    report.migration?.files.find((file) => file.origin === "memory/team.md")
-      ?.to,
-    ["vouch/rules.md"],
-  );
-  t.assert.match(
-    await root.read("vouch/intents/250820-saved-search/migration.md"),
-    /^# Migration report: 250820-saved-search$/m,
-  );
-  t.assert.equal(report.migration?.progress.intent.state, "active");
-});
-
-test("each of the 15 state fixtures is applied, or refused only when its checkboxes are unreadable", async (t) => {
-  t.plan(states.length * 2);
-  for (const state of states) {
-    const { box, migrate } = await project(t, v2Files(state));
-    const source = await digests(box.root, "aidlc");
-    const report = await migrate("apply", record);
-    t.assert.equal(
-      report.ok,
-      state !== "state-corrupted.md",
-      `${state}: ${JSON.stringify(report.checks)}`,
-    );
-    t.assert.deepEqual(
-      await digests(box.root, "aidlc"),
-      source,
-      `${state}: source unchanged`,
-    );
-  }
-});
-
-test("the observed artifacts report presence and the raw status without interpreting it", async (t) => {
-  const { box, migrate } = await project(t);
-  await migrate("apply", record);
-  await box.write(
-    `${home}/intent.md`,
-    "---\nstatus: approved\n---\n# Intent\n",
-  );
-  await box.write(`${home}/decisions.md`, "# Decisions\n");
-  const report = await migrate("plan", record);
-  t.plan(2);
-  t.assert.equal(report.ok, true, JSON.stringify(report.checks));
-  t.assert.deepEqual(
-    report.migration?.artifacts.filter((item) => item.present),
-    [
-      { path: `${home}/intent.md`, present: true, status: "approved" },
-      { path: `${home}/decisions.md`, present: true, status: null },
-    ],
-  );
 });

@@ -2,7 +2,7 @@
 
 この文書は Vouch を配ったプロジェクトの開発に適用する。判断はモデル、機械的な検査・記録はフックが担う。状態機械は作らず、成果物を状態、監査ログを証跡とする。
 現在の配布は doctor、読み取り専用 status、Intent と Design の下書き、人の明示入力による確認点と承認の記録・適用、承認済み Intent の Build、別コンテキストの Verify と Review Brief に対応する。知識の鮮度・引用・判断依頼の検査は明示入力 `vouch knowledge check` / `vouch knowledge refresh` / `vouch citations check` を UserPromptSubmit フックが処理する。監査ログ・フック設定・承認済み成果物へのツールからの書き込みと、承認済み計画のない実装のファイル編集は、登録したツールに限りフックが遮る。`main` への push、テストファイルの改変・削除や契約 → テスト → 実装の順序に反するコミットも、登録したシェルツールの Git に限りフックが遮る。DoD は `node {{HARNESS_DIR}}/hooks/vouch-dod.mjs` が実行し、build-log.md と監査に記録する。文書の規則が機械的に強制済みとはみなさない。
-引数なしの `/vouch`（Codex は `$vouch`）は成果物と監査ログから現在地を確かめて再開し、セッション開始フックが観測だけの再開要約を渡す。脇質問 `/vouch ask` は別コンテキストが読み取りで答え、フックが質問と答えを記録する。判断依頼の問いと既定適用は `node {{HARNESS_DIR}}/hooks/vouch-question.mjs`、人の回答は `vouch answer <Q-n> <選択肢>` の入力をフックが記録する。回答は確認点や承認ではない。`/vouch report` は `vouch-report.mjs` の実測値を要約し、Claude の statusline は現在地を読み取りで表示する。
+引数なしの `/vouch`（Codex は `$vouch`）は成果物と監査ログから現在地を確かめて再開し、セッション開始フックが観測だけの再開要約を渡す。脇質問 `/vouch ask` は別コンテキストが読み取りで答え、フックが質問と答えを記録する。判断依頼の問いと既定適用は `node {{HARNESS_DIR}}/hooks/vouch-question.mjs`、人の回答は `vouch answer <Q-n> <選択肢>` の入力をフックが記録する。回答は確認点や承認ではない。`/vouch report` は `vouch-report.mjs` の実測値を要約し、Claude の statusline は現在地を読み取りで表示する。`/vouch migrate` は v2 record の原本保存と監査の変換を `vouch-migrate.mjs` が行い、成果物は `status: draft` で書く。移行の完了は人の `vouch migrate approve <sha256>` をフックが記録した時だけで、Intent の承認ではない。
 
 ## ステージと参照元
 

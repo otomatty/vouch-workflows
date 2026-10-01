@@ -15,7 +15,7 @@ const references = ["resume", "ask", "questions", "report", "status", "doctor"];
 const reference = (name) =>
   readFileSync(`core/skills/vouch/references/${name}.md`, "utf8");
 
-test("the orchestrator routes resume, ask and report to existing references and keeps migrate unimplemented", (t) => {
+test("the orchestrator routes resume, ask, report and migrate to existing references", (t) => {
   const text = readFileSync(orchestrator, "utf8");
   const description = String(frontmatter(text).description);
   t.plan(references.length * 2 + 4);
@@ -26,7 +26,7 @@ test("the orchestrator routes resume, ask and report to existing references and 
   t.assert.match(description, /resume/i);
   t.assert.match(description, /\bask\b/);
   t.assert.match(description, /\breport\b/);
-  t.assert.match(text, /migrate[^\n]*未実装/);
+  t.assert.equal(text.includes("(references/migrate.md)"), true, "migrate");
 });
 
 test("ask runs read-only in a separate explorer context and leaves recording to the hook", (t) => {

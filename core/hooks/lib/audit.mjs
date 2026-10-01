@@ -1,7 +1,7 @@
 import { isAuditEvent } from "./validation.mjs";
 
 /** @param {unknown} value @returns {string} Canonical JSON for key-order-independent equality. */
-function canonical(value) {
+export function canonical(value) {
   if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
   if (value !== null && typeof value === "object")
     return `{${Object.entries(value)

@@ -801,6 +801,45 @@
           "status": "implemented",
           "path": "tests/registry/migration.test.mjs",
           "claim": "原本の91名とキーが完全一致し、値が新台帳またはlegacyであることを検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/registry/migration.test.mjs",
+          "claim": "migration.json がスキーマに合い、v2 の状態 fixture 15種の33ステージ・状態遷移の6種のチェックボックスと一致し、変換は必須値を復元できる3種に限り GATE_APPROVED を含まないことを検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/unit/lib/v2-state.test.mjs",
+          "claim": "元の15種の状態 fixture のチェックボックスを4ステージの観測へ写し、読めない・未知の印やステージを推測せず問題として返すことを検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/unit/lib/v2-audit.test.mjs",
+          "claim": "元の監査サンプルと手製シャードで、時刻・原文・出所を全記録に保持し、復元できない記録を legacy.<NAME>、隣接記録から求めた時刻・所要時間を estimated: true とし、Intent 承認を推測しないことを検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/unit/lib/migrate.test.mjs",
+          "claim": "apply が全ファイルを archive へバイト単位で複製し、元ファイルを変えず、全件を数え、再実行で何も書かず、部分失敗を次の apply が重複なく完了することを検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/unit/lib/migrate-targets.test.mjs",
+          "claim": "異なる archive・移行レポート・同名の別 Intent・変更された元ファイル・欠損・破損・リンク・時刻のないシャードで、何も書かずに拒否して対象を示すことを検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/unit/lib/migrate-states.test.mjs",
+          "claim": "15種の状態 fixture それぞれで apply が成功し（破損は拒否）、元ファイルが変わらないことを検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/scenario/migrate-distribution.test.mjs",
+          "claim": "配布した Claude / Codex のコマンドが書き込みガードを通って plan / apply し、人の vouch migrate approve だけが migration.completed を記録することを検査する。"
+        },
+        {
+          "status": "pending",
+          "claim": "実運用の v2 record（バイナリ・大量の監査・複数 space）での移行、モデルによる成果物・決定・規約の移行の評価、archive への書き込みを遮るガードは未実装・未評価。"
         }
       ]
     },
@@ -1808,6 +1847,11 @@
           "status": "implemented",
           "path": "tests/hooks/vouch-record-aside-answer.test.mjs",
           "claim": "人の vouch answer が question.answered だけを記録し、確認点の記録や intent.md の変更を伴わないことを両ハーネスの派生入力で検査する。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/unit/lib/migrate-approve.test.mjs",
+          "claim": "vouch migrate approve は現在の移行レポートの digest と prompt / turn の識別子がある時だけ migration.completed（actor human）を記録し、Intent の承認・確認点として扱わないことを検査する。"
         }
       ]
     },

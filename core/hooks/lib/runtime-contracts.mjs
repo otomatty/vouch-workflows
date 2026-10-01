@@ -11,6 +11,10 @@
  * @property {(path:string) => Promise<string|null>} readText Return null only for a missing file.
  * @property {(path:string,update:TextUpdate) => Promise<boolean>} updateText Serialize with a lock; replace atomically.
  * @property {(path:string,text:string) => Promise<boolean>} writeText Write through updateText.
+ * @property {(path:string) => Promise<Buffer|null>} readBytes Exact bytes of a regular file; null only when missing.
+ * @property {(path:string,bytes:Uint8Array) => Promise<boolean>} createBytes Create once under the update lock: false when
+ * the file already has exactly these bytes; FS-CONFLICT when it has others. Never replaces content.
+ * @property {(path:string) => Promise<DirectoryEntry[]|null>} list Direct children in code-unit order; null when missing.
  * @property {(path:string,from?:string) => Promise<PathLocation>} locate Classify without trusting the spelling:
  * resolve against `from` (default: the root) with the platform's separators, map the deepest existing ancestor to its real path and append
  * the rest. Outside, linked and missing paths are results, not errors; a component that cannot be looked
@@ -23,6 +27,7 @@
  * @property {'file'|'directory'|'missing'|'other'|'unresolved'} kind After following links; unresolved is a dangling or
  * looping link, or a target that could not be examined after it was found.
  * @property {number} links Hard link count of an existing regular file; 0 otherwise.
+ * @typedef {{name:string,kind:'file'|'directory'|'link'|'other'}} DirectoryEntry `link`: a symbolic link or a hard-linked file.
  * @typedef {import('./contracts.mjs').AuditStore} AuditStore
  * @typedef {object} RuntimeOptions
  * @property {HookContext} [context] Trusted installation configuration. Otherwise use env.mjs.
@@ -227,8 +232,9 @@ export {};
  * @typedef {(input:import('./contracts.mjs').HookInput,ctx:import('./contracts.mjs').ReadyHookContext)=>Promise<import('./contracts.mjs').HookResult>} RecordAsideAnswer
  * Stop of the turn whose submission recorded aside.asked appends aside.answered; it never blocks.
  * @typedef {{n:number,sum:number,min:number,max:number,missing:number,examples:string[]}} MeasureSummary
- * Over nonsynthetic records only; `missing` counts records without the field.
- * @typedef {{count:number,synthetic:number,measures:Record<string,MeasureSummary>}} TypeSummary
+ * Over measured records only (neither synthetic nor estimated); `missing` counts records without the field.
+ * @typedef {{count:number,synthetic:number,estimated:number,measures:Record<string,MeasureSummary>}} TypeSummary
+ * `estimated`: migrated records whose time or duration was derived; like synthetic ones, excluded from measures.
  * @typedef {object} AuditReport
  * @property {string} intent
  * @property {string} path
@@ -258,7 +264,7 @@ export {};
  */
 /**
  * @typedef {object} FileWriteHandle
- * @property {(text:string,encoding:'utf8') => FileOperationResult<void>} writeFile
+ * @property {(data:string|Uint8Array,encoding:'utf8') => FileOperationResult<void>} writeFile
  * @property {() => FileOperationResult<void>} sync
  * @property {() => FileOperationResult<void>} close
  * @typedef {object} FileOperations
@@ -271,6 +277,7 @@ export {};
  * @property {(from:string,to:string) => unknown} rename
  * @property {(path:string,options:{force:true}) => unknown} rm
  * @property {(path:string) => unknown} rmdir
+ * @property {(path:string) => FileOperationResult<string[]>} [readdir] Only FileStore.list needs it.
  */
 
 /**

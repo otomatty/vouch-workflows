@@ -9,8 +9,8 @@ import {
   digests,
   home,
   intent,
-  record,
   v2Files,
+  where,
   writeTree,
 } from "../helpers/migrate.mjs";
 import { packageRun } from "../helpers/packaging.mjs";
@@ -57,13 +57,13 @@ for (const harness of /** @type {const} */ (["claude", "codex"])) {
       [],
       JSON.stringify(
         toolFixture(harness, "Bash", root, {
-          command: `node ${entry} apply ${record}`,
+          command: `node ${entry} apply ${where.join(" ")}`,
         }).payload,
       ),
     );
     const source = await digests(root, "aidlc");
-    const plan = node(entry, ["plan", record]);
-    const apply = node(entry, ["apply", record]);
+    const plan = node(entry, ["plan", ...where]);
+    const apply = node(entry, ["apply", ...where]);
     const report = JSON.parse(apply.stdout);
     const brief = await readFile(join(root, home, "migration.md"));
     const digest = createHash("sha256").update(brief).digest("hex");

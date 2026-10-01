@@ -1,15 +1,14 @@
 ---
 name: vouch
-description: "Plan a Vouch Intent, draft its Design, build an approved Intent, verify it into a Review Brief, resume after an interruption, answer an aside with ask, summarize audit measurements with report, show status and unanswered decisions, or diagnose an installation with doctor. Use for Vouch workflow, resume, status and setup requests."
+description: "Plan a Vouch Intent, draft its Design, build an approved Intent, verify it into a Review Brief, resume after an interruption, answer an aside with ask, summarize audit measurements with report, migrate an AI-DLC v2 record with migrate, show status and unanswered decisions, or diagnose an installation with doctor. Use for Vouch workflow, resume, migration, status and setup requests."
 user-invocable: true
 reads: always
 ---
 
 # Vouch
 
-Vouch の4ステージ（Intent → Design → Build → Verify）を Skill で進める。現在対応している操作は doctor、読み取り専用 status、引数なしの再開、ask、report、Intent と Design の下書き、承認済み Intent の Build、Verify と Review Brief である。
-migrate は未実装と伝え、完了したように扱わない。
-Claude では `/vouch`・`/vouch status`・`/vouch ask <質問>`・`/vouch report`・`/vouch doctor`、Codex では先頭を `$vouch` にして指定できる。
+Vouch の4ステージ（Intent → Design → Build → Verify）を Skill で進める。現在対応している操作は doctor、読み取り専用 status、引数なしの再開、ask、report、v2 record の migrate、Intent と Design の下書き、承認済み Intent の Build、Verify と Review Brief である。
+Claude では `/vouch`・`/vouch status`・`/vouch ask <質問>`・`/vouch report`・`/vouch migrate`・`/vouch doctor`、Codex では先頭を `$vouch` にして指定できる。
 
 ## Intent
 
@@ -39,6 +38,10 @@ Q-n の判断依頼を出す・既定案で進める時は、[判断依頼の記
 ## Report
 
 利用者が `report` で監査の集計を求めた時に、[集計の説明](references/report.md)を読む。実測値・欠損・synthetic・推定を分け、ダッシュボードを作らない。
+
+## Migrate
+
+利用者が `migrate` で AI-DLC v2 の record の移行を求めた時に、[移行の説明](references/migrate.md)を読む。原本の保存・監査の変換・全件表はコマンドが行い、モデルは成果物を `status: draft` で書く。移行の完了は人の `vouch migrate approve` をフックが記録した時だけで、Intent の承認ではない。
 
 ## Status
 

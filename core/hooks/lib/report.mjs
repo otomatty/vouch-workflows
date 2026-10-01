@@ -6,7 +6,8 @@ import documents from "../../registry/project-documents.json" with {
 import { intentHome, scanAudit } from "./audit.mjs";
 import { readIntent } from "./env.mjs";
 
-// Measured audit values only (docs/development/resume.md); nothing is estimated or filled in.
+// Measured audit values only (docs/development/resume.md); nothing is estimated or filled in,
+// and migrated estimates (docs/development/migrate.md) are only counted.
 // The scan keeps only schema-valid records, so every type has a ledger entry.
 /** @typedef {import('./runtime-contracts.mjs').TypeSummary} TypeSummary
  * @typedef {keyof typeof ledger.events} Registered */
@@ -51,6 +52,7 @@ export async function runReport(
     const summary = types[event.type] ?? {
       count: 0,
       synthetic: 0,
+      estimated: 0,
       measures: Object.fromEntries(
         [...entry.measures, ...operations.report.common_measures].map(
           (name) => [
@@ -64,6 +66,11 @@ export async function runReport(
     summary.count++;
     if (event.synthetic) {
       summary.synthetic++;
+      continue;
+    }
+    // A migrated time or duration derived from neighbouring records is never a measurement.
+    if (event.estimated) {
+      summary.estimated++;
       continue;
     }
     for (const [name, measure] of Object.entries(summary.measures)) {

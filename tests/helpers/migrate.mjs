@@ -10,6 +10,8 @@ const fixtures = `${reference}/tests/fixtures`;
 export const space = "aidlc/spaces/default";
 export const record = `${space}/intents/250615-widget`;
 export const intent = "250615-widget";
+/** The command words naming the record: `<space> <YYMMDD-label>`. */
+export const where = /** @type {const} */ (["default", "250615-widget"]);
 export const home = `vouch/intents/${intent}`;
 export const archive = (/** @type {string} */ path) =>
   `vouch/archive/aidlc-v2/${path}`;
@@ -187,6 +189,14 @@ export function v2Files(state = "state-construction.md") {
   };
 }
 
+/** A record with only the state fixture and the audit sample. @param {string} state @returns {Record<string,Buffer>} */
+export const stateRecord = (state) => ({
+  [`${record}/aidlc-state.md`]: readFileSync(`${fixtures}/${state}`),
+  [`${record}/audit/host-clone.md`]: readFileSync(
+    `${fixtures}/audit-sample.md`,
+  ),
+});
+
 /** Write the files below a root. @param {string} root @param {Record<string,Buffer|string>} files */
 export async function writeTree(root, files) {
   for (const [path, bytes] of Object.entries(files)) {
@@ -224,6 +234,8 @@ export const environment = {
   nodeVersion: "22.19.0",
 };
 export const git = { ok: true, detail: "git" };
-export const instant = "2026-10-01T00:00:00.000Z";
 /** @param {...string} args */
-export const ports = (...args) => ({ args, now: () => instant });
+export const ports = (...args) => ({
+  args,
+  now: () => "2026-10-01T00:00:00.000Z",
+});

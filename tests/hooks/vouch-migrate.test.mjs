@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { source } from "../helpers/commands.mjs";
 import { hookTest as test } from "../helpers/hook-test.mjs";
-import { record } from "../helpers/migrate.mjs";
+import { where } from "../helpers/migrate.mjs";
 import { validator } from "../helpers/registry.mjs";
 
 // Planning and applying a real record run from the installed copy in tests/scenario/migrate-distribution.test.mjs.
@@ -9,13 +9,13 @@ test("the migrate command reports bad arguments and a missing record as JSON wit
   const before = [existsSync("vouch"), existsSync("aidlc")];
   const results = [
     [source("vouch-migrate"), ["MIGRATE-ARGS"]],
-    [source("vouch-migrate", ["copy", record]), ["MIGRATE-ARGS"]],
+    [source("vouch-migrate", ["copy", ...where]), ["MIGRATE-ARGS"]],
     [
-      source("vouch-migrate", ["plan", record]),
+      source("vouch-migrate", ["plan", ...where]),
       ["MIGRATE-ARGS", "MIGRATE-SOURCE"],
     ],
     [
-      source("vouch-migrate", ["apply", record]),
+      source("vouch-migrate", ["apply", ...where]),
       ["MIGRATE-ARGS", "MIGRATE-SOURCE"],
     ],
   ];

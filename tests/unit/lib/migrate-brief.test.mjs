@@ -7,8 +7,8 @@ import {
   environment,
   git,
   ports,
-  record,
   v2Files,
+  where,
   writeTree,
 } from "../../helpers/migrate.mjs";
 import { sandbox } from "../../helpers/runtime.mjs";
@@ -21,7 +21,7 @@ async function planned(t) {
     await createFileStore(box.root),
     environment,
     git,
-    ports("plan", record),
+    ports("plan", ...where),
   );
   if (!report.migration) throw new Error("plan failed");
   return report.migration;
@@ -99,4 +99,38 @@ test("untrusted text cannot break the report tables", async (t) => {
     /\| evt_x \| GATE_APPROVED \| 2025-06-15T12:00:00Z \| `a\\\|b'c d\.md#L1` \|/,
   );
   t.assert.match(brief, /\| r \| 1 \| x\\\|y \| 'z' \|/);
+});
+
+test("empty sections say none, and affirmation and a full SHA are shown as found", async (t) => {
+  const payload = await planned(t);
+  const brief = renderBrief({
+    ...payload,
+    language: "en",
+    files: [],
+    units: [],
+    decisions: [],
+    affirmation:
+      "aidlc-state.md: Practices Affirmed Timestamp 2025-08-20T09:30:00Z",
+    audit: { blocks: 0, converted: 0, legacy: 0, estimated: 0, types: [] },
+    codekb: [
+      {
+        repo: "api",
+        files: 2,
+        scanned: null,
+        commit: "a".repeat(40),
+        verifiable: true,
+      },
+    ],
+  });
+  t.plan(4);
+  t.assert.match(brief, /^files: 0$/m);
+  t.assert.match(
+    brief,
+    /<!-- sec:unmapped -->\n## 4\. Files without a destination\n\nnone\n/,
+  );
+  t.assert.match(
+    brief,
+    /^Rules affirmation evidence: aidlc-state\.md: Practices Affirmed Timestamp 2025-08-20T09:30:00Z$/m,
+  );
+  t.assert.match(brief, /^\| api \| 2 \| none \| a{40} \| full SHA \|$/m);
 });

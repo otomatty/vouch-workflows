@@ -173,6 +173,10 @@ test("a resent approval keeps its first record and time; Codex binds the turn", 
   });
   t.plan(3);
   t.assert.deepEqual(again?.events, first?.events);
-  t.assert.equal(codex?.events?.[0]?.submission?.field, "turn_id");
+  const record = codex?.events?.[0];
+  t.assert.equal(
+    record?.type === "migration.completed" && record.submission?.field,
+    "turn_id",
+  );
   t.assert.equal(validate(codex?.events?.[0]), true);
 });

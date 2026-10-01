@@ -1,12 +1,5 @@
-import {
-  basename,
-  dirname,
-  isAbsolute,
-  join,
-  relative,
-  resolve,
-  sep,
-} from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { createLocate } from "./locate.mjs";
 
 // The builtin object avoids the ESM facade, which evaluates fs.promises and the stream getters.
 const fs = process.getBuiltinModule("node:fs");
@@ -28,6 +21,7 @@ const native = {
     }
   },
   rmdir: fs.rmdirSync,
+  readdir: (path) => fs.readdirSync(path),
   open(path, flags, mode) {
     const descriptor = fs.openSync(path, flags, mode);
     return {
@@ -38,6 +32,17 @@ const native = {
     };
   },
 };
+
+/** @param {Uint8Array} bytes */
+function decode(bytes) {
+  try {
+    return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(
+      bytes,
+    );
+  } catch {
+    throw new Error("FS-ENCODING: invalid UTF-8");
+  }
+}
 
 /** @param {unknown} error @param {string} code */
 function hasCode(error, code) {
@@ -171,28 +176,26 @@ export async function createFileStore(root, operations = native) {
   }
 
   /** @param {string} path */
-  async function readText(path) {
+  async function readBytes(path) {
     const target = await resolvePath(path);
     try {
       if (!(await operations.lstat(target)).isFile())
         throw new Error("FS-TYPE: regular file required");
-      const bytes = await operations.readFile(target);
-      try {
-        return new TextDecoder("utf-8", {
-          fatal: true,
-          ignoreBOM: true,
-        }).decode(bytes);
-      } catch {
-        throw new Error("FS-ENCODING: invalid UTF-8");
-      }
+      return Buffer.from(await operations.readFile(target));
     } catch (error) {
       if (hasCode(error, "ENOENT")) return null;
       throw error;
     }
   }
 
-  /** @param {string} path @param {import('./runtime-contracts.mjs').TextUpdate} update */
-  async function updateText(path, update) {
+  /** @param {string} path */
+  async function readText(path) {
+    const bytes = await readBytes(path);
+    return bytes === null ? null : decode(bytes);
+  }
+
+  /** @param {string} path @param {(before:Buffer|null) => Uint8Array|null} update */
+  async function replaceBytes(path, update) {
     const target = await resolvePath(path);
     await operations.mkdir(dirname(target), { recursive: true });
     await resolvePath(path);
@@ -208,9 +211,9 @@ export async function createFileStore(root, operations = native) {
     }
     const temporary = join(lock, "next");
     try {
-      const before = await readText(path);
+      const before = await readBytes(path);
       const after = update(before);
-      if (after === null || after === before) return false;
+      if (after === null || before?.equals(after)) return false;
       const handle = await operations.open(temporary, "wx", 0o600);
       try {
         await handle.writeFile(after, "utf8");
@@ -227,68 +230,64 @@ export async function createFileStore(root, operations = native) {
     }
   }
 
+  /** @param {string} path @param {import('./runtime-contracts.mjs').TextUpdate} update */
+  function updateText(path, update) {
+    return replaceBytes(path, (bytes) => {
+      const before = bytes === null ? null : decode(bytes);
+      const after = update(before);
+      return after === null || after === before
+        ? null
+        : Buffer.from(after, "utf8");
+    });
+  }
+
+  /** @param {string} path */
+  async function list(path) {
+    const target = await resolvePath(path);
+    const read = operations.readdir;
+    if (!read) throw new Error("FS-LIST: listing unsupported");
+    let names;
+    try {
+      if (!(await operations.lstat(target)).isDirectory())
+        throw new Error("FS-TYPE: directory required");
+      names = await read(target);
+    } catch (error) {
+      if (hasCode(error, "ENOENT")) return null;
+      throw error;
+    }
+    /** @type {import('./runtime-contracts.mjs').DirectoryEntry[]} */
+    const entries = [];
+    for (const name of [...names].sort()) {
+      const info = await operations.lstat(join(target, name));
+      entries.push({
+        name,
+        kind:
+          info.isSymbolicLink() || (info.isFile() && info.nlink !== 1)
+            ? "link"
+            : info.isFile()
+              ? "file"
+              : info.isDirectory()
+                ? "directory"
+                : "other",
+      });
+    }
+    return entries;
+  }
+
   return {
     resolvePath,
     readText,
     updateText,
     writeText: (path, text) => updateText(path, () => text),
-    locate,
+    readBytes,
+    // Create once: identical bytes are a no-op, different bytes are never replaced.
+    createBytes: (path, bytes) =>
+      replaceBytes(path, (before) => {
+        if (before === null) return bytes;
+        if (before.equals(bytes)) return null;
+        throw new Error("FS-CONFLICT: different existing content");
+      }),
+    list,
+    locate: createLocate(base, operations),
   };
-
-  /** @param {string} from @param {string} to */
-  function outside(from, to) {
-    const path = relative(from, to);
-    return path === ".." || path.startsWith(`..${sep}`) || isAbsolute(path);
-  }
-  /** @type {(canonical:string,kind:import('./runtime-contracts.mjs').PathLocation['kind'],links?:number) => import('./runtime-contracts.mjs').PathLocation} */
-  function located(canonical, kind, links = 0) {
-    return {
-      inside: outside(base, canonical)
-        ? null
-        : relative(base, canonical).split(sep).join("/"),
-      contains: !outside(canonical, base),
-      kind,
-      links,
-    };
-  }
-
-  /** Classification only: links are followed, never refused. See FileStore.locate.
-   * @param {string} path @param {string} [from] */
-  async function locate(path, from = base) {
-    const lexical = resolve(base, from, path);
-    if (lexical.includes("\0")) return located(lexical, "missing");
-    /** @type {string[]} */ const rest = [];
-    let existing = lexical;
-    for (;;) {
-      try {
-        await operations.lstat(existing);
-        break;
-      } catch {
-        // Missing, denied, looping or too long: one word must not fail a guard open.
-        if (dirname(existing) === existing) return located(lexical, "missing");
-        rest.unshift(basename(existing));
-        existing = dirname(existing);
-      }
-    }
-    let real;
-    try {
-      real = await operations.realpath(existing);
-    } catch {
-      // A dangling or looping link stays where its own directory really is.
-      let parent = dirname(existing);
-      try {
-        parent = await operations.realpath(parent);
-      } catch {}
-      return located(join(parent, basename(existing), ...rest), "unresolved");
-    }
-    if (rest.length > 0) return located(join(real, ...rest), "missing");
-    let info;
-    try {
-      info = await operations.stat(real);
-    } catch {
-      return located(real, "unresolved");
-    }
-    if (info.isFile()) return located(real, "file", info.nlink);
-    return located(real, info.isDirectory() ? "directory" : "other");
-  }
 }
