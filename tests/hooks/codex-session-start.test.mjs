@@ -75,27 +75,32 @@ test("same session under distinct installed harnesses has distinct audit identit
   t.assert.notEqual(rows[0].id, rows[1].id);
 });
 
-test("Codex unscoped startup and scoped resume do not create audit state", async (t) => {
+test("Codex unscoped startup creates no audit and a scoped resume records session.resumed", async (t) => {
   const box = await sandbox(t);
   const fixture = sessionFor(box.root, "codex");
-  t.plan(4);
+  t.plan(6);
   const unscoped = runHook(hook, fixture, { root: box.root });
+  t.assert.deepEqual(
+    [unscoped.exitCode, unscoped.stdout, unscoped.stderr],
+    [0, "", ""],
+  );
+  await t.assert.rejects(box.read(path), { code: "ENOENT" });
   const resumed = {
     ...fixture,
     payload: { ...fixture.payload, source: "resume" },
   };
   const resume = runHook(hook, resumed, { root: box.root, intent });
-  t.assert.deepEqual(
-    [unscoped.exitCode, unscoped.stdout, unscoped.stderr],
-    [0, "", ""],
-  );
+  const event = JSON.parse(await box.read(path));
   t.assert.deepEqual([resume.exitCode, resume.stderr], [0, ""]);
   t.assert.match(
     resume.stdout,
     new RegExp(`^${operations.labels.ja.summary}\n`),
-    "resume summary only",
   );
-  await t.assert.rejects(box.read(path), { code: "ENOENT" });
+  t.assert.equal(event.type, "session.resumed");
+  t.assert.deepEqual(
+    [event.harness, event.tokens, typeof event.duration_ms],
+    ["codex", undefined, "number"],
+  );
 });
 
 test("Codex driver refuses altered capture claims and unknown legacy versions", (t) => {

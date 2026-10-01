@@ -2,9 +2,10 @@ import { symlink } from "node:fs/promises";
 import operations from "../../core/registry/operations.json" with {
   type: "json",
 };
+import { deriveFixture } from "../helpers/fixtures.mjs";
 import { assertGolden } from "../helpers/golden.mjs";
 import { hookTest as test } from "../helpers/hook-test.mjs";
-import { validator } from "../helpers/registry.mjs";
+import { readJson, validator } from "../helpers/registry.mjs";
 import {
   promptFor,
   runHook,
@@ -123,7 +124,7 @@ test("unscoped startup and unrelated events record nothing; summarized sources o
   const cases = [
     { fixture, options: { root: box.root } },
     { fixture: promptFor(box.root), options: { root: box.root, intent } },
-    ...["resume", "clear", "compact", "fork", "future"].map((source) => ({
+    ...["clear", "fork", "future"].map((source) => ({
       fixture: { ...fixture, payload: { ...fixture.payload, source } },
       options: { root: box.root, intent },
     })),
@@ -211,4 +212,80 @@ test("invalid scope and linked audit directories cannot write outside the intent
   t.assert.match(linked.stderr, /FS-LINK/);
   t.assert.equal(linked.exitCode, 0);
   await t.assert.rejects(outside.read("events.jsonl"), { code: "ENOENT" });
+});
+
+test("Claude session records obtained tokens; Codex and malformed usage do not", async (t) => {
+  const box = await sandbox(t);
+  const claude = deriveFixture(
+    readJson(
+      "tests/fixtures/harness/claude/2.1.283/linux/print/SessionStart.startup.json",
+    ),
+    { cwd: box.root, tokens: { in: 11, out: 7, cache: 3 } },
+  );
+  const codex = deriveFixture(
+    readJson(
+      "tests/fixtures/harness/codex/0.153.4/linux/exec/SessionStart.startup.json",
+    ),
+    { cwd: box.root, tokens: { in: 11, out: 7 } },
+  );
+  const malformed = deriveFixture(
+    readJson(
+      "tests/fixtures/harness/claude/2.1.283/linux/print/SessionStart.resume.json",
+    ),
+    { cwd: box.root, tokens: { in: 1.5, out: 1 } },
+  );
+  const started = runHook(hook, claude, { root: box.root, intent });
+  const other = runHook(hook, codex, {
+    root: box.root,
+    intent,
+    configuredHarness: "codex",
+  });
+  const resumed = runHook(hook, malformed, { root: box.root, intent });
+  const rows = (await box.read(path))
+    .trim()
+    .split("\n")
+    .map((line) => JSON.parse(line));
+  t.plan(6);
+  t.assert.deepEqual(
+    [started.exitCode, other.exitCode, resumed.exitCode],
+    [0, 0, 0],
+  );
+  t.assert.equal([started.stderr, other.stderr, resumed.stderr].join(""), "");
+  t.assert.deepEqual(
+    rows.map((row) => row.type),
+    ["session.started", "session.started", "session.resumed"],
+  );
+  t.assert.deepEqual(rows[0].tokens, { in: 11, out: 7, cache: 3 });
+  t.assert.equal(rows[1].tokens, undefined);
+  t.assert.deepEqual(
+    [rows[2].tokens, rows[2].duration_ms],
+    [undefined, 0],
+    "malformed usage is not a measurement; restore duration is the clock delta",
+  );
+});
+
+test("a resumed session replays the first duration and tokens", async (t) => {
+  const box = await sandbox(t);
+  const fixture = deriveFixture(
+    readJson(
+      "tests/fixtures/harness/claude/2.1.283/linux/print/SessionStart.resume.json",
+    ),
+    { cwd: box.root, tokens: { in: 4, out: 1 } },
+  );
+  runHook(hook, fixture, { root: box.root, intent });
+  const first = await box.read(path);
+  const replay = runHook(
+    hook,
+    deriveFixture(
+      readJson(
+        "tests/fixtures/harness/claude/2.1.283/linux/print/SessionStart.resume.json",
+      ),
+      { cwd: box.root, tokens: { in: 99, out: 99 } },
+    ),
+    { root: box.root, intent, instant: "2026-10-02T00:00:00.000Z" },
+  );
+  t.plan(3);
+  t.assert.equal(replay.stderr, "");
+  t.assert.equal(await box.read(path), first);
+  t.assert.equal(JSON.parse(first).duration_ms, 0);
 });

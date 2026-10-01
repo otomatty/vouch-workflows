@@ -21,7 +21,7 @@
         "properties": {
           "id": {
             "type": "string",
-            "pattern": "^(?:DOCTOR|DOD|QUESTION|REPORT|MIGRATE)-[A-Z]+$"
+            "pattern": "^(?:DOCTOR|DOD|QUESTION|REPORT|MIGRATE|LIFECYCLE)-[A-Z]+$"
           },
           "ok": {
             "type": "boolean"
@@ -43,7 +43,9 @@
         "invalid",
         "duplicates",
         "types",
-        "unpaired"
+        "unpaired",
+        "legacy",
+        "shared_waits"
       ],
       "properties": {
         "intent": {
@@ -121,6 +123,10 @@
                         "type": "string",
                         "minLength": 1
                       }
+                    },
+                    "excluded": {
+                      "type": "integer",
+                      "minimum": 0
                     }
                   }
                 }
@@ -136,6 +142,17 @@
               "type": "string",
               "minLength": 1
             }
+          }
+        },
+        "legacy": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "shared_waits": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
           }
         }
       }

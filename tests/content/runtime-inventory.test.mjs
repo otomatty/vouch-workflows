@@ -32,11 +32,12 @@ test("runtime inventory classifies every entry and every core file without omiss
     [
       "vouch-doctor.mjs",
       "vouch-dod.mjs",
+      "vouch-lifecycle.mjs",
       "vouch-migrate.mjs",
       "vouch-question.mjs",
       "vouch-report.mjs",
     ],
-    "DIST-5: manual diagnostic, DoD, migration, question and report commands are not event wiring",
+    "DIST-5: manual diagnostic, DoD, lifecycle, migration, question and report commands are not event wiring",
   );
   t.assert.deepEqual(
     runtime.statusline,

@@ -24,13 +24,17 @@ for (const harness of /** @type {const} */ (["claude", "codex"])) {
     );
     const rows = await box.rows();
     const validate = validator("audit-event");
-    t.plan(10);
+    t.plan(11);
     t.assert.equal(opened.exitCode, 2);
     t.assert.match(opened.stderr, /VOUCH-REVIEW-RECORDED/);
     t.assert.equal(approved.exitCode, 2);
     t.assert.match(approved.stderr, /VOUCH-APPROVAL-RECORDED/);
     t.assert.deepEqual([opened.stdout, approved.stdout], ["", ""]);
     t.assert.equal(rows.length, 2);
+    t.assert.deepEqual(
+      rows.map((row) => row.type),
+      ["gate.opened", "intent.approved"],
+    );
     t.assert.equal(
       rows.every((value) => validate(value)),
       true,

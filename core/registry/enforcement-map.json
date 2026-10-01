@@ -728,8 +728,13 @@
           "claim": "27種に synthetic なスキーマ例があることを検査する。エミッタの存在・実行は検査しない。"
         },
         {
+          "status": "implemented",
+          "path": "tests/registry/audit-emission.test.mjs",
+          "claim": "27種すべてについて、発火条件・入力の種別・担当フック・契約テスト・保管先を audit-emission.json で台帳と照合する。io.mjs の成功は製品 emit に数えない。synthetic fixture の成功は実機発火実績ではない。"
+        },
+        {
           "status": "pending",
-          "claim": "session.started、gate.opened、intent.approved、checkpoint.confirmed の4種は製品emitを実装済み。残り23イベントの製品emitは未実装。synthetic fixtureの成功は実機発火実績ではない。"
+          "claim": "セッション終了の採取入力はない。Stop はターン終了であり session.ended を出さない。build の stage.completed は loop_iterations と tests をフックが記録しないため拒否する。command の記録は採取した stdin ではない。Codex の tokens は記録しない。移行の estimated と legacy.* は実測ではない。"
         },
         {
           "status": "implemented",

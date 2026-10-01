@@ -71,4 +71,8 @@ git merge --ff-only "<Unit のブランチ>"
 
 すべての Unit で、コードを変えた最後のコミットに DoD 合格の記録があり、AC の証拠か未実施の理由がそろったら [Verify Skill](../vouch-verify/SKILL.md) へ渡す。builder の会話は渡さない。
 Verify の指摘 R-n が戻ったら、builder が再現するテスト → 修正の順にコミットし、往復の回数を findings に記す。上限は stage-authoring.json の review_rounds である。
-main への push、PR のマージ、承認の代行、監査ログの作成・編集、証拠の捏造をしない。[R-PROJECT-1] [R-PROJECT-2] [R-PROJECT-3] [R-PROJECT-4]
+main への push、PR のマージ、承認の代行、監査ログの手編集、証拠の捏造をしない。stage と Unit の開始・完了は登録コマンドが記録する。build の stage-completed は loop_iterations と tests を取得できないので記録しない。[R-PROJECT-1] [R-PROJECT-2] [R-PROJECT-3] [R-PROJECT-4]
+
+```sh
+node "{{HARNESS_DIR}}/hooks/vouch-lifecycle.mjs" <operation>
+```
