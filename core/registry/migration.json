@@ -9,10 +9,6 @@
   "archive": "vouch/archive/aidlc-v2",
   "brief": "migration.md",
   "operations": ["plan", "apply"],
-  "approve": {
-    "prefix": "vouch migrate approve ",
-    "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
-  },
   "checkboxes": {
     "x": "completed",
     "-": "active",

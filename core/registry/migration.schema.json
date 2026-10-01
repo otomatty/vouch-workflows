@@ -9,7 +9,6 @@
     "archive",
     "brief",
     "operations",
-    "approve",
     "checkboxes",
     "stages",
     "artifacts",
@@ -52,19 +51,6 @@
     },
     "operations": {
       "const": ["plan", "apply"]
-    },
-    "approve": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["prefix", "pattern"],
-      "properties": {
-        "prefix": {
-          "const": "vouch migrate approve "
-        },
-        "pattern": {
-          "const": "^[a-f0-9]{64}(?![\\s\\S])"
-        }
-      }
     },
     "checkboxes": {
       "type": "object",

@@ -1,5 +1,8 @@
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
+import commands from "../../core/registry/intent-review.json" with {
+  type: "json",
+};
 import migration from "../../core/registry/migration.json" with {
   type: "json",
 };
@@ -20,7 +23,10 @@ test("migrate names the registered command per operation and leaves approval to 
       true,
       operation,
     );
-  t.assert.equal(reference.includes(`\`${migration.approve.prefix}<`), true);
+  t.assert.equal(
+    reference.includes(`\`${commands.migrateApprovePrefix}<`),
+    true,
+  );
   t.assert.match(reference, /status: draft/);
   t.assert.match(reference, /\[R-PROJECT-1\]/);
   t.assert.match(reference, /\[R-PROJECT-3\]/);

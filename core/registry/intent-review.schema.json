@@ -20,6 +20,12 @@
     },
     "targetPattern": {
       "const": "^(?:(acceptance|scope|units|design)|unit ([A-Za-z0-9][A-Za-z0-9._-]{0,63})|section ([a-z][a-z-]{0,63})|design unit ([A-Za-z0-9][A-Za-z0-9._-]{0,63})|design section ([a-z][a-z-]{0,63}))(?![\\s\\S])"
+    },
+    "migrateApprovePrefix": {
+      "const": "vouch migrate approve "
+    },
+    "migrateDigestPattern": {
+      "const": "^[a-f0-9]{64}(?![\\s\\S])"
     }
   },
   "required": [
@@ -28,7 +34,9 @@
     "approvePrefix",
     "gatePattern",
     "confirmPrefix",
-    "targetPattern"
+    "targetPattern",
+    "migrateApprovePrefix",
+    "migrateDigestPattern"
   ],
   "additionalProperties": false
 }

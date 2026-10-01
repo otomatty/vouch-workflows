@@ -40,6 +40,7 @@
     "hooks/lib/knowledge-check.mjs",
     "hooks/lib/knowledge.mjs",
     "hooks/lib/locate.mjs",
+    "hooks/lib/migrate-approval.mjs",
     "hooks/lib/migrate-approve.mjs",
     "hooks/lib/migrate-brief.mjs",
     "hooks/lib/migrate-files.mjs",
