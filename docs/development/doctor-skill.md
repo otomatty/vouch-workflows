@@ -72,3 +72,5 @@ Skill 作成用の汎用 quick_validate.py も実行しましたが、Vouch の�
 次は `/vouch status` の読み取り専用の契約と、共通 AGENTS.md / rules テンプレートを整備します。残りのイベント記録、ステージ Skill、エージェント、移行、モデル評価、ミューテーションは別途実装します。Windows の性能未達も保留のまま記録しています。
 
 後続の `/vouch status` と共通 AGENTS.md / rules テンプレートを実装しました。最新の範囲と検証結果は [status と共通文書](status.md) を参照してください。上の測定値は Doctor Skill 追加時点の記録です。
+
+引数なしの再開、ask、report と判断依頼の記録を追加しました。範囲は [再開・ask・report](resume.md) を参照してください。

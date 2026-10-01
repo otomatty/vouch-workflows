@@ -1,6 +1,6 @@
 # セッション開始の監査記録
 
-現在は [Codex への拡張と検証](codex-distribution.md)まで実装済みです。以下の導入時の結果・残件は当時の記録です。
+現在は [Codex への拡張と検証](codex-distribution.md)まで実装済みです。設定した Intent の再開要約を stdout に渡す変更は [再開・ask・report](resume.md) に記録しています。以下の導入時の結果・残件は当時の記録です。
 
 ## 契約
 

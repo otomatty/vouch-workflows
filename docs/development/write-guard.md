@@ -91,7 +91,7 @@ POSIX シェルの字句だけを近似します。PowerShell の構文や、実
 - sort・find・rg・file は拒否するオプションがない。これらと sed・git は、`$`・glob・`{` の文字を含む引数を持たない。
 - sed は `-n` 付きで、スクリプトが行番号範囲の `p` だけである。
 - git は許可した大域オプション（`-C`、`--no-pager`、`-P`）とサブコマンドだけを使い、拒否するオプションがない。サブコマンドは作業ツリーのファイルを書き換えないもの（status、log、show、diff、blame、ls-files、rev-parse、cat-file、grep、add、commit）とする。
-- node は、配布ディレクトリの hooks にある runtime.json の commands（doctor）を唯一の引数とする形だけとする。
+- node は、配布ディレクトリの hooks にある runtime.json の commands（doctor・DoD・question・report）を最初の引数とし、続く引数が英数字と `-` だけの語である形だけとする（`ask Q-1` など）。展開・リダイレクト・パスを含む引数は読み取りとしない。
 
 関数の定義、別名、以前のコマンドで変えた設定・環境は解釈しません。登録済みのフックを直接起動するコマンドは、配布ディレクトリを名指して node を使うため拒否されます。
 
