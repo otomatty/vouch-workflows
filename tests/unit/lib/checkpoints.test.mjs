@@ -763,3 +763,60 @@ test("a design Unit confirmation goes stale with shared parts or its own row, no
     [first],
   );
 });
+
+test("section mode covers the design.md title, intro and unregistered sections through its first section", (t) => {
+  const intent = "260929-plan";
+  const text = planned(mixed);
+  const design = designed();
+  /** @type {import('../../../core/hooks/lib/runtime-contracts.mjs').CheckpointTarget[]} */
+  const required = [
+    "summary",
+    "ideal",
+    "alternatives",
+    "diagrams",
+    "contract",
+    "threats",
+    "units",
+    "references",
+  ].map((id) => ({ checkpoint: "design", section: id }));
+  const events = required.map((target) => {
+    const content = checkpointContent(target, { intent: text, design });
+    if (!content) throw new Error("content");
+    return confirmation(target, content, { intent });
+  });
+  /** @param {string} current */
+  const missing = (current) =>
+    missingCheckpoints({
+      required,
+      events: /** @type {never} */ (events),
+      intent,
+      texts: { intent: text, design: current },
+      newId,
+    });
+  /** @type {import('../../../core/hooks/lib/runtime-contracts.mjs').CheckpointTarget} */
+  const summary = { checkpoint: "design", section: "summary" };
+  const head = design.slice(0, design.indexOf("<!-- sec:summary -->"));
+  t.plan(5);
+  t.assert.deepEqual(checkpointContent(summary, { intent: text, design }), {
+    path: "design.md",
+    sha256: sha(`${head}${section(design, "summary")}`),
+  });
+  t.assert.deepEqual(missing(design), []);
+  t.assert.deepEqual(
+    missing(design.replace("# Synthetic design", "# Another design")),
+    [summary],
+  );
+  t.assert.deepEqual(
+    missing(
+      design.replace(
+        "<!-- sec:references -->",
+        "<!-- sec:notes -->\nUnconfirmed decision.\n\n<!-- sec:references -->",
+      ),
+    ),
+    [summary],
+  );
+  t.assert.deepEqual(
+    missing(design.replace("Parser input type.", "Reader input type.")),
+    [{ checkpoint: "design", section: "contract" }],
+  );
+});

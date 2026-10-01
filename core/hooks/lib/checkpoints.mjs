@@ -84,6 +84,26 @@ function designUnit(text, unit) {
   return lines.filter((_, i) => !others.has(i)).join("");
 }
 
+/** A design.md section; the first registered one also holds every byte no other registered section
+ * holds (the title and intro before it, unregistered sections), so section mode covers the whole file.
+ * @param {string} text @param {string} id */
+function designSection(text, id) {
+  const lines = linesOf(text);
+  const own = sectionRange(lines, id);
+  if (!own) return null;
+  if (id !== stages.design_sections[0])
+    return lines.slice(own.start, own.end).join("");
+  const others = stages.design_sections
+    .filter((other) => other !== id)
+    .map((other) => sectionRange(lines, other));
+  return lines
+    .filter(
+      (_, i) =>
+        !others.some((range) => range && i >= range.start && i < range.end),
+    )
+    .join("");
+}
+
 /** @param {string} cell @param {string[]} tokens */
 const token = (cell, tokens) =>
   tokens.find((name) => new RegExp(`^${name}(?![A-Za-z0-9_-])`).test(cell));
@@ -202,7 +222,7 @@ export function checkpointContent(target, texts) {
       unit !== undefined
         ? designUnit(draft.text, unit)
         : section !== undefined
-          ? sectionOf(draft.text, section)
+          ? designSection(draft.text, section)
           : undefined;
     if (part !== undefined)
       return part === null ? null : digest(part, "design.md");

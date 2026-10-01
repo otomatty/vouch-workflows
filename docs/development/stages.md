@@ -179,7 +179,7 @@ PR #29 の後、[承認の境界](approval-boundary.md)には「unit / section �
 
 - topic は従来どおり `vouch confirm design` の1回です。既存の確認の記録と digest は変わりません。
 - unit は Design が required の Unit（H を含む）ごとに `vouch confirm design unit <Unit ID>` が要ります。digest は status を draft にした design.md から、units 節の表のほかの Unit の行を除いたバイト列です。共通の部分を変えるとすべての Unit が、ある Unit の行を変えるとその Unit だけが再確認になります。
-- section は design_sections の8節ごとに `vouch confirm design section <節 ID>` が要ります。
+- section は design_sections の8節ごとに `vouch confirm design section <節 ID>` が要ります。最初の summary の確認は、表題・説明などの最初の節より前の部分と登録外の節も含みます（PR のレビューで、節ごとの確認では冒頭を変えても再確認にならないと指摘されたため）。
 - 監査イベントのスキーマは design の checkpoint に unit / section を既に許していたため変えていません。unit と section の両方を持つ design の記録は対象がなく、確認に数えません。
 - テンプレートと golden は変えていません。Design Skill と Intent Skill の確認の案内に新しい対象を加えました。
 

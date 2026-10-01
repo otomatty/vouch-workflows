@@ -82,7 +82,7 @@
 | section `<ID>` | intent.md の `sec:<ID>` 節 |
 | unit `<ID>` | `sec:plan` 節の最初の表で、1列目が ID の行。行頭・行末の空白と改行を含むバイト列 |
 | design | design.md 全体。intent.md と同じ frontmatter の規則で status を draft に置き換えた版 |
-| design section `<ID>` | design.md の `sec:<ID>` 節。design.md が上の frontmatter を持つ時だけ |
+| design section `<ID>` | design.md の `sec:<ID>` 節。design.md が上の frontmatter を持つ時だけ。design_sections の最初の節（summary）は、ほかの登録した節が持たないすべてのバイト（status を draft にした frontmatter、最初の節より前の表題と説明、登録外の節）も含む。intent.md の冒頭は承認の版が覆うが、design.md には版で覆う承認がないため |
 | design unit `<ID>` | status を draft に置き換えた design.md から、`sec:units` 節（approval.json の design_units）の最初の表で1列目が ID でない Unit の行を除いたバイト列。ID の行が1つだけある時だけ |
 
 節は `<!-- sec:ID -->` だけの行から、次の `<!-- sec:` で始まる行の前まで（なければ末尾まで）のバイト列です。区切り行と改行を含み、正規化しません。区切り行が1つでない、行がない、design.md が対応する frontmatter を持たない場合は対象がなく、`VOUCH-CHECKPOINT-TARGET` で記録しません。design の記録が unit と section の両方を持つ場合も対象がなく、確認に数えません。
