@@ -1,6 +1,8 @@
 import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
 import { test } from "node:test";
+import budgets from "../../core/registry/budgets.json" with { type: "json" };
+import { checkBudgetMs } from "../../scripts/lib/time-budgets.mjs";
 import { sandbox } from "../helpers/runtime.mjs";
 
 /** Exercise the real check entry with small task processes and an isolated journal.
@@ -63,6 +65,13 @@ test("check validates independent tasks together before hooks and distribution",
     ["package:check", "start"],
     ["package:check", "end"],
   ]);
+  // TEST-12: the deadline is this OS's entry of the budget table.
+  t.assert.match(
+    result.stdout,
+    new RegExp(
+      `passed in \\d+\\.\\ds \\(budget ${checkBudgetMs(budgets.timing, process.platform) / 1000}s\\)`,
+    ),
+  );
 });
 
 test("failure of any independent validator blocks hooks and distribution", async (t) => {
