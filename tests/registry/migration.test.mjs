@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 import { readJson, validator } from "../helpers/registry.mjs";
 
@@ -61,4 +61,100 @@ test("migration maps retained concepts and archives removed features", (t) => {
   t.plan(Object.keys(cases).length);
   for (const [name, target] of Object.entries(cases))
     t.assert.equal(mapping[name], target, `REG-3: ${name}`);
+});
+
+test("the migration registry is valid and classifies exactly the stages of the v2 state fixtures", (t) => {
+  const migration = readJson("core/registry/migration.json");
+  const fixtures = "docs/aidlc-v2-reference/tests/fixtures";
+  const slugs = new Set(
+    readdirSync(fixtures)
+      .filter((name) => /^state-.+\.md$/.test(name))
+      .flatMap((name) =>
+        [
+          ...readFileSync(`${fixtures}/${name}`, "utf8").matchAll(
+            /^- \[.\] ([a-z][a-z0-9-]*) /gm,
+          ),
+        ].map((match) => match[1]),
+      ),
+  );
+  const template = readFileSync(
+    "docs/aidlc-v2-reference/core/knowledge/aidlc-shared/state-template.md",
+    "utf8",
+  );
+  t.plan(5);
+  t.assert.equal(
+    validator("migration")(migration),
+    true,
+    JSON.stringify(validator("migration").errors),
+  );
+  t.assert.deepEqual(Object.keys(migration.stages).sort(), [...slugs].sort());
+  t.assert.equal(slugs.size, 33, "33 v2 stages");
+  t.assert.equal(
+    [...template.matchAll(/^- \*\*([^*]+)\*\*:/gm)].some(
+      (match) => match[1] === migration.affirmation.state,
+    ),
+    true,
+    "the affirmation field is part of the v2 state template",
+  );
+  t.assert.deepEqual(
+    Object.keys(migration.checkboxes)
+      .map((mark) => `[${mark}]`)
+      .sort(),
+    [
+      ...new Set(
+        [
+          ...readFileSync(
+            "docs/aidlc-v2-reference/docs/reference/12-state-machine.md",
+            "utf8",
+          ).matchAll(/^\| `(\[.\])` \|/gm),
+        ].map((match) => match[1]),
+      ),
+    ].sort(),
+    "every checkbox of the v2 state machine",
+  );
+});
+
+test("migration conversions and decision candidates name v2 events and restorable targets only", (t) => {
+  const migration = readJson("core/registry/migration.json");
+  const mapping = readJson("core/registry/audit-migration.json");
+  t.plan(4);
+  t.assert.deepEqual(
+    migration.audit.convert.map((/** @type {string} */ name) => mapping[name]),
+    ["stage.started", "stage.completed", "learn.recorded"],
+  );
+  t.assert.equal(
+    migration.audit.decisions.every((/** @type {string} */ name) =>
+      Object.hasOwn(mapping, name),
+    ),
+    true,
+  );
+  t.assert.equal(
+    migration.audit.convert.includes("GATE_APPROVED"),
+    false,
+    "Intent approval is never inferred",
+  );
+  t.assert.equal(
+    [...migration.record, ...migration.space].every(
+      (/** @type {{match:string,contains?:string}} */ rule) =>
+        new RegExp(rule.match).source.length > 0 &&
+        (rule.contains === undefined ||
+          new RegExp(rule.contains, "m").source.length > 0),
+    ),
+    true,
+  );
+});
+
+test("migration labels have the same keys in Japanese and English", (t) => {
+  const { labels } = readJson("core/registry/migration.json");
+  /** @param {unknown} value @returns {string[]} */
+  const keys = (value) =>
+    value !== null && typeof value === "object" && !Array.isArray(value)
+      ? Object.entries(value).flatMap(([key, item]) => [
+          key,
+          ...keys(item).map((inner) => `${key}.${inner}`),
+        ])
+      : [];
+  t.plan(2);
+  t.assert.deepEqual(keys(labels.en), keys(labels.ja));
+  t.assert.equal(labels.en.limit_items.length, labels.ja.limit_items.length);
 });
