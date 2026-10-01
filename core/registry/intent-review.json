@@ -4,5 +4,7 @@
   "approvePrefix": "vouch approve ",
   "gatePattern": "^evt_[a-f0-9]{64}(?![\\s\\S])",
   "confirmPrefix": "vouch confirm ",
-  "targetPattern": "^(?:(acceptance|scope|units|design)|unit ([A-Za-z0-9][A-Za-z0-9._-]{0,63})|section ([a-z][a-z-]{0,63})|design unit ([A-Za-z0-9][A-Za-z0-9._-]{0,63})|design section ([a-z][a-z-]{0,63}))(?![\\s\\S])"
+  "targetPattern": "^(?:(acceptance|scope|units|design)|unit ([A-Za-z0-9][A-Za-z0-9._-]{0,63})|section ([a-z][a-z-]{0,63})|design unit ([A-Za-z0-9][A-Za-z0-9._-]{0,63})|design section ([a-z][a-z-]{0,63}))(?![\\s\\S])",
+  "migrateApprovePrefix": "vouch migrate approve ",
+  "migrateDigestPattern": "^[a-f0-9]{64}(?![\\s\\S])"
 }

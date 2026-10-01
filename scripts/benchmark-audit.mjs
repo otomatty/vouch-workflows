@@ -33,6 +33,15 @@ for (const count of [0, 2000]) {
       locate: async () => {
         throw new Error("unexpected locate");
       },
+      readBytes: async () => {
+        throw new Error("unexpected readBytes");
+      },
+      createBytes: async () => {
+        throw new Error("unexpected createBytes");
+      },
+      list: async () => {
+        throw new Error("unexpected list");
+      },
       updateText: async (_path, update) => {
         const after = update(content);
         if (after === null || after === content) return false;

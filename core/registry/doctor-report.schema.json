@@ -21,7 +21,7 @@
         "properties": {
           "id": {
             "type": "string",
-            "pattern": "^(?:DOCTOR|DOD|QUESTION|REPORT)-[A-Z]+$"
+            "pattern": "^(?:DOCTOR|DOD|QUESTION|REPORT|MIGRATE)-[A-Z]+$"
           },
           "ok": {
             "type": "boolean"
@@ -77,13 +77,17 @@
           "additionalProperties": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["count", "synthetic", "measures"],
+            "required": ["count", "synthetic", "estimated", "measures"],
             "properties": {
               "count": {
                 "type": "integer",
                 "minimum": 1
               },
               "synthetic": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "estimated": {
                 "type": "integer",
                 "minimum": 0
               },
@@ -131,6 +135,367 @@
             "items": {
               "type": "string",
               "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "intent",
+        "language",
+        "files",
+        "progress",
+        "units",
+        "audit",
+        "decisions",
+        "affirmation",
+        "codekb",
+        "artifacts",
+        "brief"
+      ],
+      "properties": {
+        "source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "intent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "language": {
+          "enum": ["ja", "en"]
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "origin", "bytes", "sha256", "archive", "to"],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "origin": {
+                "type": "string",
+                "minLength": 1
+              },
+              "bytes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "archive": {
+                "type": "string",
+                "minLength": 1
+              },
+              "to": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "note": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "progress": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["intent", "design", "build", "verify"],
+          "properties": {
+            "intent": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["state", "stages"],
+              "properties": {
+                "state": {
+                  "enum": [
+                    "completed",
+                    "active",
+                    "pending",
+                    "skipped",
+                    "absent"
+                  ]
+                },
+                "stages": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            },
+            "design": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["state", "stages"],
+              "properties": {
+                "state": {
+                  "enum": [
+                    "completed",
+                    "active",
+                    "pending",
+                    "skipped",
+                    "absent"
+                  ]
+                },
+                "stages": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            },
+            "build": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["state", "stages"],
+              "properties": {
+                "state": {
+                  "enum": [
+                    "completed",
+                    "active",
+                    "pending",
+                    "skipped",
+                    "absent"
+                  ]
+                },
+                "stages": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            },
+            "verify": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["state", "stages"],
+              "properties": {
+                "state": {
+                  "enum": [
+                    "completed",
+                    "active",
+                    "pending",
+                    "skipped",
+                    "absent"
+                  ]
+                },
+                "stages": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "units": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "audit": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["blocks", "converted", "legacy", "estimated", "types"],
+          "properties": {
+            "blocks": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "converted": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "legacy": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "estimated": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "types": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "count",
+                  "to",
+                  "converted",
+                  "legacy",
+                  "estimated"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "count": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "to": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "converted": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "legacy": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "estimated": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          }
+        },
+        "decisions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "name", "ts", "source_path"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "ts": {
+                "type": "string",
+                "minLength": 1
+              },
+              "source_path": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "affirmation": {
+          "type": ["string", "null"]
+        },
+        "codekb": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["repo", "files", "scanned", "commit", "verifiable"],
+            "properties": {
+              "repo": {
+                "type": "string",
+                "minLength": 1
+              },
+              "files": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "scanned": {
+                "type": ["string", "null"]
+              },
+              "commit": {
+                "type": ["string", "null"]
+              },
+              "verifiable": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "present", "status"],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "present": {
+                "type": "boolean"
+              },
+              "status": {
+                "type": ["string", "null"]
+              }
+            }
+          }
+        },
+        "brief": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "sha256"],
+          "properties": {
+            "path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sha256": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "writes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["archived", "unchanged", "audit", "brief"],
+          "properties": {
+            "archived": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "unchanged": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "audit": {
+              "enum": ["appended", "duplicate", "none"]
+            },
+            "brief": {
+              "enum": ["written", "unchanged"]
             }
           }
         }

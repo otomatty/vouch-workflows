@@ -96,6 +96,7 @@ test("the report aggregates measured values per type and keeps missing and synth
   t.assert.deepEqual(data.types["question.answered"], {
     count: 2,
     synthetic: 1,
+    estimated: 0,
     measures: {
       wait_ms: {
         n: 1,
@@ -163,4 +164,60 @@ test("the report needs an explicit Intent and reports an empty log as zero recor
     [empty.result.ok, empty.result.report?.events, empty.result.report?.types],
     [true, 0, {}],
   );
+});
+
+test("migrated records with derived times are counted as estimated and kept out of the measures", async (t) => {
+  const start = {
+    id: "m-start",
+    v: 1,
+    type: "stage.started",
+    ts: "2025-06-15T10:40:00Z",
+    actor: "hook",
+    intent,
+    stage: "intent",
+    original_type: "STAGE_STARTED",
+    raw: "## Stage Started",
+    source_path: "aidlc/audit/a.md#L3",
+  };
+  const { result } = await report({
+    "audit/events.jsonl": jsonl([
+      start,
+      {
+        ...start,
+        id: "m-end",
+        type: "stage.completed",
+        ts: "2025-06-16T09:00:00Z",
+        parent: "m-start",
+        duration_ms: 80400000,
+        estimated: true,
+        original_type: "STAGE_COMPLETED",
+      },
+      {
+        id: "measured",
+        v: 1,
+        type: "stage.completed",
+        ts: "2026-09-30T00:00:00Z",
+        actor: "model",
+        intent,
+        stage: "design",
+        parent: "m-start",
+        duration_ms: 5,
+      },
+    ]),
+  });
+  const completed = result.report?.types["stage.completed"];
+  t.plan(3);
+  t.assert.equal(result.ok, true);
+  t.assert.deepEqual(
+    [completed?.count, completed?.synthetic, completed?.estimated],
+    [2, 0, 1],
+  );
+  t.assert.deepEqual(completed?.measures.duration_ms, {
+    n: 1,
+    sum: 5,
+    min: 5,
+    max: 5,
+    missing: 0,
+    examples: ["measured"],
+  });
 });

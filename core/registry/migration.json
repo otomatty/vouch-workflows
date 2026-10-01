@@ -1,0 +1,351 @@
+{
+  "$schema": "./migration.schema.json",
+  "version": 1,
+  "source": {
+    "record": "^aidlc/spaces/([a-z0-9][a-z0-9_-]{0,63})/intents/([0-9]{6}-[a-z0-9][a-z0-9_-]{0,120})(?![\\s\\S])",
+    "state": "aidlc-state.md",
+    "space": ["codekb", "memory"]
+  },
+  "archive": "vouch/archive/aidlc-v2",
+  "brief": "migration.md",
+  "operations": ["plan", "apply"],
+  "checkboxes": {
+    "x": "completed",
+    "-": "active",
+    "?": "active",
+    "R": "active",
+    "S": "skipped",
+    " ": "pending"
+  },
+  "stages": {
+    "workspace-scaffold": null,
+    "workspace-detection": null,
+    "state-init": null,
+    "intent-capture": "intent",
+    "market-research": "intent",
+    "feasibility": "intent",
+    "scope-definition": "intent",
+    "team-formation": "intent",
+    "rough-mockups": "intent",
+    "approval-handoff": "intent",
+    "reverse-engineering": null,
+    "practices-discovery": null,
+    "requirements-analysis": "intent",
+    "user-stories": "intent",
+    "refined-mockups": "design",
+    "domain-design": "design",
+    "units-generation": "intent",
+    "contract-design": "design",
+    "delivery-planning": "intent",
+    "functional-design": "design",
+    "nfr-requirements": "design",
+    "nfr-design": "design",
+    "infrastructure-design": "design",
+    "code-generation": "build",
+    "build-and-test": "build",
+    "ci-pipeline": "build",
+    "deployment-pipeline": null,
+    "environment-provisioning": null,
+    "deployment-execution": null,
+    "observability-setup": null,
+    "incident-response": null,
+    "performance-validation": null,
+    "feedback-optimization": null
+  },
+  "artifacts": {
+    "required": ["intent.md", "decisions.md"],
+    "drafts": ["intent.md", "design.md"]
+  },
+  "record": [
+    {
+      "match": "(?:^|/)memory\\.md$",
+      "to": [],
+      "note": "diary",
+      "final": true
+    },
+    {
+      "match": "^aidlc-state\\.md$",
+      "to": ["migration.md#progress"]
+    },
+    {
+      "match": "^audit/[^/]+\\.md$",
+      "to": ["audit/events.jsonl"]
+    },
+    {
+      "match": "^ideation/",
+      "to": ["intent.md#analysis", "vouch/knowledge/background/"]
+    },
+    {
+      "match": "^inception/(?:requirements-analysis|user-stories)/",
+      "to": ["intent.md#acceptance"]
+    },
+    {
+      "match": "^inception/(?:domain-design|units-generation|delivery-planning)/",
+      "to": ["design.md", "intent.md#plan"]
+    },
+    {
+      "match": "^inception/contract-design/",
+      "to": ["design.md#contract", "intent.md#plan", "vouch/knowledge/design/"]
+    },
+    {
+      "match": "^inception/refined-mockups/",
+      "to": ["design.md#diagrams"]
+    },
+    {
+      "match": "^inception/practices-discovery/",
+      "to": ["vouch/rules.md"]
+    },
+    {
+      "match": "^construction/[^/]+/(?:functional-design|nfr-requirements|nfr-design)/",
+      "to": ["design.md#units"]
+    },
+    {
+      "match": "^construction/[^/]+/infrastructure-design/",
+      "to": ["design.md#units", "vouch/knowledge/infra/"]
+    },
+    {
+      "match": "^construction/[^/]+/code-generation/",
+      "to": ["build-log.md#units"]
+    },
+    {
+      "match": "^construction/[^/]+/code-generation/",
+      "contains": "^## Review[ \\t]*\\r?$",
+      "to": ["review.md#references"]
+    },
+    {
+      "match": "^construction/(?:build-and-test|ci-pipeline)/",
+      "to": ["build-log.md#verification"]
+    },
+    {
+      "match": "(?:^|/)[a-z0-9-]+-questions\\.md$",
+      "to": ["decisions.md#decisions"]
+    },
+    {
+      "match": "^ideation/approval-handoff/decision-log\\.md$",
+      "to": ["decisions.md#decisions"]
+    },
+    {
+      "match": "^operation/",
+      "to": [],
+      "note": "operation",
+      "final": true
+    },
+    {
+      "match": "^(?:initialization|verification)/",
+      "to": [],
+      "note": "bootstrap",
+      "final": true
+    },
+    {
+      "match": "^archive/",
+      "to": [],
+      "note": "history",
+      "final": true
+    },
+    {
+      "match": "^(?:runtime-graph\\.json|\\.aidlc-[^/]*)$",
+      "to": [],
+      "note": "transient",
+      "final": true
+    }
+  ],
+  "space": [
+    {
+      "match": "^codekb/([a-z0-9][a-z0-9._-]{0,127})/",
+      "to": ["vouch/knowledge/codekb/$1/"]
+    },
+    {
+      "match": "^memory/(?:team|project)\\.md$",
+      "to": ["vouch/rules.md"],
+      "affirmed": true
+    },
+    {
+      "match": "^memory/(?:org\\.md|phases/[^/]+\\.md)$",
+      "to": [],
+      "note": "default",
+      "final": true
+    }
+  ],
+  "audit": {
+    "shard": "^audit/[^/]+\\.md$",
+    "actor": "hook",
+    "untyped": "UNTYPED",
+    "convert": ["STAGE_STARTED", "STAGE_COMPLETED", "RULE_LEARNED"],
+    "decisions": [
+      "DECISION_RECORDED",
+      "GATE_APPROVED",
+      "GATE_REJECTED",
+      "QUESTION_ANSWERED",
+      "SUMMARY_CONFIRMATION_RECORDED",
+      "PLAN_APPROVAL_RECORDED",
+      "PRACTICES_AFFIRMED",
+      "AUTONOMY_MODE_SET",
+      "RECOVERY_COMPLETED"
+    ]
+  },
+  "affirmation": {
+    "state": "Practices Affirmed Timestamp",
+    "event": "PRACTICES_AFFIRMED"
+  },
+  "codekb": {
+    "timestamp": "reverse-engineering-timestamp.md"
+  },
+  "labels": {
+    "ja": {
+      "title": "移行レポート",
+      "lead": "AI-DLC v2 の record を Vouch へ移した結果の Review Brief。下の全件表と `vouch/archive/aidlc-v2/` の原本を根拠にする。人が `vouch migrate approve <このファイルの sha256>` を入力し、フックが migration.completed を記録するまで承認ではない。intent.md / design.md は status: draft のままで、v2 の承認・確認から Vouch の承認・確認点を作らない。",
+      "conclusion": "1. 結論",
+      "item": "項目",
+      "value": "値",
+      "source": "移行元",
+      "files": "元ファイル",
+      "files_value": "{total}（archive {total}、行き先あり {mapped}、行き先なし {unmapped}）",
+      "blocks": "監査ブロック",
+      "blocks_value": "{blocks}（変換 {converted}、legacy {legacy}、推定を含む {estimated}）",
+      "decision_count": "人の決定の候補",
+      "affirmed": "規約の affirm の証跡",
+      "progress": "2. v2 の進捗と4ステージ",
+      "stage": "ステージ",
+      "observed": "v2 の観測",
+      "v2_stages": "v2 のステージ",
+      "artifact": "移行先の成果物",
+      "units": "v2 の Unit",
+      "draft": "status: draft",
+      "table": "3. 元ファイル → 行き先（全件）",
+      "file": "元ファイル",
+      "bytes": "バイト",
+      "destinations": "行き先",
+      "archive_only": "なし（archive のみ）",
+      "unmapped": "4. 行き先のないファイル",
+      "reason": "理由",
+      "audit": "5. 監査の変換",
+      "event": "v2 イベント",
+      "count": "件数",
+      "converted": "変換先",
+      "legacy": "legacy",
+      "estimated": "推定",
+      "decisions": "6. 人の決定の候補",
+      "decisions_note": "decisions.md の「判断と採用しなかった案」へ原文のまま抽出し、出所（監査 ID と元ファイル）を添える。Vouch の承認・確認点・回答としては記録しない。",
+      "record": "監査 ID",
+      "time": "時刻",
+      "origin": "出所",
+      "rules": "7. 規約の統合（affirm 条件）",
+      "rules_note": "affirm の証跡がある時だけ team.md / project.md を vouch/rules.md へ統合する。affirm されていない org 既定と phases の既定は落とす。",
+      "treatment": "扱い",
+      "knowledge": "8. codekb の世代と鮮度",
+      "knowledge_note": "vouch/knowledge/codekb/<repo>/ へ移し、索引の generation は走査した完全な SHA に限る。移行の直後に `vouch knowledge check` を実行し、古い・不明な世代は explorer が再走査する。",
+      "repo": "repo",
+      "scanned": "走査日",
+      "commit": "commit",
+      "generation": "世代",
+      "verifiable": "完全な SHA",
+      "unverifiable": "検証できない（再走査が必要）",
+      "limits": "9. 推測しなかったこと",
+      "limit_items": [
+        "GATE_APPROVED・SUMMARY_CONFIRMATION_RECORDED などから Intent の承認・確認点・回答を作っていない。",
+        "risk・session・Q-n・計測値など復元できない必須値は作らず、その記録は legacy.<NAME> に原文と出所を残した。",
+        "所要時間・時刻を隣接する記録から求めた記録には estimated: true を付けた。実測と混ぜない。",
+        "operation と初期化・検証・一時ファイルは archive にのみ残した。",
+        "元の record は変更していない。archive は元ファイルとバイト単位で一致する。"
+      ],
+      "none": "なし",
+      "yes": "あり",
+      "no": "なし",
+      "notes": {
+        "diary": "ステージの日誌（memory.md）",
+        "operation": "operation は archive のみ",
+        "bootstrap": "初期化・フェーズ境界の検査",
+        "history": "v2 の archive",
+        "transient": "一時・再生成できるファイル",
+        "default": "affirm されていない org / phases の既定",
+        "unaffirmed": "affirm の証跡がない",
+        "unmatched": "対応する行き先がない"
+      },
+      "progress_values": {
+        "completed": "完了",
+        "active": "進行中",
+        "pending": "未着手",
+        "skipped": "スキップ",
+        "absent": "なし"
+      }
+    },
+    "en": {
+      "title": "Migration report",
+      "lead": "Review Brief of moving an AI-DLC v2 record into Vouch. The full table below and the originals under `vouch/archive/aidlc-v2/` are its evidence. It is not approved until a person enters `vouch migrate approve <sha256 of this file>` and a hook records migration.completed. intent.md / design.md stay status: draft; no Vouch approval or checkpoint is derived from v2 approvals or confirmations.",
+      "conclusion": "1. Conclusion",
+      "item": "Item",
+      "value": "Value",
+      "source": "Source",
+      "files": "Source files",
+      "files_value": "{total} (archived {total}, with a destination {mapped}, without {unmapped})",
+      "blocks": "Audit blocks",
+      "blocks_value": "{blocks} (converted {converted}, legacy {legacy}, with estimates {estimated})",
+      "decision_count": "Human decision candidates",
+      "affirmed": "Rules affirmation evidence",
+      "progress": "2. v2 progress and the four stages",
+      "stage": "Stage",
+      "observed": "v2 observation",
+      "v2_stages": "v2 stages",
+      "artifact": "Destination artifact",
+      "units": "v2 Units",
+      "draft": "status: draft",
+      "table": "3. Source file → destination (all files)",
+      "file": "Source file",
+      "bytes": "Bytes",
+      "destinations": "Destinations",
+      "archive_only": "none (archive only)",
+      "unmapped": "4. Files without a destination",
+      "reason": "Reason",
+      "audit": "5. Audit conversion",
+      "event": "v2 event",
+      "count": "Count",
+      "converted": "Converted to",
+      "legacy": "legacy",
+      "estimated": "estimated",
+      "decisions": "6. Human decision candidates",
+      "decisions_note": "Extract them verbatim into decisions.md \"Decisions and rejected options\" with their origin (audit ID and source file). They are not recorded as Vouch approvals, checkpoint confirmations or answers.",
+      "record": "Audit ID",
+      "time": "Time",
+      "origin": "Origin",
+      "rules": "7. Rules integration (affirmation condition)",
+      "rules_note": "Integrate team.md / project.md into vouch/rules.md only with affirmation evidence. Org and phase defaults that were not affirmed are dropped.",
+      "treatment": "Treatment",
+      "knowledge": "8. codekb generation and freshness",
+      "knowledge_note": "Move it to vouch/knowledge/codekb/<repo>/; the index generation is only the full SHA that was scanned. Run `vouch knowledge check` right after the migration; explorer rescans a stale or unknown generation.",
+      "repo": "repo",
+      "scanned": "Scanned",
+      "commit": "commit",
+      "generation": "Generation",
+      "verifiable": "full SHA",
+      "unverifiable": "unverifiable (rescan required)",
+      "limits": "9. What was not inferred",
+      "limit_items": [
+        "No Intent approval, checkpoint confirmation or answer was derived from GATE_APPROVED, SUMMARY_CONFIRMATION_RECORDED or similar records.",
+        "Unrecoverable required values (risk, session, Q-n, measurements) were not invented; those records keep their original text and origin as legacy.<NAME>.",
+        "Records whose duration or time was derived from neighbouring records carry estimated: true and are kept apart from measurements.",
+        "Operation, initialization, verification and transient files stay in the archive only.",
+        "The original record was not changed. The archive matches the source files byte for byte."
+      ],
+      "none": "none",
+      "yes": "yes",
+      "no": "no",
+      "notes": {
+        "diary": "stage diary (memory.md)",
+        "operation": "operation is archived only",
+        "bootstrap": "initialization and phase boundary checks",
+        "history": "v2 archive",
+        "transient": "transient or derivable file",
+        "default": "org / phase default without affirmation",
+        "unaffirmed": "no affirmation evidence",
+        "unmatched": "no matching destination"
+      },
+      "progress_values": {
+        "completed": "completed",
+        "active": "active",
+        "pending": "pending",
+        "skipped": "skipped",
+        "absent": "absent"
+      }
+    }
+  }
+}

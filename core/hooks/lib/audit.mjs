@@ -1,7 +1,7 @@
 import { isAuditEvent } from "./validation.mjs";
 
 /** @param {unknown} value @returns {string} Canonical JSON for key-order-independent equality. */
-function canonical(value) {
+export function canonical(value) {
   if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
   if (value !== null && typeof value === "object")
     return `{${Object.entries(value)
@@ -56,6 +56,11 @@ export function scanAudit(text) {
   });
   return scan;
 }
+
+/** The v2 provenance of a migrated record; empty for any other record.
+ * @param {import('./contracts.mjs').AuditEvent} event @returns {import('./contracts.mjs').MigratedOrigin} */
+export const migratedOrigin = (event) =>
+  "original_type" in event ? event : {};
 
 /** @param {string} intent */
 export function intentHome(intent) {

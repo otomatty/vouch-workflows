@@ -19,6 +19,7 @@ node "{{HARNESS_DIR}}/hooks/vouch-report.mjs"
 - 実測：report.types の measures にある n・sum・min・max と examples のイベント ID。値は監査に記録された数値だけである。
 - 欠損：missing は、その計測値を持たない記録の数である。欠損を 0 とみなさず、取得できないハーネスの値（Codex の tokens など）はそう示す。
 - synthetic：synthetic の記録は count に含むが計測値から除く。実測と混ぜない。
+- estimated：v2 から移行した記録のうち、時刻や所要時間を隣接する記録から求めたもの。count と estimated に数えるが計測値から除く。実測として示さない。
 - 推定：コマンドの出力にない値（ts の差から求めた時間、割合の推計など）を示す時は「推定」と明記し、使ったイベント ID を添える。
 
 unpaired は、対になる終了の記録がない開始の記録である。未完了・中断・記録漏れのどれかは推測せず、事実として示す。[R-PROJECT-2]

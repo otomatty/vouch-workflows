@@ -30,6 +30,14 @@
  * @property {true} [synthetic]
  */
 
+/**
+ * Provenance of a record migrated from v2 (docs/development/migrate.md); only the converted types and legacy.* carry it.
+ * `original_type`: the v2 event name, or UNTYPED for a block without one. `raw`: the original block text, never
+ * rewritten. `source_path`: the project-relative v2 file and first line (`path#Ln`). `estimated`: a time or duration
+ * derived from neighbouring records, never a measurement.
+ * @typedef {{original_type?:string,raw?:string,source_path?:string,estimated?:true}} MigratedOrigin
+ */
+
 /** @typedef {AuditBase & ({harness:'claude',tokens?:Tokens}|{harness?:Harness,tokens?:never})} AuditCommon */
 /**
  * Optional on historical audit records, mandatory for evidence comparison.
@@ -45,8 +53,8 @@
 /** @typedef {AuditCommon & {type:'intent.created',intent:string,risk:Risk}} IntentCreated */
 /** @typedef {AuditCommon & {type:'intent.approved',intent:string,actor:'human',source:'intent',parent:string,wait_ms:number} & ({revision?:never,submission?:never}|IntentApprovalEvidence)} IntentApproved */
 /** @typedef {AuditCommon & {type:'intent.completed',intent:string,parent:string,duration_ms:number,ai_work_ms:number,human_wait_ms:number,human_review_ms:number}} IntentCompleted */
-/** @typedef {AuditCommon & {type:'stage.started',intent:string,stage:Stage}} StageStarted */
-/** @typedef {AuditCommon & {type:'stage.completed',intent:string,parent:string,duration_ms:number} & ({stage:'build',loop_iterations:number,tests:number}|{stage:Exclude<Stage,'build'>,loop_iterations?:number,tests?:number})} StageCompleted */
+/** @typedef {AuditCommon & MigratedOrigin & {type:'stage.started',intent:string,stage:Stage}} StageStarted */
+/** @typedef {AuditCommon & MigratedOrigin & {type:'stage.completed',intent:string,parent:string,duration_ms:number} & ({stage:'build',loop_iterations:number,tests:number}|{stage:Exclude<Stage,'build'>,loop_iterations?:number,tests?:number})} StageCompleted */
 /** @typedef {AuditCommon & {type:'unit.started',intent:string,unit:string,risk:Risk}} UnitStarted */
 /** @typedef {AuditCommon & {type:'unit.completed',intent:string,unit:string,risk:Risk,parent:string,duration_ms:number,files_changed:number,lines_changed:number}} UnitCompleted */
 /** @typedef {AuditCommon & {type:'checkpoint.confirmed',intent:string,actor:'human'} & ({checkpoint:'acceptance'|'scope'|'units'|'design',section?:string}|{checkpoint:'design',unit:string}|{checkpoint:'unit',unit:string}|{checkpoint:'section',section:string}) & ({content?:never,submission?:never}|CheckpointEvidence)} CheckpointConfirmed */
@@ -70,9 +78,10 @@
 /** @typedef {AuditCommon & {type:'session.resumed',session:string,duration_ms:number}} SessionResumed */
 /** @typedef {AuditCommon & {type:'session.compacted',session:string}} SessionCompacted */
 /** @typedef {AuditCommon & {type:'session.ended',session:string,parent:string,duration_ms:number}} SessionEnded */
-/** @typedef {AuditCommon & {type:'learn.recorded',intent:string,rules_added:number}} LearnRecorded */
-/** @typedef {AuditCommon & {type:'migration.completed',files_migrated:number}} MigrationCompleted */
-/** @typedef {AuditCommon & {type:`legacy.${string}`,original_type:string,raw:string,source_path:string}} LegacyEvent */
+/** @typedef {AuditCommon & MigratedOrigin & {type:'learn.recorded',intent:string,rules_added:number}} LearnRecorded */
+/** `revision` binds the person's `vouch migrate approve` to the migration.md bytes it named.
+ * @typedef {AuditCommon & {type:'migration.completed',files_migrated:number} & ({revision?:never,submission?:never}|{actor:'human',revision:{path:'migration.md',sha256:string},submission:Submission,harness:Harness,session:string})} MigrationCompleted */
+/** @typedef {AuditCommon & {type:`legacy.${string}`,original_type:string,raw:string,source_path:string,estimated?:true}} LegacyEvent */
 /** @typedef {IntentCreated|IntentApproved|IntentCompleted|StageStarted|StageCompleted|UnitStarted|UnitCompleted|CheckpointConfirmed|GateOpened|GateApproved|GateRejected|QuestionAsked|QuestionAnswered|QuestionDefaulted|AsideAsked|AsideAnswered|HookCheck|HookDenied|ReviewRequested|ReviewCompleted|KnowledgeRefreshed|SessionStarted|SessionResumed|SessionCompacted|SessionEnded|LearnRecorded|MigrationCompleted|LegacyEvent} AuditEvent */
 /**
  * find and list return detached records in file order. Mutating them cannot alter future reads or writes.
