@@ -36,12 +36,14 @@ export function doctorCommand(text) {
   return { command: lines[0] ?? "", entry: match[1] };
 }
 
-/** DOC-3: a Skill fence may run a registered Node entry or a registered git subcommand.
+/** DOC-3: a Skill fence may run a registered Node entry, with plain word or placeholder
+ * arguments, or a registered git subcommand.
  * @param {string} line @param {{commands:string[],git:string[],protected:string[]}} allowed */
 export function allowedCommand(line, allowed) {
-  const node = /^node "\{\{HARNESS_DIR\}\}\/hooks\/(vouch-[a-z-]+\.mjs)"$/.exec(
-    line,
-  );
+  const node =
+    /^node "\{\{HARNESS_DIR\}\}\/hooks\/(vouch-[a-z-]+\.mjs)"(?: (?:[a-z]+|<[^<>"'`$;&|\s]+>))*$/.exec(
+      line,
+    );
   if (node) return allowed.commands.includes(node[1] ?? "");
   const git = /^git ([a-z-]+)(?: |$)/.exec(line);
   if (!git?.[1] || !allowed.git.includes(git[1])) return false;

@@ -1,11 +1,14 @@
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
+import operations from "../../core/registry/operations.json" with {
+  type: "json",
+};
 import runtime from "../../core/registry/runtime.json" with { type: "json" };
 import { packageRun, tree } from "../helpers/packaging.mjs";
 import { sandbox } from "../helpers/runtime.mjs";
 
 test("Claude distribution reproduces exact source bytes and registers every product hook", async (t) => {
-  t.plan(11);
+  t.plan(12);
   const box = await sandbox(t);
   const first = packageRun(["--out", box.path("first")]);
   t.assert.equal(first.status, 0, first.stderr);
@@ -51,16 +54,28 @@ test("Claude distribution reproduces exact source bytes and registers every prod
   const settings = JSON.parse(
     await box.read("first/claude/.claude/settings.json"),
   );
-  t.assert.deepEqual(Object.keys(settings).sort(), ["env", "hooks"]);
+  t.assert.deepEqual(Object.keys(settings).sort(), [
+    "env",
+    "hooks",
+    "statusLine",
+  ]);
+  t.assert.deepEqual(settings.statusLine, {
+    type: "command",
+    command: `node "\${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/${runtime.statusline[0]}"`,
+  });
   t.assert.deepEqual(settings.env, { VOUCH_HARNESS: "claude" });
   t.assert.deepEqual(Object.keys(settings.hooks), [
     "SessionStart",
     "UserPromptSubmit",
     "PreToolUse",
+    "Stop",
   ]);
   const [registration] = settings.hooks.SessionStart;
   t.assert.equal(settings.hooks.SessionStart.length, 1);
-  t.assert.equal(registration.matcher, "startup");
+  t.assert.equal(
+    registration.matcher,
+    operations.resume.sources.claude.join("|"),
+  );
   t.assert.deepEqual(registration.hooks, [
     {
       type: "command",
@@ -74,6 +89,7 @@ test("Claude distribution reproduces exact source bytes and registers every prod
     ...registration.hooks,
     ...settings.hooks.UserPromptSubmit[0].hooks,
     ...settings.hooks.PreToolUse[0].hooks,
+    ...settings.hooks.Stop[0].hooks,
   ]
     .map((/** @type {{args:string[]}} */ hook) =>
       hook.args[0]?.split("/").at(-1),

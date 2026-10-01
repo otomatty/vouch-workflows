@@ -2,6 +2,9 @@ import { spawnSync } from "node:child_process";
 import { cp, mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import operations from "../../core/registry/operations.json" with {
+  type: "json",
+};
 import { assertGolden } from "../helpers/golden.mjs";
 import { hookTest as test } from "../helpers/hook-test.mjs";
 import { packageRun } from "../helpers/packaging.mjs";
@@ -11,7 +14,7 @@ test("copied Codex shell registration records from a nested directory and replay
   const box = await sandbox(t);
   const folder = "日本語 project $ apostrophe'";
   const root = box.path(folder);
-  t.plan(8);
+  t.plan(10);
   t.assert.equal(packageRun(["--out", box.path("dist")]).status, 0);
   await cp(box.path("dist/codex"), root, { recursive: true });
   const cwd = resolve(root, "nested");
@@ -46,7 +49,11 @@ test("copied Codex shell registration records from a nested directory and replay
       },
     );
     t.assert.equal(result.status, 0, result.stderr || result.error?.message);
-    t.assert.deepEqual([result.stdout, result.stderr], ["", ""]);
+    t.assert.equal(result.stderr, "");
+    t.assert.match(
+      result.stdout,
+      new RegExp(`^${operations.labels.ja.summary}\n`),
+    );
     await assertGolden(
       t,
       "codex-session-start.jsonl",

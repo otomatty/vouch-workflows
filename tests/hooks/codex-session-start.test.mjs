@@ -1,3 +1,6 @@
+import operations from "../../core/registry/operations.json" with {
+  type: "json",
+};
 import { assertGolden } from "../helpers/golden.mjs";
 import { hookTest as test } from "../helpers/hook-test.mjs";
 import { readJson, validator } from "../helpers/registry.mjs";
@@ -10,15 +13,16 @@ const path = `vouch/intents/${intent}/audit/events.jsonl`;
 test("Codex startup records a complete event and retains the first timestamp on replay", async (t) => {
   const box = await sandbox(t);
   const fixture = sessionFor(box.root, "codex");
-  t.plan(11);
+  t.plan(13);
   for (const instant of [
     "2026-09-27T00:00:00.000Z",
     "2026-09-28T00:00:00.000Z",
   ]) {
     const result = runHook(hook, fixture, { root: box.root, intent, instant });
-    t.assert.deepEqual(
-      [result.exitCode, result.stdout, result.stderr],
-      [0, "", ""],
+    t.assert.deepEqual([result.exitCode, result.stderr], [0, ""]);
+    t.assert.match(
+      result.stdout,
+      new RegExp(`^${operations.labels.ja.summary}\n`),
     );
     const log = await box.read(path);
     const event = JSON.parse(log);
@@ -71,10 +75,10 @@ test("same session under distinct installed harnesses has distinct audit identit
   t.assert.notEqual(rows[0].id, rows[1].id);
 });
 
-test("Codex unscoped startup and resume do not create audit state", async (t) => {
+test("Codex unscoped startup and scoped resume do not create audit state", async (t) => {
   const box = await sandbox(t);
   const fixture = sessionFor(box.root, "codex");
-  t.plan(3);
+  t.plan(4);
   const unscoped = runHook(hook, fixture, { root: box.root });
   const resumed = {
     ...fixture,
@@ -85,9 +89,11 @@ test("Codex unscoped startup and resume do not create audit state", async (t) =>
     [unscoped.exitCode, unscoped.stdout, unscoped.stderr],
     [0, "", ""],
   );
-  t.assert.deepEqual(
-    [resume.exitCode, resume.stdout, resume.stderr],
-    [0, "", ""],
+  t.assert.deepEqual([resume.exitCode, resume.stderr], [0, ""]);
+  t.assert.match(
+    resume.stdout,
+    new RegExp(`^${operations.labels.ja.summary}\n`),
+    "resume summary only",
   );
   await t.assert.rejects(box.read(path), { code: "ENOENT" });
 });

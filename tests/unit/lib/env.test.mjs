@@ -1,6 +1,7 @@
 import { resolve } from "node:path";
 import { test } from "node:test";
 import {
+  readArgs,
   readContext,
   readIntent,
   readSecrets,
@@ -109,6 +110,15 @@ test("manual commands read the configured Intent only from the environment", (t)
   );
   t.assert.equal(readIntent({ VOUCH_INTENT: "" }), null);
   t.assert.equal(readIntent({ VOUCH_HARNESS: "claude" }), null);
+});
+
+test("manual commands read their arguments after the entry path", (t) => {
+  t.plan(2);
+  t.assert.deepEqual(
+    readArgs(["node", "/x/vouch-question.mjs", "ask", "Q-1"]),
+    ["ask", "Q-1"],
+  );
+  t.assert.deepEqual(readArgs(["node"]), []);
 });
 
 test("manual commands read secret-named variable values of a minimum length, longest first", (t) => {

@@ -11,6 +11,7 @@ import {
   memoryFiles,
   promptFor,
   sandbox,
+  sessionFor,
 } from "../../helpers/runtime.mjs";
 
 /** @param {string|Uint8Array} text */
@@ -529,4 +530,138 @@ test("io applies an approval only after the append, to the configured draft of t
     },
   });
   t.assert.equal(failed.options.files.data.get(artifact), draft);
+});
+
+test("io writes an allowed result's context to stdout only after its events are durable", async (t) => {
+  const input = JSON.stringify(sessionFor(process.cwd()).payload);
+  const sample = readJson("tests/fixtures/audit/hook.check.jsonl");
+  const written = ports(input);
+  await run(
+    async () => ({ decision: "allow", events: [sample], context: "summary" }),
+    {
+      ...written.options,
+      context: { ...written.options.context, intent: "scope" },
+    },
+  );
+  const failed = ports(input);
+  await run(
+    async () => ({ decision: "allow", events: [sample], context: "summary" }),
+    {
+      ...failed.options,
+      audit: {
+        append: async () => {
+          throw new Error("disk");
+        },
+      },
+    },
+  );
+  const denied = ports(input);
+  await run(
+    async () =>
+      /** @type {never} */ ({
+        decision: "deny",
+        reason: "no",
+        context: "summary",
+      }),
+    denied.options,
+  );
+  t.plan(4);
+  t.assert.deepEqual(written.output, {
+    stdout: "summary\n",
+    stderr: "",
+    code: 0,
+  });
+  t.assert.equal(failed.output.stdout, "");
+  t.assert.match(failed.output.stderr, /HOOK-2: disk/);
+  t.assert.deepEqual(
+    [denied.output.stdout, denied.output.code],
+    ["", 0],
+    "context is only valid on allow",
+  );
+});
+
+test("statusline io prints one line, derives the harness from the installation and never fails", async (t) => {
+  const { runStatusline } = await import("../../../core/hooks/lib/io.mjs");
+  /** @param {import('../../../core/hooks/lib/runtime-contracts.mjs').StatuslineMain} main @param {string} [root] @param {boolean} [closed] */
+  async function line(main, root = ".claude", closed = false) {
+    const output = { text: "", code: -1 };
+    await runStatusline(main, "unused", {
+      environment: {
+        projectRoot: "/project",
+        installationRoot: root,
+        nodeVersion: "22.19.0",
+      },
+      files: memoryFiles(),
+      intent: "scope",
+      stdout: {
+        write: (text) => {
+          if (closed) throw new Error("closed");
+          output.text += text;
+        },
+      },
+      finish: (code) => {
+        output.code = code;
+      },
+    });
+    return output;
+  }
+  /** @type {string[]} */ const seen = [];
+  const shown = await line(async (_files, intent, harness) => {
+    seen.push(`${intent} ${harness}`);
+    return "Vouch scope";
+  });
+  await line(async (_files, intent, harness) => {
+    seen.push(`${intent} ${harness}`);
+    return "x";
+  }, ".codex");
+  const failed = await line(async () => {
+    throw new Error("AUDIT-SCOPE: invalid configured intent");
+  });
+  const primitive = await line(async () => {
+    throw "odd";
+  });
+  const closed = await line(async () => "x", ".claude", true);
+  t.plan(5);
+  t.assert.deepEqual(shown, { text: "Vouch scope\n", code: 0 });
+  t.assert.deepEqual(seen, ["scope claude", "scope codex"]);
+  t.assert.match(failed.text, /^Vouch: .+ \(AUDIT-SCOPE\)\n$/);
+  t.assert.match(primitive.text, /^Vouch: .+ \(ERROR\)\n$/);
+  t.assert.equal(closed.code, 0);
+});
+
+test("statusline io defaults read the entry location, the environment Intent and process stdout", async (t) => {
+  const { runStatusline } = await import("../../../core/hooks/lib/io.mjs");
+  const { pathToFileURL } = await import("node:url");
+  const box = await sandbox(t, { git: false });
+  const oldCode = process.exitCode;
+  const oldIntent = process.env.VOUCH_INTENT;
+  process.env.VOUCH_INTENT = "from-env";
+  let output = "";
+  const spy = t.mock.method(
+    process.stdout,
+    "write",
+    (/** @type {string|Uint8Array} */ text) => {
+      output += String(text);
+      return true;
+    },
+  );
+  t.after(() => {
+    spy.mock.restore();
+    process.exitCode = oldCode;
+    if (oldIntent === undefined) delete process.env.VOUCH_INTENT;
+    else process.env.VOUCH_INTENT = oldIntent;
+  });
+  let seen = "";
+  await runStatusline(
+    async (files, intent, harness) => {
+      seen = `${intent} ${harness} ${await files.readText("missing")}`;
+      return "line";
+    },
+    pathToFileURL(box.path(".claude/hooks/vouch-statusline.mjs")).href,
+  );
+  spy.mock.restore();
+  t.plan(3);
+  t.assert.equal(seen, "from-env claude null");
+  t.assert.equal(output, "line\n");
+  t.assert.equal(process.exitCode, 0);
 });
