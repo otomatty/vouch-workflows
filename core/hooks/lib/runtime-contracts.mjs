@@ -231,8 +231,9 @@ export {};
  * from the question, so a concurrent second answer conflicts in the store instead of appending.
  * @typedef {(input:import('./contracts.mjs').HookInput,ctx:import('./contracts.mjs').ReadyHookContext)=>Promise<import('./contracts.mjs').HookResult>} RecordAsideAnswer
  * Stop of the turn whose submission recorded aside.asked appends aside.answered; it never blocks.
- * @typedef {{n:number,sum:number,min:number,max:number,missing:number,examples:string[]}} MeasureSummary
+ * @typedef {{n:number,sum:number,min:number,max:number,missing:number,examples:string[],excluded?:number}} MeasureSummary
  * Over measured records only (neither synthetic nor estimated); `missing` counts records without the field.
+ * `excluded` is a wait already counted on the intent.approved that shares this parent.
  * @typedef {{count:number,synthetic:number,estimated:number,measures:Record<string,MeasureSummary>}} TypeSummary
  * `estimated`: migrated records whose time or duration was derived; like synthetic ones, excluded from measures.
  * @typedef {object} AuditReport
@@ -243,6 +244,8 @@ export {};
  * @property {string[]} duplicates
  * @property {Record<string,TypeSummary>} types
  * @property {Record<string,string[]>} unpaired Start records of a pair without any recorded end, by type.
+ * @property {number} legacy Readable legacy.* records, kept out of measures.
+ * @property {string[]} shared_waits Gate answers whose wait is already on an intent.approved.
  * @typedef {{intent:string|null}} ReportPorts
  * @typedef {(files:FileStore,environment:DoctorEnvironment,git:GitStatus,ports?:ReportPorts)=>Promise<DoctorReport & {report?:AuditReport}>} RunReport
  * Measured values only; nothing is estimated or filled in.

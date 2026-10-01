@@ -105,6 +105,7 @@
  * @property {string} [agent_type]
  * @property {string} [agent_transcript_path]
  * @property {string} [last_assistant_message]
+ * @property {Tokens} [tokens] Present only when the payload carried Claude-shaped usage. Codex emitters omit it.
  */
 /** @typedef {HookInputBase & ({hook_event_name:'SessionStart',source:string}|{hook_event_name:'UserPromptSubmit',prompt:string}|{hook_event_name:'PreToolUse',tool_name:string,tool_input:JsonObject}|{hook_event_name:'PostToolUse',tool_name:string,tool_input:JsonObject,tool_response:JsonValue}|{hook_event_name:'PreCompact',trigger:string}|{hook_event_name:'SubagentStop',agent_id:string,stop_hook_active?:boolean}|{hook_event_name:'Stop',stop_hook_active:boolean})} HookInput */
 

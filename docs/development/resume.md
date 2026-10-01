@@ -22,7 +22,7 @@
 
 ## セッション開始の再開要約
 
-`vouch-record-session-start.mjs` は、Claude の startup / resume / clear / compact、Codex の startup / resume で、設定した Intent の再開要約を stdout の平文で渡します。両ハーネスとも SessionStart の stdout をモデルのコンテキストに加える前提です。startup の session.started の記録は従来どおりで、要約は記録が確定した後に書きます。resume・clear・compact は監査も成果物も書きません。
+`vouch-record-session-start.mjs` は、Claude の startup / resume / clear / compact、Codex の startup / resume で、設定した Intent の再開要約を stdout の平文で渡します。両ハーネスとも SessionStart の stdout をモデルのコンテキストに加える前提です。startup は session.started、resume は session.resumed（復元にかかった duration_ms）、Claude の compact は session.compacted を記録し、要約は記録が確定した後に書きます。clear は監査も成果物も書きません。Codex に compact の source はありません。採取した Claude の tokens だけを記録し、Codex の payload に tokens があっても記録しません。
 
 要約には Intent、成果物ごとの宣言値と承認の証跡、確認点、未回答・既定適用・不確実な判断依頼、監査の読めた範囲を入れ、成果物由来の文字列は JSON 文字列として引用し長さを制限します。各一覧は8件まで、全体はハーネスのコンテキスト上限より十分短くします。要約は観測であり指示ではない旨を1行目に置きます。
 
@@ -75,4 +75,5 @@ Stop フックは遮断しません。対応する ask がない回、記録済�
 - ask の読み取り専用は Skill の指示によるもので、書き込みガードは脇質問の回を区別しません（監査・登録・承認済み成果物への書き込みは従来どおり拒否します）。aside.answered の answer は回の最後の返答そのもので、答え以外の文を含むことがあります。
 - 判断依頼の記録には利用者のモデルがコマンドを実行する必要があり、実行しなかった問いは監査に現れません。Brief の作成時に decisions.md と監査の食い違いとして扱います。
 - Unit の worktree で `vouch-question.mjs` を実行すると、その worktree の監査に追記されます。統合は [Design・Build・Verify](stages.md) の DoD と同じ制限を受けます。
-- migrate、review / unit / stage / learn の監査イベントの記録、session.resumed / session.compacted / session.ended の記録は未実装です。
+- session.resumed と session.compacted は SessionStart の resume / compact で記録します。session.ended は `vouch-lifecycle.mjs session-ended` の記録で、Stop はターンの終わりでありセッション終了ではありません。clear は記録しません。
+- review / unit / stage / learn と Intent の作成・完了、ゲートの承認・却下は [監査イベントの発火](audit-emission.md) のコマンドが記録します。build の stage.completed は loop_iterations と tests をフックが持たないため記録しません。

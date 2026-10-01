@@ -10,6 +10,7 @@ import resultSchema from "../../registry/hook-result.schema.json" with {
 import knowledgeSchema from "../../registry/knowledge-index.schema.json" with {
   type: "json",
 };
+import { readTokens } from "./measure.mjs";
 
 /**
  * This evaluator supports only the vocabulary used by these three registries.
@@ -210,13 +211,15 @@ export function parseInput(text) {
     return null;
   }
   if (!matches(inputSchema, value) || !object(value)) return null;
-  return /** @type {import('./contracts.mjs').HookInput} */ (
-    Object.fromEntries(
+  const tokens = readTokens(value);
+  return /** @type {import('./contracts.mjs').HookInput} */ ({
+    ...Object.fromEntries(
       Object.entries(value).filter(([key]) =>
         Object.hasOwn(inputSchema.properties, key),
       ),
-    )
-  );
+    ),
+    ...(tokens ? { tokens } : {}),
+  });
 }
 
 /** @param {unknown} value @returns {value is import('./contracts.mjs').AuditEvent} */

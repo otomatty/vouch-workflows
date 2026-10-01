@@ -5,6 +5,7 @@ import documents from "../../registry/project-documents.json" with {
 };
 import { intentHome, migratedOrigin, scanAudit } from "./audit.mjs";
 import { readIntent } from "./env.mjs";
+import { sharedWaitIds } from "./measure.mjs";
 
 // Measured audit values only (docs/development/resume.md); nothing is estimated or filled in,
 // and migrated estimates (docs/development/migrate.md) are only counted.
@@ -46,9 +47,19 @@ export async function runReport(
     };
   const path = `${intentHome(intent)}/${documents.audit}`;
   const scan = scanAudit(await files.readText(path));
+  const shared = new Set(sharedWaitIds(scan.events));
   /** @type {Record<string,TypeSummary>} */ const types = {};
+  let legacy = 0;
   for (const event of scan.events) {
+    if (event.type.startsWith("legacy.")) {
+      legacy++;
+      continue;
+    }
     const entry = ledger.events[/** @type {Registered} */ (event.type)];
+    if (!entry) {
+      legacy++;
+      continue;
+    }
     const summary = types[event.type] ?? {
       count: 0,
       synthetic: 0,
@@ -74,6 +85,10 @@ export async function runReport(
       continue;
     }
     for (const [name, measure] of Object.entries(summary.measures)) {
+      if (name === "wait_ms" && shared.has(event.id)) {
+        measure.excluded = (measure.excluded ?? 0) + 1;
+        continue;
+      }
       const value = at(event, name);
       if (typeof value !== "number") {
         measure.missing++;
@@ -97,6 +112,7 @@ export async function runReport(
   for (const event of scan.events) {
     const entry = ledger.events[/** @type {Registered} */ (event.type)];
     if (
+      !entry ||
       event.synthetic ||
       !entry.pairs_with.length ||
       entry.fields.required.includes("parent")
@@ -127,6 +143,8 @@ export async function runReport(
       duplicates: scan.duplicates,
       types,
       unpaired,
+      legacy,
+      shared_waits: [...shared].sort(),
     },
   };
 }

@@ -154,7 +154,7 @@ test("damaged lines and repeated IDs make the report partial without hiding read
 test("the report needs an explicit Intent and reports an empty log as zero records", async (t) => {
   const missing = await report({}, null);
   const empty = await report({});
-  t.plan(3);
+  t.plan(4);
   t.assert.deepEqual(
     [missing.result.ok, missing.result.checks.map((item) => item.id)],
     [false, ["REPORT-SCOPE"]],
@@ -163,6 +163,10 @@ test("the report needs an explicit Intent and reports an empty log as zero recor
   t.assert.deepEqual(
     [empty.result.ok, empty.result.report?.events, empty.result.report?.types],
     [true, 0, {}],
+  );
+  t.assert.deepEqual(
+    [empty.result.report?.legacy, empty.result.report?.shared_waits],
+    [0, []],
   );
 });
 
@@ -220,4 +224,88 @@ test("migrated records with derived times are counted as estimated and kept out 
     missing: 0,
     examples: ["measured"],
   });
+});
+
+test("a gate wait shared with intent.approved is excluded once, and legacy records stay out of the measures", async (t) => {
+  const gate = {
+    id: "gate-1",
+    v: 1,
+    type: "gate.opened",
+    ts: "2026-09-30T00:00:00.000Z",
+    actor: "hook",
+    intent,
+    source: "intent",
+  };
+  const { result } = await report({
+    "audit/events.jsonl": jsonl([
+      gate,
+      {
+        id: "approved",
+        v: 1,
+        type: "intent.approved",
+        ts: "2026-09-30T00:00:02.000Z",
+        actor: "human",
+        intent,
+        source: "intent",
+        parent: gate.id,
+        wait_ms: 4000,
+      },
+      {
+        id: "shared-gate",
+        v: 1,
+        type: "gate.approved",
+        ts: "2026-09-30T00:00:02.000Z",
+        actor: "human",
+        intent,
+        source: "intent",
+        parent: gate.id,
+        wait_ms: 4000,
+      },
+      {
+        id: "other-gate",
+        v: 1,
+        type: "gate.rejected",
+        ts: "2026-09-30T00:00:03.000Z",
+        actor: "human",
+        intent,
+        source: "pr",
+        parent: "gate-2",
+        wait_ms: 500,
+        reason: "needs-work",
+      },
+      {
+        id: "old",
+        v: 1,
+        type: "legacy.OLD",
+        ts: "2026-09-30T00:00:00.000Z",
+        actor: "hook",
+        original_type: "OLD",
+        raw: "old",
+        source_path: "aidlc/audit/a.md#L1",
+      },
+    ]),
+  });
+  const data =
+    /** @type {import('../../../core/hooks/lib/runtime-contracts.mjs').AuditReport} */ (
+      result.report
+    );
+  t.plan(4);
+  t.assert.deepEqual(data.shared_waits, ["shared-gate"]);
+  t.assert.equal(data.legacy, 1);
+  t.assert.deepEqual(data.types["gate.approved"]?.measures.wait_ms, {
+    n: 0,
+    sum: 0,
+    min: 0,
+    max: 0,
+    missing: 0,
+    examples: [],
+    excluded: 1,
+  });
+  t.assert.deepEqual(
+    [
+      data.types["intent.approved"]?.measures.wait_ms?.sum,
+      data.types["gate.rejected"]?.measures.wait_ms?.sum,
+    ],
+    [4000, 500],
+  );
 });

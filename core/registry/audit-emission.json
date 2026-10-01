@@ -1,0 +1,524 @@
+{
+  "version": 1,
+  "storage": "vouch/intents/<intent>/audit/events.jsonl",
+  "driver": "core/hooks/lib/io.mjs",
+  "store_tests": ["tests/unit/lib/audit.test.mjs"],
+  "operations": [
+    "intent-created",
+    "intent-completed",
+    "stage-started",
+    "stage-completed",
+    "unit-started",
+    "unit-completed",
+    "gate-approved",
+    "gate-rejected",
+    "review-requested",
+    "review-completed",
+    "learn-recorded",
+    "session-ended"
+  ],
+  "events": {
+    "intent.created": {
+      "fires_when": "vouch-lifecycle intent-created reads the plan's highest risk",
+      "input": { "class": "command" },
+      "hook": "hooks/vouch-lifecycle.mjs",
+      "operation": "intent-created",
+      "tests": {
+        "positive": "tests/hooks/vouch-lifecycle.test.mjs",
+        "negative": "tests/hooks/vouch-lifecycle.test.mjs",
+        "subprocess": "tests/hooks/vouch-lifecycle.test.mjs"
+      },
+      "measures": {
+        "parent": null,
+        "duration_ms": "absent",
+        "wait_ms": "absent",
+        "tokens": "omitted"
+      }
+    },
+    "intent.approved": {
+      "fires_when": "UserPromptSubmit vouch approve <gate> after a live gate.opened",
+      "input": {
+        "class": "captured",
+        "fixture": "tests/fixtures/harness/claude/2.1.283/linux/print/UserPromptSubmit.json",
+        "also": [
+          "tests/fixtures/harness/codex/0.153.4/linux/exec/UserPromptSubmit.json"
+        ]
+      },
+      "hook": "hooks/vouch-record-intent-review.mjs",
+      "tests": {
+        "positive": "tests/hooks/vouch-record-intent-approval.test.mjs",
+        "negative": "tests/hooks/vouch-record-intent-review.test.mjs",
+        "subprocess": "tests/hooks/vouch-record-intent-approval.test.mjs"
+      },
+      "measures": {
+        "parent": "gate.opened",
+        "duration_ms": "absent",
+        "wait_ms": "shared-once",
+        "tokens": "omitted"
+      }
+    },
+    "intent.completed": {
+      "fires_when": "vouch-lifecycle intent-completed sums live waits without a second copy of a shared gate wait",
+      "input": { "class": "command" },
+      "hook": "hooks/vouch-lifecycle.mjs",
+      "operation": "intent-completed",
+      "tests": {
+        "positive": "tests/hooks/vouch-lifecycle.test.mjs",
+        "negative": "tests/hooks/vouch-lifecycle.test.mjs",
+        "subprocess": "tests/hooks/vouch-lifecycle.test.mjs"
+      },
+      "measures": {
+        "parent": "intent.created",
+        "duration_ms": "parent-clock",
+        "wait_ms": "absent",
+        "tokens": "omitted"
+      }
+    },
+    "stage.started": {
+      "fires_when": "vouch-lifecycle stage-started <stage>",
+      "input": { "class": "command" },
+      "hook": "hooks/vouch-lifecycle.mjs",
+      "operation": "stage-started",
+      "migration": "hooks/vouch-migrate.mjs",
+      "tests": {
+        "positive": "tests/hooks/vouch-lifecycle.test.mjs",
+        "negative": "tests/hooks/vouch-lifecycle.test.mjs",
+        "subprocess": "tests/hooks/vouch-lifecycle.test.mjs"
+      },
+      "measures": {
+        "parent": null,
+        "duration_ms": "absent",
+        "wait_ms": "absent",
+        "tokens": "omitted"
+      }
+    },
+    "stage.completed": {
+      "fires_when": "vouch-lifecycle stage-completed <stage> for intent, design or verify; build is refused",
+      "input": { "class": "command" },
+      "hook": "hooks/vouch-lifecycle.mjs",
+      "operation": "stage-completed",
+      "migration": "hooks/vouch-migrate.mjs",
+      "tests": {
+        "positive": "tests/hooks/vouch-lifecycle.test.mjs",
+        "negative": "tests/hooks/vouch-lifecycle.test.mjs",
+        "subprocess": "tests/hooks/vouch-lifecycle.test.mjs"
+      },
+      "measures": {
+        "parent": "stage.started",
+        "duration_ms": "parent-clock",
+        "wait_ms": "absent",
+        "tokens": "omitted"
+      }
+    },
+    "unit.started": {
+      "fires_when": "vouch-lifecycle unit-started <Unit> using the plan row's risk",
+      "input": { "class": "command" },
+      "hook": "hooks/vouch-lifecycle.mjs",
+      "operation": "unit-started",
+      "tests": {
+        "positive": "tests/hooks/vouch-lifecycle.test.mjs",
+        "negative": "tests/hooks/vouch-lifecycle.test.mjs",
+        "subprocess": "tests/hooks/vouch-lifecycle.test.mjs"
+      },
+      "measures": {
+        "parent": null,
+        "duration_ms": "absent",
+        "wait_ms": "absent",
+        "tokens": "omitted"
+      }
+    },
+    "unit.completed": {
+      "fires_when": "vouch-lifecycle unit-completed <Unit> from the parent clock and git diff --numstat HEAD",
+      "input": { "class": "command" },
+      "hook": "hooks/vouch-lifecycle.mjs",
+      "operation": "unit-completed",
+      "tests": {
+        "positive": "tests/hooks/vouch-lifecycle.test.mjs",
+        "negative": "tests/hooks/vouch-lifecycle.test.mjs",
+        "subprocess": "tests/hooks/vouch-lifecycle.test.mjs"
+      },
+      "measures": {
+        "parent": "unit.started",
+        "duration_ms": "parent-clock",
+        "wait_ms": "absent",
+        "tokens": "omitted"
+      }
+    },
+    "checkpoint.confirmed": {
+      "fires_when": "UserPromptSubmit vouch confirm <target>",
+      "input": {
+        "class": "captured",
+        "fixture": "tests/fixtures/harness/claude/2.1.283/linux/print/UserPromptSubmit.json"
+      },
+      "hook": "hooks/vouch-record-intent-review.mjs",
+      "tests": {
+        "positive": "tests/hooks/vouch-record-intent-approval.test.mjs",
+        "negative": "tests/hooks/vouch-record-intent-approval.test.mjs",
+        "subprocess": "tests/hooks/vouch-record-intent-approval.test.mjs"
+      },
+      "measures": {
+        "parent": null,
+        "duration_ms": "absent",
+        "wait_ms": "absent",
+        "tokens": "omitted"
+      }
+    },
+    "gate.opened": {
+      "fires_when": "UserPromptSubmit vouch review",
+      "input": {
+        "class": "captured",
+        "fixture": "tests/fixtures/harness/claude/2.1.283/linux/print/UserPromptSubmit.json",
+        "also": [
+          "tests/fixtures/harness/codex/0.153.4/linux/exec/UserPromptSubmit.json"
+        ]
+      },
+      "hook": "hooks/vouch-record-intent-review.mjs",
+      "tests": {
+        "positive": "tests/hooks/vouch-record-intent-review.test.mjs",
+        "negative": "tests/hooks/vouch-record-intent-review.test.mjs",
+        "subprocess": "tests/hooks/vouch-record-intent-review.test.mjs"
+      },
+      "measures": {
+        "parent": null,
+        "duration_ms": "absent",
+        "wait_ms": "absent",
+        "tokens": "omitted"
+      }
+    },
+    "gate.approved": {
+      "fires_when": "vouch-lifecycle gate-approved on the latest live gate.opened; a shared parent is not summed twice",
+      "input": { "class": "command" },
+      "hook": "hooks/vouch-lifecycle.mjs",
+      "operation": "gate-approved",
+      "tests": {
+        "positive": "tests/hooks/vouch-lifecycle.test.mjs",
+        "negative": "tests/hooks/vouch-lifecycle.test.mjs",
+        "subprocess": "tests/hooks/vouch-lifecycle.test.mjs"
+      },
+      "measures": {
+        "parent": "gate.opened",
+        "duration_ms": "absent",
+        "wait_ms": "shared-once",
+        "tokens": "omitted"
+      }
+    },
+    "gate.rejected": {
+      "fires_when": "vouch-lifecycle gate-rejected <reason> on the latest live gate.opened",
+      "input": { "class": "command" },
+      "hook": "hooks/vouch-lifecycle.mjs",
+      "operation": "gate-rejected",
+      "tests": {
+        "positive": "tests/hooks/vouch-lifecycle.test.mjs",
+        "negative": "tests/hooks/vouch-lifecycle.test.mjs",
+        "subprocess": "tests/hooks/vouch-lifecycle.test.mjs"
+      },
+      "measures": {
+        "parent": "gate.opened",
+        "duration_ms": "absent",
+        "wait_ms": "shared-once",
+        "tokens": "omitted"
+      }
+    },
+    "question.asked": {
+      "fires_when": "vouch-question ask <Q-n> from the decisions.md card",
+      "input": { "class": "command" },
+      "hook": "hooks/vouch-question.mjs",
+      "tests": {
+        "positive": "tests/scenario/resume-distribution.test.mjs",
+        "negative": "tests/hooks/vouch-question.test.mjs",
+        "subprocess": "tests/scenario/resume-distribution.test.mjs"
+      },
+      "measures": {
+        "parent": null,
+        "duration_ms": "absent",
+        "wait_ms": "absent",
+        "tokens": "omitted"
+      }
+    },
+    "question.answered": {
+      "fires_when": "UserPromptSubmit vouch answer <Q-n> <choice>",
+      "input": {
+        "class": "captured",
+        "fixture": "tests/fixtures/harness/claude/2.1.283/linux/print/UserPromptSubmit.json"
+      },
+      "hook": "hooks/vouch-record-intent-review.mjs",
+      "tests": {
+        "positive": "tests/hooks/vouch-record-aside-answer.test.mjs",
+        "negative": "tests/hooks/vouch-record-aside-answer.test.mjs",
+        "subprocess": "tests/hooks/vouch-record-aside-answer.test.mjs"
+      },
+      "measures": {
+        "parent": "question.asked",
+        "duration_ms": "absent",
+        "wait_ms": "parent-clock",
+        "tokens": "omitted"
+      }
+    },
+    "question.defaulted": {
+      "fires_when": "vouch-question default <Q-n> from the recorded default",
+      "input": { "class": "command" },
+      "hook": "hooks/vouch-question.mjs",
+      "tests": {
+        "positive": "tests/scenario/resume-distribution.test.mjs",
+        "negative": "tests/hooks/vouch-question.test.mjs",
+        "subprocess": "tests/scenario/resume-distribution.test.mjs"
+      },
+      "measures": {
+        "parent": "question.asked",
+        "duration_ms": "absent",
+        "wait_ms": "parent-clock",
+        "tokens": "omitted"
+      }
+    },
+    "aside.asked": {
+      "fires_when": "UserPromptSubmit /vouch ask or $vouch ask",
+      "input": {
+        "class": "captured",
+        "fixture": "tests/fixtures/harness/claude/2.1.283/linux/print/UserPromptSubmit.json",
+        "also": [
+          "tests/fixtures/harness/codex/0.153.4/linux/exec/UserPromptSubmit.json"
+        ]
+      },
+      "hook": "hooks/vouch-record-intent-review.mjs",
+      "tests": {
+        "positive": "tests/hooks/vouch-record-aside-answer.test.mjs",
+        "negative": "tests/hooks/vouch-record-aside-answer.test.mjs",
+        "subprocess": "tests/hooks/vouch-record-aside-answer.test.mjs"
+      },
+      "measures": {
+        "parent": null,
+        "duration_ms": "absent",
+        "wait_ms": "absent",
+        "tokens": "omitted"
+      }
+    },
+    "aside.answered": {
+      "fires_when": "Stop of the same prompt_id or turn_id as aside.asked",
+      "input": {
+        "class": "captured",
+        "fixture": "tests/fixtures/harness/claude/2.1.283/linux/print/Stop.json",
+        "also": ["tests/fixtures/harness/codex/0.153.4/linux/exec/Stop.json"]
+      },
+      "hook": "hooks/vouch-record-aside-answer.mjs",
+      "tests": {
+        "positive": "tests/hooks/vouch-record-aside-answer.test.mjs",
+        "negative": "tests/hooks/vouch-record-aside-answer.test.mjs",
+        "subprocess": "tests/hooks/vouch-record-aside-answer.test.mjs"
+      },
+      "measures": {
+        "parent": "aside.asked",
+        "duration_ms": "parent-clock",
+        "wait_ms": "absent",
+        "tokens": "omitted"
+      }
+    },
+    "hook.check": {
+      "fires_when": "vouch-dod or an explicit knowledge check command",
+      "input": {
+        "class": "captured",
+        "fixture": "tests/fixtures/harness/claude/2.1.283/linux/print/UserPromptSubmit.json"
+      },
+      "hook": "hooks/vouch-record-intent-review.mjs",
+      "tests": {
+        "positive": "tests/hooks/knowledge.test.mjs",
+        "negative": "tests/hooks/knowledge.test.mjs",
+        "subprocess": "tests/hooks/knowledge.test.mjs"
+      },
+      "measures": {
+        "parent": null,
+        "duration_ms": "self-clock",
+        "wait_ms": "absent",
+        "tokens": "omitted"
+      }
+    },
+    "hook.denied": {
+      "fires_when": "an explicit knowledge check that fails",
+      "input": {
+        "class": "captured",
+        "fixture": "tests/fixtures/harness/claude/2.1.283/linux/print/UserPromptSubmit.json"
+      },
+      "hook": "hooks/vouch-record-intent-review.mjs",
+      "tests": {
+        "positive": "tests/hooks/knowledge.test.mjs",
+        "negative": "tests/hooks/knowledge.test.mjs",
+        "subprocess": "tests/hooks/knowledge.test.mjs"
+      },
+      "measures": {
+        "parent": null,
+        "duration_ms": "self-clock",
+        "wait_ms": "absent",
+        "tokens": "omitted"
+      }
+    },
+    "review.requested": {
+      "fires_when": "installed vouch-lifecycle review-requested <iteration>",
+      "input": { "class": "command" },
+      "hook": "hooks/vouch-lifecycle.mjs",
+      "operation": "review-requested",
+      "tests": {
+        "positive": "tests/hooks/vouch-lifecycle.test.mjs",
+        "negative": "tests/hooks/vouch-lifecycle.test.mjs",
+        "subprocess": "tests/hooks/vouch-lifecycle.test.mjs"
+      },
+      "measures": {
+        "parent": null,
+        "duration_ms": "absent",
+        "wait_ms": "absent",
+        "tokens": "omitted"
+      }
+    },
+    "review.completed": {
+      "fires_when": "installed vouch-lifecycle review-completed <iteration> counts review.md",
+      "input": { "class": "command" },
+      "hook": "hooks/vouch-lifecycle.mjs",
+      "operation": "review-completed",
+      "tests": {
+        "positive": "tests/hooks/vouch-lifecycle.test.mjs",
+        "negative": "tests/hooks/vouch-lifecycle.test.mjs",
+        "subprocess": "tests/hooks/vouch-lifecycle.test.mjs"
+      },
+      "measures": {
+        "parent": "review.requested",
+        "duration_ms": "parent-clock",
+        "wait_ms": "absent",
+        "tokens": "omitted"
+      }
+    },
+    "knowledge.refreshed": {
+      "fires_when": "an explicit knowledge refresh command",
+      "input": {
+        "class": "captured",
+        "fixture": "tests/fixtures/harness/claude/2.1.283/linux/print/UserPromptSubmit.json"
+      },
+      "hook": "hooks/vouch-record-intent-review.mjs",
+      "tests": {
+        "positive": "tests/hooks/knowledge.test.mjs",
+        "negative": "tests/hooks/knowledge.test.mjs",
+        "subprocess": "tests/hooks/knowledge.test.mjs"
+      },
+      "measures": {
+        "parent": null,
+        "duration_ms": "self-clock",
+        "wait_ms": "absent",
+        "tokens": "omitted"
+      }
+    },
+    "session.started": {
+      "fires_when": "SessionStart source startup",
+      "input": {
+        "class": "captured",
+        "fixture": "tests/fixtures/harness/claude/2.1.283/linux/print/SessionStart.startup.json",
+        "also": [
+          "tests/fixtures/harness/codex/0.153.4/linux/exec/SessionStart.startup.json"
+        ]
+      },
+      "hook": "hooks/vouch-record-session-start.mjs",
+      "tests": {
+        "positive": "tests/hooks/vouch-record-session-start.test.mjs",
+        "negative": "tests/hooks/vouch-record-session-start.test.mjs",
+        "subprocess": "tests/hooks/vouch-record-session-start.test.mjs"
+      },
+      "measures": {
+        "parent": null,
+        "duration_ms": "absent",
+        "wait_ms": "absent",
+        "tokens": "claude-observed"
+      }
+    },
+    "session.resumed": {
+      "fires_when": "SessionStart source resume; duration_ms is the restore time",
+      "input": {
+        "class": "captured",
+        "fixture": "tests/fixtures/harness/claude/2.1.283/linux/print/SessionStart.resume.json",
+        "also": [
+          "tests/fixtures/harness/codex/0.153.4/linux/exec/SessionStart.resume.json"
+        ]
+      },
+      "hook": "hooks/vouch-record-session-start.mjs",
+      "tests": {
+        "positive": "tests/hooks/vouch-resume.test.mjs",
+        "negative": "tests/hooks/vouch-record-session-start.test.mjs",
+        "subprocess": "tests/hooks/vouch-resume.test.mjs"
+      },
+      "measures": {
+        "parent": null,
+        "duration_ms": "restore-clock",
+        "wait_ms": "absent",
+        "tokens": "claude-observed"
+      }
+    },
+    "session.compacted": {
+      "fires_when": "SessionStart source compact; Stop and clear do not compact",
+      "input": {
+        "class": "captured",
+        "fixture": "tests/fixtures/harness/claude/2.1.283/linux/print/SessionStart.compact.json"
+      },
+      "hook": "hooks/vouch-record-session-start.mjs",
+      "tests": {
+        "positive": "tests/hooks/vouch-resume.test.mjs",
+        "negative": "tests/hooks/vouch-record-session-start.test.mjs",
+        "subprocess": "tests/hooks/vouch-resume.test.mjs"
+      },
+      "measures": {
+        "parent": null,
+        "duration_ms": "absent",
+        "wait_ms": "absent",
+        "tokens": "claude-observed"
+      }
+    },
+    "session.ended": {
+      "fires_when": "vouch-lifecycle session-ended <session>; Stop does not end a session",
+      "input": { "class": "command" },
+      "hook": "hooks/vouch-lifecycle.mjs",
+      "operation": "session-ended",
+      "tests": {
+        "positive": "tests/hooks/vouch-lifecycle.test.mjs",
+        "negative": "tests/hooks/vouch-lifecycle.test.mjs",
+        "subprocess": "tests/hooks/vouch-lifecycle.test.mjs"
+      },
+      "measures": {
+        "parent": "session.started",
+        "duration_ms": "parent-clock",
+        "wait_ms": "absent",
+        "tokens": "omitted"
+      }
+    },
+    "learn.recorded": {
+      "fires_when": "vouch-lifecycle learn-recorded counts added rules.md table rows against HEAD",
+      "input": { "class": "command" },
+      "hook": "hooks/vouch-lifecycle.mjs",
+      "operation": "learn-recorded",
+      "migration": "hooks/vouch-migrate.mjs",
+      "tests": {
+        "positive": "tests/hooks/vouch-lifecycle.test.mjs",
+        "negative": "tests/hooks/vouch-lifecycle.test.mjs",
+        "subprocess": "tests/hooks/vouch-lifecycle.test.mjs"
+      },
+      "measures": {
+        "parent": null,
+        "duration_ms": "absent",
+        "wait_ms": "absent",
+        "tokens": "omitted"
+      }
+    },
+    "migration.completed": {
+      "fires_when": "UserPromptSubmit vouch migrate approve <sha256>",
+      "input": {
+        "class": "captured",
+        "fixture": "tests/fixtures/harness/claude/2.1.283/linux/print/UserPromptSubmit.json"
+      },
+      "hook": "hooks/vouch-record-intent-review.mjs",
+      "tests": {
+        "positive": "tests/hooks/migrate-approve.test.mjs",
+        "negative": "tests/hooks/migrate-approve.test.mjs",
+        "subprocess": "tests/hooks/migrate-approve.test.mjs"
+      },
+      "measures": {
+        "parent": null,
+        "duration_ms": "absent",
+        "wait_ms": "absent",
+        "tokens": "omitted"
+      }
+    }
+  }
+}

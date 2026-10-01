@@ -77,9 +77,16 @@ for (const [harness, sources] of Object.entries(operations.resume.sources)) {
           .trim()
           .split("\n")
           .filter(Boolean)
-          .map((line) => JSON.parse(line).type),
-        source === "startup" ? ["session.started"] : [],
-        "only startup is recorded; resumes never write",
+          .map((line) => {
+            const event = JSON.parse(line);
+            return [event.type, typeof event.duration_ms === "number"];
+          }),
+        source === "startup"
+          ? [["session.started", false]]
+          : source === "resume"
+            ? [["session.resumed", true]]
+            : [["session.compacted", false]],
+        "startup, resume and compact record; clear does not",
       );
     });
   }

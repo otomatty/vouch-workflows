@@ -47,6 +47,14 @@ Q-n の判断依頼を出す・既定案で進める時は、[判断依頼の記
 
 利用者が現在地・確認点・未回答の判断依頼を求めた時に、[status の説明](references/status.md)を読む。doctor で前提を確認した上で、成果物と監査の記録を根拠付きで示す。状態の更新や作業の再開は行わない。
 
+## 監査の記録
+
+ステージ・Unit・レビュー・Learn・Intent の作成と完了・ゲートの承認と却下・セッション終了は、モデルが監査ファイルを手で追記せず、登録コマンドが記録する。引数が要る操作だけ、英数字と `-` のトークンを1つ付ける。操作名は `{{HARNESS_DIR}}/registry/audit-emission.json` にある。build の stage-completed は loop_iterations と tests を取得できないので記録しない。Stop はセッション終了ではない。[R-PROJECT-3]
+
+```sh
+node "{{HARNESS_DIR}}/hooks/vouch-lifecycle.mjs" <operation>
+```
+
 ## Doctor
 
 利用者が doctor または Vouch の導入状態の確認を求めた時に、[診断の説明](references/doctor.md)を読む。

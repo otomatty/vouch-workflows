@@ -58,4 +58,8 @@ Learn では、繰り返し出た論点や訂正を rules.md への追記案と�
 ## 終了条件
 
 Brief が9節そろい、指摘が解消するか §8 に残り、PR 本文として用意できた時に完了する。検証の結果、未解決、人に判断してほしいこと、Learn の追記案を報告する。
-構造の合格や reviewer の判定を人の承認に置き換えない。監査ログを作成・追記・編集しない。[R-PROJECT-1] [R-PROJECT-3]
+構造の合格や reviewer の判定を人の承認に置き換えない。監査ログを手で作成・追記・編集しない。レビューの依頼と完了、人が採用した rules.md の追記、セッション終了は登録コマンドが記録する。[R-PROJECT-1] [R-PROJECT-3]
+
+```sh
+node "{{HARNESS_DIR}}/hooks/vouch-lifecycle.mjs" <operation>
+```
