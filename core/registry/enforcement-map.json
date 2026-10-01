@@ -1762,7 +1762,7 @@
         {
           "status": "implemented",
           "path": "tests/unit/lib/checkpoints.test.mjs",
-          "claim": "計画の書式、rules.md の粒度、必要な確認点（topic / unit / section、Design の条件、H の Unit）、確認した内容の digest、導出した ID を持つ現在の内容の確認だけを数えることを検査する。"
+          "claim": "計画の書式、rules.md の粒度、必要な確認点（topic / unit / section、Design の条件、H の Unit、unit の Design Unit ごと・section の design.md の節ごとの design）、確認した内容の digest（design unit は共通の部分と自分の行）、導出した ID を持つ現在の内容の確認だけを数えることを検査する。"
         },
         {
           "status": "implemented",

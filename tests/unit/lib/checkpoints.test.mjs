@@ -12,7 +12,7 @@ import {
 } from "../../../core/hooks/lib/checkpoints.mjs";
 import { newId } from "../../../core/hooks/lib/clock.mjs";
 import { confirmation } from "../../helpers/approval.mjs";
-import { planned } from "../../helpers/intent-review.mjs";
+import { designed, planned } from "../../helpers/intent-review.mjs";
 
 /** @param {string} text */
 const sha = (text) => createHash("sha256").update(text).digest("hex");
@@ -254,7 +254,18 @@ test("required checkpoints follow the mode, the Design condition and H Unit addi
   ].map((id) => ({ checkpoint: "section", section: id }));
   const units = (/** @type {string[]} */ ...ids) =>
     ids.map((id) => ({ checkpoint: "unit", unit: id }));
-  t.plan(7);
+  // Open questions Q2 B and C: design.md is confirmed per Design Unit or per design section.
+  const designSections = [
+    "summary",
+    "ideal",
+    "alternatives",
+    "diagrams",
+    "contract",
+    "threats",
+    "units",
+    "references",
+  ].map((id) => ({ checkpoint: "design", section: id }));
+  t.plan(8);
   t.assert.deepEqual(requiredCheckpoints("topic", low), topic);
   t.assert.deepEqual(requiredCheckpoints("topic", design), [
     ...topic,
@@ -268,18 +279,22 @@ test("required checkpoints follow the mode, the Design condition and H Unit addi
   t.assert.deepEqual(requiredCheckpoints("unit", design), [
     { checkpoint: "acceptance" },
     ...units("U1", "U-2.b"),
-    { checkpoint: "design" },
+    { checkpoint: "design", unit: "U-2.b" },
   ]);
   t.assert.deepEqual(requiredCheckpoints("unit", high), [
     { checkpoint: "acceptance" },
     ...units("U1", "U2"),
-    { checkpoint: "design" },
+    { checkpoint: "design", unit: "U2" },
   ]);
   t.assert.deepEqual(requiredCheckpoints("section", low), sections);
+  t.assert.deepEqual(requiredCheckpoints("section", design), [
+    ...sections,
+    ...designSections,
+  ]);
   t.assert.deepEqual(requiredCheckpoints("section", high), [
     ...sections,
     ...units("U1", "U2"),
-    { checkpoint: "design" },
+    ...designSections,
   ]);
 });
 
@@ -405,7 +420,15 @@ test("absent, duplicated or unsupported targets have no content", (t) => {
 });
 
 test("targets are described with the confirm command suffix", (t) => {
-  t.plan(3);
+  t.plan(5);
+  t.assert.equal(
+    describeTarget({ checkpoint: "design", unit: "U1" }),
+    "design unit U1",
+  );
+  t.assert.equal(
+    describeTarget({ checkpoint: "design", section: "ideal" }),
+    "design section ideal",
+  );
   t.assert.equal(describeTarget({ checkpoint: "design" }), "design");
   t.assert.equal(describeTarget({ checkpoint: "unit", unit: "U1" }), "unit U1");
   t.assert.equal(
@@ -570,5 +593,230 @@ test("tableRows reads the first table of a named section and defaults to the pla
   t.assert.deepEqual(
     tableRows(planned())?.map((row) => row.cells[0]),
     ["U1"],
+  );
+});
+
+test("design sections and Design Units digest their part of the normalized design.md", (t) => {
+  const text = planned(mixed);
+  const design = designed([
+    ["U1", "Keep the parser."],
+    ["U-2.b", "Split the reader."],
+  ]);
+  const texts = { intent: text, design };
+  const own = (/** @type {string} */ value, /** @type {string} */ other) =>
+    value.replace(new RegExp(`\\| ${other} \\|.*\\r?\\n`), "");
+  const designOf = (/** @type {string} */ part) => ({
+    path: "design.md",
+    sha256: sha(part),
+  });
+  const crlf = design.replaceAll("\n", "\r\n");
+  t.plan(7);
+  t.assert.deepEqual(
+    checkpointContent({ checkpoint: "design", section: "ideal" }, texts),
+    designOf(section(design, "ideal")),
+  );
+  t.assert.deepEqual(
+    checkpointContent({ checkpoint: "design", section: "units" }, texts),
+    designOf(section(design, "units")),
+  );
+  t.assert.deepEqual(
+    checkpointContent({ checkpoint: "design", unit: "U-2.b" }, texts),
+    designOf(own(design, "U1")),
+  );
+  t.assert.deepEqual(
+    checkpointContent({ checkpoint: "design", unit: "U1" }, texts),
+    designOf(own(design, "U-2\\.b")),
+  );
+  t.assert.deepEqual(
+    checkpointContent(
+      { checkpoint: "design", unit: "U1" },
+      { intent: text, design: design.replace("draft", "approved") },
+    ),
+    checkpointContent({ checkpoint: "design", unit: "U1" }, texts),
+  );
+  t.assert.deepEqual(
+    checkpointContent(
+      { checkpoint: "design", unit: "U1" },
+      { intent: text, design: crlf },
+    ),
+    designOf(own(crlf, "U-2\\.b")),
+  );
+  t.assert.notDeepEqual(
+    checkpointContent({ checkpoint: "design", unit: "U1" }, texts),
+    checkpointContent({ checkpoint: "design" }, texts),
+  );
+});
+
+test("absent, duplicated or ambiguous design parts have no content", (t) => {
+  const text = planned(mixed);
+  const design = designed([["U1", "Keep the parser."]]);
+  /** @type {[object, string|null][]} */
+  const cases = [
+    [{ checkpoint: "design", section: "missing" }, design],
+    [{ checkpoint: "design", section: "ideal" }, null],
+    [{ checkpoint: "design", unit: "U1" }, null],
+    [
+      { checkpoint: "design", section: "ideal" },
+      design.replace("---\nstatus: draft\n---\n", ""),
+    ],
+    [
+      { checkpoint: "design", unit: "U1" },
+      design.replace("---\nstatus: draft\n---\n", ""),
+    ],
+    [{ checkpoint: "design", unit: "U9" }, design],
+    [
+      { checkpoint: "design", unit: "U1" },
+      designed([
+        ["U1", "Keep the parser."],
+        ["U1", "Split the reader."],
+      ]),
+    ],
+    [
+      { checkpoint: "design", unit: "U1" },
+      design.replace("<!-- sec:units -->", "<!-- sec:unit-designs -->"),
+    ],
+    [
+      { checkpoint: "design", unit: "U1" },
+      design.replace("| --- | --- | --- | --- | --- |\n", ""),
+    ],
+    [
+      { checkpoint: "design", section: "ideal" },
+      `${design}<!-- sec:ideal -->\nagain\n`,
+    ],
+    [{ checkpoint: "design", unit: "U1", section: "ideal" }, design],
+  ];
+  t.plan(cases.length);
+  for (const [target, value] of cases)
+    t.assert.equal(
+      checkpointContent(
+        /** @type {import('../../../core/hooks/lib/runtime-contracts.mjs').CheckpointTarget} */ (
+          target
+        ),
+        { intent: text, design: value },
+      ),
+      null,
+      JSON.stringify(target),
+    );
+});
+
+test("a design Unit confirmation goes stale with shared parts or its own row, not another Unit's row", (t) => {
+  const intent = "260929-plan";
+  const text = planned(mixed);
+  const design = designed([
+    ["U1", "Keep the parser."],
+    ["U-2.b", "Split the reader."],
+  ]);
+  /** @type {import('../../../core/hooks/lib/runtime-contracts.mjs').CheckpointTarget[]} */
+  const required = [
+    { checkpoint: "design", unit: "U1" },
+    { checkpoint: "design", unit: "U-2.b" },
+    { checkpoint: "design", section: "ideal" },
+  ];
+  const events = required.map((target) => {
+    const content = checkpointContent(target, { intent: text, design });
+    if (!content) throw new Error("content");
+    return confirmation(target, content, { intent });
+  });
+  /** @param {string} current @param {unknown[]} [recorded] */
+  const missing = (current, recorded = events) =>
+    missingCheckpoints({
+      required,
+      events: /** @type {never} */ (recorded),
+      intent,
+      texts: { intent: text, design: current },
+      newId,
+    });
+  const [first, second, ideal] = required;
+  const [byFirst, bySecond, byIdeal] = events;
+  if (!byFirst || !bySecond || !byIdeal) throw new Error("records");
+  const whole = checkpointContent(
+    { checkpoint: "design" },
+    { intent: text, design },
+  );
+  if (!whole) throw new Error("whole");
+  t.plan(7);
+  t.assert.deepEqual(missing(design), []);
+  t.assert.deepEqual(missing(design.replace("Keep the parser.", "Keep it.")), [
+    first,
+  ]);
+  t.assert.deepEqual(missing(design.replace("Split the reader.", "Split.")), [
+    second,
+  ]);
+  t.assert.deepEqual(
+    missing(design.replace("Ideal: one parser.", "Ideal: two parsers.")),
+    [first, second, ideal],
+  );
+  t.assert.deepEqual(
+    missing(design.replace("Parser input type.", "Reader input type.")),
+    [first, second],
+  );
+  t.assert.deepEqual(
+    missing(design, [
+      confirmation({ checkpoint: "design" }, whole, { intent }),
+      { ...byFirst, unit: "U-2.b" },
+      { ...byIdeal, section: "alternatives" },
+    ]),
+    required,
+  );
+  t.assert.deepEqual(
+    missing(design, [{ ...byFirst, section: "ideal" }, bySecond, byIdeal]),
+    [first],
+  );
+});
+
+test("section mode covers the design.md title, intro and unregistered sections through its first section", (t) => {
+  const intent = "260929-plan";
+  const text = planned(mixed);
+  const design = designed();
+  /** @type {import('../../../core/hooks/lib/runtime-contracts.mjs').CheckpointTarget[]} */
+  const required = [
+    "summary",
+    "ideal",
+    "alternatives",
+    "diagrams",
+    "contract",
+    "threats",
+    "units",
+    "references",
+  ].map((id) => ({ checkpoint: "design", section: id }));
+  const events = required.map((target) => {
+    const content = checkpointContent(target, { intent: text, design });
+    if (!content) throw new Error("content");
+    return confirmation(target, content, { intent });
+  });
+  /** @param {string} current */
+  const missing = (current) =>
+    missingCheckpoints({
+      required,
+      events: /** @type {never} */ (events),
+      intent,
+      texts: { intent: text, design: current },
+      newId,
+    });
+  /** @type {import('../../../core/hooks/lib/runtime-contracts.mjs').CheckpointTarget} */
+  const summary = { checkpoint: "design", section: "summary" };
+  const head = design.slice(0, design.indexOf("<!-- sec:summary -->"));
+  t.plan(5);
+  t.assert.deepEqual(checkpointContent(summary, { intent: text, design }), {
+    path: "design.md",
+    sha256: sha(`${head}${section(design, "summary")}`),
+  });
+  t.assert.deepEqual(missing(design), []);
+  t.assert.deepEqual(
+    missing(design.replace("# Synthetic design", "# Another design")),
+    [summary],
+  );
+  t.assert.deepEqual(
+    missing(
+      design.replace(
+        "<!-- sec:references -->",
+        "<!-- sec:notes -->\nUnconfirmed decision.\n\n<!-- sec:references -->",
+      ),
+    ),
+    [summary],
+  );
+  t.assert.deepEqual(
+    missing(design.replace("Parser input type.", "Reader input type.")),
+    [{ checkpoint: "design", section: "contract" }],
   );
 });

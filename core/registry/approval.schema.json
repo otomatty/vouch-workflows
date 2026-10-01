@@ -9,6 +9,7 @@
     "rules",
     "plan",
     "topics",
+    "design_units",
     "build",
     "writers"
   ],
@@ -66,6 +67,9 @@
           "const": "plan"
         }
       }
+    },
+    "design_units": {
+      "const": "units"
     },
     "build": {
       "const": ["build", "verify"]

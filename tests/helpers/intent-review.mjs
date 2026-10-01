@@ -113,3 +113,35 @@ export async function approvalBox(t, harness = "claude", text = planned()) {
   }
   return { ...box, send, confirm, approveAfter };
 }
+
+/**
+ * A synthetic design.md with every design section and a units table of Unit rows.
+ * @param {string[][]} [rows] Unit ID and design decision. @param {string} [ideal]
+ */
+export function designed(
+  rows = [["U1", "Keep the parser."]],
+  ideal = "Ideal: one parser.",
+) {
+  const sections = {
+    summary: "## Summary\n\nOne parser change.\n",
+    ideal: `## Ideal\n\n${ideal}\n`,
+    alternatives: "## Alternatives\n\nDo nothing: rejected.\n",
+    diagrams: "## Diagrams\n\nComponents diff.\n",
+    contract: "## Contract\n\nParser input type.\n",
+    threats: "## Threats\n\nNot applicable below H.\n",
+    units: [
+      "## Units",
+      "",
+      "| Unit | Risk | Design | Contract commit | Measure |",
+      "| --- | --- | --- | --- | --- |",
+      ...rows.map(([id, decision]) => `| ${id} | M | ${decision} | c1 | - |`),
+      "",
+    ].join("\n"),
+    references: "## References\n\nsrc/app.js:1@test\n",
+  };
+  return `---\nstatus: draft\n---\n# Synthetic design\n\n${Object.entries(
+    sections,
+  )
+    .map(([id, body]) => `<!-- sec:${id} -->\n${body}`)
+    .join("\n")}`;
+}

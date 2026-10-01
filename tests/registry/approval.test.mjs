@@ -15,6 +15,7 @@ test("the approval registry has a closed schema", (t) => {
       plan: { ...registry.plan, design: { required: "yes", skipped: "no" } },
     },
     { ...registry, topics: { ...registry.topics, units: "units" } },
+    { ...registry, design_units: "plan" },
     { ...registry, build: ["build"] },
   ];
   t.plan(cases.length + 1);
@@ -29,10 +30,12 @@ test("approval targets agree with the workflow, authoring, documents and command
   const documents = readJson("core/registry/project-documents.json");
   const commands = readJson("core/registry/intent-review.json");
   const quality = readJson("core/registry/quality-layers.json");
+  const stages = readJson("core/registry/stage-authoring.json");
   const unit = approval.plan.unit
     .replace(/^\^/, "")
     .replace("(?![\\s\\S])", "");
-  t.plan(8);
+  const section = "[a-z][a-z-]{0,63}";
+  t.plan(11);
   t.assert.deepEqual(
     Object.keys(approval.topics),
     workflow.topic_checkpoints
@@ -63,6 +66,16 @@ test("approval targets agree with the workflow, authoring, documents and command
     true,
   );
   t.assert.equal(commands.targetPattern.includes(`unit (${unit})`), true);
+  // Open questions Q2 B / C: design.md is confirmed per Unit row or per design section.
+  t.assert.equal(stages.design_sections.includes(approval.design_units), true);
+  t.assert.equal(
+    commands.targetPattern.includes(`|design unit (${unit})`),
+    true,
+  );
+  t.assert.equal(
+    commands.targetPattern.includes(`|design section (${section})`),
+    true,
+  );
   t.assert.deepEqual(
     [...commands.targetPattern.matchAll(/\(([a-z|]+)\)\|unit/g)].map(
       (m) => m[1],

@@ -2,21 +2,22 @@ import approval from "../../registry/approval.json" with { type: "json" };
 import authoring from "../../registry/intent-authoring.json" with {
   type: "json",
 };
+import stages from "../../registry/stage-authoring.json" with { type: "json" };
 import workflow from "../../registry/workflow.json" with { type: "json" };
-import { snapshotIntent } from "./approval.mjs";
+import { draftText, snapshotIntent } from "./approval.mjs";
 import { sha256Hex } from "./clock.mjs";
 
 // Checkpoints and the plan they depend on; see docs/development/approval-boundary.md.
 const unitId = new RegExp(approval.plan.unit);
-/** @param {string} text @returns {import('./contracts.mjs').CheckpointContent} */
-const digest = (text) => ({
-  path: "intent.md",
+/** @param {string} text @param {'intent.md'|'design.md'} [path] @returns {import('./contracts.mjs').CheckpointContent} */
+const digest = (text, path = "intent.md") => ({
+  path,
   sha256: sha256Hex(Buffer.from(text, "utf8")),
 });
 
-/** The unique `<!-- sec:id -->` line up to the next section marker. @param {string} text @param {string} id */
-function sectionOf(text, id) {
-  const lines = linesOf(text);
+/** Line indexes of the unique `<!-- sec:id -->` line up to the next section marker.
+ * @param {string[]} lines @param {string} id */
+function sectionRange(lines, id) {
   const marker = `<!-- sec:${id} -->`;
   const starts = lines.flatMap((line, i) =>
     line.replace(/\r?\n$/, "") === marker ? [i] : [],
@@ -26,7 +27,14 @@ function sectionOf(text, id) {
   const end = lines.findIndex(
     (line, i) => i > start && line.startsWith("<!-- sec:"),
   );
-  return lines.slice(start, end < 0 ? undefined : end).join("");
+  return { start, end: end < 0 ? lines.length : end };
+}
+
+/** @param {string} text @param {string} id */
+function sectionOf(text, id) {
+  const lines = linesOf(text);
+  const range = sectionRange(lines, id);
+  return range && lines.slice(range.start, range.end).join("");
 }
 
 /** Lines with their line breaks. @param {string} text */
@@ -36,8 +44,12 @@ const linesOf = (text) => text.match(/[^\n]*\n|[^\n]+$/g) ?? [];
  * @param {string} text @param {string} [id] */
 export function tableRows(text, id = approval.plan.section) {
   const plan = sectionOf(text, id);
-  if (plan === null) return null;
-  const raw = linesOf(plan);
+  return plan === null ? null : tableOf(linesOf(plan));
+}
+
+/** Rows of the first table in section lines, with their line index.
+ * @param {string[]} raw */
+function tableOf(raw) {
   const lines = raw.map((line) => line.trim());
   const first = lines.findIndex((line) => line.startsWith("|"));
   if (first < 0) return null;
@@ -51,9 +63,45 @@ export function tableRows(text, id = approval.plan.section) {
       .map((cell) => cell.trim());
   const [, separator = ""] = table;
   if (!/^\|(?:\s*:?-{3,}:?\s*\|)+$/.test(separator)) return null;
-  return table
-    .slice(2)
-    .map((line, i) => ({ line: `${raw[first + 2 + i]}`, cells: cells(line) }));
+  return table.slice(2).map((line, i) => ({
+    index: first + 2 + i,
+    line: `${raw[first + 2 + i]}`,
+    cells: cells(line),
+  }));
+}
+
+/** The draft design.md without the units table rows of other Units; null unless the row is unique.
+ * @param {string} text @param {string} unit */
+function designUnit(text, unit) {
+  const lines = linesOf(text);
+  const range = sectionRange(lines, approval.design_units);
+  const rows = range && tableOf(lines.slice(range.start, range.end));
+  const own = rows?.filter((row) => row.cells[0] === unit) ?? [];
+  if (!range || own.length !== 1) return null;
+  const others = new Set(
+    rows?.filter((row) => row !== own[0]).map((row) => range.start + row.index),
+  );
+  return lines.filter((_, i) => !others.has(i)).join("");
+}
+
+/** A design.md section; the first registered one also holds every byte no other registered section
+ * holds (the title and intro before it, unregistered sections), so section mode covers the whole file.
+ * @param {string} text @param {string} id */
+function designSection(text, id) {
+  const lines = linesOf(text);
+  const own = sectionRange(lines, id);
+  if (!own) return null;
+  if (id !== stages.design_sections[0])
+    return lines.slice(own.start, own.end).join("");
+  const others = stages.design_sections
+    .filter((other) => other !== id)
+    .map((other) => sectionRange(lines, other));
+  return lines
+    .filter(
+      (_, i) =>
+        !others.some((range) => range && i >= range.start && i < range.end),
+    )
+    .join("");
 }
 
 /** @param {string} cell @param {string[]} tokens */
@@ -141,18 +189,44 @@ export function requiredCheckpoints(mode, plan) {
             checkpoint: /** @type {const} */ ("section"),
             section,
           }));
+  // Open questions Q2: B confirms Design per Unit, C per heading of design.md as well.
+  /** @type {import('./runtime-contracts.mjs').CheckpointTarget[]} */
+  const designs = !plan.design
+    ? []
+    : mode === "unit"
+      ? plan.units
+          .filter((unit) => unit.design)
+          .map((unit) => ({ checkpoint: "design", unit: unit.id }))
+      : mode === "section"
+        ? stages.design_sections.map((section) => ({
+            checkpoint: "design",
+            section,
+          }))
+        : [{ checkpoint: "design" }];
   return [
     ...base,
     ...(plan.risk === "H" && mode !== "unit" ? units : []),
-    ...(plan.design ? [{ checkpoint: /** @type {const} */ ("design") }] : []),
+    ...designs,
   ];
 }
 
 /** @type {import('./runtime-contracts.mjs').CheckpointContentOf} */
 export function checkpointContent(target, texts) {
   if (target.checkpoint === "design") {
-    const snapshot =
-      texts.design === null ? null : snapshotIntent(texts.design);
+    const draft = texts.design === null ? null : draftText(texts.design);
+    const unit = "unit" in target ? target.unit : undefined;
+    const section = "section" in target ? target.section : undefined;
+    // A record naming both parts is ambiguous and never counts.
+    if (!draft || (unit !== undefined && section !== undefined)) return null;
+    const part =
+      unit !== undefined
+        ? designUnit(draft.text, unit)
+        : section !== undefined
+          ? designSection(draft.text, section)
+          : undefined;
+    if (part !== undefined)
+      return part === null ? null : digest(part, "design.md");
+    const snapshot = snapshotIntent(draft.text);
     return snapshot && { path: "design.md", sha256: snapshot.revision.sha256 };
   }
   if (target.checkpoint === "unit") {
@@ -173,6 +247,12 @@ export function checkpointContent(target, texts) {
 
 /** @type {import('./runtime-contracts.mjs').DescribeTarget} */
 export function describeTarget(target) {
+  if (target.checkpoint === "design")
+    return "unit" in target
+      ? `design unit ${target.unit}`
+      : "section" in target
+        ? `design section ${target.section}`
+        : "design";
   if (target.checkpoint === "unit") return `unit ${target.unit}`;
   if (target.checkpoint === "section") return `section ${target.section}`;
   return target.checkpoint;

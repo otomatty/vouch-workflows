@@ -40,7 +40,7 @@
 | `vouch confirm <対象>` | checkpoint.confirmed | 同上。対象が文書に一意に存在する |
 | `vouch approve evt_<64桁>` | intent.approved（既存） | 同上。ゲートと照合が一致する（既存） |
 
-`<対象>` は `acceptance`、`scope`、`units`、`design`、`unit <Unit ID>`、`section <節 ID>` のどれかです。Unit ID は `^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`、節 ID は `^[a-z][a-z-]{0,63}$` に従います。`vouch confirm` に続く不正な対象は `VOUCH-REVIEW-COMMAND` です。
+`<対象>` は `acceptance`、`scope`、`units`、`design`、`unit <Unit ID>`、`section <節 ID>`、`design unit <Unit ID>`、`design section <節 ID>` のどれかです。Unit ID は `^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`、節 ID は `^[a-z][a-z-]{0,63}$` に従います。`vouch confirm` に続く不正な対象は `VOUCH-REVIEW-COMMAND` です。
 
 明示操作の結果は、記録・更新の成功を含めて終了2と stderr の理由で返し、入力をモデルへ進めません。予期しない I/O・競合・実装エラーは HOOK-2 の終了0の診断です。
 
@@ -67,10 +67,10 @@
 | 粒度 | 必要な確認点 |
 | --- | --- |
 | topic（既定） | acceptance、scope、units。Design が必要なら design |
-| unit | acceptance と各 Unit。Design が必要なら design |
-| section | intent-authoring.json の intent_sections の各節。Design が必要なら design |
+| unit | acceptance と各 Unit。Design が必要なら、Design の欄が `required` の各 Unit（H を含む）の design unit |
+| section | intent-authoring.json の intent_sections の各節。Design が必要なら、stage-authoring.json の design_sections の各節の design section |
 
-どの粒度でも、Intent が H なら各 Unit の確認を加えます（`workflow.json` の high_risk_adds）。§18 Q2 の既定 A（論点ごとの固定4点、Design 不要なら3点、H は Unit ごとを追加）です。unit / section の design は design.md の節の契約がまだないため（#9）、design.md 全体への1回の確認とします。rules.md に書く範囲の説明は人のための記述で、フックは読みません。
+どの粒度でも、Intent が H なら各 Unit の確認を加えます（`workflow.json` の high_risk_adds）。§18 Q2 の既定 A（論点ごとの固定4点、Design 不要なら3点、H は Unit ごとを追加）です。unit と section は、[未決事項の記録](../spec/vouch-open-questions.html)の Q2 の B（AC 確定1回＋Unit ごとに Intent 1回・Design 1回）と C（intent.md / design.md の見出しごとに1回）に従い、design.md も Unit ごと・節ごとに確認します。design.md の節は [Design・Build・Verify の契約](stages.md)の design_sections です。H の high_risk_adds は intent.md の Unit の行の確認で、design の確認を増やしません。rules.md に書く範囲の説明は人のための記述で、フックは読みません。
 
 ### 確認の対象と版
 
@@ -82,16 +82,18 @@
 | section `<ID>` | intent.md の `sec:<ID>` 節 |
 | unit `<ID>` | `sec:plan` 節の最初の表で、1列目が ID の行。行頭・行末の空白と改行を含むバイト列 |
 | design | design.md 全体。intent.md と同じ frontmatter の規則で status を draft に置き換えた版 |
+| design section `<ID>` | design.md の `sec:<ID>` 節。design.md が上の frontmatter を持つ時だけ。design_sections の最初の節（summary）は、ほかの登録した節が持たないすべてのバイト（status を draft にした frontmatter、最初の節より前の表題と説明、登録外の節）も含む。intent.md の冒頭は承認の版が覆うが、design.md には版で覆う承認がないため |
+| design unit `<ID>` | status を draft に置き換えた design.md から、`sec:units` 節（approval.json の design_units）の最初の表で1列目が ID でない Unit の行を除いたバイト列。ID の行が1つだけある時だけ |
 
-節は `<!-- sec:ID -->` だけの行から、次の `<!-- sec:` で始まる行の前まで（なければ末尾まで）のバイト列です。区切り行と改行を含み、正規化しません。区切り行が1つでない、行がない、design.md が対応する frontmatter を持たない場合は対象がなく、`VOUCH-CHECKPOINT-TARGET` で記録しません。
+節は `<!-- sec:ID -->` だけの行から、次の `<!-- sec:` で始まる行の前まで（なければ末尾まで）のバイト列です。区切り行と改行を含み、正規化しません。区切り行が1つでない、行がない、design.md が対応する frontmatter を持たない場合は対象がなく、`VOUCH-CHECKPOINT-TARGET` で記録しません。design の記録が unit と section の両方を持つ場合も対象がなく、確認に数えません。
 
-承認を適用する時、必要な確認点ごとに、現在の内容と同じ `content` を持つ確認が監査にある必要があります。確認の後で対象が変わると、その確認点だけが古くなり、人が確認し直します。確認していない節の変更は他の確認を古くしません。§6 の「差分だけ確認する」に対応します。
+承認を適用する時、必要な確認点ごとに、現在の内容と同じ `content` を持つ確認が監査にある必要があります。確認の後で対象が変わると、その確認点だけが古くなり、人が確認し直します。確認していない節の変更は他の確認を古くしません。§6 の「差分だけ確認する」に対応します。design unit は design.md の共通の部分（要約・差分図・契約など）を含むため、共通の部分を変えるとすべての Unit の design の確認が古くなり、ある Unit の行だけを変えるとその Unit の確認だけが古くなります。
 
 確認として数えるのは、次をすべて満たす checkpoint.confirmed だけです。synthetic でない、設定した Intent、`content`・`submission`・`session`・`harness` を持つ、ID が導出と一致する、対象と内容が一致する。question.answered / question.defaulted、gate.approved、intent.approved、decisions.md の記述、ファイルの存在、無回答は確認ではありません。
 
 ### 監査レコード
 
-checkpoint.confirmed に任意の `content`（path は intent.md か design.md、design の確認は design.md）と `submission` を加えます。`content` を持つレコードは `harness`・`session`・`submission` を要求し、`submission.field` は Claude が prompt_id、Codex が turn_id です。旧形式のレコードはスキーマ上有効なまま、証跡には数えません。ts は同じ ID の最初の記録を保持します。
+checkpoint.confirmed に任意の `content`（path は intent.md か design.md、design の確認は design.md）と `submission` を加えます。design unit / design section の確認は checkpoint を design とし、`unit` / `section` を持ちます。監査イベントのスキーマは変えません。`content` を持つレコードは `harness`・`session`・`submission` を要求し、`submission.field` は Claude が prompt_id、Codex が turn_id です。旧形式のレコードはスキーマ上有効なまま、証跡には数えません。ts は同じ ID の最初の記録を保持します。
 
 ## 承認の適用
 

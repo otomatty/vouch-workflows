@@ -10,16 +10,24 @@ function digest(text) {
 
 /** @type {import('./runtime-contracts.mjs').SnapshotIntent} */
 export function snapshotIntent(text) {
+  const draft = draftText(text);
+  if (!draft) return null;
+  const sha256 = digest(draft.text);
+  if (sha256 === null) return null;
+  return {
+    status: draft.status,
+    revision: { path: "intent.md", sha256 },
+  };
+}
+
+/** @type {import('./runtime-contracts.mjs').DraftText} */
+export function draftText(text) {
   const header = /^---(\r?\n)status: (draft|approved)\1---\1/.exec(text);
   if (!header) return null;
   const [, newline, status] = header;
-  const sha256 = digest(
-    `---${newline}status: draft${newline}---${newline}${text.slice(header[0].length)}`,
-  );
-  if (sha256 === null) return null;
   return {
     status: /** @type {'draft'|'approved'} */ (status),
-    revision: { path: "intent.md", sha256 },
+    text: `---${newline}status: draft${newline}---${newline}${text.slice(header[0].length)}`,
   };
 }
 

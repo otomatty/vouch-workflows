@@ -16,13 +16,13 @@
 
 | 場面 | 人の操作 | 記録・適用 | Skill がすること |
 | --- | --- | --- | --- |
-| 設計の採択（確認点） | `vouch confirm design` | UserPromptSubmit フックが design.md の内容に結び付けた checkpoint.confirmed を記録（既存） | design.md の下書きと採択の依頼を1回だけ示す。採択を代行せず、確認後に design.md を変えたら再確認が要ることを示す |
+| 設計の採択（確認点） | rules.md の checkpoints が topic なら `vouch confirm design`、unit なら `vouch confirm design unit <Unit ID>`、section なら `vouch confirm design section <節 ID>` | UserPromptSubmit フックが design.md の対象の内容に結び付けた checkpoint.confirmed を記録 | design.md の下書きと採択の依頼を1回だけ示す。採択を代行せず、確認後に design.md を変えたら再確認が要ることを示す |
 | Intent 承認 | `vouch review` → `vouch approve <ゲート ID>` | 確認点がそろった時だけフックが intent.md を approved にする（既存） | Build の Skill は approved と承認の証跡を確認してから始める。未承認なら実装せず入力の案内を1回だけ返す |
 | Build 中の先送りできない判断 | 構造化質問への回答 | 回答は decisions.md に人の言葉で残す。質問イベントの記録フックは未実装 | 未回答なら既定案で進め、Brief §7 に「Q-n 未回答・既定 X」を載せる。既定案を作れない時だけ止まる範囲を示して止まる |
 | PR 承認 | 人が Brief を読んで PR をマージ | Git（`gh pr merge` と main への push はガードが拒否、既存） | Brief を PR 本文として用意する。マージしない。L でも自動マージしない |
 | Learn | rules.md への追記案を採用するか | 人の採択の言葉を decisions.md に残す | 採択された案だけを rules.md の Corrections に追記する。採択前の案は Brief §9 に提案として残す |
 
-design.md の frontmatter は `status: draft` のままです。承認フックは intent.md だけを approved にし、design の採択は checkpoint.confirmed（内容の SHA-256）が証跡です。unit / section の粒度でも design は design.md 全体への1回の確認とする既存の契約（approval-boundary.md）を変えません。節 ID を追加しても確認の単位は変わりません。
+design.md の frontmatter は `status: draft` のままです。承認フックは intent.md だけを approved にし、design の採択は checkpoint.confirmed（内容の SHA-256）が証跡です。確認の単位は rules.md の checkpoints で決まります（[承認の境界](approval-boundary.md)）。topic は design.md 全体に1回、unit は Design が required の Unit ごと（共通の節とその Unit の行）、section は design_sections の節ごとです。§18 Q2 が選べるとした B・C の粒度を design.md にも適用するため、design_sections の節 ID と units 節の表の1列目（Unit ID）が確認の対象を決めます。
 
 ## 正典 stage-authoring.json
 
@@ -110,7 +110,7 @@ diff_kinds の図は diagrams.json の diff の classDef 3行（added 緑、chan
 
 | Skill | 入力 | 出力 | 完了条件 |
 | --- | --- | --- | --- |
-| vouch-design | 下書きの intent.md（Design が required）、decisions.md、知識レイヤー、コード | design.md の下書き | 差分図・契約・代替案・（H の）脅威観点と参照元を書き、`vouch confirm design` の案内を1回返した時。採択は人 |
+| vouch-design | 下書きの intent.md（Design が required）、decisions.md、知識レイヤー、コード | design.md の下書き | 差分図・契約・代替案・（H の）脅威観点と参照元を書き、rules.md の checkpoints に合う `vouch confirm design`（unit / section の対象を含む）の案内を1回返した時。採択は人 |
 | vouch-build | approved の intent.md と承認の証跡、採択済みの design.md、rules.md | Unit ごとの型付きコミット、build-log.md、demo.sh | すべての Unit の DoD が green で、AC の証拠がそろった時。または止まる範囲を示した時 |
 | vouch-verify | 成果物・diff・監査・build-log.md（builder の会話は渡さない） | review.md（Brief）、Learn の追記案 | reviewer が独立に再現・破壊検査を終え、指摘を往復の上限まで戻し、Brief を PR 本文として用意した時。マージは人 |
 
@@ -172,3 +172,15 @@ content テストに、Build Skill の `git merge --ff-only` と承認コミッ�
 GitHub Actions では Windows の2ジョブが `npm run check` の90秒予算（TEST-12）を超えました。Node.js 22.19.0 は main の `41da839`・`65fa8c8` でも同じ理由で失敗しており、この PR の変更ではありません。Node.js 24.x は main で88秒の成功だったものが、この PR の追加で `package:check` の開始時に予算に達しました。予算は変えずに、この PR が足した実行を減らしました。評価素材と registry の検査を既存の content・registry のテストファイルへ移し（新しいテストの子プロセスを3から1へ）、テンプレートの配布のバイト一致は Intent のテストの既存の配布生成1回で全テンプレートを検査するようにして、配布生成を1回減らしました。検査の内容は減らしていません。
 
 その後の CodeRabbit のレビュー（Major）は、DoD が build-log.md と監査ログに追記した記録がコミットされず、早送りの取り込みで Intent のブランチへ移らないことを指摘しました。手順を読んで再現を確かめ、Unit の最後の DoD の後に2つのファイルだけを記録のコミットにする手順と、その順序の content テストを加えました。stage-authoring.json の git に add と commit を加えています。
+
+### design.md の確認の粒度（Issue #9 の残り）
+
+PR #29 の後、[承認の境界](approval-boundary.md)には「unit / section の design は design.md の節の契約がまだないため（#9）、design.md 全体への1回の確認とする」という先送りが残っていました。design_sections ができたので、未決事項の記録 Q2 の B（Unit ごとに Design 1回）と C（design.md の見出しごとに1回）を design.md にも適用しました。契約（`intent-review.json` の `design unit <Unit ID>`・`design section <節 ID>`、`approval.json` の design_units、型、この文書と承認の境界）、失敗する先行テスト、実装の順にコミットしています。
+
+- topic は従来どおり `vouch confirm design` の1回です。既存の確認の記録と digest は変わりません。
+- unit は Design が required の Unit（H を含む）ごとに `vouch confirm design unit <Unit ID>` が要ります。digest は status を draft にした design.md から、units 節の表のほかの Unit の行を除いたバイト列です。共通の部分を変えるとすべての Unit が、ある Unit の行を変えるとその Unit だけが再確認になります。
+- section は design_sections の8節ごとに `vouch confirm design section <節 ID>` が要ります。最初の summary の確認は、表題・説明などの最初の節より前の部分と登録外の節も含みます（PR のレビューで、節ごとの確認では冒頭を変えても再確認にならないと指摘されたため）。
+- 監査イベントのスキーマは design の checkpoint に unit / section を既に許していたため変えていません。unit と section の両方を持つ design の記録は対象がなく、確認に数えません。
+- テンプレートと golden は変えていません。Design Skill と Intent Skill の確認の案内に新しい対象を加えました。
+
+先行テストの時点では、registry の検査が成功し、checkpoints・intent-review の単体テストと Skill の content テストの9件が失敗することを確かめてから実装しました。

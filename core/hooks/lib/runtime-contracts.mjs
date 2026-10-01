@@ -58,6 +58,8 @@ export {};
  * A match also occurs for synthetic data; provenance and consent need future hooks.
  * @typedef {{status:'draft'|'approved',revision:import('./contracts.mjs').IntentRevision}} IntentSnapshot
  * @typedef {(text:string)=>IntentSnapshot|null} SnapshotIntent
+ * @typedef {(text:string)=>{status:'draft'|'approved',text:string}|null} DraftText The text with its
+ * status line read as draft; null without the single-status frontmatter that snapshots require.
  * @typedef {(input:import('./contracts.mjs').HookInput,harness:import('./contracts.mjs').Harness)=>import('./contracts.mjs').Submission|null} IdentifySubmission
  * @typedef {object} ApprovalComparisonInput
  * @property {unknown} gate
@@ -85,7 +87,9 @@ export {};
  * Approval boundary (docs/development/approval-boundary.md). Pure functions over texts the caller
  * read and validated audit records; they never read files, record events or trust actor claims.
  * @typedef {'acceptance'|'scope'|'units'|'design'} TopicCheckpoint
- * @typedef {{checkpoint:TopicCheckpoint}|{checkpoint:'unit',unit:string}|{checkpoint:'section',section:string}} CheckpointTarget
+ * @typedef {{checkpoint:TopicCheckpoint}|{checkpoint:'unit',unit:string}|{checkpoint:'section',section:string}|{checkpoint:'design',unit:string}|{checkpoint:'design',section:string}} CheckpointTarget
+ * `design` alone is the whole design.md; with `section` one design.md section, with `unit` the design.md
+ * without the other Units' rows of its units table, so shared parts stay covered for every Unit.
  * @typedef {'topic'|'unit'|'section'} CheckpointMode
  * @typedef {{id:string,risk:import('./contracts.mjs').Risk,design:boolean}} PlanUnit `design`: declared required.
  * @typedef {{units:PlanUnit[],risk:import('./contracts.mjs').Risk,design:boolean}} Plan `risk`: highest Unit;
@@ -98,7 +102,8 @@ export {};
  * @typedef {{intent:string,design:string|null}} ArtifactTexts
  * @typedef {(target:CheckpointTarget,texts:ArtifactTexts)=>import('./contracts.mjs').CheckpointContent|null} CheckpointContentOf
  * Digest of the exact confirmed bytes; null when the target is absent or not unique.
- * @typedef {(target:CheckpointTarget)=>string} DescribeTarget "acceptance", "unit U1", "section plan".
+ * @typedef {(target:CheckpointTarget)=>string} DescribeTarget "acceptance", "unit U1", "section plan",
+ * "design unit U1", "design section ideal".
  * @typedef {(session:string,identity:string)=>string} NewId
  * @typedef {object} CheckpointQuery
  * @property {CheckpointTarget[]} required

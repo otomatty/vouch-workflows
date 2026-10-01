@@ -35,7 +35,7 @@ Intent 冒頭に目的・Before/After・AC・非ゴール・分割とリスク�
 ## 図と確認点
 
 図の種類・条件は `{{HARNESS_DIR}}/registry/diagrams.json` の intent を使う。ユーザー操作フローを実際の AC に結び付ける。brownfield なら現状の参照元と変更影響を図にする。条件に該当しない図は不適用の理由を残す。未記入の図を完成と数えない。
-確認点は workflow の topic_checkpoints と rules の checkpoints に合わせる。H は high_risk_adds の Unit 確認も追加する。確認済みとするには、人が `vouch confirm <対象>`（acceptance・scope・units・design、`unit <ID>`、`section <節 ID>`）を入力し、フックが対象の内容に結び付けて記録した checkpoint.confirmed が必要である。ファイルの存在、無回答、既定適用、構造化質問の回答は確認ではない。確認後に対象を変えたら、その確認点だけ人に確認し直してもらう。[R-PROJECT-1]
+確認点は workflow の topic_checkpoints と rules の checkpoints に合わせる。H は high_risk_adds の Unit 確認も追加する。確認済みとするには、人が `vouch confirm <対象>`（acceptance・scope・units・design、`unit <ID>`、`section <節 ID>`、`design unit <ID>`、`design section <節 ID>`）を入力し、フックが対象の内容に結び付けて記録した checkpoint.confirmed が必要である。ファイルの存在、無回答、既定適用、構造化質問の回答は確認ではない。確認後に対象を変えたら、その確認点だけ人に確認し直してもらう。[R-PROJECT-1]
 未確定の論点があっても、既定案で下書きの独立部分は進める。既定案が作れない時は理由と止まる範囲を示す。既定案で Intent の採択・Design の承認を代行しない。[R-PROJECT-6]
 
 ## 判断記録と終了条件

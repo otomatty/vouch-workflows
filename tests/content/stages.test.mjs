@@ -258,8 +258,13 @@ test("stage Skills connect to the human confirmation, approval, DoD and review-r
   /** @param {string} stage */
   const skill = (stage) =>
     readFileSync(`core/skills/${stages.skills[stage]}/SKILL.md`, "utf8");
-  t.plan(9);
+  t.plan(10);
   t.assert.match(skill("design"), /`vouch confirm design`/);
+  t.assert.match(
+    skill("design"),
+    /`vouch confirm design unit <Unit ID>`[\s\S]*`vouch confirm design section <節 ID>`/,
+    "Open questions Q2 B / C: Design is confirmed per Unit or per section",
+  );
   t.assert.match(
     skill("build"),
     /^git merge --ff-only /m,
