@@ -1615,16 +1615,21 @@
         {
           "status": "implemented",
           "path": "scripts/test.mjs",
-          "claim": "予算テスト以外を CPU 数で並列実行し、HOOK-13 の予算テストは合成負荷の下で最後に1ファイルずつ実行する。Node 22 のファイル単位タイムアウトと hooks の各ケース5秒は分けて扱う。"
+          "claim": "予算テスト以外を CPU 数で並列実行し、HOOK-13 の予算テストは合成負荷の下で最後に1ファイルずつ実行する。Node 22 のファイル単位タイムアウト（testFileTimeoutMs 90秒）と hooks の各ケース5秒は分けて扱う。"
         },
         {
           "status": "implemented",
           "path": "scripts/check.mjs",
-          "claim": "checkの90秒予算を監視する。"
+          "claim": "check 全体の予算を実行中の OS の値で監視する（既定90秒、Windows 150秒。所有者の判断、docs/development/check-budget.md）。"
         },
         {
           "status": "pending",
-          "claim": "CI の check 全体は Windows 27〜55秒・Ubuntu 13〜23秒で90秒以内。Windows の runner が遅い時は、記録性能のケースが5秒を超える（25f12fa の Benchmark で11.8秒）。詳細は hook-startup.md。"
+          "claim": "元資料の CI の全体 ≤ 90 s は Windows で未達。2026-09-29〜10-01 の成功時の check は Ubuntu 15〜52秒、Windows 30〜91秒で、Windows Node 22 は約100秒かかり90秒で打ち切られた。所有者の判断で Windows の予算を150秒にした後の CI 4回（16ジョブ）は Ubuntu 30〜50秒、Windows 87〜98秒で、全体予算の超過は0件（docs/development/check-budget.md）。"
+        },
+        {
+          "status": "implemented",
+          "path": "tests/packaging/time-budgets.test.mjs",
+          "claim": "check は OS ごとの全体予算、test・benchmark-suite はファイル単位の上限、負荷ワーカーはファイル単位の上限を読み、互いのキーを参照しないことを検査する。"
         },
         {
           "status": "implemented",

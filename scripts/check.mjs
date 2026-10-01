@@ -1,13 +1,15 @@
 import { spawn } from "node:child_process";
 import { performance } from "node:perf_hooks";
 import budgets from "../core/registry/budgets.json" with { type: "json" };
+import { checkBudgetMs } from "./lib/time-budgets.mjs";
 
 const npm = process.env.npm_execpath ?? "";
 if (!npm) throw new Error("Run this check with npm run check.");
+const budget = checkBudgetMs(budgets.timing);
 const start = performance.now();
 /** Run one task within the original shared deadline. @param {string} task @returns {Promise<number>} */
 async function runTask(task) {
-  const remaining = budgets.timing.checkTimeoutMs - (performance.now() - start);
+  const remaining = budget - (performance.now() - start);
   if (remaining <= 0)
     throw new Error("TEST-12: check exceeded its time budget.");
   return new Promise((done) => {
@@ -39,5 +41,5 @@ for (const task of ["test:hooks", "package", "package:check"]) {
   if (status !== 0) process.exit(status);
 }
 console.log(
-  `Implemented checks passed in ${((performance.now() - start) / 1000).toFixed(1)}s.`,
+  `Implemented checks passed in ${((performance.now() - start) / 1000).toFixed(1)}s (budget ${budget / 1000}s).`,
 );

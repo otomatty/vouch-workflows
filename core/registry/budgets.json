@@ -19,7 +19,11 @@
     "checkP95Ms": 2000,
     "samples": 20,
     "testTimeoutMs": 5000,
-    "checkTimeoutMs": 90000
+    "testFileTimeoutMs": 90000,
+    "checkTimeoutMs": {
+      "default": 90000,
+      "win32": 150000
+    }
   },
   "coverage": {
     "lib": {
