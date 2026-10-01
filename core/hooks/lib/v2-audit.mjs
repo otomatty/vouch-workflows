@@ -2,6 +2,7 @@ import candidates from "../../registry/audit-migration.json" with {
   type: "json",
 };
 import migration from "../../registry/migration.json" with { type: "json" };
+import { migratedOrigin } from "./audit.mjs";
 import { elapsedMilliseconds, newId } from "./clock.mjs";
 
 // v2 audit shards → Vouch audit records (docs/development/migrate.md). Only three v2 events have
@@ -174,19 +175,20 @@ export function convertAudit(blocks, intent, progress) {
   return {
     events,
     types: summarize(events),
-    decisions: events.flatMap((event) =>
-      event.original_type &&
-      migration.audit.decisions.includes(event.original_type)
+    decisions: events.flatMap((event) => {
+      const origin = migratedOrigin(event);
+      return origin.original_type &&
+        migration.audit.decisions.includes(origin.original_type)
         ? [
             {
               id: event.id,
-              name: event.original_type,
+              name: origin.original_type,
               ts: event.ts,
-              source_path: `${event.source_path}`,
+              source_path: `${origin.source_path}`,
             },
           ]
-        : [],
-    ),
+        : [];
+    }),
     problems,
   };
 }
@@ -196,7 +198,8 @@ function summarize(events) {
   /** @type {Map<string,import('./migration-contracts.mjs').ConvertedAudit['types'][number]>} */
   const types = new Map();
   for (const event of events) {
-    const name = `${event.original_type}`;
+    const origin = migratedOrigin(event);
+    const name = `${origin.original_type}`;
     const entry = types.get(name) ?? {
       name,
       count: 0,
@@ -208,7 +211,7 @@ function summarize(events) {
     entry.count++;
     if (event.type.startsWith("legacy.")) entry.legacy++;
     else entry.converted++;
-    if (event.estimated) entry.estimated++;
+    if (origin.estimated) entry.estimated++;
     types.set(name, entry);
   }
   return [...types.values()].sort((a, b) => (a.name < b.name ? -1 : 1));

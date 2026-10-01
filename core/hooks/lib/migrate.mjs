@@ -3,7 +3,7 @@ import migration from "../../registry/migration.json" with { type: "json" };
 import documents from "../../registry/project-documents.json" with {
   type: "json",
 };
-import { createAuditStore, intentHome } from "./audit.mjs";
+import { createAuditStore, intentHome, migratedOrigin } from "./audit.mjs";
 import { now, sha256Hex } from "./clock.mjs";
 import { readArgs } from "./env.mjs";
 import { renderBrief } from "./migrate-brief.mjs";
@@ -97,12 +97,13 @@ export async function runMigrate(
   auditProblems.push(...audit.problems);
   const stamp = state.fields[migration.affirmation.state];
   const affirmed = audit.events.find(
-    (event) => event.original_type === migration.affirmation.event,
+    (event) =>
+      migratedOrigin(event).original_type === migration.affirmation.event,
   );
   const affirmation = stamp
     ? `${migration.source.state}: ${migration.affirmation.state} ${stamp}`
     : affirmed
-      ? `${affirmed.source_path}: ${migration.affirmation.event} ${affirmed.id}`
+      ? `${migratedOrigin(affirmed).source_path}: ${migration.affirmation.event} ${affirmed.id}`
       : null;
   const migrated = sources.map((file) => ({
     path: file.path,
@@ -138,7 +139,8 @@ export async function runMigrate(
       ).length,
       legacy: audit.events.filter((event) => event.type.startsWith("legacy."))
         .length,
-      estimated: audit.events.filter((event) => event.estimated).length,
+      estimated: audit.events.filter((event) => migratedOrigin(event).estimated)
+        .length,
       types: audit.types,
     },
     decisions: audit.decisions,

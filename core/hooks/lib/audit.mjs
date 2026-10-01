@@ -57,6 +57,11 @@ export function scanAudit(text) {
   return scan;
 }
 
+/** The v2 provenance of a migrated record; empty for any other record.
+ * @param {import('./contracts.mjs').AuditEvent} event @returns {import('./contracts.mjs').MigratedOrigin} */
+export const migratedOrigin = (event) =>
+  "original_type" in event ? event : {};
+
 /** @param {string} intent */
 export function intentHome(intent) {
   if (!/^[a-z0-9][a-z0-9_-]{0,127}$/.test(intent))

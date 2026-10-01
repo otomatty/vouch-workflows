@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
+import { migratedOrigin } from "../../../core/hooks/lib/audit.mjs";
 import { convertAudit, readShard } from "../../../core/hooks/lib/v2-audit.mjs";
 import mapping from "../../../core/registry/audit-migration.json" with {
   type: "json",
@@ -94,7 +95,7 @@ test("the audit sample and the hand-made shard convert only what can be restored
       started?.stage,
       completed?.parent,
       completed?.duration_ms,
-      completed?.estimated,
+      completed && migratedOrigin(completed).estimated,
     ],
     ["intent", started?.id, 80400000, true],
     "the last completion of a completed stage closes its first start; the duration is estimated",
@@ -107,7 +108,12 @@ test("the audit sample and the hand-made shard convert only what can be restored
     ["learn.recorded", 1],
   );
   t.assert.deepEqual(
-    [design?.type, design?.stage, design?.ts, design?.estimated],
+    [
+      design?.type,
+      design?.stage,
+      design?.ts,
+      design && migratedOrigin(design).estimated,
+    ],
     ["stage.started", "design", "2025-06-16T09:05:00Z", true],
     "a missing timestamp comes from the previous block of the same shard",
   );
@@ -115,15 +121,16 @@ test("the audit sample and the hand-made shard convert only what can be restored
     converted.events.map((event) => [
       event.actor,
       event.intent,
-      event.original_type,
-      event.source_path?.split("#")[0],
+      migratedOrigin(event).original_type,
+      migratedOrigin(event).source_path?.split("#")[0],
     ])[0],
     ["hook", intent, "SESSION_STARTED", samplePath],
   );
   t.assert.deepEqual(
     converted.events
-      .filter((event) => event.original_type === "UNTYPED")
-      .map((event) => event.source_path),
+      .map(migratedOrigin)
+      .filter((origin) => origin.original_type === "UNTYPED")
+      .map((origin) => origin.source_path),
     [`${handPath}#L67`, `${handPath}#L76`],
   );
   t.assert.deepEqual(converted.decisions, [
@@ -213,7 +220,7 @@ test("conversion never infers approval, build counters or an unfinished stage's 
     progress,
   );
   t.assert.deepEqual(
-    later.events.map((event) => [event.ts, event.estimated]),
+    later.events.map((event) => [event.ts, migratedOrigin(event).estimated]),
     [
       ["2025-06-15T10:00:00Z", true],
       ["2025-06-15T10:00:00Z", undefined],

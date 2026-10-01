@@ -13,11 +13,7 @@
       "wait_ms",
       "harness",
       "tokens",
-      "synthetic",
-      "original_type",
-      "raw",
-      "source_path",
-      "estimated"
+      "synthetic"
     ]
   },
   "events": {
@@ -60,7 +56,7 @@
     "stage.started": {
       "fields": {
         "required": ["intent", "stage"],
-        "optional": []
+        "optional": ["original_type", "raw", "source_path", "estimated"]
       },
       "measures": [],
       "pairs_with": ["stage.completed"]
@@ -68,7 +64,14 @@
     "stage.completed": {
       "fields": {
         "required": ["intent", "stage", "parent", "duration_ms"],
-        "optional": ["loop_iterations", "tests"]
+        "optional": [
+          "loop_iterations",
+          "tests",
+          "original_type",
+          "raw",
+          "source_path",
+          "estimated"
+        ]
       },
       "measures": ["duration_ms", "loop_iterations", "tests"],
       "pairs_with": ["stage.started"]
@@ -265,7 +268,7 @@
     "learn.recorded": {
       "fields": {
         "required": ["intent", "rules_added"],
-        "optional": []
+        "optional": ["original_type", "raw", "source_path", "estimated"]
       },
       "measures": ["rules_added"],
       "pairs_with": []

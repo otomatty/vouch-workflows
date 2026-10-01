@@ -45,7 +45,7 @@ Vouch のステージごとに、所属する v2 ステージの印から観測�
 
 `audit/*.md` のシャードを `---` の行で区切り、各ブロックを1件の記録にする。区切りの前のファイル見出しだけのブロックは記録しない。時刻はブロックの最初の `**Timestamp**:`、種別は `**Event**:`、その他の `**名前**: 値` をフィールドとして読む。全シャードを時刻・パス・順で並べてから変換する。
 
-- 全記録に `original_type`（v2 名、Event がなければ `UNTYPED`）、`raw`（ブロックの原文）、`source_path`（`元のパス#L行`）を付ける。`actor` は記録したフック（`hook`）とし、元の主体は raw に残す。ID は Intent・出所・原文から決め、再実行で同じ記録になる。
+- 移行した全記録に `original_type`（v2 名、Event がなければ `UNTYPED`）、`raw`（ブロックの原文）、`source_path`（`元のパス#L行`）を付ける。これらと `estimated` を持てるのは変換先の3種（stage.started / stage.completed / learn.recorded）と `legacy.*` だけで、`estimated` や `source_path` があれば出所の3項目をそろえることを、その種別のスキーマで要求する。`actor` は記録したフック（`hook`）とし、元の主体は raw に残す。ID は Intent・出所・原文から決め、再実行で同じ記録になる。
 - 時刻が欠損・不正なら同じシャードの直前（なければ直後）の時刻を使い `estimated: true` を付ける。シャードに有効な時刻が1つもない、または記録が1つもない（見出しだけ）時は MIGRATE-AUDIT として `apply` を拒否する。
 - 変換は `audit-migration.json` の候補のうち、必須値を復元できる3種に限る。STAGE_STARTED は Vouch ステージごとに最初の1件を `stage.started` に、STAGE_COMPLETED は観測が completed のステージで最後の1件を、変換済みの開始を親として `stage.completed`（所要時間は時刻差で `estimated: true`）にする。build は loop_iterations / tests を復元できないため変換しない。RULE_LEARNED は `learn.recorded`（rules_added 1）にする。
 - それ以外は `legacy.<NAME>` に原文を保存する。intent / unit の risk、session、Q-n と選択肢、gate のソース、review の harness、sensor の検査種別、codekb の更新の範囲など、必須の意味や値を復元できないためである。`GATE_APPROVED` から Intent 承認を推測しない。
@@ -99,3 +99,5 @@ Linux / Node.js 22.22.0 で `npm run check` が69.3秒（予算90秒）で成功
 2026-10-01、レビューの指摘4件を再現するテストを追加してから修正した。承認は apply の結果（archive のコピーと移行記録の件数）を要求し、手で書いた移行レポートでは記録しない。所有権の検査は record が行き先に含まない成果物も対象にする。形式の合わないチェックボックス状の行と記録のない監査シャードは問題として拒否する。移行レポートの codekb の節は、行き先の規則と同じ正規表現で repo を判定する。移行レポートの frontmatter に `blocks` を加えたため、この PR で追加した golden を更新した。
 
 同日の CI（run 36842590907）では、Windows / Node 24 の既存の承認記録の負荷測定が p95 200.2ms で200ms予算をわずかに超えた。前の head では合格していたが、この PR がすべての UserPromptSubmit で移行承認のモジュールと migration.json を読み込むようにしたため、起動の余裕を削っていた。承認コマンドの接頭辞と digest の形式を他の人の入力コマンドと同じ intent-review.json に移し、`migrate-approve.mjs` は接頭辞の判定だけを行い、一致した時に記録部（`migrate-approval.mjs`）と migration.json を動的に読み込むよう分けた。Linux での追加の読み込み時間は約1.2msから約0.4msになった。時間予算と測定は変更していない。
+
+同じ CI の別の実行（run 36842592698）では、Windows / Node 24 の Stop 記録の負荷測定が p95 215.8ms だった。Linux で基準コミットと交互に測ると、監査スキーマに加えた出所の項目と条件が原因だった。条件を全種別（後に根）に置くと、移行と無関係な記録の検査にも評価が加わり、Stop 記録の中央値が約7ms増えた。出所の項目と条件を移行記録になり得る4種別だけに置くと、交互測定（各100回）で基準との差は中央値3.6ms・p95 2.5msになった。スキーマは80KBから86KBになる（修正前は113KB）。

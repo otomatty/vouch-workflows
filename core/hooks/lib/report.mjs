@@ -3,7 +3,7 @@ import operations from "../../registry/operations.json" with { type: "json" };
 import documents from "../../registry/project-documents.json" with {
   type: "json",
 };
-import { intentHome, scanAudit } from "./audit.mjs";
+import { intentHome, migratedOrigin, scanAudit } from "./audit.mjs";
 import { readIntent } from "./env.mjs";
 
 // Measured audit values only (docs/development/resume.md); nothing is estimated or filled in,
@@ -69,7 +69,7 @@ export async function runReport(
       continue;
     }
     // A migrated time or duration derived from neighbouring records is never a measurement.
-    if (event.estimated) {
+    if (migratedOrigin(event).estimated) {
       summary.estimated++;
       continue;
     }

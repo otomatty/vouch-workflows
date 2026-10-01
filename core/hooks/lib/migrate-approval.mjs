@@ -1,6 +1,6 @@
 import migration from "../../registry/migration.json" with { type: "json" };
 import { identifySubmission } from "./approval.mjs";
-import { intentHome, listEvents } from "./audit.mjs";
+import { intentHome, listEvents, migratedOrigin } from "./audit.mjs";
 import { sha256Hex } from "./clock.mjs";
 
 // The recorder behind `vouch migrate approve` (docs/development/migrate.md), loaded only when that
@@ -61,12 +61,14 @@ async function unapplied(ctx, text, front, events) {
     if (copy.kind !== "file" || copy.links !== 1)
       return `${migration.archive}/${path} is not archived`;
   }
-  const blocks = events.filter(
-    (event) =>
+  const blocks = events.filter((event) => {
+    const origin = migratedOrigin(event);
+    return (
       !event.synthetic &&
-      event.original_type !== undefined &&
-      event.source_path?.startsWith(`${front.source}/`),
-  ).length;
+      origin.original_type !== undefined &&
+      origin.source_path?.startsWith(`${front.source}/`)
+    );
+  }).length;
   return blocks === front.blocks
     ? null
     : `the audit holds ${blocks} of ${front.blocks} migrated blocks`;
