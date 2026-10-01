@@ -4,6 +4,7 @@ import { availableParallelism } from "node:os";
 import { resolve } from "node:path";
 import budgets from "../core/registry/budgets.json" with { type: "json" };
 import { testGroups, testPhases } from "./lib/test-phases.mjs";
+import { testTimeoutFor } from "./lib/time-budgets.mjs";
 
 /** @param {string} directory */
 function files(directory) {
@@ -42,8 +43,7 @@ for (const { suite, files: tests } of groups) {
   for (const phase of testPhases(suite, tests, availableParallelism())) {
     const flags = [
       "--test",
-      // Node 22 times out the whole file; hookTest enforces five seconds per hook/scenario case.
-      `--test-timeout=${["hooks", "scenario"].includes(suite) ? budgets.timing.checkTimeoutMs : budgets.timing.testTimeoutMs}`,
+      `--test-timeout=${testTimeoutFor(suite, budgets.timing)}`,
       `--test-concurrency=${phase.concurrency}`,
       "--import=./tests/helpers/no-network.mjs",
     ];

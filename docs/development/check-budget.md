@@ -52,3 +52,12 @@
 - packaging：実際の `scripts/check.mjs` を sandbox で起動し、成功時の表示が実行中の OS の予算になっていること。
 - packaging：`scripts/check.mjs`・`scripts/test.mjs`・`scripts/benchmark-suite.mjs`・`tests/helpers/load-worker.mjs` が、それぞれ意図した予算を読み、意図しないキーを参照しないこと。
 - CI：4ジョブ（Ubuntu / Windows × Node 22.19.0 / 24.x）を複数回実行し、各ジョブの所要時間と予算の余裕を記録します。
+
+## 検証結果
+
+| 検査 | Linux / Node.js v22.22.0（4 CPU） |
+| --- | --- |
+| `npm run check` | 成功、42.0秒（予算90秒）。表示は `Implemented checks passed in 42.0s (budget 90s).` |
+| 追加したテスト | registry 2件、packaging 3件（`time-budgets.test.mjs`）、check-runner の予算の表示の検査が成功 |
+
+Windows の値（150秒）を使う経路は、`checkBudgetMs` のテストと CI の Windows ジョブで確認します。

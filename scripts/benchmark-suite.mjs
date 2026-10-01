@@ -16,6 +16,7 @@ import { availableParallelism, tmpdir } from "node:os";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { performance } from "node:perf_hooks";
 import budgets from "../core/registry/budgets.json" with { type: "json" };
+import { testTimeoutFor } from "./lib/time-budgets.mjs";
 
 // Developer-only: the work that runs beside the HOOK-13 tests in the parallel hooks suite.
 // Alternating commands, then each hooks file alone with the suite's flags. Never a budget gate.
@@ -160,7 +161,7 @@ try {
       process.execPath,
       [
         "--test",
-        `--test-timeout=${budgets.timing.checkTimeoutMs}`,
+        `--test-timeout=${testTimeoutFor("hooks", budgets.timing)}`,
         "--import=./tests/helpers/no-network.mjs",
         "--experimental-test-coverage",
         "--test-coverage-include=core/hooks/*.mjs",

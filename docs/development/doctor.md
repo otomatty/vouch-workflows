@@ -28,7 +28,7 @@ stdout は doctor-report.schema.json に従う1行の JSON です。`v:1`、全�
 
 契約と JSDoc → テスト → 実装の順でコミットします。単体テストはファイルと Git の結果を注入し、子プロセスを起動しません。配布先テストは空の Git 未初期化プロジェクトに生成物だけをコピーし、Node の子プロセスで実際の doctor を実行します。正常例と、欠損・登録改変・リンクの負例で stdout / stderr / 終了コードと無書き込みを観測します。手製の診断データをハーネスの実機イベント fixture と扱いません。
 
-記録フックの性能予算とケース5秒、check 全体90秒は変更しません。doctor の導入で既知の性能失敗を合格に置き換えません。オーケストレータ Skill の `/vouch doctor` と Node 未導入時の説明は別の [Doctor Skill](doctor-skill.md) として追加しました。
+記録フックの性能予算とケース5秒、check 全体90秒（Windows は150秒。[check 全体の時間予算](check-budget.md)）は変更しません。doctor の導入で既知の性能失敗を合格に置き換えません。オーケストレータ Skill の `/vouch doctor` と Node 未導入時の説明は別の [Doctor Skill](doctor-skill.md) として追加しました。
 
 ## 実装と検証結果
 
