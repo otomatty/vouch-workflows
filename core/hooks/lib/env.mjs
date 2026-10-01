@@ -35,6 +35,9 @@ export function readContext(env = process.env) {
 /** A manual command's explicitly configured Intent, never inferred. @param {Record<string,string|undefined>} [env] */
 export const readIntent = (env = process.env) => env.VOUCH_INTENT || null;
 
+/** A manual command's arguments after the entry path. @param {string[]} [argv] */
+export const readArgs = (argv = process.argv) => argv.slice(2);
+
 /** Values of secret-named variables, longest first. @param {{names:string,minLength:number}} rule @param {Record<string,string|undefined>} [env] */
 export const readSecrets = ({ names, minLength }, env = process.env) =>
   Object.keys(env)

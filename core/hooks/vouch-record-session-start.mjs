@@ -1,18 +1,18 @@
 import { findEvent } from "./lib/audit.mjs";
 import { run } from "./lib/io.mjs";
+import { resumeContext } from "./lib/resume.mjs";
 
 /**
- * Record an observed Claude or Codex startup in the explicitly configured intent.
- * No state inference, approval, resumption or token estimation.
+ * Record an observed Claude or Codex startup in the explicitly configured intent, and pass the
+ * registered sources a read-only resume summary of it. No approval, state cache or next step.
  * @type {import('./lib/contracts.mjs').HookMain}
  */
 export async function main(input, ctx) {
-  if (
-    input.hook_event_name !== "SessionStart" ||
-    input.source !== "startup" ||
-    !ctx.intent
-  )
+  if (input.hook_event_name !== "SessionStart" || !ctx.intent)
     return { decision: "allow" };
+  const context = await resumeContext(input, ctx);
+  const summary = context ? { context } : {};
+  if (input.source !== "startup") return { decision: "allow", ...summary };
   const id = ctx.newId(
     input.session_id,
     JSON.stringify(["session.started", ctx.harness, ctx.intent]),
@@ -32,6 +32,7 @@ export async function main(input, ctx) {
         session: input.session_id,
       },
     ],
+    ...summary,
   };
 }
 

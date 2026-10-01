@@ -250,7 +250,11 @@ export function readsOnly(command, doctor) {
     return false;
   if (program === "sed") return sedPrints(args);
   if (program === "git") return gitReads(args);
+  // A registered command entry may take literal word arguments, such as `ask Q-1`.
   if (program === "node")
-    return args.length === 1 && doctor(/** @type {string} */ (args[0]));
+    return (
+      doctor(args[0] ?? "") &&
+      args.slice(1).every((arg) => /^[A-Za-z0-9][A-Za-z0-9-]*$/.test(arg))
+    );
   return true;
 }

@@ -41,7 +41,7 @@ review.md（名前は `{{HARNESS_DIR}}/registry/project-documents.json`）を、
 図は `{{HARNESS_DIR}}/registry/diagrams.json` の review を使い、主フローの sequence 図を置く。UI の変更は Before / After の画像、設計の変更は design.md の差分図を引く。該当しない図は不適用の理由を残す。
 読むべき箇所ガイドは hunk を stage-authoring.json の hunks に分ける。5分版を置き、H は15分版で人が読むコアロジックの hunk を示す。
 §6 は先送りした判断依頼を優先度順に並べ、カード本体は decisions.md に置く。記録に答えがあるものは載せない。
-§7 には D-n、採用しなかった案、知識の警告、参照元と、未回答のまま既定案で進めた判断依頼を「Q-n 未回答・既定 X」として載せる。既定適用は人の回答ではない。[R-PROJECT-6]
+§7 には D-n、採用しなかった案、知識の警告、参照元と、未回答のまま既定案で進めた判断依頼を「Q-n 未回答・既定 X」として question.defaulted の ID とともに載せる（[判断依頼の記録](../vouch/references/questions.md)）。既定適用は人の回答ではない。[R-PROJECT-6]
 監査にない記録（質問・回答・レビューのイベントなど）を作らず、未記録と書く。[R-PROJECT-3]
 
 ## PR と Learn

@@ -1,7 +1,6 @@
 import { test } from "node:test";
 import { createIntentAuditStore } from "../../../core/hooks/lib/audit.mjs";
 import { newId } from "../../../core/hooks/lib/clock.mjs";
-import { readQuestionCard } from "../../../core/hooks/lib/decisions.mjs";
 import {
   answerQuestion,
   runQuestion,
@@ -42,55 +41,6 @@ const rows = (files) =>
     .split("\n")
     .filter(Boolean)
     .map((line) => JSON.parse(line));
-
-test("question cards yield table-ordered option IDs and an option-named default or a blocking reason", (t) => {
-  const blocking = card("Q-2", {
-    fallback: "blocking: no executable default until U1 is decided.",
-  });
-  const text = decisions(
-    card(),
-    blocking,
-    card("Q-3", {
-      fallback: "未回答時の既定: B（在庫不足は 409）",
-      options: ["A: 400", "B: 409", "C: 422"],
-    }),
-  );
-  t.plan(3);
-  t.assert.deepEqual(readQuestionCard(text, "Q-1"), {
-    options: ["A", "B"],
-    default: "A",
-  });
-  t.assert.deepEqual(readQuestionCard(text, "Q-2"), { options: ["A", "B"] });
-  t.assert.deepEqual(readQuestionCard(text, "Q-3"), {
-    options: ["A", "B", "C"],
-    default: "B",
-  });
-});
-
-test("question cards that are absent, repeated or incomplete are errors, never guessed", (t) => {
-  const cases = [
-    [null, "Q-1"],
-    [decisions(card()), "Q-2"],
-    [decisions(card(), card()), "Q-1"],
-    [decisions(card("Q-1", { options: ["A"] })), "Q-1"],
-    [decisions(card("Q-1", { options: ["A", "B", "C", "D", "E"] })), "Q-1"],
-    [decisions(card("Q-1", { options: ["A", "A"] })), "Q-1"],
-    [decisions(card("Q-1", { options: ["Option one", "B"] })), "Q-1"],
-    [decisions(card("Q-1", { fallback: "未決定" })), "Q-1"],
-    [decisions(card("Q-1", { fallback: "" })), "Q-1"],
-    [decisions(card("Q-1", { fallback: "blocking:" })), "Q-1"],
-    [decisions(card("Q-1", { fallback: "C if unanswered." })), "Q-1"],
-  ];
-  t.plan(cases.length);
-  for (const [text, id] of /** @type {[string|null,string][]} */ (cases))
-    t.assert.equal(
-      typeof (
-        /** @type {{error?:string}} */ (readQuestionCard(text, id)).error
-      ),
-      "string",
-      `${id}: ${text?.slice(-80)}`,
-    );
-});
 
 test("the question command needs an explicit Intent and exact arguments", async (t) => {
   const files = project({ "decisions.md": decisions(card()) });
@@ -200,12 +150,22 @@ test("defaults are refused before asking, for blocking questions and after an an
   ];
   t.plan(2);
   t.assert.deepEqual(reports.map(ids), [
-    ["QUESTION-NOT-ASKED"],
-    ["QUESTION-NO-DEFAULT"],
+    ["QUESTION-UNASKED"],
+    ["QUESTION-BLOCKING"],
     ["QUESTION-ANSWERED"],
-    ["QUESTION-NOT-ASKED"],
+    ["QUESTION-UNASKED"],
   ]);
   t.assert.equal(files.data.get(auditPath), before);
+});
+
+test("a default before its ask's time is refused as unordered evidence", async (t) => {
+  const files = project({
+    "audit/events.jsonl": jsonl([asked("Q-1", { ts: "2026-10-09T00:00:00Z" })]),
+  });
+  const result = await command(files, ["default", "Q-1"]);
+  t.plan(2);
+  t.assert.deepEqual(ids(result), ["QUESTION-EVIDENCE"]);
+  t.assert.equal(rows(files).length, 1);
 });
 
 test("an unreadable audit log fails the command instead of recording past it", async (t) => {
@@ -328,7 +288,7 @@ test("answers after a default are kept, but a second answer, unknown choices and
     /VOUCH-ANSWER-RECORDED/,
   );
   t.assert.equal(files.data.has(auditPath), true);
-  for (const [text, code] of cases)
+  for (const [text = "", code] of cases)
     t.assert.match(
       /** @type {{reason:string}} */ (await submit(text, `other-${text}`))
         .reason,

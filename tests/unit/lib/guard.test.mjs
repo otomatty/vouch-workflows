@@ -442,6 +442,16 @@ test("guardWrites lets recognized reads name protected files and refuses shell w
     ["cat .claude/settings.json", "allow"],
     ["node .claude/hooks/vouch-doctor.mjs", "allow"],
     ['node ".claude/hooks/vouch-doctor.mjs"', "allow"],
+    ["node .claude/hooks/vouch-question.mjs ask Q-1", "allow"],
+    ["node .claude/hooks/vouch-report.mjs", "allow"],
+    [
+      "node .claude/hooks/vouch-question.mjs ask Q-1 > .claude/hooks/x",
+      "VOUCH-GUARD-INSTALLATION",
+    ],
+    [
+      "node .claude/hooks/vouch-record-session-start.mjs startup",
+      "VOUCH-GUARD-INSTALLATION",
+    ],
     ["git add . && npm test", "allow"],
     ["ls vouch/intents && mkdir -p vouch/intents/260929-new", "allow"],
     [`touch vouch/intents/${intent}/notes.md && rm -f notes.txt`, "allow"],

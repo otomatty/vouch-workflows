@@ -1,5 +1,8 @@
 import { mkdir, readdir, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import operations from "../../core/registry/operations.json" with {
+  type: "json",
+};
 import { hookTest as test } from "../helpers/hook-test.mjs";
 import { runHook, sandbox, sessionFor } from "../helpers/runtime.mjs";
 
@@ -21,8 +24,12 @@ test("recording hooks append twice and release their lock beneath a Japanese pat
       { root, intent },
     );
     t.assert.deepEqual(
-      [result.exitCode, result.stdout, result.stderr],
-      [0, "", ""],
+      [
+        result.exitCode,
+        result.stdout.startsWith(`${operations.labels.ja.summary}\n`),
+        result.stderr,
+      ],
+      [0, true, ""],
     );
   }
   const directory = resolve(root, `vouch/intents/${intent}/audit`);

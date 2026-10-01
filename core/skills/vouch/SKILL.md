@@ -1,15 +1,15 @@
 ---
 name: vouch
-description: "Plan a Vouch Intent, draft its Design, build an approved Intent, verify it into a Review Brief, show status and unanswered decisions, or diagnose an installation with doctor. Use for Vouch workflow, status and setup requests."
+description: "Plan a Vouch Intent, draft its Design, build an approved Intent, verify it into a Review Brief, resume after an interruption, answer an aside with ask, summarize audit measurements with report, show status and unanswered decisions, or diagnose an installation with doctor. Use for Vouch workflow, resume, status and setup requests."
 user-invocable: true
 reads: always
 ---
 
 # Vouch
 
-Vouch の4ステージ（Intent → Design → Build → Verify）を Skill で進める。現在対応している操作は doctor、読み取り専用 status、Intent と Design の下書き、承認済み Intent の Build、Verify と Review Brief である。
-引数なしではこの対応範囲を案内する。ask / report / migrate と、中断からの自動の再開は未実装と伝え、完了したように扱わない。
-Claude では `/vouch doctor` または `/vouch status`、Codex では `$vouch doctor` または `$vouch status` を指定できる。
+Vouch の4ステージ（Intent → Design → Build → Verify）を Skill で進める。現在対応している操作は doctor、読み取り専用 status、引数なしの再開、ask、report、Intent と Design の下書き、承認済み Intent の Build、Verify と Review Brief である。
+migrate は未実装と伝え、完了したように扱わない。
+Claude では `/vouch`・`/vouch status`・`/vouch ask <質問>`・`/vouch report`・`/vouch doctor`、Codex では先頭を `$vouch` にして指定できる。
 
 ## Intent
 
@@ -23,6 +23,22 @@ Claude では `/vouch doctor` または `/vouch status`、Codex では `$vouch d
 ## Knowledge
 
 知識の調査・鮮度・引用・判断依頼の検査は必要時に [Knowledge / explorer Skill](../vouch-knowledge/SKILL.md) を読む。フックは鮮度と形式を検査し、explorer が再走査範囲を判断する。
+
+## 再開
+
+引数なしで呼ばれた時、またはセッション開始の「Vouch 再開要約」を受けて作業を続ける時に、[再開の説明](references/resume.md)を読む。現在地は成果物の frontmatter と監査ログから毎回導き、状態ファイルを作らない。承認・確認・回答を代行しない。
+
+## Ask
+
+利用者が `ask` で脇質問をした時に、[脇質問の説明](references/ask.md)を読む。別コンテキストの explorer が読み取りだけで答え、進行中の作業の状態を変えない。質問と答えはフックが監査に記録する。
+
+## 判断依頼
+
+Q-n の判断依頼を出す・既定案で進める時は、[判断依頼の記録](references/questions.md)を読む。人の回答は `vouch answer` の入力をフックが記録し、確認点や承認とは別に扱う。
+
+## Report
+
+利用者が `report` で監査の集計を求めた時に、[集計の説明](references/report.md)を読む。実測値・欠損・synthetic・推定を分け、ダッシュボードを作らない。
 
 ## Status
 

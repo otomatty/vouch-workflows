@@ -2,7 +2,7 @@
   "hooks": {
     "SessionStart": [
       {
-        "matcher": "startup",
+        "matcher": "startup|resume",
         "hooks": [
           {
             "type": "command",
@@ -31,6 +31,17 @@
             "type": "command",
             "command": "VOUCH_HARNESS=codex node \"${VOUCH_PROJECT_ROOT:?VOUCH_PROJECT_ROOT required}/.codex/hooks/vouch-guard-writes.mjs\"",
             "commandWindows": "$env:VOUCH_HARNESS = 'codex'; & node \"$env:VOUCH_PROJECT_ROOT/.codex/hooks/vouch-guard-writes.mjs\"; exit $LASTEXITCODE"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "VOUCH_HARNESS=codex node \"${VOUCH_PROJECT_ROOT:?VOUCH_PROJECT_ROOT required}/.codex/hooks/vouch-record-aside-answer.mjs\"",
+            "commandWindows": "$env:VOUCH_HARNESS = 'codex'; & node \"$env:VOUCH_PROJECT_ROOT/.codex/hooks/vouch-record-aside-answer.mjs\"; exit $LASTEXITCODE"
           }
         ]
       }

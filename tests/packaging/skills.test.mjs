@@ -61,8 +61,9 @@ test("both harnesses ship equivalent Skills with resolving references and doctor
         ...["background", "code", "design", "infra", "rules"].map(
           (name) => `${prefix}vouch-knowledge/references/${name}.md`,
         ),
-        `${prefix}vouch/references/doctor.md`,
-        `${prefix}vouch/references/status.md`,
+        ...["ask", "doctor", "questions", "report", "resume", "status"].map(
+          (name) => `${prefix}vouch/references/${name}.md`,
+        ),
       ].sort(),
     );
     texts[harness] = [];

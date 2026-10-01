@@ -43,7 +43,7 @@ function box(harness = "claude", scope = intent, initial = {}) {
       },
       ctx(instant),
     );
-  /** @param {string} [submission] @param {string|undefined} [message] @param {string} [instant] */
+  /** @param {string} [submission] @param {string|null} [message] null: no final message. @param {string} [instant] */
   const stop = (
     submission = "ask-1",
     message = "The cache is rebuilt on boot.",
@@ -56,7 +56,7 @@ function box(harness = "claude", scope = intent, initial = {}) {
         cwd: "/project",
         stop_hook_active: false,
         ...(submission ? { [field]: submission } : {}),
-        ...(message === undefined ? {} : { last_assistant_message: message }),
+        ...(message === null ? {} : { last_assistant_message: message }),
       },
       ctx(instant),
     );
@@ -126,10 +126,10 @@ test("ask input needs a question and an identity; other prompts and unscoped ses
   t.assert.equal(await ask("/vouch asking"), null);
   t.assert.equal(await ask("please /vouch ask why?"), null);
   t.assert.equal(await box("claude", null).ask("/vouch ask why?"), null);
-  t.assert.equal(
-    String(bounded?.events?.[0]?.question).length,
-    operations.ask.questionChars,
+  const first = /** @type {{question?:string}|undefined} */ (
+    bounded?.events?.[0]
   );
+  t.assert.equal(String(first?.question).length, operations.ask.questionChars);
 });
 
 test("a resent ask keeps the first time", async (t) => {
@@ -175,10 +175,8 @@ test("the Stop of the asking turn records the answer with its duration and bound
       "ask-1",
       "y".repeat(operations.ask.answerChars + 5),
     );
-    t.assert.equal(
-      String(/** @type {{answer?:string}} */ long.events?.[0]?.answer).length,
-      operations.ask.answerChars,
-    );
+    const kept = /** @type {{answer?:string}|undefined} */ (long.events?.[0]);
+    t.assert.equal(String(kept?.answer).length, operations.ask.answerChars);
   }
 });
 
@@ -202,7 +200,7 @@ test("Stop never blocks and records nothing for other turns, recorded answers or
       /** @type {never} */ ({ intent }),
     ),
   ];
-  const withoutMessage = await stop("ask-1", undefined);
+  const withoutMessage = await stop("ask-1", null);
   await append(answer);
   const replay = await stop();
   const synthetic = box("claude", intent, {
