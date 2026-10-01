@@ -10,7 +10,7 @@ import {
   parseIntentReviewCommand,
   reviewIntent,
 } from "../../../core/hooks/lib/intent-review.mjs";
-import { planned } from "../../helpers/intent-review.mjs";
+import { designed, planned } from "../../helpers/intent-review.mjs";
 import { memoryFiles } from "../../helpers/runtime.mjs";
 
 test("review commands are exact operator inputs and do not infer consent", (t) => {
@@ -50,6 +50,14 @@ test("confirm commands name one checkpoint target exactly", (t) => {
     ["vouch confirm design", { checkpoint: "design" }],
     ["vouch confirm unit U-2.b", { checkpoint: "unit", unit: "U-2.b" }],
     ["vouch confirm section plan", { checkpoint: "section", section: "plan" }],
+    [
+      "vouch confirm design unit U-2.b",
+      { checkpoint: "design", unit: "U-2.b" },
+    ],
+    [
+      "vouch confirm design section ideal",
+      { checkpoint: "design", section: "ideal" },
+    ],
   ];
   const invalid = [
     "vouch confirm",
@@ -62,6 +70,15 @@ test("confirm commands name one checkpoint target exactly", (t) => {
     "vouch confirm acceptance\n",
     "vouch confirm  acceptance",
     "vouch confirm\tacceptance",
+    "vouch confirm design unit",
+    "vouch confirm design unit U 1",
+    "vouch confirm design section",
+    "vouch confirm design section Ideal",
+    "vouch confirm design units U1",
+    "vouch confirm design  unit U1",
+    "vouch confirm design unit U1 ideal",
+    "vouch confirm design section ideal\n",
+    "vouch confirm design-unit U1",
   ];
   t.plan(cases.length + invalid.length + 2);
   for (const [input, target] of cases)
@@ -525,5 +542,142 @@ test("an M plan that declares Design applies once design.md is confirmed", async
   t.assert.equal(
     snapshotIntent(files.data.get(artifact) ?? "")?.status,
     "approved",
+  );
+});
+
+test("design unit and design section confirmations record the digest of that design part", async (t) => {
+  const designText = designed([
+    ["U1", "Keep the parser."],
+    ["U2", "Split the reader."],
+  ]);
+  const text = planned([
+    ["U1", "M", "required"],
+    ["U2", "M", "required"],
+  ]);
+  const { send, audit } = project({ [artifact]: text, [design]: designText });
+  const unit = await send("vouch confirm design unit U2");
+  const part = await send("vouch confirm design section contract");
+  const absent = await send("vouch confirm design unit U9");
+  const missing = await send("vouch confirm design section nowhere");
+  const rows = await audit.list();
+  t.plan(7);
+  t.assert.match(
+    reason(unit),
+    /^VOUCH-CHECKPOINT-RECORDED: evt_[a-f0-9]{64}; design unit U2$/,
+  );
+  t.assert.match(
+    reason(part),
+    /^VOUCH-CHECKPOINT-RECORDED: evt_[a-f0-9]{64}; design section contract$/,
+  );
+  t.assert.equal(
+    reason(absent),
+    "VOUCH-CHECKPOINT-TARGET: design unit U9 is absent or not unique",
+  );
+  t.assert.equal(
+    reason(missing),
+    "VOUCH-CHECKPOINT-TARGET: design section nowhere is absent or not unique",
+  );
+  t.assert.equal(rows.length, 2);
+  t.assert.deepEqual(
+    rows.map((row) =>
+      row.type === "checkpoint.confirmed"
+        ? [row.checkpoint, "unit" in row ? row.unit : row.section]
+        : null,
+    ),
+    [
+      ["design", "U2"],
+      ["design", "contract"],
+    ],
+  );
+  t.assert.deepEqual(
+    rows.map((row) => row.type === "checkpoint.confirmed" && row.content),
+    [
+      checkpointContent(
+        { checkpoint: "design", unit: "U2" },
+        { intent: text, design: designText },
+      ),
+      checkpointContent(
+        { checkpoint: "design", section: "contract" },
+        { intent: text, design: designText },
+      ),
+    ],
+  );
+});
+
+test("unit and section modes apply only once design.md is confirmed per Design Unit or design section", async (t) => {
+  const text = planned([
+    ["U1", "L", "not-required"],
+    ["U2", "M", "required"],
+  ]);
+  const designText = designed([["U2", "Split the reader."]]);
+  /** @param {string} mode @param {string[]} targets @param {(value:string)=>string} [edit] */
+  async function attempt(mode, targets, edit = (value) => value) {
+    const box = project({
+      [artifact]: text,
+      [design]: designText,
+      "vouch/rules.md": `---\nlanguage: ja\ncheckpoints: ${mode}\n---\n`,
+    });
+    for (const target of targets) await box.send(`vouch confirm ${target}`);
+    box.files.data.set(design, edit(designText));
+    await box.send("vouch review");
+    const gate = (await box.audit.list()).find(
+      (row) => row.type === "gate.opened",
+    );
+    return reason(await box.send(`vouch approve ${gate?.id}`));
+  }
+  const unitTargets = ["acceptance", "unit U1", "unit U2"];
+  const intentSections = [
+    "summary",
+    "acceptance",
+    "scope",
+    "analysis",
+    "plan",
+    "verification",
+    "diagrams",
+    "checkpoints",
+    "references",
+  ].map((id) => `section ${id}`);
+  const designSections = [
+    "summary",
+    "ideal",
+    "alternatives",
+    "diagrams",
+    "contract",
+    "threats",
+    "units",
+    "references",
+  ].map((id) => `design section ${id}`);
+  t.plan(7);
+  t.assert.match(
+    await attempt("unit", [...unitTargets, "design"]),
+    /not applied: checkpoints design unit U2$/,
+  );
+  t.assert.match(
+    await attempt("unit", [...unitTargets, "design unit U2"]),
+    /^VOUCH-APPROVAL-APPLIED: /,
+  );
+  t.assert.match(
+    await attempt("unit", [...unitTargets, "design unit U2"], (value) =>
+      value.replace("Ideal: one parser.", "Ideal: two parsers."),
+    ),
+    /not applied: checkpoints design unit U2$/,
+  );
+  t.assert.match(
+    await attempt("section", [...intentSections, "design"]),
+    new RegExp(`not applied: checkpoints ${designSections.join(", ")}$`),
+  );
+  t.assert.match(
+    await attempt("section", [...intentSections, ...designSections]),
+    /^VOUCH-APPROVAL-APPLIED: /,
+  );
+  t.assert.match(
+    await attempt("section", [...intentSections, ...designSections], (value) =>
+      value.replace("Parser input type.", "Reader input type."),
+    ),
+    /not applied: checkpoints design section contract$/,
+  );
+  t.assert.match(
+    await attempt("topic", [...["acceptance", "scope", "units"], "design"]),
+    /^VOUCH-APPROVAL-APPLIED: /,
   );
 });
