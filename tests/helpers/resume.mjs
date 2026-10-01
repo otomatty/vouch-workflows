@@ -1,4 +1,5 @@
 import { newId } from "../../core/hooks/lib/clock.mjs";
+import { readQuestionCard } from "../../core/hooks/lib/decisions.mjs";
 import { memoryFiles } from "./runtime.mjs";
 
 // Hand-authored inputs for resume, ask, question and report tests. None is captured evidence.
@@ -55,8 +56,17 @@ export const askedId = (question, scope = intent) =>
 export const defaultedId = (parent, scope = intent) =>
   newId(scope, JSON.stringify(["question.defaulted", scope, parent]));
 
+/** The digest an ask records for a card. @param {string} text @param {string} question */
+function cardDigest(text, question) {
+  const read = readQuestionCard(decisions(text), question);
+  if ("error" in read) throw new Error(read.error);
+  return read.sha256;
+}
+
 /**
- * @param {string} question @param {{fallback?:string,ts?:string,scope?:string,options?:number}} [shape]
+ * @param {string} question
+ * @param {{fallback?:string,ts?:string,scope?:string,options?:number,text?:string}} [shape] `text`: the
+ * asked card, by default `card(question)`.
  * @returns {import('../../core/hooks/lib/contracts.mjs').QuestionAsked}
  */
 export function asked(question, shape = {}) {
@@ -65,6 +75,7 @@ export function asked(question, shape = {}) {
     ts = "2026-09-30T00:00:00Z",
     scope = intent,
     options = 2,
+    text = card(question),
   } = shape;
   return {
     id: askedId(question, scope),
@@ -75,6 +86,7 @@ export function asked(question, shape = {}) {
     intent: scope,
     question,
     options,
+    card: { path: "decisions.md", sha256: cardDigest(text, question) },
     ...(fallback ? { blocking: false, default: fallback } : { blocking: true }),
   };
 }

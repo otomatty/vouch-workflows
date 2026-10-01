@@ -12,6 +12,7 @@ import operations from "../../../core/registry/operations.json" with {
 };
 import { evidenced } from "../../helpers/approval.mjs";
 import { planned } from "../../helpers/intent-review.mjs";
+import { readJson } from "../../helpers/registry.mjs";
 import {
   answered,
   asked,
@@ -236,4 +237,50 @@ test("resume context exists only for a registered SessionStart source of a confi
     ),
     undefined,
   );
+});
+
+test("repeated audit IDs make the line and summary partial instead of claiming nothing is open", async (t) => {
+  const start = readJson("tests/fixtures/audit/session.started.jsonl");
+  delete start.synthetic;
+  const hidden = { ...asked("Q-1"), id: start.id };
+  const position = await observe({
+    "audit/events.jsonl": jsonl([{ ...start, intent }, hidden]),
+  });
+  const labels = operations.labels.ja;
+  t.plan(3);
+  t.assert.match(
+    formatStatusline(position),
+    new RegExp(`${labels.line_partial}$`),
+  );
+  t.assert.doesNotMatch(
+    formatStatusline(position),
+    new RegExp(`${labels.line_unanswered} 0`),
+  );
+  t.assert.match(
+    formatSummary(position),
+    new RegExp(
+      `${labels.unanswered}: ${labels.unknown}[\\s\\S]*${labels.partial}; duplicate ${start.id}`,
+    ),
+  );
+});
+
+test("a long statusline shortens the Intent and stages first and always keeps the audit warning", async (t) => {
+  const long = "x".repeat(128);
+  const position = await observe({
+    "intent.md": `---\nstatus: draft\n---\n# Plan\n`,
+    "audit/events.jsonl": `${jsonl(Array.from({ length: 30 }, (_, i) => asked(`Q-${i + 1}`)))}oops\n`,
+  });
+  const labels = operations.labels.ja;
+  const head = formatStatusline({ ...position, intent: long, unanswered: [] });
+  const both = formatStatusline({ ...position, intent: long });
+  t.plan(4);
+  t.assert.match(
+    head,
+    new RegExp(
+      `^Vouch x{128} | intent:d?… | ${labels.line_checkpoints} ? | ${labels.line_partial}$`,
+    ),
+  );
+  t.assert.equal([...head].length, operations.statusline.chars);
+  t.assert.match(both, new RegExp(`… \\| ${labels.line_partial}$`));
+  t.assert.equal([...both].length, operations.statusline.chars);
 });

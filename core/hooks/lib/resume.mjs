@@ -25,7 +25,8 @@ export function formatSummary(position) {
       : labels.none;
   };
   const { audit, checkpoints } = position;
-  const partial = audit.invalid.length > 0;
+  // A repeated ID hides its later record, so nothing can be concluded from the rest either.
+  const partial = audit.invalid.length > 0 || audit.duplicates.length > 0;
   const approval = {
     none: "",
     evidence: ` (${labels.evidence})`,
@@ -53,7 +54,7 @@ export function formatSummary(position) {
     ...(position.uncertain.length
       ? [`${labels.uncertain}: ${list(position.uncertain.map(id))}`]
       : []),
-    `${labels.audit}: ${audit.path}, ${audit.events} (synthetic ${audit.synthetic})${partial ? `; ${labels.partial} (L${audit.invalid.join(", L")})` : ""}${audit.duplicates.length ? `; duplicate ${list(audit.duplicates.map(id))}` : ""}`,
+    `${labels.audit}: ${audit.path}, ${audit.events} (synthetic ${audit.synthetic})${partial ? `; ${labels.partial}` : ""}${audit.invalid.length ? ` (L${audit.invalid.join(", L")})` : ""}${audit.duplicates.length ? `; duplicate ${list(audit.duplicates.map(id))}` : ""}`,
     labels.next,
   ].join("\n");
 }
@@ -72,11 +73,11 @@ export function formatStatusline(position) {
     )
     .join(" ");
   const { checkpoints } = position;
-  const partial = position.audit.invalid.length > 0;
+  const partial =
+    position.audit.invalid.length > 0 || position.audit.duplicates.length > 0;
   const open = position.unanswered.map((q) => q.question).join(" ");
-  const line = [
-    `Vouch ${position.intent}`,
-    stages,
+  const head = [`Vouch ${position.intent}`, stages].filter(Boolean).join(" | ");
+  const tail = [
     position.approval === "none"
       ? `${labels.line_checkpoints} ${checkpoints.state === "observed" ? `${checkpoints.required.length - checkpoints.missing.length}/${checkpoints.required.length}` : "?"}`
       : "",
@@ -84,12 +85,19 @@ export function formatStatusline(position) {
     position.defaulted.length
       ? `${labels.line_defaulted} ${position.defaulted.map((d) => d.question).join(" ")}`
       : "",
-    partial ? labels.line_partial : "",
   ]
     .filter(Boolean)
     .join(" | ");
+  // The head shortens first; the audit warning is never cut off.
+  const warning = partial ? ` | ${labels.line_partial}` : "";
   const limit = operations.statusline.chars;
-  return [...line].length > limit ? `${bounded(line, limit - 1)}…` : line;
+  const size = (/** @type {string} */ text) => [...text].length;
+  const body = tail ? ` | ${tail}` : "";
+  if (size(head + body + warning) <= limit) return head + body + warning;
+  const room = limit - size(body + warning);
+  return room > 1
+    ? `${bounded(head, room - 1)}…${body}${warning}`
+    : `${bounded(head + body, limit - size(warning) - 1)}…${warning}`;
 }
 
 /** @type {import('./runtime-contracts.mjs').StatuslineMain} */

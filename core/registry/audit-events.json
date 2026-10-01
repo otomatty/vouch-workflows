@@ -128,7 +128,7 @@
     "question.asked": {
       "fields": {
         "required": ["intent", "question", "blocking", "options"],
-        "optional": ["default"]
+        "optional": ["default", "card"]
       },
       "measures": ["options"],
       "pairs_with": ["question.answered", "question.defaulted"]

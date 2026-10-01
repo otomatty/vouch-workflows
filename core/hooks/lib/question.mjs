@@ -91,14 +91,20 @@ export async function runQuestion(
       intent,
       question,
       options: card.options.length,
+      card: { path: "decisions.md", sha256: card.sha256 },
       ...(card.default
         ? { blocking: false, default: card.default }
         : { blocking: true }),
     };
     const same = (/** @type {AuditEvent} */ item) =>
       item.type === "question.asked" &&
-      JSON.stringify([item.options, item.blocking, item.default]) ===
-        JSON.stringify([event.options, event.blocking, event.default]);
+      JSON.stringify([item.options, item.blocking, item.default, item.card]) ===
+        JSON.stringify([
+          event.options,
+          event.blocking,
+          event.default,
+          event.card,
+        ]);
     if (previous && !same(previous))
       return report(
         "QUESTION-CONFLICT",
@@ -196,26 +202,34 @@ export async function answerQuestion(input, ctx) {
     await ctx.readText(`${intentHome(intent)}/${documents.decisions}`),
     question,
   );
+  if (!("error" in card) && card.sha256 !== asked.card?.sha256)
+    return deny(
+      `VOUCH-ANSWER-CHANGED: ${question} changed after ${asked.id}; it must be asked again as a new Q-n`,
+    );
   if ("error" in card || !card.options.includes(choice))
     return deny(
       `VOUCH-ANSWER-CHOICE: ${choice} is not an option of ${question}`,
     );
+  // One answer per question: a concurrent different answer conflicts in the store under its lock.
   const id = ctx.newId(
-    input.session_id,
-    JSON.stringify([
-      "question.answered",
-      ctx.harness,
-      intent,
-      submission.field,
-      submission.id,
-    ]),
+    intent,
+    JSON.stringify(["question.answered", intent, asked.id]),
   );
-  const answered = answerOf(events, asked.id, id);
+  const previous = events.find((item) => item.id === id);
+  const answered =
+    answerOf(events, asked.id, id) ??
+    (previous &&
+    (previous.type !== "question.answered" ||
+      previous.choice !== choice ||
+      previous.session !== input.session_id ||
+      previous.harness !== ctx.harness)
+      ? previous
+      : undefined);
   if (answered)
     return deny(
       `VOUCH-ANSWER-EXISTS: ${question} was answered in ${answered.id}; ask a changed question as a new Q-n`,
     );
-  const ts = events.find((item) => item.id === id)?.ts ?? ctx.now();
+  const ts = previous?.ts ?? ctx.now();
   const wait = elapsedMilliseconds(asked.ts, ts);
   if (wait === null)
     return deny("VOUCH-ANSWER-EVIDENCE: valid ordered UTC timestamps required");

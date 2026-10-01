@@ -14,7 +14,7 @@
 - 確認点は承認の境界と同じ `missingCheckpoints` で、現在の内容の確認だけを数えます。
 - intent.md の approved は、`findApproval` が同じ版の承認の連鎖を見つけた時だけ「証跡あり」、それ以外は「宣言のみ」と示します。
 - 判断依頼は question.asked を起点に question.answered / question.defaulted の parent で対応付けます。同じ Q 番号の複数の問い、親が存在しない・Q 番号が食い違う記録は「対応が不確実」にします。既定適用は人の回答と分けます。synthetic と別 Intent の記録は数えません。
-- 監査は `scanAudit` で行ごとに読み、不正な行（最後の改行がない行を含む）の行番号と重複 ID を示し、読めた記録で観測を続けます。一部しか読めない時は「未回答なし」と断定しません。
+- 監査は `scanAudit` で行ごとに読み、不正な行（最後の改行がない行を含む）の行番号と重複 ID を示し、読めた記録で観測を続けます。不正な行か重複 ID があれば一部しか読めない観測とし、「未回答なし」と断定しません。
 
 観測を受けて作業を選ぶのはモデル、承認・確認・回答は人の明示入力です。Skill の [再開の説明](../../core/skills/vouch/references/resume.md) は doctor を先に実行し、Node がなければ再開しません。
 
@@ -36,12 +36,12 @@ Stop フックは遮断しません。対応する ask がない回、記録済�
 
 `vouch-question.mjs` は登録したコマンドです（DoD と同じく `VOUCH_INTENT` で対象を指定）。
 
-- `ask <Q-n>`：decisions.md の Q-n カードから選択肢 ID（表の1列目の英大文字）と「未回答時の既定」を読み、question.asked（actor:model）を記録します。既定は選択肢 ID を含む文、作れない時は `blocking: <理由>` とし、後者は blocking:true・既定なしになります。カードが不完全なら記録しません。ID は Intent と Q-n から導くため再送は最初の記録を保ち、記録後にカードを変えた再質問は新しい Q-n を求めます。
+- `ask <Q-n>`：decisions.md の Q-n カードから選択肢 ID（表の1列目の英大文字）と「未回答時の既定」を読み、回答欄を除いたカードの digest とともに question.asked（actor:model）を記録します。既定は選択肢 ID を含む文、作れない時は `blocking: <理由>` とし、後者は blocking:true・既定なしになります。カードが不完全なら記録しません。ID は Intent と Q-n から導くため再送は最初の記録を保ち、記録後にカードを変えた再質問は、選択肢の数と既定が同じでも digest の違いで拒否し、新しい Q-n を求めます。
 - `default <Q-n>`：記録済みの既定で question.defaulted を記録します。人の回答がある、問いが未記録、既定がない時は記録しません。
 
-人の回答は UserPromptSubmit の `vouch answer <Q-n> <選択肢 ID>` だけで、フックが question.answered（actor:human、入力の識別子から導いた ID、待ち時間）を記録し、入力はモデルへ渡しません。記録済みの問いと現在のカードの選択肢に限ります。既定適用の後の回答は受け付け（人が覆す場合）、別の入力による二度目の回答は拒否します。回答は確認点の確認でも承認でもなく、checkpoint.confirmed や approved への更新を伴いません。
+人の回答は UserPromptSubmit の `vouch answer <Q-n> <選択肢 ID>` だけで、フックが question.answered（actor:human、待ち時間）を記録し、入力はモデルへ渡しません。記録済みの問いに限り、現在のカードの digest が問いの記録と一致しない時は拒否するため、問いの後に選択肢の意味を変えたカードへの回答は結び付きません。既定適用の後の回答は受け付けます（人が覆す場合）。回答の ID は問いから導くので、1つの問いに回答の記録は1件です。同じ内容の再送は最初の記録を保ち、別の回答は拒否します。同時に届いた別の回答は、監査ストアのロック内で同じ ID・異なる内容として衝突し、後の方は記録されません（フックは fail-open のため、その入力は記録されずにモデルへ届きます）。回答は確認点の確認でも承認でもなく、checkpoint.confirmed や approved への更新を伴いません。
 
-書き込みガードは、配布した `hooks` の runtime.json の commands を、英数字と `-` だけの引数付きで起動する形を許します（`node .claude/hooks/vouch-question.mjs ask Q-1`）。展開・リダイレクト・パスを含む引数、commands にない入口は従来どおり拒否します。
+書き込みガードは、配布した `hooks` の runtime.json の commands を、英数字と `-` だけの引数付きで起動する形を許します（`node .claude/hooks/vouch-question.mjs ask Q-1`）。シェルが展開する語（`$`・glob・`{`・`~`。引用符の中の `$` を含む）、リダイレクト・パスを含む引数、commands にない入口は従来どおり拒否します。
 
 ## report
 
@@ -49,7 +49,7 @@ Stop フックは遮断しません。対応する ask がない回、記録済�
 
 ## statusline
 
-`vouch-statusline.mjs` は Claude の `statusLine` から起動され、1行（上限160文字）を出して常に終了0です。表示は Intent、frontmatter のあるステージの宣言値（宣言のみの approved は「証跡なし」）、Intent が承認前なら確認点の数、未回答と既定適用の Q-n、監査が一部しか読めない時の注記です。Intent が未指定なら未指定と出し、候補から選びません。プロジェクトの root は入口の配布位置から決め、読み取り以外をしません。
+`vouch-statusline.mjs` は Claude の `statusLine` から起動され、1行（上限160文字）を出して常に終了0です。表示は Intent、frontmatter のあるステージの宣言値（宣言のみの approved は「証跡なし」）、Intent が承認前なら確認点の数、未回答と既定適用の Q-n、監査が一部しか読めない時（不正な行・重複 ID）の注記です。上限を超える時は Intent とステージの部分から縮め、監査の注記は切りません。Intent が未指定なら未指定と出し、候補から選びません。プロジェクトの root は入口の配布位置から決め、読み取り以外をしません。
 
 登録は `node "${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/vouch-statusline.mjs"` です。Codex の TUI のステータス行は組み込み項目の選択だけで、任意のコマンドを登録できないため、Codex には statusline を配りません。
 

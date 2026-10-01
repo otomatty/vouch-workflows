@@ -1589,6 +1589,20 @@
         "default": {
           "type": "string",
           "minLength": 1
+        },
+        "card": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "const": "decisions.md"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}(?![\\s\\S])"
+            }
+          },
+          "required": ["path", "sha256"],
+          "additionalProperties": false
         }
       },
       "required": [

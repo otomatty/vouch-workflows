@@ -220,7 +220,7 @@ test("readsOnly refuses writers, unknown programs, write options and smuggled op
 test("readsOnly accepts node only for an installed command with literal word arguments", (t) => {
   const doctor = (/** @type {string} */ word) =>
     word === "install/hooks/vouch-question.mjs";
-  t.plan(7);
+  t.plan(12);
   t.assert.equal(
     reading("node install/hooks/vouch-question.mjs", doctor),
     true,
@@ -231,6 +231,11 @@ test("readsOnly accepts node only for an installed command with literal word arg
   );
   for (const text of [
     "node install/hooks/vouch-question.mjs ask $Q",
+    'node install/hooks/vouch-question.mjs ask "$Q"',
+    `node install/hooks/vouch-question.mjs ask $${"{Q}"}`,
+    "node install/hooks/vouch-question.mjs ask Q-{1,2}",
+    "node install/hooks/vouch-question.mjs ask ~",
+    "node install/hooks/vouch-question.mjs ask Q-1*",
     "node install/hooks/vouch-question.mjs ask ../x",
     "node install/hooks/vouch-question.mjs --eval x",
     "node install/hooks/vouch-question.mjs ask Q-1 > out",

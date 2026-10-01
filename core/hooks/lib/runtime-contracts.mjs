@@ -211,14 +211,17 @@ export {};
  * @typedef {(reader:PositionReader,intent:string)=>Promise<Position>} ReadPosition Unreadable files are
  * observations, not errors.
  * @typedef {(position:Position)=>string} FormatPosition Untrusted strings are quoted and bounded.
- * @typedef {{options:string[],default?:string}} QuestionCard Option IDs in table order; no default means blocking.
+ * @typedef {{options:string[],default?:string,sha256:string}} QuestionCard Option IDs in table order; no default
+ * means blocking. `sha256` digests the card without its answer section, so recording an answer keeps it.
  * @typedef {(text:string|null,question:string)=>QuestionCard|{error:string}} ReadQuestionCard
  * @typedef {{intent:string|null,args:string[],now:() => string}} QuestionPorts
  * @typedef {(files:FileStore,environment:DoctorEnvironment,git:GitStatus,ports?:QuestionPorts)=>Promise<DoctorReport>} RunQuestion
- * `ask <Q-n>` records question.asked from the decisions.md card; `default <Q-n>` records question.defaulted
+ * `ask <Q-n>` records question.asked from the decisions.md card and its digest, refusing a changed card;
+ * `default <Q-n>` records question.defaulted
  * with the recorded default while no answer exists. Neither answers, confirms or approves.
  * @typedef {(input:import('./contracts.mjs').HookInput,ctx:import('./contracts.mjs').ReadyHookContext)=>Promise<import('./contracts.mjs').HookResult|null>} PromptRecorder
- * null: the prompt is not this recorder's input.
+ * null: the prompt is not this recorder's input. A question has one answer record whose identity derives
+ * from the question, so a concurrent second answer conflicts in the store instead of appending.
  * @typedef {(input:import('./contracts.mjs').HookInput,ctx:import('./contracts.mjs').ReadyHookContext)=>Promise<import('./contracts.mjs').HookResult>} RecordAsideAnswer
  * Stop of the turn whose submission recorded aside.asked appends aside.answered; it never blocks.
  * @typedef {{n:number,sum:number,min:number,max:number,missing:number,examples:string[]}} MeasureSummary

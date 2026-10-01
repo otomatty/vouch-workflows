@@ -80,7 +80,13 @@ test("asking records the card's option count and default once, and a resend keep
   t.assert.match(first.checks[0]?.detail ?? "", new RegExp(askedId("Q-1")));
   t.assert.equal(records.length, 2);
   t.assert.deepEqual(records[0], asked("Q-1"));
-  t.assert.deepEqual(records[1], asked("Q-2", { fallback: "" }));
+  t.assert.deepEqual(
+    records[1],
+    asked("Q-2", {
+      fallback: "",
+      text: card("Q-2", { fallback: "blocking: needs product input." }),
+    }),
+  );
   t.assert.equal(records.every(isAuditEvent), true);
 });
 
@@ -213,18 +219,9 @@ function prompt(initial, harness = "claude") {
   return { files, submit };
 }
 
-/** @param {string} submission @param {'claude'|'codex'} [harness] */
-const answerId = (submission, harness = "claude") =>
-  newId(
-    "s-1",
-    JSON.stringify([
-      "question.answered",
-      harness,
-      intent,
-      harness === "claude" ? "prompt_id" : "turn_id",
-      submission,
-    ]),
-  );
+/** One answer per question: the identity derives from the asked record. @param {string} parent */
+const answerId = (parent) =>
+  newId(intent, JSON.stringify(["question.answered", intent, parent]));
 
 test("a person's explicit answer is recorded against the asked question and is not a confirmation or approval", async (t) => {
   const question = asked("Q-1");
@@ -244,7 +241,7 @@ test("a person's explicit answer is recorded against the asked question and is n
     );
     t.assert.deepEqual(result?.events, [
       {
-        id: answerId("answer-1", harness),
+        id: answerId(question.id),
         v: 1,
         type: "question.answered",
         ts: "2026-09-30T00:00:05Z",
@@ -362,5 +359,57 @@ test("a resent answer keeps its first record and time", async (t) => {
   t.assert.match(
     /** @type {{reason:string}} */ (again).reason,
     /VOUCH-ANSWER-RECORDED/,
+  );
+});
+
+test("a card changed after its ask cannot be re-asked or answered under the same Q-n", async (t) => {
+  const swapped = decisions(card("Q-1", { options: ["B", "A"] }));
+  const { files, submit } = prompt({
+    "decisions.md": swapped,
+    "audit/events.jsonl": jsonl([asked("Q-1")]),
+  });
+  const before = files.data.get(auditPath);
+  t.plan(3);
+  t.assert.match(
+    /** @type {{reason:string}} */ (await submit("vouch answer Q-1 A")).reason,
+    /^VOUCH-ANSWER-CHANGED/,
+  );
+  t.assert.deepEqual(ids(await command(files, ["ask", "Q-1"])), [
+    "QUESTION-CONFLICT",
+  ]);
+  t.assert.equal(files.data.get(auditPath), before);
+});
+
+test("the card digest ignores the answer section, which is filled after answering", async (t) => {
+  const answeredCard = card().replace(
+    "Unanswered.",
+    "A, from the person on 2026-09-30.",
+  );
+  const { submit } = prompt({
+    "decisions.md": decisions(answeredCard),
+    "audit/events.jsonl": jsonl([asked("Q-1")]),
+  });
+  t.plan(1);
+  t.assert.match(
+    /** @type {{reason:string}} */ (await submit("vouch answer Q-1 A")).reason,
+    /^VOUCH-ANSWER-RECORDED/,
+  );
+});
+
+test("concurrent different answers share one identity, so the store refuses the second", async (t) => {
+  const { files, submit } = prompt({
+    "decisions.md": decisions(card()),
+    "audit/events.jsonl": jsonl([asked("Q-1")]),
+  });
+  const first = await submit("vouch answer Q-1 A", "alice");
+  const second = await submit("vouch answer Q-1 B", "bob");
+  const store = createIntentAuditStore(files, intent);
+  await store.append(first?.events ?? []);
+  t.plan(3);
+  t.assert.equal(first?.events?.[0]?.id, second?.events?.[0]?.id);
+  await t.assert.rejects(store.append(second?.events ?? []), /AUDIT-CONFLICT/);
+  t.assert.equal(
+    rows(files).filter((r) => r.type === "question.answered").length,
+    1,
   );
 });

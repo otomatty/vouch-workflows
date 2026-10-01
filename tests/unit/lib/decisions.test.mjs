@@ -14,16 +14,33 @@ test("question cards yield table-ordered option IDs and an option-named default 
       options: ["A: 400", "B: 409", "C: 422"],
     }),
   );
+  /** @param {string} id */
+  const fields = (id) => {
+    const read = readQuestionCard(text, id);
+    if ("error" in read) throw new Error(read.error);
+    const { sha256, ...rest } = read;
+    t.assert.match(sha256, /^[a-f0-9]{64}$/);
+    return rest;
+  };
+  t.plan(6);
+  t.assert.deepEqual(fields("Q-1"), { options: ["A", "B"], default: "A" });
+  t.assert.deepEqual(fields("Q-2"), { options: ["A", "B"] });
+  t.assert.deepEqual(fields("Q-3"), { options: ["A", "B", "C"], default: "B" });
+});
+
+test("a card's digest changes with its question and options but not with its answer section", (t) => {
+  /** @param {string} text */
+  const sha = (text) => {
+    const read = readQuestionCard(decisions(text), "Q-1");
+    return "error" in read ? read.error : read.sha256;
+  };
   t.plan(3);
-  t.assert.deepEqual(readQuestionCard(text, "Q-1"), {
-    options: ["A", "B"],
-    default: "A",
-  });
-  t.assert.deepEqual(readQuestionCard(text, "Q-2"), { options: ["A", "B"] });
-  t.assert.deepEqual(readQuestionCard(text, "Q-3"), {
-    options: ["A", "B", "C"],
-    default: "B",
-  });
+  t.assert.notEqual(sha(card("Q-1", { options: ["B", "A"] })), sha(card()));
+  t.assert.notEqual(sha(card().replace("Small", "Tiny")), sha(card()));
+  t.assert.equal(
+    sha(card().replace("Unanswered.", "B, from the person.")),
+    sha(card()),
+  );
 });
 
 test("question cards that are absent, repeated or incomplete are errors, never guessed", (t) => {

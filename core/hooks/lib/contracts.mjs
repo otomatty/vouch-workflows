@@ -53,7 +53,8 @@
 /** @typedef {AuditCommon & {type:'gate.opened',intent:string,source:'intent'|'pr'} & ({revision?:never}|{revision:IntentRevision,source:'intent',actor:'hook',harness:Harness,session:string})} GateOpened */
 /** @typedef {AuditCommon & {type:'gate.approved',intent:string,actor:'human',source:'intent'|'pr',parent:string,wait_ms:number}} GateApproved */
 /** @typedef {AuditCommon & {type:'gate.rejected',intent:string,actor:'human',source:'intent'|'pr',parent:string,wait_ms:number,reason:string}} GateRejected */
-/** @typedef {AuditCommon & {type:'question.asked',intent:string,question:string,options:number} & ({blocking:false,default:string}|{blocking:true,default?:string})} QuestionAsked */
+/** `card` digests the decisions.md card without its answer section; an answer binds to that version.
+ * @typedef {AuditCommon & {type:'question.asked',intent:string,question:string,options:number,card?:{path:'decisions.md',sha256:string}} & ({blocking:false,default:string}|{blocking:true,default?:string})} QuestionAsked */
 /** @typedef {AuditCommon & {type:'question.answered',intent:string,actor:'human',question:string,choice:string,parent:string,wait_ms:number}} QuestionAnswered */
 /** @typedef {AuditCommon & {type:'question.defaulted',intent:string,question:string,choice:string,parent:string,wait_ms:number}} QuestionDefaulted */
 /** @typedef {AuditCommon & {type:'aside.asked',intent:string,question:string}} AsideAsked */
