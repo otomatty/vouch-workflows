@@ -275,7 +275,12 @@ export function remove(options) {
     if (options.scope === "project") deactivate(changes, options.harness);
     // Explicitly named project bindings are removed; other projects keep their pinned version.
     const finish = () => {
-      commitChanges([...changes.changes.values()]);
+      const entries = [...changes.changes];
+      const ordered = [
+        ...entries.filter(([key]) => key.startsWith("project:")),
+        ...entries.filter(([key]) => !key.startsWith("project:")),
+      ];
+      commitChanges(ordered.map(([, change]) => change));
       return { v: 1, ok: true, harness: options.harness, scope: options.scope };
     };
     if (options.scope === "user" && options.projectExplicit) {

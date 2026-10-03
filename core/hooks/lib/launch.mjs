@@ -52,6 +52,16 @@ export async function launch(entryUrl, ports) {
   const stdout = ports.stdout ?? descriptorWriter(1);
   const options = ports.environment ?? readLaunchEnvironment();
   const [action = "", scope = "manual", ...rest] = options.args;
+  const passCursor = () =>
+    stdout.write(
+      `${JSON.stringify(
+        cursorOutput(action, {
+          status: 0,
+          stdout: "",
+          stderr: "",
+        }),
+      )}\n`,
+    );
   const product = actions[action];
   const native = ["session", "prompt", "guard", "stop"].includes(action);
   const display = action === "statusline" && scope !== "manual";
@@ -83,14 +93,14 @@ export async function launch(entryUrl, ports) {
         throw new Error(
           "INSTALL-INACTIVE: initialize this project before using Vouch",
         );
-      if (harness === "cursor") stdout.write("{}\n");
+      if (harness === "cursor") passCursor();
       return;
     }
     const binding = /** @type {Record<string,unknown>} */ (
       project.config.harnesses
     )[harness];
     if (binding === undefined && (native || display)) {
-      if (harness === "cursor") stdout.write("{}\n");
+      if (harness === "cursor") passCursor();
       return;
     }
     if (
@@ -122,7 +132,7 @@ export async function launch(entryUrl, ports) {
       (selectedRoot !== runtimeRoot ||
         (scope === "user" && binding.registrationScope === "project"))
     ) {
-      if (harness === "cursor") stdout.write("{}\n");
+      if (harness === "cursor") passCursor();
       return;
     }
     if (selectedRoot !== runtimeRoot && !display)
@@ -147,7 +157,7 @@ export async function launch(entryUrl, ports) {
       if (harness === "cursor") {
         const normalized = cursorInput(JSON.parse(input), project.root);
         if (normalized === null) {
-          stdout.write("{}\n");
+          passCursor();
           return;
         }
         input = JSON.stringify(normalized);
@@ -180,7 +190,7 @@ export async function launch(entryUrl, ports) {
     stderr.write(
       `VOUCH-LAUNCH: ${error instanceof Error ? error.message : String(error)}\n`,
     );
-    if (harness === "cursor" && native) stdout.write("{}\n");
+    if (harness === "cursor" && native) passCursor();
     ports.finish(native || display ? 0 : 2);
   }
 }

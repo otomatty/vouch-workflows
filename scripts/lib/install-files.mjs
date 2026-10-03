@@ -115,8 +115,30 @@ export function commitChanges(changes) {
       completed.push(change);
     }
   } catch (error) {
-    for (const change of completed.reverse())
-      if (read(change.path) === change.after) write(change.path, change.before);
+    /** @type {Error[]} */ const failures = [];
+    for (const change of completed.reverse()) {
+      try {
+        if (read(change.path) !== change.after)
+          throw new Error("concurrent modification prevents restoration");
+        write(change.path, change.before);
+      } catch (failure) {
+        failures.push(
+          new Error(
+            `${change.path}: ${
+              failure instanceof Error ? failure.message : String(failure)
+            }`,
+            { cause: failure },
+          ),
+        );
+      }
+    }
+    if (failures.length)
+      throw new AggregateError(
+        [error, ...failures],
+        `INSTALL-ROLLBACK: ${
+          error instanceof Error ? error.message : String(error)
+        }; ${failures.map((failure) => failure.message).join("; ")}`,
+      );
     throw error;
   }
 }

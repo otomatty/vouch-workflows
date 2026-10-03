@@ -77,8 +77,11 @@ export function cursorInput(value, root) {
 /** @param {string} action @param {{status:number|null,stdout:string,stderr:string}} result */
 export function cursorOutput(action, result) {
   const reason = result.stderr.trim();
+  if (action === "guard")
+    return result.status === 2
+      ? { permission: "deny", user_message: reason }
+      : { permission: "allow" };
   if (result.status === 2) {
-    if (action === "guard") return { decision: "deny", reason };
     if (action === "prompt") return { continue: false, user_message: reason };
   }
   if (action === "session" && result.status === 0 && result.stdout.trim())
