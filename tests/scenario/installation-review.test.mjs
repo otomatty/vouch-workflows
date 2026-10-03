@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
-import { mkdir, rm } from "node:fs/promises";
+import fs, { readFileSync } from "node:fs";
+import { mkdir, readdir, rm } from "node:fs/promises";
+import { syncBuiltinESMExports } from "node:module";
 import { join, resolve } from "node:path";
 import { test } from "node:test";
 import { withLock } from "../../scripts/lib/install-files.mjs";
@@ -84,7 +85,7 @@ test("installation lock records its owner and gives safe manual recovery guidanc
     );
     const error = JSON.parse(conflict.stdout).error;
     t.assert.match(error, /INSTALL-LOCK/);
-    t.assert.ok(error.includes(lock));
+    t.assert.equal(error.includes(lock), true);
     t.assert.match(error, /no installer is running/);
   });
   await t.assert.rejects(box.read(".vouch/install.lock/owner.json"), {
@@ -98,12 +99,41 @@ test("installation lock records its owner and gives safe manual recovery guidanc
   t.assert.throws(() => withLock(box.root, () => {}), /INSTALL-LOCK/);
   t.assert.match(await box.read(".vouch/install.lock/owner.json"), /999999/);
   await rm(lock, { recursive: true });
-  let owner;
-  withLock(box.root, () => {
-    owner = JSON.parse(readFileSync(join(lock, "owner.json"), "utf8"));
-  });
+  const owner = withLock(box.root, () =>
+    JSON.parse(readFileSync(join(lock, "owner.json"), "utf8")),
+  );
   t.assert.equal(owner.pid, process.pid);
-  t.assert.ok(Number.isFinite(Date.parse(owner.startedAt)));
+  t.assert.equal(Number.isFinite(Date.parse(owner.startedAt)), true);
+});
+
+test("lock creation preserves filesystem errors that are not lock conflicts", async (t) => {
+  const box = await sandbox(t);
+  const lock = box.path(".vouch/install.lock");
+  const original = fs.mkdirSync;
+  const denied = Object.assign(new Error("permission denied"), {
+    code: "EACCES",
+  });
+  const mocked = t.mock.method(
+    fs,
+    "mkdirSync",
+    (
+      /** @type {string} */ path,
+      /** @type {import('node:fs').MakeDirectoryOptions} */ options,
+    ) => {
+      if (path === lock) throw denied;
+      return original(path, options);
+    },
+  );
+  syncBuiltinESMExports();
+  try {
+    t.assert.throws(
+      () => withLock(box.root, () => {}),
+      (error) => error === denied,
+    );
+  } finally {
+    mocked.mock.restore();
+    syncBuiltinESMExports();
+  }
 });
 
 test("activation guidance encodes Markdown paths and refuses control characters before installation", async (t) => {
@@ -144,15 +174,15 @@ test("activation guidance encodes Markdown paths and refuses control characters 
     decodeURIComponent(destination ?? ""),
     `${runtime}/templates/ja/rules.md`,
   );
-  t.assert.ok(rendered.includes(`\`\` ${runtime}/registry/workflow.json \`\``));
+  t.assert.equal(
+    rendered.includes(`\`\` ${runtime}/registry/workflow.json \`\``),
+    true,
+  );
   const bad = installRun("install", box, "cursor", "user", [
     "--home",
     box.path("home\ninjected"),
   ]);
   t.assert.equal(bad.status, 2, bad.stdout);
   t.assert.match(bad.stdout, /INSTALL-PATH/);
-  await t.assert.rejects(
-    box.read("home\ninjected/.vouch/installations/cursor.json"),
-    { code: "ENOENT" },
-  );
+  t.assert.equal((await readdir(box.root)).includes("home\ninjected"), false);
 });

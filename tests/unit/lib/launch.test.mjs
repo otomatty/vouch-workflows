@@ -139,7 +139,8 @@ test("managed commands cannot inherit an Intent into an unconfigured project", a
     await launch(box.entry, command.hooks);
     t.assert.equal(command.seen.calls.length, 1);
     t.assert.equal(
-      /** @type {{intent:string}|undefined} */ (command.seen.calls[0]?.[3])?.intent,
+      /** @type {{intent:string}|undefined} */ (command.seen.calls[0]?.[3])
+        ?.intent,
       "",
     );
   }

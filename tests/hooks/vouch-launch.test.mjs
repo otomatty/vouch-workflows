@@ -143,6 +143,20 @@ group(
           .filter((row) => row.type === "aside.answered");
         t.assert.equal(aside.length, 1);
         t.assert.equal(aside[0].answer, "An evidence-based answer.");
+        send("prompt", "beforeSubmitPrompt", {
+          prompt: "/vouch ask A second question?",
+          generation_id: "aside-next",
+        });
+        send("stop", "afterAgentResponse", {
+          text: "The first complete answer.",
+          generation_id: "aside-next",
+        });
+        const complete = await box.read(path);
+        send("stop", "stop", {
+          text: "A duplicate answer.",
+          generation_id: "aside-next",
+        });
+        t.assert.equal(await box.read(path), complete);
       },
       t,
     );
