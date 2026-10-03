@@ -4,7 +4,7 @@
  * Numeric bounds, cross-record references and filesystem containment need runtime checks.
  * @typedef {'intent'|'design'|'build'|'verify'} Stage
  * @typedef {'L'|'M'|'H'} Risk
- * @typedef {'claude'|'codex'} Harness
+ * @typedef {'claude'|'codex'|'cursor'} Harness
  * @typedef {'model'|'hook'|'human'|'reviewer'} Actor
  * @typedef {'contract'|'dod'|'freshness'|'citation'|'format'} Check
  * @typedef {{in:number,out:number,cache?:number}} Tokens
@@ -44,11 +44,11 @@
  * Digests and IDs bind data; they do not prove human consent or trusted provenance.
  * @typedef {{path:'intent.md',sha256:string}} IntentRevision
  * @typedef {{hook_event_name:'UserPromptSubmit',field:'prompt_id'|'turn_id',id:string,prompt_sha256:string}} Submission
- * @typedef {({harness:'claude',submission:Submission & {field:'prompt_id'}}|{harness:'codex',submission:Submission & {field:'turn_id'}}) & {session:string,revision:IntentRevision}} IntentApprovalEvidence
+ * @typedef {({harness:'claude',submission:Submission & {field:'prompt_id'}}|{harness:'codex'|'cursor',submission:Submission & {field:'turn_id'}}) & {session:string,revision:IntentRevision}} IntentApprovalEvidence
  * `content` digests the confirmed part only: an intent.md section or Unit row, or the normalized design.md,
  * one of its sections, or it without the other Units' rows.
  * @typedef {{path:'intent.md'|'design.md',sha256:string}} CheckpointContent
- * @typedef {({harness:'claude',submission:Submission & {field:'prompt_id'}}|{harness:'codex',submission:Submission & {field:'turn_id'}}) & {session:string,content:CheckpointContent}} CheckpointEvidence
+ * @typedef {({harness:'claude',submission:Submission & {field:'prompt_id'}}|{harness:'codex'|'cursor',submission:Submission & {field:'turn_id'}}) & {session:string,content:CheckpointContent}} CheckpointEvidence
  */
 /** @typedef {AuditCommon & {type:'intent.created',intent:string,risk:Risk}} IntentCreated */
 /** @typedef {AuditCommon & {type:'intent.approved',intent:string,actor:'human',source:'intent',parent:string,wait_ms:number} & ({revision?:never,submission?:never}|IntentApprovalEvidence)} IntentApproved */
@@ -143,7 +143,7 @@
  * Missing version on imported evidence is preserved, never guessed from `model`.
  * Only nonsynthetic records with a known harness version qualify for TEST-7.
  * @typedef {object} HarnessFixture
- * @property {Harness} harness
+ * @property {'claude'|'codex'} harness Captured fixture inventory; Cursor adapter examples are separate synthetic tests.
  * @property {string|null} version
  * @property {boolean} synthetic
  * @property {'imported'|'captured'|'synthetic'} provenance

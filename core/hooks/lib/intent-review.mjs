@@ -162,7 +162,7 @@ export async function reviewIntent(input, ctx) {
           },
         }
       : {
-          harness: /** @type {const} */ ("codex"),
+          harness: ctx.harness,
           submission: {
             ...submission,
             field: /** @type {const} */ ("turn_id"),

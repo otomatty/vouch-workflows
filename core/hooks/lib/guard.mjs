@@ -1,5 +1,4 @@
-import { dirname, isAbsolute, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { isAbsolute, resolve } from "node:path";
 import runtime from "../../registry/runtime.json" with { type: "json" };
 import guard from "../../registry/write-guard.json" with { type: "json" };
 import {
@@ -9,6 +8,7 @@ import {
   normalizeSegment,
   parsePatch,
 } from "./areas.mjs";
+import { guardScope } from "./guard-scope.mjs";
 import { parseShell, programOf, readsOnly } from "./shell.mjs";
 import { expandBraces, uncommented } from "./words.mjs";
 
@@ -52,36 +52,6 @@ const split = (path) => path.replaceAll("\\", "/").split("/");
 const readings = (path) =>
   path.includes("\\") ? [path.replaceAll("\\", "/"), path] : [path];
 
-/** @param {import('./contracts.mjs').ReadyHookContext} ctx @param {string} entry
- * @returns {Promise<import('./runtime-contracts.mjs').GuardScope>} */
-async function guardScope(ctx, entry) {
-  const hook = entry.startsWith("file:") ? fileURLToPath(entry) : entry;
-  const home = (await ctx.locate(dirname(dirname(hook)))).inside;
-  if (!home) return { installation: null, installed: [] };
-  let installed = ["*"];
-  try {
-    const value = JSON.parse(
-      (await ctx.readText(`${home}/registry/installation.json`)) ?? "",
-    );
-    const names = [
-      value.registration,
-      ...(value.configuration === undefined ? [] : [value.configuration]),
-      ...(value.overrides ?? []),
-    ];
-    if (
-      Array.isArray(value.overrides ?? []) &&
-      names.every((name) => typeof name === "string")
-    )
-      installed = [...guard.installation, ...names];
-  } catch {
-    // An unreadable descriptor protects the whole installation directory.
-  }
-  return {
-    installation: split(home).map(normalizeSegment),
-    installed: installed.map(normalizeSegment),
-  };
-}
-
 /** @type {import('./runtime-contracts.mjs').GuardWrites} */
 export async function guardWrites(input, ctx, entry) {
   if (input.hook_event_name !== "PreToolUse") return { decision: "allow" };
@@ -107,7 +77,12 @@ export async function guardWrites(input, ctx, entry) {
     const shown = at.inside ?? spelled;
     if (at.kind === "unresolved" || at.links > 1) found.push(["link", shown]);
     const match =
-      at.inside === null ? null : classifySegments(split(at.inside), scope);
+      at.inside === null
+        ? scope.managed &&
+          split(spelled).some((part) => normalizeSegment(part) === ".vouch")
+          ? { area: /** @type {const} */ ("installation"), ancestor: false }
+          : null
+        : classifySegments(split(at.inside), scope);
     if (!match || match.ancestor) return;
     if (match.area !== "artifact") return void found.push([match.area, shown]);
     /** @type {string|null} */ let current = null;
@@ -198,16 +173,26 @@ export async function guardWrites(input, ctx, entry) {
         }
       const [entry] = args;
       const home = scope.installation;
-      if (program === "node" && entry !== undefined && home && cwd !== null) {
+      if (program === "node" && entry !== undefined && cwd !== null) {
         const at = await ctx.locate(/** @type {string} */ (entry), cwd);
         const spelled = at.inside && split(at.inside).map(normalizeSegment);
         if (
+          home &&
           spelled &&
           runtime.commands.some(
             (name) => [...home, "hooks", name].join("/") === spelled.join("/"),
           )
         )
           doctor.add(/** @type {string} */ (entry));
+        if (
+          scope.runtime &&
+          runtime.commands.some(
+            (name) =>
+              resolve(/** @type {string} */ (cwd), entry) ===
+              resolve(scope.runtime ?? "", name),
+          )
+        )
+          doctor.add(entry);
       }
       if (!readsOnly(command, doctored)) reading = false;
       if (program === "cd" || program === "pushd" || program === "popd") {

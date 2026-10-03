@@ -44,7 +44,7 @@ export {};
 /**
  * Manual distribution diagnostic, separate from the stdin hook protocol.
  * No configuration repair, audit writes, or harness trust claims.
- * @typedef {{projectRoot:string,installationRoot:string,nodeVersion:string}} DoctorEnvironment
+ * @typedef {{projectRoot:string,installationRoot:string,nodeVersion:string,runtimeRoot?:string,harness?:import('./contracts.mjs').Harness}} DoctorEnvironment
  * @typedef {{id:string,ok:boolean,detail:string}} DoctorCheck
  * @typedef {{v:1,ok:boolean,checks:DoctorCheck[]}} DoctorReport
  * @typedef {{ok:boolean,detail:string}} GitStatus
@@ -141,6 +141,8 @@ export {};
  * @typedef {object} GuardScope
  * @property {string[]|null} installation Normalized segments of the installation directory below the root, or null.
  * @property {string[]} installed Normalized protected entry names inside the installation directory.
+ * @property {string} [managed] Native directory of a managed installation, including its activation configuration.
+ * @property {string} [runtime] Trusted absolute hooks directory for managed manual commands outside the project.
  * @typedef {(segments:string[],scope:GuardScope)=>GuardMatch|null} ClassifySegments Segments are
  * root-relative; glob segments may match any name at their position.
  * @typedef {(segment:string)=>string} NormalizeSegment Lower case without trailing dots, spaces or `:stream`.

@@ -46,11 +46,13 @@ test("product hooks have a single run(main) entry and registered literal event t
     t.assert.deepEqual(
       effects.map((node) => node.getText(source)),
       [
-        command
-          ? "runDoctor(main, import.meta.url);"
-          : statusline
-            ? "runStatusline(main, import.meta.url);"
-            : "run(main);",
+        name === "vouch-launch.mjs"
+          ? "runLauncher(import.meta.url);"
+          : command
+            ? "runDoctor(main, import.meta.url);"
+            : statusline
+              ? "runStatusline(main, import.meta.url);"
+              : "run(main);",
       ],
       "HOOK-2",
     );

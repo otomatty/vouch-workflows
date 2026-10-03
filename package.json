@@ -2,7 +2,7 @@
   "name": "vouch-workflows",
   "version": "0.0.0",
   "private": true,
-  "description": "Development workspace for Vouch workflows for Claude Code and Codex",
+  "description": "Development workspace for Vouch workflows for Claude Code, Codex CLI and Cursor",
   "type": "module",
   "engines": {
     "node": ">=22.19.0",

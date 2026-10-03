@@ -1,4 +1,6 @@
+import { isDeepStrictEqual } from "node:util";
 import runtime from "../../registry/runtime.json" with { type: "json" };
+import { createFileStore } from "./fs.mjs";
 
 /** @param {unknown} value @returns {value is Record<string,unknown>} */
 function object(value) {
@@ -41,6 +43,9 @@ function supportedNode(version) {
 
 /** @type {import('./runtime-contracts.mjs').DoctorMain} */
 export async function inspectInstallation(files, environment, git) {
+  const installationFiles = environment.runtimeRoot
+    ? await createFileStore(environment.runtimeRoot)
+    : files;
   /** @type {import('./runtime-contracts.mjs').DoctorCheck[]} */
   const checks = [
     {
@@ -53,7 +58,9 @@ export async function inspectInstallation(files, environment, git) {
   const directory = environment.installationRoot;
   /** @param {string} path */
   async function read(path) {
-    const text = await files.readText(`${directory}/${path}`);
+    const text = await installationFiles.readText(
+      directory ? `${directory}/${path}` : path,
+    );
     if (!text) throw new Error(`missing or empty: ${path}`);
     return text;
   }
@@ -81,7 +88,7 @@ export async function inspectInstallation(files, environment, git) {
     );
     if (
       !object(value) ||
-      !["claude", "codex"].includes(String(value.harness)) ||
+      !["claude", "codex", "cursor"].includes(String(value.harness)) ||
       typeof value.registration !== "string" ||
       !/^[a-z][a-z-]*\.json$/.test(value.registration) ||
       (value.configuration !== undefined &&
@@ -122,6 +129,52 @@ export async function inspectInstallation(files, environment, git) {
         return `${path}: present; TOML semantics not validated`;
       });
     }
+  }
+  if (environment.runtimeRoot && environment.harness) {
+    await check("DOCTOR-ACTIVATION", async () => {
+      const harness = environment.harness;
+      const stateText =
+        (await files.readText(`.vouch/installations/${harness}.json`)) ??
+        (await files.readText(`.vouch/bindings/${harness}.json`));
+      /** @type {unknown} */ const state = JSON.parse(stateText ?? "null");
+      if (
+        !object(state) ||
+        state.v !== 1 ||
+        state.harness !== harness ||
+        !Array.isArray(state.owned)
+      )
+        throw new Error("missing managed activation descriptor");
+      const entry = state.owned.find(
+        (item) => object(item) && item.kind === "hooks",
+      );
+      if (
+        !object(entry) ||
+        typeof entry.path !== "string" ||
+        typeof entry.content !== "string"
+      )
+        throw new Error("missing owned registration");
+      const actual = JSON.parse((await files.readText(entry.path)) ?? "null");
+      const expected = JSON.parse(entry.content);
+      if (!contains(actual, expected))
+        throw new Error("active native registration differs");
+      if (!object(actual.hooks) || !object(expected.hooks))
+        throw new Error("invalid native registration");
+      for (const [event, registrations] of Object.entries(expected.hooks)) {
+        if (
+          !Array.isArray(registrations) ||
+          !Array.isArray(actual.hooks[event])
+        )
+          throw new Error("invalid native event");
+        for (const registration of registrations)
+          if (
+            actual.hooks[event].filter((/** @type {unknown} */ candidate) =>
+              isDeepStrictEqual(candidate, registration),
+            ).length !== 1
+          )
+            throw new Error("duplicate native registration");
+      }
+      return `${harness}: project registration selects the managed runtime`;
+    });
   }
   return { v: 1, ok: checks.every((item) => item.ok), checks };
 }

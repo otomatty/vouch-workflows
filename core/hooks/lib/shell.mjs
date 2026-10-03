@@ -1,3 +1,4 @@
+import runtime from "../../registry/runtime.json" with { type: "json" };
 import guard from "../../registry/write-guard.json" with { type: "json" };
 
 /** Leading reserved words and group braces; they are not programs. */
@@ -255,6 +256,12 @@ export function readsOnly(command, doctor) {
   if (program === "node")
     return (
       doctor(args[0] ?? "") &&
+      (!(args[0] ?? "").endsWith("vouch-launch.mjs") ||
+        (args[2] === "manual" &&
+          runtime.commands.some(
+            (name) =>
+              name !== "vouch-launch.mjs" && name === `vouch-${args[1]}.mjs`,
+          ))) &&
       !command.expands.slice(start + 1).some(Boolean) &&
       args.slice(1).every((arg) => /^[A-Za-z0-9][A-Za-z0-9-]*$/.test(arg))
     );

@@ -16,65 +16,104 @@
   "$defs": {
     "names": {
       "type": "array",
-      "items": { "type": "string", "minLength": 1 },
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
       "minItems": 1,
       "uniqueItems": true
     },
     "tools": {
       "type": "object",
       "minProperties": 1,
-      "propertyNames": { "pattern": "^[A-Za-z_]+$" },
+      "propertyNames": {
+        "pattern": "^[A-Za-z_]+$"
+      },
       "additionalProperties": {
         "enum": ["write", "edit", "patch", "shell"]
       }
     }
   },
   "properties": {
-    "$schema": { "const": "./write-guard.schema.json" },
-    "version": { "const": 1 },
+    "$schema": {
+      "const": "./write-guard.schema.json"
+    },
+    "version": {
+      "const": 1
+    },
     "tools": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["claude", "codex"],
+      "required": ["claude", "codex", "cursor"],
       "properties": {
-        "claude": { "$ref": "#/$defs/tools" },
-        "codex": { "$ref": "#/$defs/tools" }
+        "claude": {
+          "$ref": "#/$defs/tools"
+        },
+        "codex": {
+          "$ref": "#/$defs/tools"
+        },
+        "cursor": {
+          "$ref": "#/$defs/tools"
+        }
       }
     },
     "intents": {
       "type": "array",
-      "items": { "type": "string", "pattern": "^[a-z]+$" },
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z]+$"
+      },
       "minItems": 1
     },
-    "audit": { "type": "string", "pattern": "^[a-z]+$" },
+    "audit": {
+      "type": "string",
+      "pattern": "^[a-z]+$"
+    },
     "artifacts": {
       "type": "array",
-      "items": { "type": "string", "pattern": "^[a-z-]+\\.md$" },
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z-]+\\.md$"
+      },
       "minItems": 1,
       "uniqueItems": true
     },
-    "lockSuffix": { "const": ".vouch-lock" },
-    "installation": { "$ref": "#/$defs/names" },
+    "lockSuffix": {
+      "const": ".vouch-lock"
+    },
+    "installation": {
+      "$ref": "#/$defs/names"
+    },
     "shell": {
       "type": "object",
       "additionalProperties": false,
       "required": ["readers", "refused", "git", "removers"],
       "properties": {
-        "readers": { "$ref": "#/$defs/names" },
+        "readers": {
+          "$ref": "#/$defs/names"
+        },
         "refused": {
           "type": "object",
-          "additionalProperties": { "$ref": "#/$defs/names" }
+          "additionalProperties": {
+            "$ref": "#/$defs/names"
+          }
         },
         "git": {
           "type": "object",
           "additionalProperties": false,
           "required": ["globals", "commands"],
           "properties": {
-            "globals": { "$ref": "#/$defs/names" },
-            "commands": { "$ref": "#/$defs/names" }
+            "globals": {
+              "$ref": "#/$defs/names"
+            },
+            "commands": {
+              "$ref": "#/$defs/names"
+            }
           }
         },
-        "removers": { "$ref": "#/$defs/names" }
+        "removers": {
+          "$ref": "#/$defs/names"
+        }
       }
     }
   }
