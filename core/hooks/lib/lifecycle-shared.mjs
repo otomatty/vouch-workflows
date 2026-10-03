@@ -49,6 +49,7 @@ export function harnessOf(root) {
   const name = root.split(/[/\\]/).at(-1);
   if (name === ".claude") return "claude";
   if (name === ".codex") return "codex";
+  if (name === ".cursor") return "cursor";
   return null;
 }
 

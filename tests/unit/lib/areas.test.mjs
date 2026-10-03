@@ -12,6 +12,27 @@ const claudeScope = {
   installed: ["hooks", "registry", "settings.json", "settings.local.json"],
 };
 
+test("managed installations protect version caches, selection and native registration", (t) => {
+  const scope = { installation: null, installed: [], managed: ".cursor" };
+  for (const path of [
+    ".vouch",
+    ".vouch/versions/hash/cursor/hooks/a.mjs",
+    "vouch/config.json",
+    ".cursor/hooks.json",
+    ".cursor/config.toml",
+  ])
+    t.assert.deepEqual(classifySegments(path.split("/"), scope), {
+      area: "installation",
+      ancestor: false,
+    });
+  for (const path of [
+    "src/a.mjs",
+    "vouch/rules.md",
+    ".cursor/rules/unrelated.mdc",
+  ])
+    t.assert.equal(classifySegments(path.split("/"), scope), null);
+});
+
 test("normalizeSegment folds case, trailing dots and spaces and stream suffixes", (t) => {
   /** @type {[string,string][]} */
   const cases = [

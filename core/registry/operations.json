@@ -16,7 +16,8 @@
   "resume": {
     "sources": {
       "claude": ["startup", "resume", "clear", "compact"],
-      "codex": ["startup", "resume"]
+      "codex": ["startup", "resume"],
+      "cursor": ["startup", "resume"]
     },
     "items": 8
   },

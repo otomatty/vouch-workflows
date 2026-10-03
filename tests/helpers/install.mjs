@@ -20,10 +20,10 @@ export function installRun(command, box, harness, scope, extra = []) {
       harness,
       "--scope",
       scope,
-      "--home",
-      box.path("home"),
-      "--project",
-      box.path("project"),
+      ...(!extra.includes("--home") ? ["--home", box.path("home")] : []),
+      ...(!extra.includes("--project")
+        ? ["--project", box.path("project")]
+        : []),
       "--dist",
       box.path("dist"),
       ...extra,

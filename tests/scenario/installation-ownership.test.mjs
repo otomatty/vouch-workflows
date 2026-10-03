@@ -22,10 +22,12 @@ test("install/update/remove preserve unrelated settings and detect edits to owne
       await box.read("project/.claude/settings.json"),
     );
     t.assert.equal(settings.model, existing.model);
-    t.assert.ok(
+    t.assert.equal(
       settings.hooks.Stop.some(
-        (item) => item.hooks[0].command === "echo keep-my-hook",
+        (/** @type {{hooks:{command:string}[]}} */ item) =>
+          item.hooks[0]?.command === "echo keep-my-hook",
       ),
+      true,
     );
   }
   const path = "project/.claude/skills/vouch/SKILL.md";

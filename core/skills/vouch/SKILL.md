@@ -9,6 +9,7 @@ reads: always
 
 Vouch の4ステージ（Intent → Design → Build → Verify）を Skill で進める。現在対応している操作は doctor、読み取り専用 status、引数なしの再開、ask、report、v2 record の migrate、Intent と Design の下書き、承認済み Intent の Build、Verify と Review Brief である。
 Claude では `/vouch`・`/vouch status`・`/vouch ask <質問>`・`/vouch report`・`/vouch migrate`・`/vouch doctor`、Codex では先頭を `$vouch` にして指定できる。
+Cursor の Agent では同名の Skill を指定する。共通本体が個人共通にある場合も、利用者が指定したプロジェクトの規則・成果物・監査を使う。導入済みプロジェクトでは `vouch/config.json` が選ぶ本体を読み、対象のプロジェクトルートからコマンドを実行する。未有効化の場合は導入元の `init` で有効化してから使う。
 
 ## Intent
 
@@ -58,7 +59,7 @@ node "{{HARNESS_DIR}}/hooks/vouch-lifecycle.mjs" <operation>
 ## Doctor
 
 利用者が doctor または Vouch の導入状態の確認を求めた時に、[診断の説明](references/doctor.md)を読む。
-この Skill を配ったプロジェクトを対象にする。別の作業ディレクトリや環境変数から対象を推測せず、対象を特定できなければ利用者に確認する。
+利用者が指定したプロジェクトを対象にする。共通本体の配置先を対象プロジェクトとみなさず、対象を特定できなければ利用者に確認する。
 診断結果、未検査の範囲、必要な対処を伝えた時点で完了する。修正の依頼がなければ設定変更や再実行を続けない。
 
 実行コマンドは必ず診断の説明にある Node コマンドを使う。[R-DOC-3]

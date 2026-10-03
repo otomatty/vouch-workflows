@@ -67,6 +67,77 @@ async function guardBox(t, harness = "claude") {
 }
 
 const audit = `vouch/intents/${intent}/audit/events.jsonl`;
+
+test("managed user runtime is protected outside the project and manual operations remain callable", async (t) => {
+  const box = await sandbox(t, { git: false });
+  await mkdir(box.path("project"));
+  const files = await createFileStore(box.path("project"));
+  const runtime = box.path("home/.vouch/versions/hash/cursor/hooks");
+  const ctx = {
+    projectRoot: box.path("project"),
+    harness: /** @type {const} */ ("cursor"),
+    generation: "test",
+    ...fakeClock(),
+    readText: files.readText,
+    locate: files.locate,
+  };
+  /** @param {string} tool @param {Record<string,unknown>} tool_input */
+  const decide = (tool, tool_input) =>
+    guardWrites(
+      {
+        session_id: "s",
+        cwd: ctx.projectRoot,
+        hook_event_name: "PreToolUse",
+        tool_name: tool,
+        tool_input,
+      },
+      ctx,
+      `${runtime}/vouch-guard-writes.mjs`,
+    );
+  t.assert.equal(
+    (
+      await decide("Write", {
+        file_path: `${runtime}/lib/env.mjs`,
+        content: "tamper",
+      })
+    ).decision,
+    "deny",
+  );
+  t.assert.equal(
+    (
+      await decide("Write", {
+        file_path: box.path("outside/unrelated.mjs"),
+        content: "code",
+      })
+    ).decision,
+    "allow",
+  );
+  for (const action of [
+    "doctor",
+    "dod",
+    "lifecycle",
+    "question",
+    "migrate",
+    "report",
+  ])
+    t.assert.equal(
+      (
+        await decide("Bash", {
+          command: `node '${runtime}/vouch-launch.mjs' ${action} manual`,
+        })
+      ).decision,
+      "allow",
+      action,
+    );
+  t.assert.equal(
+    (
+      await decide("Bash", {
+        command: `node '${runtime}/vouch-launch.mjs' session user`,
+      })
+    ).decision,
+    "deny",
+  );
+});
 const artifact = `vouch/intents/${intent}/intent.md`;
 const done = "vouch/intents/260929-done/intent.md";
 

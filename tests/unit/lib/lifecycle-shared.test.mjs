@@ -52,9 +52,10 @@ test("live rows drop synthetic and estimated records", (t) => {
 });
 
 test("the harness name is the installation directory", (t) => {
-  t.plan(5);
+  t.plan(6);
   t.assert.equal(harnessOf(".claude"), "claude");
   t.assert.equal(harnessOf("proj/.codex"), "codex");
+  t.assert.equal(harnessOf("proj/.cursor"), "cursor");
   t.assert.equal(harnessOf("core"), null);
   t.assert.deepEqual(harnessFields("claude"), { harness: "claude" });
   t.assert.deepEqual(harnessFields(null), {});
