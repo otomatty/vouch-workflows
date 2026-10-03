@@ -81,12 +81,18 @@ Cursor の接続ではネイティブの JSON 入出力と共通フックの入�
 
 個人共通のプロジェクト接続の所有記録は `.vouch/bindings/<harness>.json` に置く。個人共通の更新はこの接続を変更せず、`init` で最新の個人共通版へ切り替える。プロジェクト内の本体がある場合はそちらを選ぶ。プロジェクト内の版と接続は相対参照で移動可能にし、個人共通の選択は導入先の絶対パスを持つため、その利用者の環境に依存する。
 
-`remove --scope project` はプロジェクト本体の登録、または個人共通本体へのプロジェクト接続を解除する。`remove --scope user` は個人共通の登録と明示した対象プロジェクトの接続を解除し、他のプロジェクトには適用しない。どちらも版のディレクトリ、規則、知識、成果物、監査を保持する。未使用版の清掃は実装していない。
+`remove --scope project` はプロジェクト本体の登録、または個人共通本体へのプロジェクト接続を解除する。`remove --scope user` は個人共通の登録を解除し、`--project` を明示した場合だけそのプロジェクトの接続も解除する。現在の作業ディレクトリだけではプロジェクトを解除しない。両方を変更する場合は両方の導入ロックを保持し、一方の競合ではどちらも変更しない。どちらも版のディレクトリ、規則、知識、成果物、監査を保持する。未使用版の清掃は実装していない。
+
+導入ロックには所有プロセスの PID と取得時刻を保存する。既存ロックは自動削除せず、競合時にロックのパスと、実行中の導入処理がないことを確認してから手動解除する手順を伝える。権限不足などのエラーをロック競合に置き換えない。
+
+Claude の管理する登録には読み取り専用の `statusLine` を含める。既存の利用者の `statusLine` は保持し、Vouch が追加したものだけを更新・削除する。個人共通の表示もプロジェクトが選んだ版と Intent を読み、未有効化のプロジェクトでは何も表示・記録しない。
+
+導入パスから生成する Markdown のリンク先は構文文字を符号化し、インラインコードはパス内のバッククォートに応じた区切りを使う。改行を含む制御文字のある導入パスは変更前に拒否する。
 
 `doctor` は選択した配置・digest、所有する登録と文書、配布の原本と本体の一致を検査する。Skill の doctor も、本体を別の FileStore で読み、実際のプロジェクト登録の不足・重複を検査する。どちらもハーネスの信頼設定やモデルの遵守を証明しない。Codex の既存モデル・プロバイダー・sandbox と正の `agents.max_depth` は保持し、必要な `features.hooks` だけを有効化する。対象テーブルのインライン・ドット形式など安全に追加できない TOML は、変更前に拒否する。
 
-ネイティブの本体参照と明示プロジェクト引数は Claude の `CLAUDE_PROJECT_DIR`、Codex の `VOUCH_PROJECT_ROOT`、Cursor の `CURSOR_PROJECT_DIR` を使う。Codex の起動時は対象ルートを `VOUCH_PROJECT_ROOT` に設定する。手動コマンドはプロジェクトルートから実行する。`VOUCH_INTENT` があればそれを優先し、なければ `init` / `install` の `--intent` で保存した設定を使う。stdin の root・Intent・harness の主張から使用先を選ばない。
+ネイティブの本体参照と明示プロジェクト引数は Claude の `CLAUDE_PROJECT_DIR`、Codex の `VOUCH_PROJECT_ROOT`、Cursor の `CURSOR_PROJECT_DIR` を使う。Codex の起動時は対象ルートを `VOUCH_PROJECT_ROOT` に設定する。手動コマンドはプロジェクトルートから実行する。管理するランチャーは `init` / `install` の `--intent` で `vouch/config.json` に保存した Intent だけを使い、継承した `VOUCH_INTENT` では対象を変更しない。Intent の切り替えは `init --intent <Intent>` で明示する。旧来の製品フックの直接実行では従来の環境変数の契約を保持する。stdin の root・Intent・harness の主張から使用先を選ばない。
 
-Cursor には `sessionStart`・`beforeSubmitPrompt`・`preToolUse`・`afterAgentResponse`・`stop` を登録する。入力の `conversation_id` / `generation_id` を共通入力へ写し、ツール名とパス名を変換する。共通の拒否を `decision: deny` または `continue: false` へ、再開要約を `additional_context` へ変換する。回答の `text` は脇質問の回答として記録し、後続の stop では重複追記しない。未知・欠損の入力と内部エラーは既存契約どおり fail-open にし、取得できない測定値や入力識別子を補わない。全ツール・全経路を機械的に強制する境界ではない。
+Cursor には `sessionStart`・`beforeSubmitPrompt`・`preToolUse`・`afterAgentResponse`・`stop` を登録する。入力の `conversation_id` / `generation_id` を共通入力へ写し、ツール名とパス名を変換する。共通の拒否を `decision: deny` または `continue: false` へ、再開要約を `additional_context` へ変換する。回答の `text` は脇質問の回答として記録し、本文がない `afterAgentResponse` では回答を確定せず、後続の stop の本文を保存できるようにする。本文がある回答の後は重複追記しない。未知・欠損の入力と内部エラーは既存契約どおり fail-open にし、取得できない測定値や入力識別子を補わない。全ツール・全経路を機械的に強制する境界ではない。
 
 実機検証にはツールの実行ファイル・版・信頼設定と fixture の採取が必要で、この環境では Cursor の実行ファイルがない。新方式の Claude / Codex の実発火も今回の自動テストでは確認していない。正式対応の判定は引き続き上記の検証を条件とする。
