@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import fs, { readFileSync } from "node:fs";
+import fs, { existsSync, readFileSync } from "node:fs";
 import { mkdir, readdir, rm } from "node:fs/promises";
 import { syncBuiltinESMExports } from "node:module";
 import { join, resolve } from "node:path";
@@ -63,6 +63,29 @@ test("user removal changes only an explicitly named project and holds both locks
     JSON.parse(await box.read("project/vouch/config.json")).harnesses.cursor,
     undefined,
   );
+});
+
+test("user removal recognizes home case aliases while preserving a distinct home binding", async (t) => {
+  const box = await sandbox(t);
+  distribution(t, box);
+  t.assert.equal(installRun("install", box, "cursor", "user").status, 0);
+  t.assert.equal(installRun("init", box, "cursor", "user").status, 0);
+  const home = box.path("HOME");
+  const alias = existsSync(join(home, ".vouch/installations/cursor.json"));
+  if (!alias)
+    t.assert.equal(
+      installRun("install", box, "cursor", "user", ["--home", home]).status,
+      0,
+    );
+  const before = await box.read("project/vouch/config.json");
+  const result = installRun("remove", box, "cursor", "user", ["--home", home]);
+  t.assert.equal(result.status, 0, result.stdout);
+  if (alias)
+    t.assert.equal(
+      JSON.parse(await box.read("project/vouch/config.json")).harnesses.cursor,
+      undefined,
+    );
+  else t.assert.equal(await box.read("project/vouch/config.json"), before);
 });
 
 test("installation lock records its owner and gives safe manual recovery guidance", async (t) => {
