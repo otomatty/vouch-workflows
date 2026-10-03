@@ -4,10 +4,84 @@ import { mkdir, readdir, rm } from "node:fs/promises";
 import { syncBuiltinESMExports } from "node:module";
 import { join, resolve } from "node:path";
 import { test } from "node:test";
+import { remove } from "../../scripts/lib/install.mjs";
 import { withLock } from "../../scripts/lib/install-files.mjs";
 import { installedText } from "../../scripts/lib/install-registration.mjs";
 import { distribution, installRun } from "../helpers/install.mjs";
 import { sandbox } from "../helpers/runtime.mjs";
+
+test("failed project removal preserves user state even when one project restoration is denied", async (t) => {
+  const box = await sandbox(t);
+  distribution(t, box);
+  await box.write("project/AGENTS.md", "existing guidance\n");
+  t.assert.equal(installRun("install", box, "cursor", "user").status, 0);
+  t.assert.equal(installRun("init", box, "cursor", "user").status, 0);
+  const paths = [
+    "home/.vouch/installations/cursor.json",
+    "home/.cursor/hooks.json",
+    "project/vouch/config.json",
+    "project/.cursor/hooks.json",
+    "project/.vouch/bindings/cursor.json",
+  ];
+  const before = await Promise.all(paths.map((path) => box.read(path)));
+  const agents = await box.read("project/AGENTS.md");
+  const original = fs.renameSync;
+  let failed = false;
+  const mocked = t.mock.method(
+    fs,
+    "renameSync",
+    (
+      /** @type {import('node:fs').PathLike} */ source,
+      /** @type {import('node:fs').PathLike} */ target,
+    ) => {
+      if (target === box.path("project/vouch/config.json")) {
+        failed = true;
+        throw new Error("activation write denied");
+      }
+      if (failed && target === box.path("project/AGENTS.md"))
+        throw new Error("guidance restoration denied");
+      return original(source, target);
+    },
+  );
+  syncBuiltinESMExports();
+  try {
+    t.assert.throws(
+      () =>
+        remove({
+          harness: "cursor",
+          scope: "user",
+          home: box.path("home"),
+          project: box.path("project"),
+          projectExplicit: true,
+          dist: box.path("dist"),
+        }),
+      (error) => {
+        t.assert.match(String(error), /INSTALL-ROLLBACK/);
+        t.assert.match(String(error), /activation write denied/);
+        t.assert.equal(
+          String(error).includes(box.path("project/AGENTS.md")),
+          true,
+        );
+        return true;
+      },
+    );
+  } finally {
+    mocked.mock.restore();
+    syncBuiltinESMExports();
+  }
+  t.assert.deepEqual(
+    await Promise.all(paths.map((path) => box.read(path))),
+    before,
+  );
+  t.assert.equal(await box.read("project/AGENTS.md"), "existing guidance\n");
+  // Repair the explicitly reported file; the retained user state permits retry.
+  await box.write("project/AGENTS.md", agents);
+  const retry = installRun("remove", box, "cursor", "user");
+  t.assert.equal(retry.status, 0, retry.stdout);
+  await t.assert.rejects(box.read("home/.vouch/installations/cursor.json"), {
+    code: "ENOENT",
+  });
+});
 
 test("user removal changes only an explicitly named project and holds both locks", async (t) => {
   const box = await sandbox(t);

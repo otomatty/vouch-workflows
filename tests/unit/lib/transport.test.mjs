@@ -136,8 +136,8 @@ test("unrecognized or incomplete Cursor events do not invent canonical evidence"
 test("Cursor responses convert shared denials and context without changing workflow decisions", (t) => {
   const denied = { status: 2, stdout: "", stderr: " reason \n" };
   t.assert.deepEqual(cursorOutput("guard", denied), {
-    decision: "deny",
-    reason: "reason",
+    permission: "deny",
+    user_message: "reason",
   });
   t.assert.deepEqual(cursorOutput("prompt", denied), {
     continue: false,
@@ -148,7 +148,7 @@ test("Cursor responses convert shared denials and context without changing workf
     cursorOutput("session", { status: 0, stdout: " context \n", stderr: "" }),
     { additional_context: "context" },
   );
-  for (const action of ["session", "guard", "stop"])
+  for (const action of ["session", "stop"])
     t.assert.deepEqual(
       cursorOutput(action, { status: 0, stdout: "", stderr: "" }),
       {},
@@ -161,4 +161,9 @@ test("Cursor responses convert shared denials and context without changing workf
     }),
     {},
   );
+  for (const status of [0, 1, null])
+    t.assert.deepEqual(
+      cursorOutput("guard", { status, stdout: "", stderr: "" }),
+      { permission: "allow" },
+    );
 });

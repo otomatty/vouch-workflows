@@ -279,6 +279,9 @@ test("invalid activation and malformed native transport fail open while manual c
     await launch(box.entry, failure.hooks);
     t.assert.equal(failure.seen.calls.length, 0);
     t.assert.equal(failure.seen.code, 0);
+    t.assert.deepEqual(JSON.parse(failure.seen.stdout), {
+      permission: "allow",
+    });
   }
   const relative = ports("relative", ["doctor", "manual"]);
   await launch(box.entry, relative.hooks);
@@ -307,11 +310,56 @@ test("launcher preserves Claude and Codex native protocol and converts Cursor de
     t.assert.equal(denial.seen.code, harness === "cursor" ? 0 : 2);
     if (harness === "cursor")
       t.assert.deepEqual(JSON.parse(denial.seen.stdout), {
-        decision: "deny",
-        reason: "protected",
+        permission: "deny",
+        user_message: "protected",
       });
     else t.assert.equal(denial.seen.stderr, "protected");
   }
+});
+test("Cursor guard returns valid allow responses for active, inactive, absent and stale bindings and internal failures", async (t) => {
+  const box = await setup(t);
+  const configs = [
+    JSON.stringify(box.config),
+    JSON.stringify({ v: 1, harnesses: {} }),
+    JSON.stringify({
+      ...box.config,
+      harnesses: {
+        cursor: {
+          ...box.binding,
+          digest: "b".repeat(64),
+          runtimeRoot: `.vouch/versions/${"b".repeat(64)}/cursor`,
+        },
+      },
+    }),
+    "{",
+  ];
+  for (const config of configs) {
+    await box.box.write("project/vouch/config.json", config);
+    const command = ports(box.root, ["guard", "project", box.root]);
+    await launch(box.entry, command.hooks);
+    t.assert.equal(command.seen.code, 0);
+    t.assert.deepEqual(JSON.parse(command.seen.stdout), {
+      permission: "allow",
+    });
+  }
+  const absent = ports(box.box.root, ["guard", "user"]);
+  await launch(box.entry, absent.hooks);
+  t.assert.deepEqual(JSON.parse(absent.seen.stdout), { permission: "allow" });
+  await box.box.write("project/vouch/config.json", JSON.stringify(box.config));
+  const duplicate = ports(box.root, ["guard", "user"]);
+  await launch(box.entry, duplicate.hooks);
+  t.assert.equal(duplicate.seen.calls.length, 0);
+  t.assert.deepEqual(JSON.parse(duplicate.seen.stdout), {
+    permission: "allow",
+  });
+  const crashed = ports(box.root, ["guard", "project", box.root], {
+    status: null,
+    stdout: "",
+    stderr: "process failed",
+  });
+  await launch(box.entry, crashed.hooks);
+  t.assert.equal(crashed.seen.code, 0);
+  t.assert.deepEqual(JSON.parse(crashed.seen.stdout), { permission: "allow" });
 });
 test("launcher I/O wrapper owns the process exit boundary", async (t) => {
   const previous = process.exitCode;

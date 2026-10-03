@@ -68,7 +68,7 @@ group(
           tool_name: "Write",
           tool_input: { path: "src/new.mjs", content: "implementation" },
         });
-        t.assert.equal(denied.decision, "deny");
+        t.assert.equal(denied.permission, "deny");
         for (const topic of topics) {
           const confirmed = send("prompt", "beforeSubmitPrompt", {
             prompt: `vouch confirm ${topic}`,
@@ -172,8 +172,11 @@ group(
             tool_name: "Write",
             tool_input: { path: target, content: "tamper" },
           });
-          t.assert.equal(protectedResult.decision, "deny");
-          t.assert.match(protectedResult.reason, /VOUCH-GUARD-INSTALLATION/);
+          t.assert.equal(protectedResult.permission, "deny");
+          t.assert.match(
+            protectedResult.user_message,
+            /VOUCH-GUARD-INSTALLATION/,
+          );
         }
         const doctor = spawnSync(
           process.execPath,
@@ -184,6 +187,23 @@ group(
           },
         );
         t.assert.equal(doctor.status, 0, doctor.stdout + doctor.stderr);
+      },
+      t,
+    );
+    await test(
+      "allow reads, approved implementation and ordinary shell tools with native permission responses",
+      async (t) => {
+        for (const [tool_name, tool_input] of [
+          ["Read", { path: "README.md" }],
+          ["Write", { path: "src/new.mjs", content: "implementation" }],
+          ["Shell", { command: "pwd" }],
+        ])
+          t.assert.deepEqual(
+            send("guard", "preToolUse", { tool_name, tool_input }),
+            {
+              permission: "allow",
+            },
+          );
       },
       t,
     );

@@ -1,4 +1,6 @@
+import fs from "node:fs";
 import { mkdir, rm, symlink } from "node:fs/promises";
+import { syncBuiltinESMExports } from "node:module";
 import { test } from "node:test";
 import { commitChanges } from "../../scripts/lib/install-files.mjs";
 
@@ -114,6 +116,58 @@ test("unchanged installation files are validated without replacement or temporar
     /INSTALL-CONFLICT/,
   );
   t.assert.equal(await box.read("same"), "concurrent edit");
+});
+test("rollback attempts remaining files after a restoration fails and reports both failures", async (t) => {
+  const box = await sandbox(t);
+  await box.write("first", "old first");
+  await box.write("second", "old second");
+  await box.write(`third.vouch-install-${process.pid}`, "unowned");
+  const original = fs.renameSync;
+  let secondWrites = 0;
+  const mocked = t.mock.method(
+    fs,
+    "renameSync",
+    (
+      /** @type {import('node:fs').PathLike} */ source,
+      /** @type {import('node:fs').PathLike} */ target,
+    ) => {
+      if (target === box.path("second") && ++secondWrites === 2)
+        throw new Error("restoration denied");
+      return original(source, target);
+    },
+  );
+  syncBuiltinESMExports();
+  try {
+    t.assert.throws(
+      () =>
+        commitChanges([
+          { path: box.path("first"), before: "old first", after: "new first" },
+          {
+            path: box.path("second"),
+            before: "old second",
+            after: "new second",
+          },
+          { path: box.path("third"), before: null, after: "new third" },
+        ]),
+      (error) => {
+        t.assert.equal(error instanceof AggregateError, true);
+        t.assert.match(String(error), /INSTALL-ROLLBACK/);
+        t.assert.equal(String(error).includes(box.path("second")), true);
+        t.assert.match(String(error), /EEXIST/);
+        t.assert.match(String(error), /restoration denied/);
+        return true;
+      },
+    );
+  } finally {
+    mocked.mock.restore();
+    syncBuiltinESMExports();
+  }
+  t.assert.equal(await box.read("first"), "old first");
+  t.assert.equal(await box.read("second"), "new second");
+  t.assert.equal(
+    await box.read(`third.vouch-install-${process.pid}`),
+    "unowned",
+  );
 });
 test("Codex setup preserves model, sandbox, provider and agent depth while owning only required hook settings", async (t) => {
   const box = await sandbox(t);
