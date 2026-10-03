@@ -41,9 +41,13 @@
 
 1. `budgets.schema.json` の `timing.checkTimeoutMs` は、必須の `default` と任意の `win32` を持つオブジェクトです。どちらも正の整数で、その他のキーは拒否します。`timing.testFileTimeoutMs` は必須の正の整数です。
 2. `scripts/check.mjs` は、実行中の OS（`process.platform`）の値を check 全体の締め切りに使います。その OS の値がなければ `default` を使います。成功時には所要時間と予算を表示します。
-3. `scripts/test.mjs` と `scripts/benchmark-suite.mjs` は、hooks・scenario のファイル単位の `--test-timeout` に `testFileTimeoutMs` を使います。その他の階層は `testTimeoutMs`（5秒）です。どちらも `checkTimeoutMs` を読みません。
+3. `scripts/test.mjs` と `scripts/benchmark-suite.mjs` は、hooks・scenario と下記の distribution のファイル単位の `--test-timeout` に `testFileTimeoutMs` を使います。その他の階層は `testTimeoutMs`（5秒）です。どちらも `checkTimeoutMs` を読みません。
 4. HOOK-13 の負荷ワーカー（`tests/helpers/load-worker.mjs`）の寿命は `testFileTimeoutMs` です。負荷を起動するテストファイルの上限と同じ長さで、異常終了したときの残留を防ぎます。
 5. 予算の選択は `scripts/lib/time-budgets.mjs` の関数にまとめ、テストから値を差し替えて検査します。
+
+### 配布の子プロセス検査
+
+Claude / Codex / Cursor の配布を生成し、バイトと登録を検査する3ファイルは distribution のグループとして実行する。各ケースに既存の `hookTest` ヘルパーで5秒を明示し、ファイル全体には既存の90秒を使う。これは Node 22 が CLI の5秒をケースに加えてファイル全体にも適用するためで、モジュール起動と後片付けをケースの時間と区別する。PR #38 の CI run 37161337699 では、Windows / Node 22 が `tests/packaging/claude.test.mjs` のファイル全体を5025.9msで打ち切った。全体の90秒 / Windows 150秒、ケース5秒、p95 の予算は変更しない。ファイルの欠落・二重実行・ネイティブ検査や性能計測との混在をグループのテストで検査する。
 
 ## 検証方法
 
