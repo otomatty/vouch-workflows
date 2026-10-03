@@ -93,6 +93,28 @@ test("failed installation transaction restores prior bytes and never removes an 
     "unowned",
   );
 });
+test("unchanged installation files are validated without replacement or temporary writes", async (t) => {
+  const box = await sandbox(t);
+  await box.write("same", "immutable");
+  await box.write(`same.vouch-install-${process.pid}`, "unowned");
+  commitChanges([
+    { path: box.path("same"), before: "immutable", after: "immutable" },
+  ]);
+  t.assert.equal(await box.read("same"), "immutable");
+  t.assert.equal(
+    await box.read(`same.vouch-install-${process.pid}`),
+    "unowned",
+  );
+  await box.write("same", "concurrent edit");
+  t.assert.throws(
+    () =>
+      commitChanges([
+        { path: box.path("same"), before: "immutable", after: "immutable" },
+      ]),
+    /INSTALL-CONFLICT/,
+  );
+  t.assert.equal(await box.read("same"), "concurrent edit");
+});
 test("Codex setup preserves model, sandbox, provider and agent depth while owning only required hook settings", async (t) => {
   const box = await sandbox(t);
   await mkdir(box.path("project"));
