@@ -1,11 +1,70 @@
 import { resolve } from "node:path";
 import { test } from "node:test";
+import { pathToFileURL } from "node:url";
 import {
+  childEnvironment,
   readArgs,
   readContext,
+  readDoctorContext,
   readIntent,
+  readLaunchEnvironment,
   readSecrets,
 } from "../../../core/hooks/lib/env.mjs";
+
+test("managed environment keeps runtime and project roots separate for all three harnesses", (t) => {
+  const root = resolve("project");
+  const runtime = resolve("user/.vouch/versions/hash/cursor");
+  const selected = {
+    projectRoot: root,
+    runtimeRoot: runtime,
+    harness: /** @type {const} */ ("cursor"),
+    intent: "scope",
+  };
+  const env = childEnvironment(selected, {
+    KEEP: "value",
+    VOUCH_HARNESS: "claude",
+  });
+  t.assert.equal(env.KEEP, "value");
+  t.assert.equal(readContext(env).harness, "cursor");
+  t.assert.deepEqual(
+    readDoctorContext(pathToFileURL(`${runtime}/hooks/entry.mjs`).href, env),
+    {
+      projectRoot: root,
+      installationRoot: "",
+      runtimeRoot: runtime,
+      harness: "cursor",
+      nodeVersion: process.versions.node,
+    },
+  );
+  t.assert.equal(
+    readLaunchEnvironment(
+      { CURSOR_PROJECT_DIR: root },
+      ["node", "entry", "session"],
+      "/cwd",
+    ).projectRoot,
+    root,
+  );
+  t.assert.equal(
+    readLaunchEnvironment({}, ["node", "entry"], "/cwd").explicit,
+    false,
+  );
+  t.assert.equal(
+    readLaunchEnvironment(
+      { VOUCH_PROJECT_ROOT: "", CLAUDE_PROJECT_DIR: root, VOUCH_INTENT: "" },
+      ["node", "entry"],
+      "/cwd",
+    ).projectRoot,
+    "",
+  );
+  t.assert.equal(
+    readLaunchEnvironment(
+      { CLAUDE_PROJECT_DIR: root },
+      ["node", "entry"],
+      "/cwd",
+    ).explicit,
+    true,
+  );
+});
 
 test("Claude uses its exported project root only when an explicit root is absent", (t) => {
   const root = resolve(".");

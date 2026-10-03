@@ -65,7 +65,7 @@ export async function runLifecycle(files, environment, _git, ports = {}) {
   const clock = ports.now ?? now;
   const harness =
     ports.harness === undefined
-      ? harnessOf(environment.installationRoot)
+      ? (environment.harness ?? harnessOf(environment.installationRoot))
       : ports.harness;
   const git = ports.git ?? readGit(environment.projectRoot);
   const events = await listEvents(createIntentAuditStore(files, intent));

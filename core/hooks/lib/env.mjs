@@ -16,7 +16,7 @@ export function readContext(env = process.env) {
   if (
     !root ||
     !isAbsolute(root) ||
-    (harness !== "claude" && harness !== "codex")
+    (harness !== "claude" && harness !== "codex" && harness !== "cursor")
   ) {
     throw new Error(
       "ENV-CONFIG: absolute VOUCH_PROJECT_ROOT and known VOUCH_HARNESS required",
@@ -47,8 +47,18 @@ export const readSecrets = ({ names, minLength }, env = process.env) =>
     .sort((a, b) => b.length - a.length);
 
 /** @param {string} entryUrl @returns {import('./runtime-contracts.mjs').DoctorEnvironment} */
-export function readDoctorContext(entryUrl) {
+export function readDoctorContext(entryUrl, env = process.env) {
   const directory = resolve(dirname(fileURLToPath(entryUrl)), "..");
+  if (env.VOUCH_RUNTIME_ROOT === directory) {
+    const context = readContext(env);
+    return {
+      projectRoot: context.projectRoot,
+      installationRoot: "",
+      runtimeRoot: directory,
+      harness: context.harness,
+      nodeVersion: process.versions.node,
+    };
+  }
   const projectRoot = resolve(directory, "..");
   return {
     projectRoot,
@@ -56,3 +66,34 @@ export function readDoctorContext(entryUrl) {
     nodeVersion: process.versions.node,
   };
 }
+
+/** @param {Record<string,string|undefined>} [env] @param {string[]} [argv] @param {string} [cwd] */
+export function readLaunchEnvironment(
+  env = process.env,
+  argv = process.argv,
+  cwd = process.cwd(),
+) {
+  return {
+    args: readArgs(argv),
+    projectRoot:
+      env.VOUCH_PROJECT_ROOT ??
+      env.CLAUDE_PROJECT_DIR ??
+      env.CURSOR_PROJECT_DIR ??
+      cwd,
+    explicit:
+      env.VOUCH_PROJECT_ROOT !== undefined ||
+      env.CLAUDE_PROJECT_DIR !== undefined ||
+      env.CURSOR_PROJECT_DIR !== undefined,
+    ...(env.VOUCH_INTENT === undefined ? {} : { intent: env.VOUCH_INTENT }),
+  };
+}
+
+/** @param {{projectRoot:string,runtimeRoot:string,harness:import('./contracts.mjs').Harness,intent:string}} selected
+ * @param {Record<string,string|undefined>} [env] @returns {Record<string,string|undefined>} */
+export const childEnvironment = (selected, env = process.env) => ({
+  ...env,
+  VOUCH_PROJECT_ROOT: selected.projectRoot,
+  VOUCH_RUNTIME_ROOT: selected.runtimeRoot,
+  VOUCH_HARNESS: selected.harness,
+  VOUCH_INTENT: selected.intent,
+});

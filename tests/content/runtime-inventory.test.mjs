@@ -32,6 +32,7 @@ test("runtime inventory classifies every entry and every core file without omiss
     [
       "vouch-doctor.mjs",
       "vouch-dod.mjs",
+      "vouch-launch.mjs",
       "vouch-lifecycle.mjs",
       "vouch-migrate.mjs",
       "vouch-question.mjs",

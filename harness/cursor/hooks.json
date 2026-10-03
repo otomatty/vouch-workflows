@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      { "command": "node .cursor/hooks/vouch-launch.mjs session project" }
+    ],
+    "beforeSubmitPrompt": [
+      { "command": "node .cursor/hooks/vouch-launch.mjs prompt project" }
+    ],
+    "preToolUse": [
+      { "command": "node .cursor/hooks/vouch-launch.mjs guard project" }
+    ],
+    "afterAgentResponse": [
+      { "command": "node .cursor/hooks/vouch-launch.mjs stop project" }
+    ],
+    "stop": [{ "command": "node .cursor/hooks/vouch-launch.mjs stop project" }]
+  }
+}

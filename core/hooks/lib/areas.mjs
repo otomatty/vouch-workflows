@@ -71,6 +71,21 @@ export function classifySegments(segments, scope) {
   if (parts.some((part) => part.endsWith(guard.lockSuffix)))
     return { area: "lock", ancestor: false };
   if (
+    scope.managed &&
+    parts.length > 0 &&
+    (matches(parts[0] ?? "", ".vouch") ||
+      (parts.length >= 2 && under(parts, ["vouch", "config.json"])) ||
+      (parts.length >= 2 &&
+        under(parts, [scope.managed]) &&
+        [
+          "hooks.json",
+          "settings.json",
+          "settings.local.json",
+          "config.toml",
+        ].some((name) => matches(parts[1] ?? "", name))))
+  )
+    return { area: "installation", ancestor: false };
+  if (
     installed &&
     parts.length > home.length &&
     scope.installed.some(

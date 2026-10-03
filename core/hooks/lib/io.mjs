@@ -4,7 +4,16 @@ import { approvedText } from "./approval.mjs";
 import { createIntentAuditStore } from "./audit.mjs";
 import { readContext, readDoctorContext, readIntent } from "./env.mjs";
 import { createFileStore, descriptorWriter, readDescriptor } from "./fs.mjs";
+import { launch } from "./launch.mjs";
 import { isHookResult, parseInput } from "./validation.mjs";
+
+/** Managed activation wrapper; only this I/O boundary sets the process exit code. @param {string} entryUrl */
+export const runLauncher = (entryUrl) =>
+  launch(entryUrl, {
+    finish: (code) => {
+      process.exitCode = code;
+    },
+  });
 
 /**
  * Process boundary. Fail open on malformed input, implementation or persistence errors.
@@ -152,9 +161,11 @@ export async function runStatusline(main, entryUrl, options = {}) {
     const environment = options.environment ?? readDoctorContext(entryUrl);
     const files =
       options.files ?? (await createFileStore(environment.projectRoot));
-    const harness = /(?:^|\/)\.codex$/.test(environment.installationRoot)
-      ? "codex"
-      : "claude";
+    const harness =
+      environment.harness ??
+      (/(?:^|\/)\.codex$/.test(environment.installationRoot)
+        ? "codex"
+        : "claude");
     line = await main(
       files,
       options.intent === undefined ? readIntent() : options.intent,

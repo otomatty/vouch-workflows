@@ -2,7 +2,70 @@ import { test } from "node:test";
 import { inspectInstallation } from "../../../core/hooks/lib/doctor.mjs";
 import runtime from "../../../core/registry/runtime.json" with { type: "json" };
 import { validator } from "../../helpers/registry.mjs";
-import { memoryFiles } from "../../helpers/runtime.mjs";
+import { memoryFiles, sandbox } from "../../helpers/runtime.mjs";
+
+test("managed doctor inspects the selected runtime separately and detects missing or duplicate native registration", async (t) => {
+  const box = await sandbox(t, { git: false });
+  const runtimeRoot = box.path("runtime");
+  for (const path of runtime.files)
+    await box.write(`runtime/${path}`, "source");
+  const expected = {
+    version: 1,
+    hooks: { sessionStart: [{ command: "node launcher session" }] },
+  };
+  await box.write(
+    "runtime/registry/installation.json",
+    JSON.stringify({ harness: "cursor", registration: "hooks.json" }),
+  );
+  await box.write(
+    "runtime/registry/registration.json",
+    JSON.stringify(expected),
+  );
+  await box.write("runtime/hooks.json", JSON.stringify(expected));
+  const store = memoryFiles({ ".cursor/hooks.json": JSON.stringify(expected) });
+  const owned = {
+    kind: "hooks",
+    path: ".cursor/hooks.json",
+    content: JSON.stringify(expected),
+  };
+  const state = { v: 1, harness: "cursor", owned: [owned] };
+  store.data.set(".vouch/bindings/cursor.json", JSON.stringify(state));
+  const managed = {
+    projectRoot: "/project",
+    installationRoot: "",
+    runtimeRoot,
+    harness: /** @type {const} */ ("cursor"),
+    nodeVersion: "24.19.0",
+  };
+  const inspect = () =>
+    inspectInstallation(store, managed, { ok: true, detail: "git" });
+  t.assert.equal((await inspect()).ok, true);
+  store.data.set(
+    ".cursor/hooks.json",
+    JSON.stringify({
+      ...expected,
+      hooks: {
+        sessionStart: [
+          ...expected.hooks.sessionStart,
+          ...expected.hooks.sessionStart,
+        ],
+      },
+    }),
+  );
+  t.assert.equal((await inspect()).ok, false);
+  store.data.set(".cursor/hooks.json", "{}");
+  t.assert.equal((await inspect()).ok, false);
+  for (const value of [
+    "null",
+    JSON.stringify({ ...state, owned: [] }),
+    JSON.stringify({ ...state, owned: [{ ...owned, content: "null" }] }),
+  ]) {
+    store.data.set(".vouch/bindings/cursor.json", value);
+    t.assert.equal((await inspect()).ok, false);
+  }
+  store.data.delete(".vouch/bindings/cursor.json");
+  t.assert.equal((await inspect()).ok, false);
+});
 
 const environment = {
   projectRoot: "/project",
