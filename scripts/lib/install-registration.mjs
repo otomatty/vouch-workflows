@@ -25,10 +25,9 @@ export function registration(harness, runtimeRoot, scope, projectRoot) {
     scope,
     ...(projectRoot ? [`\${${variable}}`] : []),
   ];
-  /** @param {string} action */
-  const hook = (action) => {
+  /** @param {string} action @param {boolean} windows */
+  const command = (action, windows) => {
     const args = base.map((word, i) => (i === 1 ? action : word));
-    if (harness === "claude") return { type: "command", command: "node", args };
     const quote = (/** @type {string} */ word) =>
       word.startsWith(`\${${variable}}`)
         ? `"\${${variable}:?${variable} required}${word.slice(variable.length + 3)}"`
@@ -37,18 +36,26 @@ export function registration(harness, runtimeRoot, scope, projectRoot) {
       word.startsWith(`\${${variable}}`)
         ? `"$env:${variable}${word.slice(variable.length + 3)}"`
         : powershell(word);
-    const command = `node ${args.map(quote).join(" ")}`;
+    return windows
+      ? `& node ${args.map(quoteWindows).join(" ")}`
+      : `node ${args.map(quote).join(" ")}`;
+  };
+  /** @param {string} action */
+  const hook = (action) => {
+    if (harness === "claude")
+      return {
+        type: "command",
+        command: "node",
+        args: base.map((word, i) => (i === 1 ? action : word)),
+      };
     return harness === "codex"
       ? {
           type: "command",
-          command,
-          commandWindows: `& node ${args.map(quoteWindows).join(" ")}; exit $LASTEXITCODE`,
+          command: command(action, false),
+          commandWindows: `${command(action, true)}; exit $LASTEXITCODE`,
         }
       : {
-          command:
-            process.platform === "win32"
-              ? `& node ${args.map(quoteWindows).join(" ")}`
-              : command,
+          command: command(action, process.platform === "win32"),
         };
   };
   if (harness === "cursor")
@@ -63,6 +70,14 @@ export function registration(harness, runtimeRoot, scope, projectRoot) {
       },
     };
   return {
+    ...(harness === "claude"
+      ? {
+          statusLine: {
+            type: "command",
+            command: command("statusline", process.platform === "win32"),
+          },
+        }
+      : {}),
     hooks: {
       SessionStart: [
         { matcher: "startup|resume|clear|compact", hooks: [hook("session")] },
@@ -89,21 +104,52 @@ export const skillsDirectory = (harness) =>
 export const registrationPath = (harness) =>
   `${nativeDirectory(harness)}/${harness === "claude" ? "settings.json" : "hooks.json"}`;
 
+/** A local Markdown destination, with syntax characters encoded rather than interpreted.
+ * @param {string} path */
+export const markdownDestination = (path) =>
+  `<${encodeURI(path.replaceAll("\\", "/")).replace(/[()#?']/g, (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`)}>`;
+
 /** Rebind all distributed references and route manual commands through activation.
  * @param {string} text @param {string} harness @param {string} runtimeRoot */
 export function installedText(text, harness, runtimeRoot) {
   const prefix = `.${harness}`;
   const at = runtimeRoot.replaceAll("\\", "/");
   const operations = "doctor|dod|lifecycle|migrate|question|report|statusline";
+  const operation = `node ("?)\\.${harness}/hooks/vouch-(${operations})\\.mjs`;
+  /** @param {string} action */
+  const manual = (action) =>
+    `node ${(process.platform === "win32" ? powershell : sh)(`${at}/hooks/vouch-launch.mjs`)} ${action} manual`;
+  /** @param {string} value */
+  const rebind = (value) =>
+    value.replace(
+      new RegExp(`${operation}\\1|\\.${harness}/`, "g"),
+      (_match, _quote, action) => (action ? manual(action) : `${at}/`),
+    );
   text = text.replace(
     new RegExp(
-      `node ("?)\\.${harness}/hooks/vouch-(${operations})\\.mjs\\1`,
+      [
+        "`([^`\\r\\n]+)`",
+        `\\]\\((\\.${harness}/[^)\\s]+)\\)`,
+        `${operation}\\3`,
+        `\\.${harness}/`,
+      ].join("|"),
       "g",
     ),
-    (_match, _quote, action) =>
-      `node ${(process.platform === "win32" ? powershell : sh)(`${at}/hooks/vouch-launch.mjs`)} ${action} manual`,
+    (_match, code, link, _quote, action) => {
+      if (code !== undefined) {
+        const body = rebind(code);
+        const width = Math.max(
+          0,
+          ...(body.match(/`+/g) ?? []).map((word) => word.length),
+        );
+        const fence = "`".repeat(width + 1);
+        return width ? `${fence} ${body} ${fence}` : `${fence}${body}${fence}`;
+      }
+      if (link !== undefined)
+        return `](${markdownDestination(`${at}/${link.slice(prefix.length + 1)}`)})`;
+      return action ? manual(action) : `${at}/`;
+    },
   );
-  text = text.replaceAll(`${prefix}/`, `${at}/`);
   if (harness === "codex" && text.includes("developer_instructions = '''\n"))
     text = text.replace(
       /developer_instructions = '''\n([\s\S]*)'''\n$/,

@@ -62,12 +62,14 @@ node scripts/vouch.mjs doctor --harness cursor --project /path/to/project
 
 個人共通の本体を更新しても、有効化済みのプロジェクトは元の版を使います。同じ `init` を再実行すると新しい個人共通の版へ切り替わり、プロジェクト内に本体がある場合はその版を優先します。複数ツールで使う場合はツールごとに導入・有効化します。`--home` で個人共通の導入先を変更できます。
 
+管理するランチャーの対象 Intent は `vouch/config.json` に保存します。切り替えは `init --intent <Intent>` で行い、継承した `VOUCH_INTENT` では対象を変更しません。Claude のステータス表示は既存の利用者設定がある場合にそれを保持し、ない場合に Vouch の読み取り専用表示を登録します。
+
 ```sh
 node scripts/vouch.mjs update --harness cursor --scope user
 node scripts/vouch.mjs remove --harness cursor --scope project --project /path/to/project
 ```
 
-`remove --scope project` は対象プロジェクトでの有効化と管理する接続を除去します。`remove --scope user` は個人共通の登録を除去し、明示した作業先の有効化も解除します。他のプロジェクトの固定版が使えなくならないよう、版ごとの本体は保持します。規則・成果物・監査ログは削除しません。管理対象に利用者の編集がある場合は更新・削除を止め、既存設定を上書きしません。
+`remove --scope project` は対象プロジェクトでの有効化と管理する接続を除去します。`remove --scope user` は個人共通の登録を除去し、`--project` を明示した場合だけその作業先の有効化も解除します。他のプロジェクトの固定版が使えなくならないよう、版ごとの本体は保持します。規則・成果物・監査ログは削除しません。管理対象に利用者の編集がある場合は更新・削除を止め、既存設定を上書きしません。
 
 Cursor は Agent の Skills・エージェント・Rules と JSON フックの接続を生成します。手製のプロトコル入力による検証と実機の検証を区別し、現時点では正式な実機対応を宣言しません。Claude / Codex の従来の実機記録も、新しい導入方式を実機で検証した証拠とは扱いません。
 

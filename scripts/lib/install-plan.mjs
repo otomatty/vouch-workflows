@@ -71,6 +71,10 @@ export function plan(root, prior) {
     },
     /** @param {string} path @param {Record<string,unknown>} contribution */
     hooks(path, contribution) {
+      contribution = { ...contribution };
+      // A user-provided display remains theirs; own only a display we add.
+      if (json(current(path)).statusLine !== undefined)
+        delete contribution.statusLine;
       claim(
         path,
         "hooks",

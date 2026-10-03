@@ -54,6 +54,7 @@ export async function launch(entryUrl, ports) {
   const [action = "", scope = "manual", ...rest] = options.args;
   const product = actions[action];
   const native = ["session", "prompt", "guard", "stop"].includes(action);
+  const display = action === "statusline" && scope !== "manual";
   let harness = "";
   try {
     if (!product || !["manual", "project", "user"].includes(scope))
@@ -74,7 +75,7 @@ export async function launch(entryUrl, ports) {
       (scope === "project" && Boolean(rest[0])) || options.explicit,
     );
     if (!project) {
-      if (!native)
+      if (!native && !display)
         throw new Error(
           "INSTALL-INACTIVE: initialize this project before using Vouch",
         );
@@ -84,7 +85,7 @@ export async function launch(entryUrl, ports) {
     const binding = /** @type {Record<string,unknown>} */ (
       project.config.harnesses
     )[harness];
-    if (binding === undefined && native) {
+    if (binding === undefined && (native || display)) {
       if (harness === "cursor") stdout.write("{}\n");
       return;
     }
@@ -120,9 +121,9 @@ export async function launch(entryUrl, ports) {
       if (harness === "cursor") stdout.write("{}\n");
       return;
     }
-    if (selectedRoot !== runtimeRoot)
+    if (selectedRoot !== runtimeRoot && !display)
       throw new Error("INSTALL-VERSION: invoke the selected runtime");
-    const intent = options.intent ?? project.config.intent ?? "";
+    const intent = project.config.intent ?? "";
     if (
       typeof intent !== "string" ||
       (intent && !/^[a-z0-9][a-zA-Z0-9_-]{0,127}$/.test(intent))
@@ -141,20 +142,23 @@ export async function launch(entryUrl, ports) {
       input = Buffer.concat(chunks).toString("utf8");
       if (harness === "cursor") {
         const normalized = cursorInput(JSON.parse(input), project.root);
-        if (normalized === null)
-          throw new Error("HOOK-14: unsupported Cursor input");
+        if (normalized === null) {
+          stdout.write("{}\n");
+          return;
+        }
         input = JSON.stringify(normalized);
       }
     }
     const execute =
       ports.execute ?? (await import("./launch-process.mjs")).executeProduct;
+    const productRoot = display ? selectedRoot : runtimeRoot;
     const result = execute(
-      join(runtimeRoot, "hooks", product),
+      join(productRoot, "hooks", product),
       scope === "project" ? rest.slice(1) : rest,
       input,
       {
         projectRoot: project.root,
-        runtimeRoot,
+        runtimeRoot: productRoot,
         harness: /** @type {import('./contracts.mjs').Harness} */ (harness),
         intent,
       },
@@ -166,13 +170,13 @@ export async function launch(entryUrl, ports) {
     } else {
       if (result.stdout) stdout.write(result.stdout);
       if (result.stderr) stderr.write(result.stderr);
-      ports.finish(result.status ?? (native ? 0 : 2));
+      ports.finish(result.status ?? (native || display ? 0 : 2));
     }
   } catch (error) {
     stderr.write(
       `VOUCH-LAUNCH: ${error instanceof Error ? error.message : String(error)}\n`,
     );
     if (harness === "cursor" && native) stdout.write("{}\n");
-    ports.finish(native ? 0 : 2);
+    ports.finish(native || display ? 0 : 2);
   }
 }

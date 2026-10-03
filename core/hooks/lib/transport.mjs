@@ -63,7 +63,7 @@ export function cursorInput(value, root) {
   }
   if (
     value.hook_event_name === "stop" ||
-    value.hook_event_name === "afterAgentResponse"
+    (value.hook_event_name === "afterAgentResponse" && text(value.text))
   )
     return {
       ...base,

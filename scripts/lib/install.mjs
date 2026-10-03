@@ -10,6 +10,7 @@ import {
 import { plan, readInstallation } from "./install-plan.mjs";
 import {
   installedText,
+  markdownDestination,
   nativeDirectory,
   registration,
   registrationPath,
@@ -18,7 +19,7 @@ import {
 import { json, object, pretty } from "./install-settings.mjs";
 import { enableCodex } from "./install-toml.mjs";
 
-/** @typedef {{harness:string,scope:string,home:string,project:string,dist:string,intent?:string}} Options */
+/** @typedef {{harness:string,scope:string,home:string,project:string,projectExplicit:boolean,dist:string,intent?:string}} Options */
 /** @param {string} harness */
 const statePath = (harness) => `.vouch/installations/${harness}.json`;
 /** @param {Options} options */
@@ -176,14 +177,14 @@ function activate(changes, options, state, runtimeRoot) {
   changes.document(
     "AGENTS.md",
     options.harness,
-    `Vouch を ${options.harness} で利用する時は、選択した本体の [共通ルール](<${referenceRoot}/AGENTS.md>) を読む。規則と成果物はこのプロジェクトの vouch/ に保存する。`,
+    `Vouch を ${options.harness} で利用する時は、選択した本体の [共通ルール](${markdownDestination(`${referenceRoot}/AGENTS.md`)}) を読む。規則と成果物はこのプロジェクトの vouch/ に保存する。`,
   );
   if (options.harness === "claude")
     changes.document("CLAUDE.md", options.harness, "@AGENTS.md");
   if (options.harness === "cursor")
     changes.file(
       ".cursor/rules/vouch.mdc",
-      `---\ndescription: Vouch workflow activation\nalwaysApply: true\n---\nRead ${referenceRoot}/AGENTS.md when using Vouch in this project.`,
+      `---\ndescription: Vouch workflow activation\nalwaysApply: true\n---\nRead [Vouch rules](${markdownDestination(`${referenceRoot}/AGENTS.md`)}) when using Vouch in this project.`,
     );
 }
 
@@ -266,26 +267,35 @@ export function remove(options) {
     changes.put(local ? statePath(options.harness) : bindingPath, null);
     if (options.scope === "project") deactivate(changes, options.harness);
     // Explicitly named project bindings are removed; other projects keep their pinned version.
-    if (options.scope === "user") {
-      const path = `.vouch/bindings/${options.harness}.json`;
-      const binding = readInstallation(read(inside(options.project, path)));
-      if (
-        binding &&
-        binding.runtimeRoot ===
-          inside(
-            options.home,
-            `.vouch/versions/${binding.digest}/${options.harness}`,
-          )
-      ) {
-        const project = plan(options.project, binding);
-        deactivate(project, options.harness);
-        project.put(path, null);
-        for (const [key, change] of project.changes)
-          changes.changes.set(`project:${key}`, change);
-      }
+    const finish = () => {
+      commitChanges([...changes.changes.values()]);
+      return { v: 1, ok: true, harness: options.harness, scope: options.scope };
+    };
+    if (options.scope === "user" && options.projectExplicit) {
+      const removeBinding = () => {
+        const path = `.vouch/bindings/${options.harness}.json`;
+        const binding = readInstallation(read(inside(options.project, path)));
+        if (
+          binding &&
+          binding.runtimeRoot ===
+            inside(
+              options.home,
+              `.vouch/versions/${binding.digest}/${options.harness}`,
+            )
+        ) {
+          const project = plan(options.project, binding);
+          deactivate(project, options.harness);
+          project.put(path, null);
+          for (const [key, change] of project.changes)
+            changes.changes.set(`project:${key}`, change);
+        }
+        return finish();
+      };
+      return options.project === root
+        ? removeBinding()
+        : withLock(options.project, removeBinding);
     }
-    commitChanges([...changes.changes.values()]);
-    return { v: 1, ok: true, harness: options.harness, scope: options.scope };
+    return finish();
   });
 }
 

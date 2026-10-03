@@ -125,10 +125,19 @@ export function withLock(root, operation) {
   mkdirSync(dirname(lock), { recursive: true });
   try {
     mkdirSync(lock);
-  } catch {
-    throw new Error("INSTALL-LOCK: another installer owns this scope");
+  } catch (error) {
+    if (/** @type {NodeJS.ErrnoException} */ (error).code !== "EEXIST")
+      throw error;
+    throw new Error(
+      `INSTALL-LOCK: ${lock}; confirm no installer is running before removing this lock directory manually`,
+    );
   }
   try {
+    writeFileSync(
+      join(lock, "owner.json"),
+      JSON.stringify({ pid: process.pid, startedAt: new Date().toISOString() }),
+      { flag: "wx", mode: 0o600 },
+    );
     return operation();
   } finally {
     rmSync(lock, { recursive: true });

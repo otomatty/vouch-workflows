@@ -63,10 +63,19 @@ try {
     harness: /** @type {string} */ (flags["--harness"]),
     scope: flags["--scope"] ?? "project",
     project: resolve(flags["--project"] ?? process.cwd()),
+    projectExplicit: flags["--project"] !== undefined,
     home: resolve(flags["--home"] ?? homedir()),
     dist,
     ...(flags["--intent"] === undefined ? {} : { intent: flags["--intent"] }),
   };
+  for (const path of [options.project, options.home, options.dist])
+    if (
+      [...path].some(
+        (character) =>
+          character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127,
+      )
+    )
+      throw new Error("INSTALL-PATH: control characters are not supported");
   const result =
     command === "install" || command === "update"
       ? install(options, command)
