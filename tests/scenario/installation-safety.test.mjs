@@ -3,6 +3,7 @@ import { mkdir, rm, symlink } from "node:fs/promises";
 import { syncBuiltinESMExports } from "node:module";
 import { test } from "node:test";
 import { commitChanges } from "../../scripts/lib/install-files.mjs";
+import { plan } from "../../scripts/lib/install-plan.mjs";
 
 test("custom user home with shell metacharacters remains selectable without repeating the home flag to doctor", async (t) => {
   const box = await sandbox(t);
@@ -116,6 +117,19 @@ test("unchanged installation files are validated without replacement or temporar
     /INSTALL-CONFLICT/,
   );
   t.assert.equal(await box.read("same"), "concurrent edit");
+});
+test("a concurrent edit between reading and planning remains a conflict with the original bytes", async (t) => {
+  const box = await sandbox(t);
+  await box.write("existing", "original bytes");
+  const changes = plan(box.root, null);
+  t.assert.equal(changes.current("existing"), "original bytes");
+  await box.write("existing", "concurrent edit");
+  changes.put("existing", "installation bytes");
+  t.assert.throws(
+    () => commitChanges([...changes.changes.values()]),
+    /INSTALL-CONFLICT/,
+  );
+  t.assert.equal(await box.read("existing"), "concurrent edit");
 });
 test("rollback attempts remaining files after a restoration fails and reports both failures", async (t) => {
   const box = await sandbox(t);
