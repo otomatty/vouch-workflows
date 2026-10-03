@@ -13,7 +13,7 @@ export function checkBudgetMs(timing, platform = process.platform) {
 /** Node 22 times out whole files; hookTest and scenario cases keep the five-second limit.
  * @param {string} suite @param {Timing} timing @returns {number} */
 export function testTimeoutFor(suite, timing) {
-  return ["hooks", "scenario"].includes(suite)
+  return ["hooks", "scenario", "distribution"].includes(suite)
     ? timing.testFileTimeoutMs
     : timing.testTimeoutMs;
 }

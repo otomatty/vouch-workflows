@@ -4,7 +4,7 @@ import {
   digest,
   files,
   inside,
-  read,
+  readInside,
   sameLocation,
   withLock,
 } from "./install-files.mjs";
@@ -40,7 +40,7 @@ export function install(options, command) {
   const root = scopeRoot(options);
   return withLock(root, () => {
     const prior = readInstallation(
-      read(inside(root, statePath(options.harness))),
+      readInside(root, statePath(options.harness)),
     );
     if (command === "update" && !prior)
       throw new Error("INSTALL-MISSING: scope is not installed");
@@ -77,7 +77,7 @@ export function install(options, command) {
     const bindingPath = `.vouch/bindings/${options.harness}.json`;
     const binding =
       options.scope === "project"
-        ? readInstallation(read(inside(root, bindingPath)))
+        ? readInstallation(readInside(root, bindingPath))
         : null;
     const changes = plan(root, prior ?? binding);
     if (binding) changes.put(bindingPath, null);
@@ -201,10 +201,10 @@ function activate(changes, options, state, runtimeRoot) {
 export function initialize(options) {
   return withLock(options.project, () => {
     const local = readInstallation(
-      read(inside(options.project, statePath(options.harness))),
+      readInside(options.project, statePath(options.harness)),
     );
     const global = readInstallation(
-      read(inside(options.home, statePath(options.harness))),
+      readInside(options.home, statePath(options.harness)),
     );
     const selected = local ?? global;
     if (!selected)
@@ -216,9 +216,7 @@ export function initialize(options) {
       selected.runtimeRoot,
     );
     const bindingPath = `.vouch/bindings/${options.harness}.json`;
-    const binding = readInstallation(
-      read(inside(options.project, bindingPath)),
-    );
+    const binding = readInstallation(readInside(options.project, bindingPath));
     const changes = plan(options.project, binding);
     if (local) {
       // The project installation already owns its activation documents and registration.
@@ -263,12 +261,12 @@ export function remove(options) {
   const root = scopeRoot(options);
   return withLock(root, () => {
     const local = readInstallation(
-      read(inside(root, statePath(options.harness))),
+      readInside(root, statePath(options.harness)),
     );
     const bindingPath = `.vouch/bindings/${options.harness}.json`;
     const binding =
       options.scope === "project" && !local
-        ? readInstallation(read(inside(root, bindingPath)))
+        ? readInstallation(readInside(root, bindingPath))
         : null;
     const state = local ?? binding;
     if (!state) throw new Error("INSTALL-MISSING: scope is not installed");
@@ -283,7 +281,7 @@ export function remove(options) {
     if (options.scope === "user" && options.projectExplicit) {
       const removeBinding = () => {
         const path = `.vouch/bindings/${options.harness}.json`;
-        const binding = readInstallation(read(inside(options.project, path)));
+        const binding = readInstallation(readInside(options.project, path));
         if (
           binding &&
           sameLocation(
@@ -319,7 +317,7 @@ function deactivate(changes, harness) {
 
 /** @param {Options} options */
 export function diagnose(options) {
-  const config = json(read(inside(options.project, "vouch/config.json")));
+  const config = json(readInside(options.project, "vouch/config.json"));
   const binding = object(config.harnesses)
     ? config.harnesses[options.harness]
     : undefined;
@@ -338,13 +336,11 @@ export function diagnose(options) {
       ? options.project
       : dirname(dirname(dirname(dirname(runtimeRoot))));
   const state = readInstallation(
-    read(
-      inside(
-        binding.scope === "project" ? root : options.project,
-        binding.scope === "project"
-          ? statePath(options.harness)
-          : `.vouch/bindings/${options.harness}.json`,
-      ),
+    readInside(
+      binding.scope === "project" ? root : options.project,
+      binding.scope === "project"
+        ? statePath(options.harness)
+        : `.vouch/bindings/${options.harness}.json`,
     ),
   );
   if (
@@ -362,7 +358,7 @@ export function diagnose(options) {
   plan(options.project, state); // Read-only validation of the active project's registration and documents.
   if (
     options.harness === "codex" &&
-    enableCodex(read(inside(options.project, ".codex/config.toml"))).content !==
+    enableCodex(readInside(options.project, ".codex/config.toml")).content !==
       "[]\n"
   )
     throw new Error(
@@ -386,7 +382,7 @@ export function diagnose(options) {
       continue;
     const target = path === "AGENTS.md" ? path : path.slice(prefix.length);
     if (
-      read(inside(runtimeRoot, target)) !==
+      readInside(runtimeRoot, target) !==
       (path.endsWith(".md")
         ? installedText(text, options.harness, referenceRoot)
         : text)

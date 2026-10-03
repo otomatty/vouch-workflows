@@ -31,7 +31,7 @@ function inspectPath(path) {
 }
 
 /** @param {string} root @param {string} path */
-export function inside(root, path) {
+function scopedPath(root, path) {
   const target = resolve(root, path);
   const part = relative(root, target);
   if (
@@ -41,9 +41,19 @@ export function inside(root, path) {
     part.startsWith(`..${process.platform === "win32" ? "\\" : "/"}`)
   )
     throw new Error(`INSTALL-PATH: ${path}`);
+  return target;
+}
+
+/** @param {string} root @param {string} path */
+export function inside(root, path) {
+  const target = scopedPath(root, path);
   inspectPath(target);
   return target;
 }
+
+/** Containment followed by the read's own link inspection, without repeating it.
+ * @param {string} root @param {string} path */
+export const readInside = (root, path) => read(scopedPath(root, path));
 
 /** Resolve filesystem identity without assuming the platform's case rules.
  * @param {string} left @param {string} right */
@@ -80,11 +90,11 @@ export function files(path) {
     withFileTypes: true,
   })) {
     const at = join(entry.parentPath, entry.name);
-    inspectPath(at);
     if (entry.isFile())
       result[relative(path, at).replaceAll("\\", "/")] = /** @type {string} */ (
         read(at)
       );
+    else inspectPath(at);
   }
   return result;
 }

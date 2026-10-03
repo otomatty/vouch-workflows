@@ -1,4 +1,4 @@
-import { inside, read } from "./install-files.mjs";
+import { inside, read, readInside } from "./install-files.mjs";
 import {
   addHooks,
   block,
@@ -22,13 +22,14 @@ export function plan(root, prior) {
     changes.has(path)
       ? /** @type {import('./install-files.mjs').Change} */ (changes.get(path))
           .after
-      : read(inside(root, path));
+      : readInside(root, path);
   /** @param {string} path @param {string|null} after */
   function put(path, after) {
     const previous = changes.get(path);
+    const target = inside(root, path);
     changes.set(path, {
-      path: inside(root, path),
-      before: previous ? previous.before : read(inside(root, path)),
+      path: target,
+      before: previous ? previous.before : read(target),
       after,
     });
   }

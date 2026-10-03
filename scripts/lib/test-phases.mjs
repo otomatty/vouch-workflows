@@ -1,6 +1,7 @@
 // HOOK-13 budget files; see docs/development/hook-startup.md.
 const budget = /-performance\.test\.mjs$/;
 const nativeFile = /[/\\]native-environment\.test\.mjs$/;
+const distributionFile = /[/\\](claude|codex|cursor)\.test\.mjs$/;
 
 /** Combine only tiers with identical timeout and coverage settings.
  * @param {{suite:string,files:string[]}[]} suites
@@ -14,13 +15,21 @@ export function testGroups(suites) {
   const native = shared
     .filter(({ suite }) => suite === "packaging")
     .flatMap(({ files }) => files.filter((file) => nativeFile.test(file)));
+  const distribution = shared
+    .filter(({ suite }) => suite === "packaging")
+    .flatMap(({ files }) =>
+      files.filter((file) => distributionFile.test(file)),
+    );
   return [
     {
       suite: "checks",
       files: shared.flatMap(({ files }) =>
-        files.filter((file) => !native.includes(file)),
+        files.filter(
+          (file) => !native.includes(file) && !distribution.includes(file),
+        ),
       ),
     },
+    { suite: "distribution", files: distribution },
     ...suites.filter(
       (group) =>
         !shared.includes(group) && !["hooks", "scenario"].includes(group.suite),
