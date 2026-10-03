@@ -54,6 +54,35 @@ for (const harness of ["claude", "codex", "cursor"]) {
         .map((line) => JSON.parse(line));
       t.assert.equal(events.length, 1);
       t.assert.equal(events[0].harness, harness);
+      if (harness === "claude") {
+        const { statusLine } = JSON.parse(
+          await box.read("project/.claude/settings.json"),
+        );
+        t.assert.equal(statusLine.type, "command");
+        t.assert.match(statusLine.command, /vouch-launch\.mjs.*statusline/);
+        const display = spawnSync(
+          process.platform === "win32" ? "powershell.exe" : "sh",
+          process.platform === "win32"
+            ? ["-NoProfile", "-Command", statusLine.command]
+            : ["-c", statusLine.command],
+          {
+            cwd: box.path("project"),
+            env: {
+              ...process.env,
+              CLAUDE_PROJECT_DIR: box.path("project"),
+              VOUCH_INTENT: "unselected",
+            },
+            encoding: "utf8",
+            timeout: 4000,
+          },
+        );
+        t.assert.equal(display.status, 0, display.stderr);
+        t.assert.match(display.stdout, /scope-test/);
+        t.assert.equal(
+          await box.read("project/vouch/intents/scope-test/audit/events.jsonl"),
+          events.map((event) => JSON.stringify(event)).join("\n") + "\n",
+        );
+      }
       const doctor = installRun("doctor", box, harness, scope);
       t.assert.equal(doctor.status, 0, doctor.stdout + doctor.stderr);
       t.assert.equal(

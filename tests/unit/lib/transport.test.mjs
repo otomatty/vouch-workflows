@@ -108,11 +108,9 @@ test("Cursor normalization retains native identities and ignores payload root an
       )?.last_assistant_message,
       "response",
     );
-    t.assert.equal(
-      cursorInput({ ...base, hook_event_name: event }, "/trusted")
-        ?.last_assistant_message,
-      undefined,
-    );
+    const empty = cursorInput({ ...base, hook_event_name: event }, "/trusted");
+    if (event === "afterAgentResponse") t.assert.equal(empty, null);
+    else t.assert.equal(empty?.last_assistant_message, undefined);
   }
 });
 test("unrecognized or incomplete Cursor events do not invent canonical evidence", (t) => {
@@ -123,6 +121,7 @@ test("unrecognized or incomplete Cursor events do not invent canonical evidence"
     { ...base, conversation_id: "" },
     { ...base, hook_event_name: "" },
     { ...base, hook_event_name: "futureEvent" },
+    { ...base, hook_event_name: "afterAgentResponse", text: "" },
     { ...base, hook_event_name: "beforeSubmitPrompt", prompt: "" },
     { ...base, hook_event_name: "preToolUse" },
     {

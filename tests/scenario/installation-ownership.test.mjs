@@ -8,6 +8,7 @@ test("install/update/remove preserve unrelated settings and detect edits to owne
   await mkdir(box.path("project"), { recursive: true });
   const existing = {
     model: "keep-my-model",
+    statusLine: { type: "command", command: "echo keep-my-status" },
     hooks: {
       Stop: [{ hooks: [{ type: "command", command: "echo keep-my-hook" }] }],
     },
@@ -22,6 +23,7 @@ test("install/update/remove preserve unrelated settings and detect edits to owne
       await box.read("project/.claude/settings.json"),
     );
     t.assert.equal(settings.model, existing.model);
+    t.assert.deepEqual(settings.statusLine, existing.statusLine);
     t.assert.equal(
       settings.hooks.Stop.some(
         (/** @type {{hooks:{command:string}[]}} */ item) =>

@@ -42,7 +42,12 @@ function ports(root, args, result = { status: 0, stdout: "", stderr: "" }) {
     calls: /** @type {unknown[][]} */ ([]),
   };
   const hooks = {
-    environment: { projectRoot: root, explicit: false, args },
+    environment:
+      /** @type {ReturnType<typeof import('../../../core/hooks/lib/env.mjs').readLaunchEnvironment>} */ ({
+        projectRoot: root,
+        explicit: false,
+        args,
+      }),
     stdout: {
       write: (/** @type {string} */ text) => {
         seen.stdout += text;
@@ -86,6 +91,10 @@ test("launcher selects only the configured project and Intent and routes manual 
     stdout: "context",
     stderr: "",
   });
+  native.hooks.environment = {
+    ...native.hooks.environment,
+    intent: "unselected",
+  };
   await launch(box.entry, native.hooks);
   t.assert.deepEqual(JSON.parse(native.seen.stdout), {
     additional_context: "context",
@@ -113,6 +122,63 @@ test("launcher selects only the configured project and Intent and routes manual 
   });
   await launch(box.entry, failure.hooks);
   t.assert.equal(failure.seen.code, 2);
+});
+test("managed commands cannot inherit an Intent into an unconfigured project", async (t) => {
+  const box = await setup(t);
+  const { intent: _intent, ...config } = box.config;
+  await box.box.write("project/vouch/config.json", JSON.stringify(config));
+  for (const args of [
+    ["session", "project", box.root],
+    ["report", "manual"],
+  ]) {
+    const command = ports(box.root, args);
+    command.hooks.environment = {
+      ...command.hooks.environment,
+      intent: "unselected",
+    };
+    await launch(box.entry, command.hooks);
+    t.assert.equal(command.seen.calls.length, 1);
+    t.assert.equal(
+      /** @type {{intent:string}|undefined} */ (command.seen.calls[0]?.[3])?.intent,
+      "",
+    );
+  }
+});
+test("native statusline quietly skips inactive projects and renders the selected runtime", async (t) => {
+  const box = await setup(t, "claude");
+  for (const root of [box.box.root, box.root]) {
+    const display = ports(root, ["statusline", "user"], {
+      status: 0,
+      stdout: "selected status\n",
+      stderr: "",
+    });
+    await launch(box.entry, display.hooks);
+    t.assert.equal(display.seen.code, 0);
+    t.assert.equal(display.seen.stderr, "");
+    t.assert.equal(
+      display.seen.stdout,
+      root === box.root ? "selected status\n" : "",
+    );
+  }
+  box.binding.digest = "b".repeat(64);
+  box.binding.runtimeRoot = `.vouch/versions/${box.binding.digest}/claude`;
+  await box.box.write("project/vouch/config.json", JSON.stringify(box.config));
+  const pinned = ports(box.root, ["statusline", "user"]);
+  await launch(box.entry, pinned.hooks);
+  t.assert.equal(
+    pinned.seen.calls[0]?.[0],
+    box.box.path(
+      `project/${box.binding.runtimeRoot}/hooks/vouch-statusline.mjs`,
+    ),
+  );
+  const absent = ports(box.root, ["statusline", "user"]);
+  await box.box.write(
+    "project/vouch/config.json",
+    JSON.stringify({ v: 1, harnesses: {} }),
+  );
+  await launch(box.entry, absent.hooks);
+  t.assert.equal(absent.seen.calls.length, 0);
+  t.assert.equal(absent.seen.stderr, "");
 });
 test("launcher ascends cwd, skips inactive projects, stale registrations and duplicate user hooks", async (t) => {
   const box = await setup(t);

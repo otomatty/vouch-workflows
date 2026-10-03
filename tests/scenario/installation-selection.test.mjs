@@ -49,7 +49,11 @@ for (const harness of ["claude", "codex", "cursor"]) {
         ],
         {
           cwd: box.path("project/src"),
-          env: { ...process.env, VOUCH_PROJECT_ROOT: box.path("project") },
+          env: {
+            ...process.env,
+            VOUCH_PROJECT_ROOT: box.path("project"),
+            VOUCH_INTENT: "unselected",
+          },
           input: JSON.stringify(payload),
           encoding: "utf8",
         },

@@ -25,7 +25,7 @@ test("custom user home with shell metacharacters remains selectable without repe
 import { distribution, installRun } from "../helpers/install.mjs";
 import { sandbox } from "../helpers/runtime.mjs";
 
-test("setup rejects malformed settings, duplicate owned hooks, incomplete runtime and linked paths without replacing files", async (t) => {
+test("setup rejects malformed settings, duplicate owned hooks and incomplete runtime without replacing files", async (t) => {
   const box = await sandbox(t);
   await mkdir(box.path("project"));
   distribution(t, box);
@@ -51,8 +51,27 @@ test("setup rejects malformed settings, duplicate owned hooks, incomplete runtim
       installRun(command, box, "cursor", "project").stdout,
       /INSTALL-CONFLICT/,
     );
-  await rm(box.path(path));
-  await symlink(box.path("dangling"), box.path(path), "file");
+});
+test("setup refuses a linked registration without replacing it", async (t) => {
+  const box = await sandbox(t);
+  distribution(t, box);
+  await mkdir(box.path("project/.cursor"), { recursive: true });
+  try {
+    await symlink(
+      box.path("dangling"),
+      box.path("project/.cursor/hooks.json"),
+      "file",
+    );
+  } catch (error) {
+    if (
+      process.platform === "win32" &&
+      /** @type {NodeJS.ErrnoException} */ (error).code === "EPERM"
+    ) {
+      t.skip("Windows does not permit symbolic links for this user");
+      return;
+    }
+    throw error;
+  }
   t.assert.match(
     installRun("install", box, "cursor", "project").stdout,
     /INSTALL-LINK/,
