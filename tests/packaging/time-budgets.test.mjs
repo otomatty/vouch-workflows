@@ -22,9 +22,10 @@ test("check budget uses the Windows value on win32 and the default elsewhere", (
   );
 });
 
-test("hooks and scenario files get the file limit and other tiers the case limit", (t) => {
+test("hooks, scenario and distribution files get the file limit while other tiers retain the case limit", (t) => {
   t.assert.equal(testTimeoutFor("hooks", timing), 70);
   t.assert.equal(testTimeoutFor("scenario", timing), 70);
+  t.assert.equal(testTimeoutFor("distribution", timing), 70);
   for (const suite of ["checks", "packaging", "unit"])
     t.assert.equal(testTimeoutFor(suite, timing), 5, suite);
 });

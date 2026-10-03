@@ -56,6 +56,9 @@ test("identical validation settings share a phase without losing files or overla
   const registry = "/repo/tests/registry/schemas.test.mjs";
   const native = "/repo/tests/packaging/native-environment.test.mjs";
   const skills = "/repo/tests/packaging/skills.test.mjs";
+  const distribution = ["claude", "codex", "cursor"].map(
+    (name) => `/repo/tests/packaging/${name}.test.mjs`,
+  );
   const scenario = {
     suite: "scenario",
     files: ["/repo/tests/scenario/git.test.mjs"],
@@ -68,7 +71,7 @@ test("identical validation settings share a phase without losing files or overla
   const suites = [
     { suite: "content", files: [content] },
     { suite: "registry", files: [registry] },
-    { suite: "packaging", files: [native, skills] },
+    { suite: "packaging", files: [native, skills, ...distribution] },
     scenario,
     unit,
     hook,
@@ -79,6 +82,7 @@ test("identical validation settings share a phase without losing files or overla
       suite: "checks",
       files: [content, registry, skills],
     },
+    { suite: "distribution", files: distribution },
     unit,
     { suite: "packaging", files: [native] },
     scenario,

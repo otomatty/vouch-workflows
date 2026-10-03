@@ -1,9 +1,9 @@
 import { readFileSync } from "node:fs";
-import { test } from "node:test";
 import operations from "../../core/registry/operations.json" with {
   type: "json",
 };
 import runtime from "../../core/registry/runtime.json" with { type: "json" };
+import { hookTest as test } from "../helpers/hook-test.mjs";
 import { packageRun, tree } from "../helpers/packaging.mjs";
 import { sandbox } from "../helpers/runtime.mjs";
 
