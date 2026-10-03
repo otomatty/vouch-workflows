@@ -186,3 +186,32 @@ test("activation guidance encodes Markdown paths and refuses control characters 
   t.assert.match(bad.stdout, /INSTALL-PATH/);
   t.assert.equal((await readdir(box.root)).includes("home\ninjected"), false);
 });
+
+test("corrupt distribution descriptor paths cannot overwrite project files or omit their snapshots", async (t) => {
+  const box = await sandbox(t);
+  distribution(t, box);
+  await box.write("project/README.md", "existing project content\n");
+  const path = "dist/codex/.codex/registry/installation.json";
+  const original = JSON.parse(await box.read(path));
+  for (const bad of [
+    { registration: "../../../../README.md" },
+    { configuration: "../../../../README.md" },
+    { registration: "missing-hooks.json" },
+    { configuration: "missing-config.toml" },
+    { registration: null },
+    { configuration: null },
+  ]) {
+    await box.write(path, JSON.stringify({ ...original, ...bad }));
+    const result = installRun("install", box, "codex", "project");
+    t.assert.equal(result.status, 2, result.stdout);
+    t.assert.match(result.stdout, /INSTALL-(PATH|SOURCE)/);
+    t.assert.equal(
+      await box.read("project/README.md"),
+      "existing project content\n",
+    );
+    await t.assert.rejects(
+      box.read("project/.vouch/installations/codex.json"),
+      { code: "ENOENT" },
+    );
+  }
+});

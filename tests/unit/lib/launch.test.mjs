@@ -45,6 +45,7 @@ function ports(root, args, result = { status: 0, stdout: "", stderr: "" }) {
     environment:
       /** @type {ReturnType<typeof import('../../../core/hooks/lib/env.mjs').readLaunchEnvironment>} */ ({
         projectRoot: root,
+        cwd: root,
         explicit: false,
         args,
       }),
@@ -144,6 +145,23 @@ test("managed commands cannot inherit an Intent into an unconfigured project", a
       "",
     );
   }
+});
+test("an explicit dot project argument selects command cwd independently of inherited roots", async (t) => {
+  const box = await setup(t);
+  const command = ports(box.root, ["session", "project", "."]);
+  command.hooks.environment = {
+    ...command.hooks.environment,
+    projectRoot: box.box.root,
+    explicit: true,
+  };
+  await launch(box.entry, command.hooks);
+  t.assert.equal(command.seen.stderr, "");
+  t.assert.equal(command.seen.calls.length, 1);
+  t.assert.equal(
+    /** @type {{projectRoot:string}|undefined} */ (command.seen.calls[0]?.[3])
+      ?.projectRoot,
+    box.root,
+  );
 });
 test("native statusline quietly skips inactive projects and renders the selected runtime", async (t) => {
   const box = await setup(t, "claude");

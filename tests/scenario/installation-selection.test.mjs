@@ -108,7 +108,11 @@ for (const harness of ["claude", "codex", "cursor"]) {
     const box = await sandbox(t);
     await mkdir(box.path("project"));
     distribution(t, box);
-    t.assert.equal(installRun("install", box, harness, "project").status, 0);
+    t.assert.equal(
+      installRun("install", box, harness, "project", ["--intent", "moved"])
+        .status,
+      0,
+    );
     await cp(box.path("project"), box.path("moved 日本語 $ apostrophe'"), {
       recursive: true,
     });
@@ -136,6 +140,19 @@ for (const harness of ["claude", "codex", "cursor"]) {
           ? "CURSOR_PROJECT_DIR"
           : "VOUCH_PROJECT_ROOT";
     const root = box.path("moved 日本語 $ apostrophe'");
+    if (harness === "cursor") {
+      for (const hooks of Object.values(native.hooks))
+        for (const item of /** @type {{command:string}[]} */ (hooks))
+          t.assert.match(
+            item.command,
+            /^node \.vouch\/versions\/[a-f0-9]{64}\/cursor\/hooks\/vouch-launch\.mjs (session|prompt|guard|stop) project \.$/,
+          );
+    }
+    if (harness === "claude")
+      t.assert.match(
+        native.statusLine.command,
+        /^node \.vouch\/versions\/[a-f0-9]{64}\/claude\/hooks\/vouch-launch\.mjs statusline project \.$/,
+      );
     const input =
       harness === "cursor"
         ? cursorInput(root, "sessionStart")
@@ -160,7 +177,11 @@ for (const harness of ["claude", "codex", "cursor"]) {
           : ["-c", hook.command],
       {
         cwd: root,
-        env: { ...process.env, [variable]: root },
+        env: {
+          ...process.env,
+          [variable]: root,
+          ...(harness === "cursor" ? { VOUCH_PROJECT_ROOT: box.root } : {}),
+        },
         input: JSON.stringify(input),
         encoding: "utf8",
       },
@@ -168,5 +189,14 @@ for (const harness of ["claude", "codex", "cursor"]) {
     t.assert.equal(result.status, 0, result.stderr);
     t.assert.equal(result.stderr, "");
     t.assert.equal(config.harnesses[harness].scope, "project");
+    const recorded = JSON.parse(
+      (
+        await box.read(
+          "moved 日本語 $ apostrophe'/vouch/intents/moved/audit/events.jsonl",
+        )
+      ).trim(),
+    );
+    t.assert.equal(recorded.harness, harness);
+    t.assert.equal(recorded.intent, "moved");
   });
 }

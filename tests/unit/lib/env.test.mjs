@@ -49,6 +49,10 @@ test("managed environment keeps runtime and project roots separate for all three
     false,
   );
   t.assert.equal(
+    readLaunchEnvironment({}, ["node", "entry"], "/cwd").cwd,
+    "/cwd",
+  );
+  t.assert.equal(
     readLaunchEnvironment(
       { VOUCH_PROJECT_ROOT: "", CLAUDE_PROJECT_DIR: root, VOUCH_INTENT: "" },
       ["node", "entry"],
