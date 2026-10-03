@@ -2,11 +2,12 @@ import { spawnSync } from "node:child_process";
 import { cp, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { test as group } from "node:test";
-import { hookTest as test } from "../helpers/hook-test.mjs";
-import { cursorInput, distribution, installRun } from "../helpers/install.mjs";
-import { sandbox } from "../helpers/runtime.mjs";
+import { hookTest as test } from "./hook-test.mjs";
+import { cursorInput, distribution, installRun } from "./install.mjs";
+import { sandbox } from "./runtime.mjs";
 
-for (const harness of ["claude", "codex", "cursor"]) {
+/** @param {"claude"|"codex"|"cursor"} harness */
+export function installationSelection(harness) {
   group(
     `${harness}: user update preserves project pins, project install takes precedence and duplicate hooks skip`,
     async (t) => {
