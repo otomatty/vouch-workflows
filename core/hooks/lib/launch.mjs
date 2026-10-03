@@ -71,7 +71,11 @@ export async function launch(entryUrl, ports) {
       throw new Error("INSTALL-RUNTIME: invalid runtime descriptor");
     harness = /** @type {string} */ (descriptor.harness);
     const project = await findProject(
-      scope === "project" && rest[0] ? rest[0] : options.projectRoot,
+      scope === "project" && rest[0]
+        ? rest[0] === "."
+          ? options.cwd
+          : rest[0]
+        : options.projectRoot,
       (scope === "project" && Boolean(rest[0])) || options.explicit,
     );
     if (!project) {

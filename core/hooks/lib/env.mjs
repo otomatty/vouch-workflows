@@ -75,6 +75,7 @@ export function readLaunchEnvironment(
 ) {
   return {
     args: readArgs(argv),
+    cwd,
     projectRoot:
       env.VOUCH_PROJECT_ROOT ??
       env.CLAUDE_PROJECT_DIR ??

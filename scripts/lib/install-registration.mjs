@@ -27,6 +27,15 @@ export function registration(harness, runtimeRoot, scope, projectRoot) {
   ];
   /** @param {string} action @param {boolean} windows */
   const command = (action, windows) => {
+    if (
+      (harness === "cursor" || action === "statusline") &&
+      portable &&
+      local !== null &&
+      /^\.vouch\/versions\/[a-f0-9]{64}\/(claude|cursor)\/hooks\/vouch-launch\.mjs$/.test(
+        local,
+      )
+    )
+      return `node ${local} ${action} ${scope} .`;
     const args = base.map((word, i) => (i === 1 ? action : word));
     const quote = (/** @type {string} */ word) =>
       word.startsWith(`\${${variable}}`)

@@ -5,6 +5,7 @@ import {
   files,
   inside,
   read,
+  sameLocation,
   withLock,
 } from "./install-files.mjs";
 import { plan, readInstallation } from "./install-plan.mjs";
@@ -53,6 +54,21 @@ export function install(options, command) {
     if (!source[`${prefix}registry/installation.json`])
       throw new Error("INSTALL-SOURCE: incomplete distribution");
     const inventory = json(source[`${prefix}registry/runtime.json`] ?? null);
+    const descriptor = json(
+      source[`${prefix}registry/installation.json`] ?? null,
+    );
+    /** @type {{path:string,text:string}[]} */ const snapshots = [];
+    for (const key of ["registration", "configuration"]) {
+      const path = descriptor[key];
+      if (path === undefined && key === "configuration") continue;
+      if (typeof path !== "string")
+        throw new Error(`INSTALL-SOURCE: invalid ${key} snapshot`);
+      inside(runtimeRoot, path);
+      const text = source[`${prefix}${path}`];
+      if (text === undefined)
+        throw new Error(`INSTALL-SOURCE: missing ${key} snapshot ${path}`);
+      snapshots.push({ path, text });
+    }
     if (!Array.isArray(inventory.files) || !source["AGENTS.md"])
       throw new Error("INSTALL-SOURCE: runtime inventory or guidance missing");
     for (const path of inventory.files)
@@ -98,15 +114,8 @@ export function install(options, command) {
       }
     }
     // Keep a distribution registration snapshot for runtime doctor; native registration is checked by setup doctor.
-    const descriptor = json(
-      source[`${prefix}registry/installation.json`] ?? null,
-    );
-    for (const key of ["registration", "configuration"])
-      if (typeof descriptor[key] === "string")
-        changes.put(
-          `${runtimeRelative}/${descriptor[key]}`,
-          source[`${prefix}${descriptor[key]}`] ?? "",
-        );
+    for (const { path, text } of snapshots)
+      changes.put(`${runtimeRelative}/${path}`, text);
     changes.hooks(
       registrationPath(options.harness),
       registration(
@@ -277,11 +286,13 @@ export function remove(options) {
         const binding = readInstallation(read(inside(options.project, path)));
         if (
           binding &&
-          binding.runtimeRoot ===
+          sameLocation(
+            binding.runtimeRoot,
             inside(
               options.home,
               `.vouch/versions/${binding.digest}/${options.harness}`,
-            )
+            ),
+          )
         ) {
           const project = plan(options.project, binding);
           deactivate(project, options.harness);
@@ -291,7 +302,7 @@ export function remove(options) {
         }
         return finish();
       };
-      return options.project === root
+      return sameLocation(options.project, root)
         ? removeBinding()
         : withLock(options.project, removeBinding);
     }

@@ -45,6 +45,18 @@ export function inside(root, path) {
   return target;
 }
 
+/** Resolve filesystem identity without assuming the platform's case rules.
+ * @param {string} left @param {string} right */
+export function sameLocation(left, right) {
+  inspectPath(left);
+  inspectPath(right);
+  if (resolve(left) === resolve(right)) return true;
+  if (!existsSync(left) || !existsSync(right)) return false;
+  const a = lstatSync(left, { bigint: true });
+  const b = lstatSync(right, { bigint: true });
+  return a.dev === b.dev && a.ino === b.ino;
+}
+
 /** @param {string} path @returns {string|null} */
 export function read(path) {
   inspectPath(path);
@@ -86,6 +98,7 @@ export function commitChanges(changes) {
   /** @type {Change[]} */ const completed = [];
   try {
     for (const change of changes) {
+      if (change.before === change.after) continue;
       if (read(change.path) !== change.before)
         throw new Error(`INSTALL-CONFLICT: ${change.path}`);
       write(change.path, change.after);
