@@ -141,6 +141,100 @@ test("managed user runtime is protected outside the project and manual operation
 const artifact = `vouch/intents/${intent}/intent.md`;
 const done = "vouch/intents/260929-done/intent.md";
 
+test("managed runtime aliases protect existing and missing targets across file, patch and shell tools", async (t) => {
+  const box = await sandbox(t, { git: false });
+  const root = box.path("project");
+  const runtime = box.path("home/.vouch/versions/hash/cursor");
+  await box.write(
+    "home/.vouch/versions/hash/cursor/hooks/lib/env.mjs",
+    "trusted",
+  );
+  await box.write(
+    "home/.vouch/versions/hash/cursor/registry/installation.json",
+    "{}",
+  );
+  await box.write("home/other/file.mjs", "unrelated");
+  await mkdir(box.path("project/links"), { recursive: true });
+  await symlink(runtime, box.path("project/links/selected"), "junction");
+  await symlink(box.path("home"), box.path("project/links/home"), "junction");
+  await symlink(
+    box.path("home/other"),
+    box.path("project/links/unrelated"),
+    "junction",
+  );
+  const files = await createFileStore(root);
+  const ctx = {
+    projectRoot: root,
+    harness: /** @type {const} */ ("cursor"),
+    generation: "test",
+    ...fakeClock(),
+    readText: files.readText,
+    locate: files.locate,
+  };
+  /** @param {string} tool_name @param {Record<string,unknown>} tool_input */
+  const decide = (tool_name, tool_input) =>
+    guardWrites(
+      {
+        session_id: "s",
+        cwd: root,
+        hook_event_name: "PreToolUse",
+        tool_name,
+        tool_input,
+      },
+      ctx,
+      `${runtime}/hooks/vouch-guard-writes.mjs`,
+    );
+  for (const [
+    tool,
+    input,
+  ] of /** @type {[string,Record<string,unknown>][]} */ ([
+    [
+      "Write",
+      { file_path: "links/selected/hooks/lib/env.mjs", content: "tamper" },
+    ],
+    [
+      "Edit",
+      {
+        file_path: "links/selected/registry/installation.json",
+        old_string: "{}",
+        new_string: "tamper",
+      },
+    ],
+    ["Write", { file_path: "links/selected/hooks/new.mjs", content: "tamper" }],
+    [
+      "apply_patch",
+      {
+        command:
+          "*** Begin Patch\n*** Update File: links/selected/hooks/lib/env.mjs\n+tamper\n*** End Patch",
+      },
+    ],
+    ["Shell", { command: "echo tamper > links/selected/hooks/lib/env.mjs" }],
+    ["Shell", { command: "rm -rf links/home" }],
+  ])) {
+    const result = await decide(tool, input);
+    t.assert.equal(result.decision, "deny", tool);
+    t.assert.match(
+      result.decision === "deny" ? result.reason : "",
+      /VOUCH-GUARD-INSTALLATION/,
+    );
+  }
+  for (const [
+    tool,
+    input,
+  ] of /** @type {[string,Record<string,unknown>][]} */ ([
+    [
+      "Write",
+      { file_path: "links/unrelated/file.mjs", content: "application" },
+    ],
+    ["Shell", { command: "cat links/selected/hooks/lib/env.mjs" }],
+  ]))
+    t.assert.equal((await decide(tool, input)).decision, "allow", tool);
+  t.assert.equal(
+    await box.read("home/.vouch/versions/hash/cursor/hooks/lib/env.mjs"),
+    "trusted",
+  );
+});
+
 test("guardWrites refuses Claude file writes to the audit, locks and installation whatever the content", async (t) => {
   const box = await guardBox(t);
   const forged = `${JSON.stringify({ id: "evt_y", v: 1, type: "session.started", ts: "2026-09-29T00:00:01.000Z", actor: "hook", session: "s" })}\n`;

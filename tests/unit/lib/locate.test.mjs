@@ -1,5 +1,5 @@
 import * as fs from "node:fs/promises";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { createFileStore } from "../../../core/hooks/lib/fs.mjs";
 import { sandbox } from "../../helpers/runtime.mjs";
@@ -59,12 +59,24 @@ test("file store locates spelled paths at their real place without refusing link
     [
       "..",
       undefined,
-      { inside: null, contains: true, kind: "directory", links: 0 },
+      {
+        inside: null,
+        outside: dirname(box.root),
+        contains: true,
+        kind: "directory",
+        links: 0,
+      },
     ],
     [
       other.path("x"),
       undefined,
-      { inside: null, contains: false, kind: "missing", links: 0 },
+      {
+        inside: null,
+        outside: other.path("x"),
+        contains: false,
+        kind: "missing",
+        links: 0,
+      },
     ],
     [
       "file-link",
@@ -134,6 +146,28 @@ test("file store locates spelled paths at their real place without refusing link
   for (const [path, from, expected] of cases)
     t.assert.deepEqual(await files.locate(path, from), expected, path);
   t.assert.equal(await box.read("nested/file"), "x", "locating never writes");
+});
+
+test("file store exposes the resolved external target for aliases and missing descendants", async (t) => {
+  const box = await sandbox(t, { git: false });
+  const other = await sandbox(t, { git: false });
+  await other.write("runtime/file.mjs", "trusted");
+  await fs.symlink(other.path("runtime"), box.path("selected"), "junction");
+  const files = await createFileStore(box.root);
+  t.assert.deepEqual(await files.locate("selected/file.mjs"), {
+    inside: null,
+    outside: other.path("runtime/file.mjs"),
+    contains: false,
+    kind: "file",
+    links: 1,
+  });
+  t.assert.deepEqual(await files.locate("selected/new/file.mjs"), {
+    inside: null,
+    outside: other.path("runtime/new/file.mjs"),
+    contains: false,
+    kind: "missing",
+    links: 0,
+  });
 });
 
 test("file store locate reports other node types, a missing volume and components it cannot look up", async (t) => {
