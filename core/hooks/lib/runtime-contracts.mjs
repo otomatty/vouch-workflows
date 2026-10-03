@@ -23,6 +23,7 @@
  * Where a spelled path lands after links, junctions, root aliases and 8.3 names are followed.
  * @typedef {object} PathLocation
  * @property {string|null} inside Canonical path below the canonical root, "/"-separated; "" is the root; null outside.
+ * @property {string} [outside] Canonical absolute target when outside the store root; absent for inside paths.
  * @property {boolean} contains The canonical path is the root or one of its ancestors.
  * @property {'file'|'directory'|'missing'|'other'|'unresolved'} kind After following links; unresolved is a dangling or
  * looping link, or a target that could not be examined after it was found.
@@ -143,6 +144,7 @@ export {};
  * @property {string[]} installed Normalized protected entry names inside the installation directory.
  * @property {string} [managed] Native directory of a managed installation, including its activation configuration.
  * @property {string} [runtime] Trusted absolute hooks directory for managed manual commands outside the project.
+ * @property {string} [externalRuntime] Canonical selected runtime root outside the project, including registry and templates.
  * @typedef {(segments:string[],scope:GuardScope)=>GuardMatch|null} ClassifySegments Segments are
  * root-relative; glob segments may match any name at their position.
  * @typedef {(segment:string)=>string} NormalizeSegment Lower case without trailing dots, spaces or `:stream`.
