@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { mkdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { test } from "node:test";
+import { hookTest as test } from "../helpers/hook-test.mjs";
 import { cursorInput, distribution, installRun } from "../helpers/install.mjs";
 import { sandbox } from "../helpers/runtime.mjs";
 

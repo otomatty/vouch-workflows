@@ -1,9 +1,9 @@
 import fs from "node:fs";
 import { mkdir, rm, symlink } from "node:fs/promises";
 import { syncBuiltinESMExports } from "node:module";
-import { test } from "node:test";
 import { commitChanges } from "../../scripts/lib/install-files.mjs";
 import { plan } from "../../scripts/lib/install-plan.mjs";
+import { hookTest as test } from "../helpers/hook-test.mjs";
 
 test("custom user home with shell metacharacters remains selectable without repeating the home flag to doctor", async (t) => {
   const box = await sandbox(t);

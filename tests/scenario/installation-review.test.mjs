@@ -3,10 +3,10 @@ import fs, { existsSync, readFileSync } from "node:fs";
 import { mkdir, readdir, rm } from "node:fs/promises";
 import { syncBuiltinESMExports } from "node:module";
 import { join, resolve } from "node:path";
-import { test } from "node:test";
 import { remove } from "../../scripts/lib/install.mjs";
 import { withLock } from "../../scripts/lib/install-files.mjs";
 import { installedText } from "../../scripts/lib/install-registration.mjs";
+import { hookTest as test } from "../helpers/hook-test.mjs";
 import { distribution, installRun } from "../helpers/install.mjs";
 import { sandbox } from "../helpers/runtime.mjs";
 

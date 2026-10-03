@@ -1,5 +1,5 @@
 import { mkdir } from "node:fs/promises";
-import { test } from "node:test";
+import { hookTest as test } from "../helpers/hook-test.mjs";
 import { distribution, installRun } from "../helpers/install.mjs";
 import { sandbox } from "../helpers/runtime.mjs";
 
