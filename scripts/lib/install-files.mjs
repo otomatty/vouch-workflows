@@ -55,6 +55,13 @@ export function inside(root, path) {
  * @param {string} root @param {string} path */
 export const readInside = (root, path) => read(scopedPath(root, path));
 
+/** The first guarded read supplies both the contained target and its original bytes.
+ * @param {string} root @param {string} path */
+export function readScopedFile(root, path) {
+  const target = scopedPath(root, path);
+  return { path: target, text: read(target) };
+}
+
 /** Resolve filesystem identity without assuming the platform's case rules.
  * @param {string} left @param {string} right */
 export function sameLocation(left, right) {
@@ -68,7 +75,7 @@ export function sameLocation(left, right) {
 }
 
 /** @param {string} path @returns {string|null} */
-export function read(path) {
+function read(path) {
   inspectPath(path);
   if (!existsSync(path)) return null;
   if (!lstatSync(path).isFile()) throw new Error(`INSTALL-TYPE: ${path}`);

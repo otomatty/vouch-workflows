@@ -1,4 +1,4 @@
-import { inside, read, readInside } from "./install-files.mjs";
+import { readScopedFile } from "./install-files.mjs";
 import {
   addHooks,
   block,
@@ -16,20 +16,30 @@ import { enableCodex, removeCodex } from "./install-toml.mjs";
 export function plan(root, prior) {
   /** @type {Map<string,import('./install-files.mjs').Change>} */ const changes =
     new Map();
+  /** @type {Map<string,ReturnType<typeof readScopedFile>>} */ const originals =
+    new Map();
+  /** @param {string} path */
+  function original(path) {
+    let value = originals.get(path);
+    if (!value) {
+      value = readScopedFile(root, path);
+      originals.set(path, value);
+    }
+    return value;
+  }
   /** @type {Owned[]} */ const owned = [];
   /** @param {string} path */
   const current = (path) =>
     changes.has(path)
       ? /** @type {import('./install-files.mjs').Change} */ (changes.get(path))
           .after
-      : readInside(root, path);
+      : original(path).text;
   /** @param {string} path @param {string|null} after */
   function put(path, after) {
-    const previous = changes.get(path);
-    const target = inside(root, path);
+    const before = original(path);
     changes.set(path, {
-      path: target,
-      before: previous ? previous.before : read(target),
+      path: before.path,
+      before: before.text,
       after,
     });
   }
