@@ -207,6 +207,9 @@ test("native statusline skips inactive or unverified projects and uses registere
     ...runtime.assets.claude.map((path) => [path, "source"]),
   ]);
   source["AGENTS.md"] = "source";
+  source[".claude/registry/installation.json"] = JSON.stringify({
+    harness: "claude",
+  });
   source[".claude/registry/runtime.json"] = JSON.stringify(runtime);
   let activationOwned = managedOwned("claude");
   for (const entry of activationOwned) {
@@ -255,6 +258,9 @@ test("native statusline skips inactive or unverified projects and uses registere
     }),
   );
   await box.box.write("project/vouch/config.json", JSON.stringify(box.config));
+  const duplicate = ports(box.root, ["guard", "user"]);
+  await launch(box.entry, duplicate.hooks);
+  t.assert.equal(duplicate.seen.calls.length, 0);
   for (const root of [box.box.root, box.root]) {
     const display = ports(root, ["statusline", "user"], {
       status: 0,
@@ -290,7 +296,7 @@ test("native statusline skips inactive or unverified projects and uses registere
   t.assert.equal(absent.seen.calls.length, 0);
   t.assert.equal(absent.seen.stderr, "");
 });
-test("launcher ascends cwd, skips inactive projects, stale registrations and duplicate user hooks", async (t) => {
+test("launcher ascends cwd, skips inactive and stale project hooks, and keeps unverified user replacements active", async (t) => {
   const box = await setup(t);
   await mkdir(box.box.path("project/src"));
   const nested = ports(box.box.path("project/src"), ["doctor", "manual"]);
@@ -302,7 +308,7 @@ test("launcher ascends cwd, skips inactive projects, stale registrations and dup
   ]) {
     const skipped = ports(box.root, args);
     await launch(box.entry, skipped.hooks);
-    t.assert.equal(skipped.seen.calls.length, 0);
+    t.assert.equal(skipped.seen.calls.length, args[1] === "user" ? 1 : 0);
     t.assert.equal(skipped.seen.stdout, "{}\n");
   }
   const inactive = ports(box.box.root, ["doctor", "manual"]);
@@ -439,7 +445,7 @@ test("Cursor guard returns valid allow responses for active, inactive, absent an
   await box.box.write("project/vouch/config.json", JSON.stringify(box.config));
   const duplicate = ports(box.root, ["guard", "user"]);
   await launch(box.entry, duplicate.hooks);
-  t.assert.equal(duplicate.seen.calls.length, 0);
+  t.assert.equal(duplicate.seen.calls.length, 1);
   t.assert.deepEqual(JSON.parse(duplicate.seen.stdout), {
     permission: "allow",
   });
@@ -528,7 +534,7 @@ test("Cursor prompt permission survives successful execution, inactive bindings,
     await launch(box.entry, command.hooks);
     t.assert.equal(command.seen.code, 0);
     t.assert.deepEqual(JSON.parse(command.seen.stdout), { continue: true });
-    t.assert.equal(command.seen.calls.length, scope === "project" ? 1 : 0);
+    t.assert.equal(command.seen.calls.length, 1);
   }
 });
 
@@ -540,4 +546,41 @@ test("launcher I/O wrapper owns the process exit boundary", async (t) => {
   );
   t.assert.equal(process.exitCode, 2);
   process.exitCode = previous;
+});
+
+test("every harness keeps trusted user code active when a claimed replacement is absent or has an invalid descriptor", async (t) => {
+  for (const harness of /** @type {const} */ (["claude", "codex", "cursor"])) {
+    const box = await setup(t, harness);
+    box.binding.digest = "b".repeat(64);
+    box.binding.runtimeRoot = `.vouch/versions/${box.binding.digest}/${harness}`;
+    await box.box.write(
+      "project/vouch/config.json",
+      JSON.stringify(box.config),
+    );
+    for (const descriptor of [
+      undefined,
+      "null",
+      JSON.stringify({ harness: "unknown" }),
+    ]) {
+      if (descriptor !== undefined)
+        await box.box.write(
+          `project/${box.binding.runtimeRoot}/registry/installation.json`,
+          descriptor,
+        );
+      const command = ports(box.root, ["guard", "user"], {
+        status: 2,
+        stdout: "",
+        stderr: "trusted guard denied",
+      });
+      await launch(box.entry, command.hooks);
+      t.assert.equal(command.seen.calls.length, 1);
+      t.assert.equal(
+        command.seen.calls[0]?.[0],
+        join(box.runtime, "hooks/vouch-guard-writes.mjs"),
+      );
+      if (harness === "cursor")
+        t.assert.equal(JSON.parse(command.seen.stdout).permission, "deny");
+      else t.assert.equal(command.seen.code, 2);
+    }
+  }
 });
