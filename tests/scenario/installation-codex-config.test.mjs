@@ -7,6 +7,8 @@ import { sandbox } from "../helpers/runtime.mjs";
 
 /** @type {Record<string,string>} */
 const unfinished = {
+  "duplicate-model": 'model = "a"\nmodel = "b"',
+  "duplicate-provider-key": "[provider]\nmodel = 1\nmodel = 2",
   "unfinished-header": "[provider",
   "extra-header-closing": "[provider]]",
   "unfinished-array-header": "[[provider]",
@@ -85,6 +87,7 @@ group(
                 quote === "missing-array-separator" ||
                 quote === "invalid-bare-scalar" ||
                 quote === "unfinished-header" ||
+                quote === "duplicate-model" ||
                 quote === "closing-array-eof-comment"
               ) {
                 const result = installRun("install", box, "codex", scope);

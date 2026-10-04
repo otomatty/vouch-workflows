@@ -88,6 +88,14 @@ for (const scope of ["project", "user"])
           t,
         );
       for (const [name, invalid] of [
+        [
+          "duplicate ordinary keys cannot look active",
+          'model = "a"\nmodel = "b"',
+        ],
+        [
+          "duplicate keys in another table cannot look active",
+          "[provider]\nmodel = 1\nmodel = 2",
+        ],
         ["unfinished table header cannot look active", "[provider"],
         ["extra table closing bracket cannot look active", "[provider]]"],
         ["invalid bare scalar cannot look active", "bad = hello"],
