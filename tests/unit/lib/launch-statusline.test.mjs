@@ -19,7 +19,9 @@ test("native statusline skips inactive or unverified projects and uses registere
   source["AGENTS.md"] = "source";
   source[".claude/registry/installation.json"] = JSON.stringify({
     harness: "claude",
+    registration: "settings.json",
   });
+  source[".claude/settings.json"] = '{"hooks":{}}';
   source[".claude/registry/runtime.json"] = JSON.stringify(runtime);
   let activationOwned = managedOwned("claude");
   for (const entry of activationOwned) {

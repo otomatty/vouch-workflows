@@ -26,6 +26,7 @@ export async function managedDoctor(t) {
     registration: "hooks.json",
   });
   source[".cursor/registry/registration.json"] = JSON.stringify(expected);
+  source[".cursor/hooks.json"] = JSON.stringify(expected);
   let activationOwned = managedOwned("cursor");
   for (const entry of activationOwned)
     if (entry.kind === "file" && !entry.path.includes("/rules/"))

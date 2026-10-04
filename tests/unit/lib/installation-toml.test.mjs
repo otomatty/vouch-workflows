@@ -7,6 +7,35 @@ import {
 
 const owned = { path: "owned", kind: "toml", content: "", previous: null };
 
+test("Codex refuses unfinished and mismatched inline tables before enabling or restoring settings", (t) => {
+  for (const value of [
+    "{ a = 1",
+    "{ a = 1}}",
+    "{ a = [1}, 2]",
+    "[ { a = 1 ] }",
+    "{ a = 1\n}",
+  ])
+    for (const suffix of ["", " # trailing"])
+      for (const prefix of [
+        "",
+        "[features]\nhooks = true\n[agents]\nmax_depth = 3\n",
+      ]) {
+        const text = `${prefix}x = ${value}${suffix}`;
+        t.assert.throws(() => enableCodex(text), /INSTALL-CONFIG/);
+        t.assert.throws(() => removeCodex(text, "[]", null), /INSTALL-CONFIG/);
+      }
+  for (const value of [
+    "{}",
+    "{ a = 1, b = { c = [1, 2] } }",
+    "[ { a = '}[', b = [1] } ]",
+  ])
+    for (const suffix of ["", " # trailing"]) {
+      const text = `[features]\nhooks = true\n[agents]\nmax_depth = 3\nx = ${value}${suffix}`;
+      t.assert.equal(enableCodex(text).text, text);
+      t.assert.equal(removeCodex(text, "[]", null), text);
+    }
+});
+
 test("Codex refuses unbalanced arrays at EOF before accepting or editing settings", (t) => {
   for (const text of [
     "x = [1, 2",

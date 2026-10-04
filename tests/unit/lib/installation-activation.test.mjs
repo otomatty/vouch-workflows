@@ -18,6 +18,11 @@ function setup(scope = "project", harness = "claude") {
   ]);
   source["AGENTS.md"] = "content";
   source[`.${harness}/registry/runtime.json`] = JSON.stringify(runtime);
+  source[`.${harness}/registry/installation.json`] = JSON.stringify({
+    harness,
+    registration: "selected-hooks.json",
+  });
+  source[`.${harness}/selected-hooks.json`] = '{"hooks":{}}';
   let activationOwned = managedOwned(harness);
   for (const entry of activationOwned)
     if (entry.kind === "file" && !entry.path.includes("/rules/"))

@@ -35,6 +35,14 @@ function fixture(harness = "codex", scope = "user") {
   source["AGENTS.md"] =
     `Read [rules](.${harness}/templates/rules.md) and run \`node .${harness}/hooks/vouch-doctor.mjs\`.`;
   source[`.${harness}/registry/runtime.json`] = JSON.stringify(runtime);
+  source[`.${harness}/registry/installation.json`] = JSON.stringify({
+    harness,
+    registration: "selected-hooks.json",
+    ...(harness === "codex" ? { configuration: "selected-config.toml" } : {}),
+  });
+  source[`.${harness}/selected-hooks.json`] = '{"hooks":{}}';
+  if (harness === "codex")
+    source[`.${harness}/selected-config.toml`] = "# selected configuration\n";
   source[`.${harness}/templates/rules.md`] =
     `See .${harness}/registry/workflow.json`;
   source[`.${harness}/skills/vouch/SKILL.md`] = "owned activation";
@@ -53,6 +61,31 @@ function fixture(harness = "codex", scope = "user") {
   });
   return { source, state, root, store };
 }
+
+test("descriptor-selected snapshots join runtime integrity in every harness and scope", async (t) => {
+  for (const harness of /** @type {const} */ (["claude", "codex", "cursor"]))
+    for (const scope of ["project", "user"])
+      for (const path of [
+        "selected-hooks.json",
+        ...(harness === "codex" ? ["selected-config.toml"] : []),
+      ]) {
+        const { source, state, root, store } = fixture(harness, scope);
+        t.assert.equal(
+          runtimeContents(source, harness, root)[path],
+          source[`.${harness}/${path}`],
+        );
+        for (const text of [null, "changed nonempty bytes", ""]) {
+          if (text === null) store.data.delete(path);
+          else store.data.set(path, text);
+          const before = new Map(store.data);
+          await t.assert.rejects(
+            verifyManagedRuntime(store, state, root),
+            /INSTALL-VERSION/,
+          );
+          t.assert.deepEqual(store.data, before);
+        }
+      }
+});
 
 test("every managed harness and scope verifies transformed guidance and complete immutable archive without writes", async (t) => {
   for (const harness of ["claude", "codex", "cursor"])

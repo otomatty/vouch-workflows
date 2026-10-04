@@ -8,6 +8,8 @@ import { sandbox } from "../helpers/runtime.mjs";
 /** @type {Record<string,string>} */
 const unfinished = {
   "unfinished-array-eof": "x = [1, 2",
+  "unfinished-inline-eof": "x = { a = 1",
+  "unfinished-inline-comment": "x = { a = 1 # trailing",
   "unfinished-nested-array-eof": "x = [[1], [2]",
   "closing-array-eof-comment": "x = ] # trailing",
   "extra-closing-array-eof-comment": "x = [1]] # trailing",
@@ -68,6 +70,7 @@ group(
               if (
                 quote === '"""' ||
                 quote === "unfinished-array-eof" ||
+                quote === "unfinished-inline-eof" ||
                 quote === "closing-array-eof-comment"
               ) {
                 const result = installRun("install", box, "codex", scope);
