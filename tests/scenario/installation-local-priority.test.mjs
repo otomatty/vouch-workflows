@@ -59,7 +59,8 @@ group(
                     harness: "claude",
                   }),
             );
-          await rm(box.path("project/vouch/config.json"));
+        await box.write("project/vouch/config.json", config);
+        await rm(box.path("project/vouch/config.json"));
           const before = tree(box.root);
           const initialized = installRun("init", box, "cursor", "project", [
             "--home",
