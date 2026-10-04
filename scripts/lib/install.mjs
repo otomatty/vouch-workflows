@@ -57,6 +57,10 @@ export function install(options, command) {
     const descriptor = json(
       source[`${prefix}registry/installation.json`] ?? null,
     );
+    if (descriptor.harness !== options.harness)
+      throw new Error(
+        "INSTALL-SOURCE: distribution harness differs from requested harness",
+      );
     /** @type {{path:string,text:string}[]} */ const snapshots = [];
     for (const key of ["registration", "configuration"]) {
       const path = descriptor[key];

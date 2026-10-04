@@ -293,7 +293,10 @@ for (const scope of ["user", "project"])
     await box.write("home/README.md", "existing home content\n");
     const path = "dist/claude/.claude/registry/installation.json";
     const original = await box.read(path);
-    const wrong = JSON.stringify({ ...JSON.parse(original), harness: "cursor" });
+    const wrong = JSON.stringify({
+      ...JSON.parse(original),
+      harness: "cursor",
+    });
     await box.write(path, wrong);
     const fresh = tree(box.root);
     const rejected = installRun("install", box, "claude", scope);
