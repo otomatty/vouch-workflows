@@ -8,6 +8,7 @@ import { withLock } from "../../scripts/lib/install-files.mjs";
 import { installedText } from "../../scripts/lib/install-registration.mjs";
 import { hookTest as test } from "../helpers/hook-test.mjs";
 import { distribution, installRun } from "../helpers/install.mjs";
+import { tree } from "../helpers/packaging.mjs";
 import { sandbox } from "../helpers/runtime.mjs";
 
 test("failed project removal preserves user state even when one project restoration is denied", async (t) => {
@@ -284,13 +285,43 @@ test("activation guidance encodes Markdown paths and refuses control characters 
   t.assert.equal((await readdir(box.root)).includes("home\ninjected"), false);
 });
 
-test("corrupt distribution descriptor paths cannot overwrite project files or omit their snapshots", async (t) => {
+for (const scope of ["user", "project"])
+  test(`${scope} setup rejects a different harness before changing fresh or installed files`, async (t) => {
+    const box = await sandbox(t);
+    distribution(t, box);
+    await box.write("project/README.md", "existing project content\n");
+    await box.write("home/README.md", "existing home content\n");
+    const path = "dist/claude/.claude/registry/installation.json";
+    const original = await box.read(path);
+    const wrong = JSON.stringify({ ...JSON.parse(original), harness: "cursor" });
+    await box.write(path, wrong);
+    const fresh = tree(box.root);
+    const rejected = installRun("install", box, "claude", scope);
+    t.assert.equal(rejected.status, 2, rejected.stdout);
+    t.assert.match(rejected.stdout, /INSTALL-SOURCE/);
+    t.assert.deepEqual(tree(box.root), fresh);
+    await box.write(path, original);
+    const installed = installRun("install", box, "claude", scope);
+    t.assert.equal(installed.status, 0, installed.stdout);
+    await box.write(path, wrong);
+    const before = tree(box.root);
+    for (const command of ["install", "update"]) {
+      const result = installRun(command, box, "claude", scope);
+      t.assert.equal(result.status, 2, result.stdout);
+      t.assert.match(result.stdout, /INSTALL-SOURCE/);
+      t.assert.deepEqual(tree(box.root), before);
+    }
+  });
+
+test("corrupt distribution descriptors cannot overwrite project files or omit their snapshots", async (t) => {
   const box = await sandbox(t);
   distribution(t, box);
   await box.write("project/README.md", "existing project content\n");
   const path = "dist/codex/.codex/registry/installation.json";
   const original = JSON.parse(await box.read(path));
   for (const bad of [
+    { harness: "cursor" },
+    { harness: null },
     { registration: "../../../../README.md" },
     { configuration: "../../../../README.md" },
     { registration: "missing-hooks.json" },
