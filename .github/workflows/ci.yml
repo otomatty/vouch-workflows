@@ -37,5 +37,6 @@ jobs:
       # Diagnostic only, after the unchanged gate; profiler overhead is never a budget result.
       - name: Diagnose process startup and populated resume
         if: always() && runner.os == 'Windows' && steps.check.outcome != 'skipped'
+        continue-on-error: true
         timeout-minutes: 1
         run: node scripts/benchmark-hook.mjs --resume --load --profile

@@ -204,16 +204,22 @@ function activate(changes, options, state, runtimeRoot) {
 /** @param {Options} options */
 export function initialize(options) {
   return withLock(options.project, () => {
-    const local = readInstallation(
+    const projectState = readInstallation(
       readInside(options.project, statePath(options.harness)),
     );
-    const global = readInstallation(
+    const userState = readInstallation(
       readInside(options.home, statePath(options.harness)),
     );
+    const local = projectState?.scope === "project" ? projectState : null;
+    const global = userState?.scope === "user" ? userState : null;
     const selected = local ?? global;
     if (!selected)
       throw new Error(
         "INSTALL-MISSING: install a project or user runtime first",
+      );
+    if (!local && sameLocation(options.project, options.home))
+      throw new Error(
+        "INSTALL-SCOPE: user installation and project share a directory; choose a distinct --project",
       );
     const runtimeRoot = inside(
       local ? options.project : options.home,
