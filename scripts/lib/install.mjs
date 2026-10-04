@@ -160,11 +160,7 @@ export function install(options, command) {
 
 /** @param {ReturnType<import('./install-plan.mjs').plan>} changes @param {Options} options
  * @param {import('./install-plan.mjs').Installation} state @param {string} runtimeRoot */
-function activate(changes, options, state, runtimeRoot) {
-  const referenceRoot =
-    state.scope === "project"
-      ? relative(options.project, runtimeRoot).replaceAll("\\", "/")
-      : runtimeRoot.replaceAll("\\", "/");
+function configureProject(changes, options, state, runtimeRoot) {
   const config = json(changes.current("vouch/config.json"));
   if (config.v !== undefined && config.v !== 1)
     throw new Error("INSTALL-CONFIG: unsupported project configuration");
@@ -191,6 +187,16 @@ function activate(changes, options, state, runtimeRoot) {
       ...(options.intent === undefined ? {} : { intent: options.intent }),
     }),
   );
+}
+
+/** @param {ReturnType<import('./install-plan.mjs').plan>} changes @param {Options} options
+ * @param {import('./install-plan.mjs').Installation} state @param {string} runtimeRoot */
+function activate(changes, options, state, runtimeRoot) {
+  const referenceRoot =
+    state.scope === "project"
+      ? relative(options.project, runtimeRoot).replaceAll("\\", "/")
+      : runtimeRoot.replaceAll("\\", "/");
+  configureProject(changes, options, state, runtimeRoot);
   changes.document(
     "AGENTS.md",
     options.harness,
@@ -239,9 +245,7 @@ export function initialize(options) {
     const changes = plan(options.project, binding);
     if (local) {
       // The project installation already owns its activation documents and registration.
-      const config = json(changes.current("vouch/config.json"));
-      if (options.intent !== undefined) config.intent = options.intent;
-      changes.put("vouch/config.json", pretty(config));
+      configureProject(changes, options, selected, runtimeRoot);
     } else {
       const source = files(join(runtimeRoot, "distribution"));
       if (sourceDigest(source) !== selected.digest)

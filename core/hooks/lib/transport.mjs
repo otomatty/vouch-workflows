@@ -90,9 +90,10 @@ export function cursorOutput(action, result) {
     return result.status === 2
       ? { permission: "deny", user_message: reason }
       : { permission: "allow" };
-  if (result.status === 2) {
-    if (action === "prompt") return { continue: false, user_message: reason };
-  }
+  if (action === "prompt")
+    return result.status === 2
+      ? { continue: false, user_message: reason }
+      : { continue: true };
   if (action === "session" && result.status === 0 && result.stdout.trim())
     return { additional_context: result.stdout.trim() };
   return {};
