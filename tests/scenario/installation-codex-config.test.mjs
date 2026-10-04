@@ -7,6 +7,9 @@ import { sandbox } from "../helpers/runtime.mjs";
 
 /** @type {Record<string,string>} */
 const unfinished = {
+  "unfinished-header": "[provider",
+  "extra-header-closing": "[provider]]",
+  "unfinished-array-header": "[[provider]",
   "invalid-bare-scalar": "bad = hello",
   "invalid-leading-zero": "bad = 01",
   "missing-array-separator": "bad = [1 2]",
@@ -81,6 +84,7 @@ group(
                 quote === "missing-value-eof" ||
                 quote === "missing-array-separator" ||
                 quote === "invalid-bare-scalar" ||
+                quote === "unfinished-header" ||
                 quote === "closing-array-eof-comment"
               ) {
                 const result = installRun("install", box, "codex", scope);

@@ -88,6 +88,8 @@ for (const scope of ["project", "user"])
           t,
         );
       for (const [name, invalid] of [
+        ["unfinished table header cannot look active", "[provider"],
+        ["extra table closing bracket cannot look active", "[provider]]"],
         ["invalid bare scalar cannot look active", "bad = hello"],
         ["invalid integer spelling cannot look active", "bad = 01"],
         ["missing array separators cannot look active", "bad = [1 2]"],
