@@ -3,6 +3,14 @@ import guard from "../../registry/write-guard.json" with { type: "json" };
 // Protected areas and approved status; see docs/development/write-guard.md.
 const approvedLine = /^\s*status\s*:\s*(["']?)approved\1\s*(?:#.*)?$/i;
 
+// Registrations and configuration overrides that can disable native hooks.
+export const nativeRegistrationNames = [
+  "hooks.json",
+  "settings.json",
+  "settings.local.json",
+  "config.toml",
+];
+
 /** Any line declaring approved, wherever it is. @param {string} text */
 export const approvedLines = (text) =>
   text.split(/\r?\n/).some((line) => approvedLine.test(line));
@@ -77,12 +85,7 @@ export function classifySegments(segments, scope) {
       (parts.length >= 2 && under(parts, ["vouch", "config.json"])) ||
       (parts.length >= 2 &&
         under(parts, [scope.managed]) &&
-        [
-          "hooks.json",
-          "settings.json",
-          "settings.local.json",
-          "config.toml",
-        ].some((name) => matches(parts[1] ?? "", name))))
+        nativeRegistrationNames.some((name) => matches(parts[1] ?? "", name))))
   )
     return { area: "installation", ancestor: false };
   if (

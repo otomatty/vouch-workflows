@@ -145,6 +145,7 @@ export {};
  * @property {string} [managed] Native directory of a managed installation, including its activation configuration.
  * @property {string} [runtime] Trusted absolute hooks directory for managed manual commands outside the project.
  * @property {string} [externalRuntime] Canonical selected runtime root outside the project, including registry and templates.
+ * @property {PathLocation[]} [externalRegistrations] Canonical native registration/configuration targets of the selected user installation, including missing overrides and aliases into the project.
  * @typedef {(segments:string[],scope:GuardScope)=>GuardMatch|null} ClassifySegments Segments are
  * root-relative; glob segments may match any name at their position.
  * @typedef {(segment:string)=>string} NormalizeSegment Lower case without trailing dots, spaces or `:stream`.

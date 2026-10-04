@@ -1,18 +1,35 @@
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import guard from "../../registry/write-guard.json" with { type: "json" };
-import { normalizeSegment } from "./areas.mjs";
+import { nativeRegistrationNames, normalizeSegment } from "./areas.mjs";
 
 /** @param {import('./contracts.mjs').ReadyHookContext} ctx @param {string} entry
  * @returns {Promise<import('./runtime-contracts.mjs').GuardScope>} */
 export async function guardScope(ctx, entry) {
   const hook = entry.startsWith("file:") ? fileURLToPath(entry) : entry;
-  const location = await ctx.locate(dirname(dirname(hook)));
+  const runtimeRoot = dirname(dirname(hook));
+  const location = await ctx.locate(runtimeRoot);
   const managed = /(?:^|[/\\])\.vouch[/\\]versions[/\\]/.test(hook)
     ? {
         managed: `.${ctx.harness}`,
         runtime: resolve(dirname(hook)),
-        ...(location.outside ? { externalRuntime: location.outside } : {}),
+        ...(location.outside
+          ? {
+              externalRuntime: location.outside,
+              externalRegistrations: await Promise.all(
+                nativeRegistrationNames.map((name) =>
+                  ctx.locate(
+                    resolve(
+                      runtimeRoot,
+                      "../../../..",
+                      `.${ctx.harness}`,
+                      name,
+                    ),
+                  ),
+                ),
+              ),
+            }
+          : {}),
       }
     : {};
   const home = location.inside;
@@ -53,10 +70,19 @@ function contains(root, target) {
  * @param {import('./runtime-contracts.mjs').GuardScope} scope
  * @returns {import('./runtime-contracts.mjs').GuardMatch|null} */
 export function externalRuntimeMatch(at, scope) {
-  if (!at.outside || !scope.externalRuntime) return null;
-  if (contains(scope.externalRuntime, at.outside))
-    return { area: "installation", ancestor: false };
-  if (contains(at.outside, scope.externalRuntime))
-    return { area: "installation", ancestor: true };
+  if (at.outside && scope.externalRuntime) {
+    if (contains(scope.externalRuntime, at.outside))
+      return { area: "installation", ancestor: false };
+    if (contains(at.outside, scope.externalRuntime))
+      return { area: "installation", ancestor: true };
+  }
+  for (const registration of scope.externalRegistrations ?? []) {
+    const root = at.outside ? registration.outside : registration.inside;
+    const target = at.outside ?? at.inside;
+    if (root === undefined || root === null || target === null) continue;
+    if (contains(root, target))
+      return { area: "installation", ancestor: false };
+    if (contains(target, root)) return { area: "installation", ancestor: true };
+  }
   return null;
 }
