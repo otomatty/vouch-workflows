@@ -1,6 +1,7 @@
 import runtime from "../../registry/runtime.json" with { type: "json" };
 import { createFileStore } from "./fs.mjs";
 import { verifyManagedActivation } from "./installation-activation.mjs";
+import { isSnapshotName } from "./installation-runtime.mjs";
 
 /** @param {unknown} value @returns {value is Record<string,unknown>} */
 function object(value) {
@@ -89,11 +90,9 @@ export async function inspectInstallation(files, environment, git) {
     if (
       !object(value) ||
       !["claude", "codex", "cursor"].includes(String(value.harness)) ||
-      typeof value.registration !== "string" ||
-      !/^[a-z][a-z-]*\.json$/.test(value.registration) ||
+      !isSnapshotName(value.registration, "registration") ||
       (value.configuration !== undefined &&
-        (typeof value.configuration !== "string" ||
-          !/^[a-z][a-z-]*\.toml$/.test(value.configuration)))
+        !isSnapshotName(value.configuration, "configuration"))
     )
       throw new Error("invalid installation descriptor");
     installation = {

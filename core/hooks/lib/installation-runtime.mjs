@@ -2,6 +2,14 @@ import { createHash } from "node:crypto";
 import runtime from "../../registry/runtime.json" with { type: "json" };
 import { json } from "./installation-ownership.mjs";
 
+/** Snapshot names accepted equally by setup and the distributed diagnostic.
+ * @param {unknown} value @param {'registration'|'configuration'} kind @returns {value is string} */
+export const isSnapshotName = (value, kind) =>
+  typeof value === "string" &&
+  new RegExp(
+    `^[a-z][a-z-]*\\.${kind === "registration" ? "json" : "toml"}$`,
+  ).test(value);
+
 /** Exact installer digest over every archived relative name and UTF-8 content.
  * @param {Record<string,string>} source */
 export const distributionDigest = (source) =>

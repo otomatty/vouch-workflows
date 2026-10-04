@@ -1,5 +1,6 @@
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import {
+  isSnapshotName,
   runtimeContents,
   distributionDigest as sourceDigest,
 } from "../../core/hooks/lib/installation-runtime.mjs";
@@ -62,7 +63,12 @@ export function install(options, command) {
     for (const key of ["registration", "configuration"]) {
       const path = descriptor[key];
       if (path === undefined && key === "configuration") continue;
-      if (typeof path !== "string")
+      if (
+        !isSnapshotName(
+          path,
+          key === "registration" ? "registration" : "configuration",
+        )
+      )
         throw new Error(`INSTALL-SOURCE: invalid ${key} snapshot`);
       inside(runtimeRoot, path);
       const text = source[`${prefix}${path}`];
