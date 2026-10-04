@@ -388,11 +388,56 @@ test("damaged descriptors preserve the native adapter and manual failure without
         if (!manual && harness === "cursor")
           t.assert.deepEqual(
             JSON.parse(command.seen.stdout),
-            action === "guard" ? { permission: "allow" } : {},
+            action === "guard"
+              ? { permission: "allow" }
+              : action === "prompt"
+                ? { continue: true }
+                : {},
           );
         else t.assert.equal(command.seen.stdout, "");
       }
     }
+  }
+});
+
+test("Cursor prompt permission survives successful execution, inactive bindings, invalid input and internal failures", async (t) => {
+  const box = await setup(t);
+  const payload = JSON.stringify({
+    hook_event_name: "beforeSubmitPrompt",
+    conversation_id: "conversation",
+    generation_id: "generation",
+    prompt: "hello",
+  });
+  for (const config of [
+    JSON.stringify(box.config),
+    '{"v":1,"harnesses":{}}',
+    "{",
+  ]) {
+    await box.box.write("project/vouch/config.json", config);
+    for (const raw of [payload, "{", "{}"]) {
+      const command = ports(box.root, ["prompt", "project", box.root]);
+      command.hooks.input = (async function* () {
+        yield Buffer.from(raw);
+      })();
+      await launch(box.entry, command.hooks);
+      t.assert.equal(command.seen.code, 0);
+      t.assert.deepEqual(JSON.parse(command.seen.stdout), { continue: true });
+    }
+  }
+  await box.box.write("project/vouch/config.json", JSON.stringify(box.config));
+  for (const scope of ["user", "project"]) {
+    const command = ports(box.root, ["prompt", scope, box.root], {
+      status: null,
+      stdout: "",
+      stderr: "internal failure",
+    });
+    command.hooks.input = (async function* () {
+      yield Buffer.from(payload);
+    })();
+    await launch(box.entry, command.hooks);
+    t.assert.equal(command.seen.code, 0);
+    t.assert.deepEqual(JSON.parse(command.seen.stdout), { continue: true });
+    t.assert.equal(command.seen.calls.length, scope === "project" ? 1 : 0);
   }
 });
 

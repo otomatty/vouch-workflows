@@ -238,3 +238,15 @@ test("Cursor responses convert shared denials and context without changing workf
       { permission: "allow" },
     );
 });
+
+test("accepted and fail-open Cursor prompts always return explicit native permission", (t) => {
+  for (const status of [0, 1, null])
+    t.assert.deepEqual(
+      cursorOutput("prompt", {
+        status,
+        stdout: "",
+        stderr: status === 0 ? "" : "internal failure",
+      }),
+      { continue: true },
+    );
+});
