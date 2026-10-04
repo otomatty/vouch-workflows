@@ -30,7 +30,7 @@
         "pattern": "^[A-Za-z_]+$"
       },
       "additionalProperties": {
-        "enum": ["write", "edit", "patch", "shell"]
+        "enum": ["write", "edit", "delete", "patch", "shell"]
       }
     }
   },
