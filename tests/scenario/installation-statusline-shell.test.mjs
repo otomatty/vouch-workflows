@@ -34,12 +34,14 @@ for (const scope of ["user", "project"])
       let command = "";
       try {
         Object.defineProperty(process, "platform", { value: "win32" });
-        command = registration(
+        const native = registration(
           "claude",
           box.path(runtime),
           scope,
           scope === "project" ? box.path("project") : undefined,
-        ).statusLine.command;
+        );
+        command =
+          "statusLine" in native ? (native.statusLine?.command ?? "") : "";
       } finally {
         if (platform) Object.defineProperty(process, "platform", platform);
       }
