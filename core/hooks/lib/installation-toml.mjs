@@ -51,10 +51,14 @@ function sectionBounds(text, section) {
   );
   if (
     starts.length > 1 ||
-    lines.some((line) =>
-      new RegExp(`^\\s*(?:${section}|"${section}"|'${section}')\\s*[.=]`).test(
-        line,
-      ),
+    lines.some(
+      (line) =>
+        new RegExp(
+          `^\\s*(?:${section}|"${section}"|'${section}')\\s*[.=]`,
+        ).test(line) ||
+        new RegExp(
+          `^\\s*\\[\\[\\s*(?:${section}|"${section}"|'${section}')\\s*\\]\\]`,
+        ).test(line),
     )
   )
     throw new Error(
