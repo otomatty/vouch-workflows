@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { readdirSync, statSync } from "node:fs";
 import { availableParallelism } from "node:os";
 import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import budgets from "../core/registry/budgets.json" with { type: "json" };
 import { createInstallationFixture } from "./lib/installation-fixture.mjs";
 import { testGroups, testPhases } from "./lib/test-phases.mjs";
@@ -59,7 +60,10 @@ try {
         files: phase.files,
         timeout: testTimeoutFor(suite, budgets.timing),
         concurrency: phase.concurrency,
-        execArgv: ["--import", resolve("tests/helpers/no-network.mjs")],
+        execArgv: [
+          "--import",
+          pathToFileURL(resolve("tests/helpers/no-network.mjs")).href,
+        ],
       };
       const measured =
         !phase.budget &&
