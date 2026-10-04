@@ -105,8 +105,8 @@ export function plan(root, prior) {
   };
 }
 
-/** @param {string|null} text @returns {Installation|null} */
-export function readInstallation(text) {
+/** @param {string|null} text @param {{harness:string,scope?:string}} [expected] @returns {Installation|null} */
+export function readInstallation(text, expected) {
   if (text === null) return null;
   const value = json(text);
   if (
@@ -119,6 +119,14 @@ export function readInstallation(text) {
     !Array.isArray(value.owned)
   )
     throw new Error("INSTALL-STATE: invalid installation descriptor");
+  if (
+    expected &&
+    (value.harness !== expected.harness ||
+      (expected.scope !== undefined && value.scope !== expected.scope))
+  )
+    throw new Error(
+      "INSTALL-STATE: stored harness or scope differs from requested installation",
+    );
   for (const entry of value.owned)
     if (
       !entry ||

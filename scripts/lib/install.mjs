@@ -41,6 +41,7 @@ export function install(options, command) {
   return withLock(root, () => {
     const prior = readInstallation(
       readInside(root, statePath(options.harness)),
+      { harness: options.harness, scope: options.scope },
     );
     if (command === "update" && !prior)
       throw new Error("INSTALL-MISSING: scope is not installed");
@@ -81,7 +82,10 @@ export function install(options, command) {
     const bindingPath = `.vouch/bindings/${options.harness}.json`;
     const binding =
       options.scope === "project"
-        ? readInstallation(readInside(root, bindingPath))
+        ? readInstallation(readInside(root, bindingPath), {
+            harness: options.harness,
+            scope: "user",
+          })
         : null;
     const changes = plan(root, prior ?? binding);
     if (binding) changes.put(bindingPath, null);
@@ -206,9 +210,11 @@ export function initialize(options) {
   return withLock(options.project, () => {
     const projectState = readInstallation(
       readInside(options.project, statePath(options.harness)),
+      { harness: options.harness },
     );
     const userState = readInstallation(
       readInside(options.home, statePath(options.harness)),
+      { harness: options.harness },
     );
     const local = projectState?.scope === "project" ? projectState : null;
     const global = userState?.scope === "user" ? userState : null;
@@ -226,7 +232,10 @@ export function initialize(options) {
       selected.runtimeRoot,
     );
     const bindingPath = `.vouch/bindings/${options.harness}.json`;
-    const binding = readInstallation(readInside(options.project, bindingPath));
+    const binding = readInstallation(readInside(options.project, bindingPath), {
+      harness: options.harness,
+      scope: "user",
+    });
     const changes = plan(options.project, binding);
     if (local) {
       // The project installation already owns its activation documents and registration.
@@ -272,11 +281,15 @@ export function remove(options) {
   return withLock(root, () => {
     const local = readInstallation(
       readInside(root, statePath(options.harness)),
+      { harness: options.harness, scope: options.scope },
     );
     const bindingPath = `.vouch/bindings/${options.harness}.json`;
     const binding =
       options.scope === "project" && !local
-        ? readInstallation(readInside(root, bindingPath))
+        ? readInstallation(readInside(root, bindingPath), {
+            harness: options.harness,
+            scope: "user",
+          })
         : null;
     const state = local ?? binding;
     if (!state) throw new Error("INSTALL-MISSING: scope is not installed");
@@ -296,7 +309,10 @@ export function remove(options) {
     if (options.scope === "user" && options.projectExplicit) {
       const removeBinding = () => {
         const path = `.vouch/bindings/${options.harness}.json`;
-        const binding = readInstallation(readInside(options.project, path));
+        const binding = readInstallation(readInside(options.project, path), {
+          harness: options.harness,
+          scope: "user",
+        });
         if (
           binding &&
           sameLocation(
@@ -357,6 +373,7 @@ export function diagnose(options) {
         ? statePath(options.harness)
         : `.vouch/bindings/${options.harness}.json`,
     ),
+    { harness: options.harness, scope: String(binding.scope) },
   );
   if (
     !state ||
