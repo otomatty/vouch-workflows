@@ -15,7 +15,7 @@ export async function guardScope(ctx, entry) {
         runtime: resolve(dirname(hook)),
         ...(location.outside ? { externalRuntime: location.outside } : {}),
         nativeRegistrations: await Promise.all(
-          nativeRegistrationNames.map((name) =>
+          (nativeRegistrationNames[`.${ctx.harness}`] ?? []).map((name) =>
             ctx.locate(
               resolve(runtimeRoot, "../../../..", `.${ctx.harness}`, name),
             ),

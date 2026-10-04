@@ -3,13 +3,13 @@ import guard from "../../registry/write-guard.json" with { type: "json" };
 // Protected areas and approved status; see docs/development/write-guard.md.
 const approvedLine = /^\s*status\s*:\s*(["']?)approved\1\s*(?:#.*)?$/i;
 
-// Registrations and configuration overrides that can disable native hooks.
-export const nativeRegistrationNames = [
-  "hooks.json",
-  "settings.json",
-  "settings.local.json",
-  "config.toml",
-];
+// Kept equal to each harness installation descriptor by the distribution tests.
+/** @type {Record<string,string[]>} */
+export const nativeRegistrationNames = {
+  ".claude": ["settings.json", "settings.local.json"],
+  ".codex": ["hooks.json", "config.toml"],
+  ".cursor": ["hooks.json"],
+};
 
 /** Any line declaring approved, wherever it is. @param {string} text */
 export const approvedLines = (text) =>
@@ -85,7 +85,9 @@ export function classifySegments(segments, scope) {
       (parts.length >= 2 && under(parts, ["vouch", "config.json"])) ||
       (parts.length >= 2 &&
         under(parts, [scope.managed]) &&
-        nativeRegistrationNames.some((name) => matches(parts[1] ?? "", name))))
+        (nativeRegistrationNames[scope.managed] ?? []).some((name) =>
+          matches(parts[1] ?? "", name),
+        )))
   )
     return { area: "installation", ancestor: false };
   if (
