@@ -1,0 +1,101 @@
+import { spawnSync } from "node:child_process";
+import { rename } from "node:fs/promises";
+import { join } from "node:path";
+import { test as group } from "node:test";
+import { hookTest as test } from "../helpers/hook-test.mjs";
+import { distribution, installRun } from "../helpers/install.mjs";
+import { tree } from "../helpers/packaging.mjs";
+import { sandbox } from "../helpers/runtime.mjs";
+
+group(
+  "distributed doctor inspects all owned Codex activation without changing project files",
+  async (t) => {
+    const box = await sandbox(t);
+    let runtimeRoot = "";
+    const doctor = () =>
+      spawnSync(
+        process.execPath,
+        [
+          join(runtimeRoot, "hooks/vouch-launch.mjs"),
+          "doctor",
+          "project",
+          box.path("project"),
+        ],
+        {
+          cwd: box.path("project"),
+          encoding: "utf8",
+          timeout: 4000,
+        },
+      );
+    await test(
+      "install and activate the shared runtime with preexisting enabled Codex settings",
+      async (t) => {
+        distribution(t, box);
+        await box.write(
+          "project/.codex/config.toml",
+          "[features]\nhooks = true\n\n[agents]\nmax_depth = 3\n",
+        );
+        const installed = installRun("install", box, "codex", "user");
+        t.assert.equal(installed.status, 0, installed.stdout);
+        runtimeRoot = JSON.parse(installed.stdout).runtimeRoot;
+        t.assert.equal(installRun("init", box, "codex", "user").status, 0);
+        const before = tree(box.path("project"));
+        const result = doctor();
+        t.assert.equal(result.status, 0, result.stdout + result.stderr);
+        t.assert.deepEqual(tree(box.path("project")), before);
+      },
+      t,
+    );
+    for (const path of [
+      ".codex/config.toml",
+      ".agents/skills/vouch/SKILL.md",
+      "AGENTS.md",
+    ])
+      await test(
+        `reject the missing activation ${path}`,
+        async (t) => {
+          const target = box.path(`project/${path}`);
+          const saved = box.path("saved-owned");
+          await rename(target, saved);
+          try {
+            const before = tree(box.path("project"));
+            const result = doctor();
+            t.assert.equal(result.status, 2, result.stdout + result.stderr);
+            t.assert.equal(
+              JSON.parse(result.stdout).checks.some(
+                (/** @type {{id:string,ok:boolean}} */ check) =>
+                  check.id === "DOCTOR-ACTIVATION" && !check.ok,
+              ),
+              true,
+            );
+            t.assert.deepEqual(tree(box.path("project")), before);
+          } finally {
+            await rename(saved, target);
+          }
+        },
+        t,
+      );
+    await test(
+      "reject disabled preexisting Codex hooks even when no TOML setting is owned",
+      async (t) => {
+        const path = "project/.codex/config.toml";
+        await box.write(
+          path,
+          (await box.read(path)).replace("hooks = true", "hooks = false"),
+        );
+        const before = tree(box.path("project"));
+        const result = doctor();
+        t.assert.equal(result.status, 2, result.stdout + result.stderr);
+        t.assert.equal(
+          JSON.parse(result.stdout).checks.some(
+            (/** @type {{id:string,ok:boolean}} */ check) =>
+              check.id === "DOCTOR-ACTIVATION" && !check.ok,
+          ),
+          true,
+        );
+        t.assert.deepEqual(tree(box.path("project")), before);
+      },
+      t,
+    );
+  },
+);

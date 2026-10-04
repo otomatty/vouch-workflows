@@ -27,6 +27,7 @@ test("managed doctor inspects the selected runtime separately and detects missin
     kind: "hooks",
     path: ".cursor/hooks.json",
     content: JSON.stringify(expected),
+    previous: null,
   };
   const state = { v: 1, harness: "cursor", owned: [owned] };
   store.data.set(".vouch/bindings/cursor.json", JSON.stringify(state));
