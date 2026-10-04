@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import runtime from "../../registry/runtime.json" with { type: "json" };
 import { json } from "./installation-ownership.mjs";
+import { projectManual } from "./io.mjs";
 
 /** Snapshot names accepted equally by setup and the distributed diagnostic.
  * @param {unknown} value @param {'registration'|'configuration'} kind @returns {value is string} */
@@ -120,7 +121,9 @@ export function installedText(
   const operation = `node ("?)\\.${harness}/hooks/vouch-(${operations})\\.mjs`;
   /** @param {string} action */
   const manual = (action) =>
-    `node ${(platform === "win32" ? powershell : sh)(`${at}/hooks/vouch-launch.mjs`)} ${action} manual`;
+    /^\.vouch\/versions\/[a-f0-9]{64}\/(claude|codex|cursor)$/.test(at)
+      ? projectManual(action, at)
+      : `node ${(platform === "win32" ? powershell : sh)(`${at}/hooks/vouch-launch.mjs`)} ${action} manual`;
   /** @param {string} value */
   const rebind = (value) =>
     value.replace(

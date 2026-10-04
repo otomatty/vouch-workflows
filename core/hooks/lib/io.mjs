@@ -6,13 +6,35 @@ import { readContext, readDoctorContext, readIntent } from "./env.mjs";
 import { createFileStore, descriptorWriter, readDescriptor } from "./fs.mjs";
 import { isHookResult, parseInput } from "./validation.mjs";
 
-/** Managed activation wrapper; only this I/O boundary sets the process exit code. @param {string} entryUrl */
-export const runLauncher = async (entryUrl) =>
-  (await import("./launch.mjs")).launch(entryUrl, {
+/** Managed activation wrapper; only this I/O boundary sets the process exit code.
+ * @param {string} entryUrl @param {typeof import("./launch.mjs").launch} launch */
+export const runLauncher = async (entryUrl, launch) =>
+  launch(entryUrl, {
     finish: (code) => {
       process.exitCode = code;
     },
   });
+
+/** Find the exact project entry without shell-specific path or environment syntax.
+ * Missing dependencies inside an entry must never select another ancestor.
+ * @param {string} action @param {string} at */
+export function projectManual(action, at) {
+  const encoded = Buffer.from(at).toString("base64");
+  const code = [
+    "const p=require('node:path'),u=require('node:url'),a=process.argv.slice(1);",
+    `const at=Buffer.from('${encoded}','base64').toString();`,
+    "delete process.env.VOUCH_PROJECT_ROOT;",
+    "(async()=>{let r=process.cwd();for(;;){",
+    "const entry=p.join(r,at,'hooks/vouch-launch.mjs'),href=u.pathToFileURL(entry).href;",
+    `process.argv=[process.execPath,entry,'${action}','manual',...a];`,
+    "try{await import(href);return;}catch(e){",
+    "if(e.code!=='ERR_MODULE_NOT_FOUND'||e.url!==href)throw e;",
+    "const parent=p.dirname(r);",
+    "if(parent===r)throw new Error('INSTALL-INACTIVE: initialize this project before using Vouch');",
+    "r=parent;}}})().catch(e=>{console.error('VOUCH-LAUNCH: '+e.message);process.exitCode=2;});",
+  ].join("");
+  return `node -e "${code}" --`;
+}
 
 /**
  * Process boundary. Fail open on malformed input, implementation or persistence errors.

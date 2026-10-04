@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { cp } from "node:fs/promises";
 import { resolve } from "node:path";
+import { test as group } from "node:test";
 import { pathToFileURL } from "node:url";
 import { source } from "../helpers/commands.mjs";
 import { deriveFixture } from "../helpers/fixtures.mjs";
@@ -85,61 +86,96 @@ test("the lifecycle command reports a missing Intent without writing", (t) => {
   }
 });
 
-test("an installed command records plan, stage, unit and learn measurements", async (t) => {
-  const { box, run, rows } = await installed(t);
-  gitIn(box.root, "add", "--", ".gitignore", "src/app.js", "vouch");
-  gitIn(box.root, "commit", "-qm", "chore: base");
-  await box.write("src/app.js", "export const n = 2;\n");
-  const steps = [
-    ["intent-created"],
-    ["stage-started", "design"],
-    ["stage-completed", "design"],
-    ["stage-completed", "build"],
-    ["unit-started", "U1"],
-    ["unit-completed", "U1"],
-  ];
-  const results = steps.map((args) => run(args));
-  const recorded = await rows();
-  t.plan(6);
-  t.assert.deepEqual(
-    results.map((result) => result.report.checks[0].id),
-    [
-      "LIFECYCLE-RECORDED",
-      "LIFECYCLE-RECORDED",
-      "LIFECYCLE-RECORDED",
-      "LIFECYCLE-UNMEASURED",
-      "LIFECYCLE-RECORDED",
-      "LIFECYCLE-RECORDED",
-    ],
-  );
-  t.assert.deepEqual(
-    recorded.map((row) => row.type),
-    [
-      "intent.created",
-      "stage.started",
-      "stage.completed",
-      "unit.started",
-      "unit.completed",
-    ],
-  );
-  t.assert.equal(recorded[4].files_changed > 0, true);
-  t.assert.equal(
-    recorded.every((row) => validator("audit-event")(row)),
-    true,
-  );
-  gitIn(box.root, "add", "--", "vouch/rules.md", "src/app.js");
-  gitIn(box.root, "commit", "-qm", "chore: rules");
-  await box.write(
-    "vouch/rules.md",
-    `${await box.read("vouch/rules.md")}| K-2 | count rows |\n`,
-  );
-  const learned = run(["learn-recorded"]);
-  t.assert.equal(
-    (await rows()).find((row) => row.type === "learn.recorded")?.rules_added,
-    1,
-  );
-  t.assert.equal(learned.report.ok, true);
-});
+group(
+  "an installed command records plan, stage, unit and learn measurements",
+  async (t) => {
+    /** @type {Awaited<ReturnType<typeof installed>>} */ let setup;
+    await test(
+      "prepare the installed lifecycle command and base commit",
+      async () => {
+        setup = await installed(t);
+        const { box } = setup;
+        gitIn(box.root, "add", "--", ".gitignore", "src/app.js", "vouch");
+        gitIn(box.root, "commit", "-qm", "chore: base");
+        await box.write("src/app.js", "export const n = 2;\n");
+      },
+      t,
+    );
+    const steps = [
+      ["intent-created"],
+      ["stage-started", "design"],
+      ["stage-completed", "design"],
+      ["stage-completed", "build"],
+      ["unit-started", "U1"],
+      ["unit-completed", "U1"],
+    ];
+    /** @type {ReturnType<Awaited<ReturnType<typeof installed>>['run']>[]} */
+    const results = [];
+    await test(
+      "record the Intent and measured design stage",
+      () => {
+        results.push(...steps.slice(0, 3).map((args) => setup.run(args)));
+      },
+      t,
+    );
+    await test(
+      "record the remaining stage and Unit and verify every measurement",
+      async (t) => {
+        results.push(...steps.slice(3).map((args) => setup.run(args)));
+        const recorded = await setup.rows();
+        t.plan(4);
+        t.assert.deepEqual(
+          results.map((result) => result.report.checks[0].id),
+          [
+            "LIFECYCLE-RECORDED",
+            "LIFECYCLE-RECORDED",
+            "LIFECYCLE-RECORDED",
+            "LIFECYCLE-UNMEASURED",
+            "LIFECYCLE-RECORDED",
+            "LIFECYCLE-RECORDED",
+          ],
+        );
+        t.assert.deepEqual(
+          recorded.map((row) => row.type),
+          [
+            "intent.created",
+            "stage.started",
+            "stage.completed",
+            "unit.started",
+            "unit.completed",
+          ],
+        );
+        t.assert.equal(recorded[4].files_changed > 0, true);
+        t.assert.equal(
+          recorded.every((row) => validator("audit-event")(row)),
+          true,
+        );
+      },
+      t,
+    );
+    await test(
+      "commit the rules and record the measured Learn addition",
+      async (t) => {
+        const { box, run, rows } = setup;
+        t.plan(2);
+        gitIn(box.root, "add", "--", "vouch/rules.md", "src/app.js");
+        gitIn(box.root, "commit", "-qm", "chore: rules");
+        await box.write(
+          "vouch/rules.md",
+          `${await box.read("vouch/rules.md")}| K-2 | count rows |\n`,
+        );
+        const learned = run(["learn-recorded"]);
+        t.assert.equal(
+          (await rows()).find((row) => row.type === "learn.recorded")
+            ?.rules_added,
+          1,
+        );
+        t.assert.equal(learned.report.ok, true);
+      },
+      t,
+    );
+  },
+);
 
 test("gates, review and session end are recorded from the installed entry", async (t) => {
   const { box, run, rows } = await installed(t);
