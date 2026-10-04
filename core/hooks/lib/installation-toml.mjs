@@ -1,4 +1,28 @@
 /** @typedef {{section:string,key:string,line:string,previous:string|null}} Setting */
+
+/** Refuse multiline values before the line editor can mistake their contents for tables.
+ * Ordinary quoted strings and comments may contain triple quotes. @param {string} text */
+function rejectMultiline(text) {
+  let quote = "";
+  for (let i = 0; i < text.length; i++) {
+    const character = text[i] ?? "";
+    if (quote) {
+      if (quote === '"' && character === "\\") i++;
+      else if (character === quote) quote = "";
+      continue;
+    }
+    if (character === "#") {
+      const end = text.indexOf("\n", i);
+      if (end < 0) return;
+      i = end;
+      continue;
+    }
+    if (character !== '"' && character !== "'") continue;
+    if (text.slice(i, i + 3) === character.repeat(3))
+      throw new Error("INSTALL-CONFIG: unsupported multiline Codex TOML value");
+    quote = character;
+  }
+}
 /** @param {string} text @param {string} section */
 function sectionBounds(text, section) {
   const lines = text.split("\n");
@@ -29,6 +53,7 @@ function sectionBounds(text, section) {
 /** @param {string|null} before */
 export function enableCodex(before) {
   let text = before ?? "";
+  rejectMultiline(text);
   /** @type {Setting[]} */ const settings = [];
   for (const [section, key, value] of [
     ["features", "hooks", "true"],
@@ -82,6 +107,7 @@ export function enableCodex(before) {
 export function removeCodex(text, content, previous) {
   if (text === null)
     throw new Error("INSTALL-CONFLICT: owned Codex configuration missing");
+  rejectMultiline(text);
   const original = text;
   /** @type {Setting[]} */ const settings = JSON.parse(content);
   for (const setting of settings.reverse()) {
