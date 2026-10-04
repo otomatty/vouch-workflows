@@ -12,9 +12,10 @@ import { memoryFiles } from "../../helpers/runtime.mjs";
 
 /** @param {'project'|'user'} [scope] @param {'claude'|'codex'|'cursor'} [harness] */
 function setup(scope = "project", harness = "claude") {
-  const source = Object.fromEntries(
-    runtime.files.map((path) => [`.${harness}/${path}`, "content"]),
-  );
+  const source = Object.fromEntries([
+    ...runtime.files.map((path) => [`.${harness}/${path}`, "content"]),
+    ...runtime.assets[harness].map((path) => [path, "content"]),
+  ]);
   source["AGENTS.md"] = "content";
   source[`.${harness}/registry/runtime.json`] = JSON.stringify(runtime);
   let activationOwned = managedOwned(harness);

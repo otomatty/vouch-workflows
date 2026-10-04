@@ -1,5 +1,6 @@
 import { activationGuidance } from "../../core/hooks/lib/installation-activation.mjs";
 import { block } from "../../core/hooks/lib/installation-ownership.mjs";
+import runtime from "../../core/registry/runtime.json" with { type: "json" };
 /** Complete activation fixtures for the three native layouts.
  * @param {'claude'|'codex'|'cursor'} harness @param {string} [referenceRoot] */
 export function managedOwned(harness, referenceRoot = "fixture-runtime") {
@@ -24,6 +25,14 @@ export function managedOwned(harness, referenceRoot = "fixture-runtime") {
       toml: [],
     },
   };
+  layouts[harness].file = [
+    ...new Set([
+      ...layouts[harness].file,
+      ...runtime.assets[harness].filter(
+        (path) => path.includes("/skills/") || path.includes("/agents/"),
+      ),
+    ]),
+  ];
   return Object.entries(layouts[harness]).flatMap(([kind, paths]) =>
     paths.map((path) => ({
       path,

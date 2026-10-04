@@ -202,9 +202,10 @@ test("an explicit dot project argument selects command cwd independently of inhe
 });
 test("native statusline skips inactive or unverified projects and uses registered code to render a validated selection", async (t) => {
   const box = await setup(t, "claude");
-  const source = Object.fromEntries(
-    runtime.files.map((path) => [`.claude/${path}`, "source"]),
-  );
+  const source = Object.fromEntries([
+    ...runtime.files.map((path) => [`.claude/${path}`, "source"]),
+    ...runtime.assets.claude.map((path) => [path, "source"]),
+  ]);
   source["AGENTS.md"] = "source";
   source[".claude/registry/runtime.json"] = JSON.stringify(runtime);
   let activationOwned = managedOwned("claude");

@@ -26,11 +26,12 @@ test("snapshot validation accepts simple lowercase native filenames and rejects 
   t.assert.equal(isSnapshotName("config.json", "configuration"), false);
 });
 
-/** @param {string} [harness] @param {string} [scope] */
+/** @param {import("../../../core/hooks/lib/contracts.mjs").Harness} [harness] @param {string} [scope] */
 function fixture(harness = "codex", scope = "user") {
-  const source = Object.fromEntries(
-    runtime.files.map((path) => [`.${harness}/${path}`, `content: ${path}`]),
-  );
+  const source = Object.fromEntries([
+    ...runtime.files.map((path) => [`.${harness}/${path}`, `content: ${path}`]),
+    ...runtime.assets[harness].map((path) => [path, `content: ${path}`]),
+  ]);
   source["AGENTS.md"] =
     `Read [rules](.${harness}/templates/rules.md) and run \`node .${harness}/hooks/vouch-doctor.mjs\`.`;
   source[`.${harness}/registry/runtime.json`] = JSON.stringify(runtime);
@@ -56,7 +57,12 @@ function fixture(harness = "codex", scope = "user") {
 test("every managed harness and scope verifies transformed guidance and complete immutable archive without writes", async (t) => {
   for (const harness of ["claude", "codex", "cursor"])
     for (const scope of ["project", "user"]) {
-      const { store, state, root } = fixture(harness, scope);
+      const { store, state, root } = fixture(
+        /** @type {import("../../../core/hooks/lib/contracts.mjs").Harness} */ (
+          harness
+        ),
+        scope,
+      );
       const before = new Map(store.data);
       await verifyManagedRuntime(store, state, root);
       t.assert.deepEqual(store.data, before);
@@ -109,6 +115,36 @@ test("archive digest ignores insertion order and includes every filename and exa
     distributionDigest(source),
     distributionDigest({ c: "first\n", b: "second" }),
   );
+});
+
+test("a matching digest and rewritten asset inventory cannot hide any missing or empty canonical asset", async (t) => {
+  for (const harness of /** @type {const} */ (["claude", "codex", "cursor"]))
+    for (const path of runtime.assets[harness].filter(
+      (path) =>
+        path.endsWith("vouch-build/SKILL.md") ||
+        path.endsWith("templates/ja/rules.md"),
+    ))
+      for (const missing of [true, false]) {
+        const { source, store, state, root } = fixture(harness);
+        if (missing) delete source[path];
+        else source[path] = "";
+        source[`.${harness}/registry/runtime.json`] = JSON.stringify({
+          ...runtime,
+          assets: {},
+        });
+        state.digest = distributionDigest(source);
+        for (const at of [...store.data.keys()])
+          if (at.startsWith("distribution/")) store.data.delete(at);
+        for (const [at, text] of Object.entries(source))
+          store.data.set(`distribution/${at}`, text);
+        const before = new Map(store.data);
+        await t.assert.rejects(
+          verifyManagedRuntime(store, state, root),
+          /INSTALL-SOURCE/,
+          `${harness}: ${path}`,
+        );
+        t.assert.deepEqual(store.data, before);
+      }
 });
 
 test("managed archive changes and every materialized runtime kind are rejected without writes", async (t) => {

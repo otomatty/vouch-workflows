@@ -15,9 +15,10 @@ export async function managedDoctor(t) {
     version: 1,
     hooks: { sessionStart: [{ command: "node launcher session" }] },
   };
-  const source = Object.fromEntries(
-    runtime.files.map((path) => [`.cursor/${path}`, "source"]),
-  );
+  const source = Object.fromEntries([
+    ...runtime.files.map((path) => [`.cursor/${path}`, "source"]),
+    ...runtime.assets.cursor.map((path) => [path, "source"]),
+  ]);
   source["AGENTS.md"] = "source";
   source[".cursor/registry/runtime.json"] = JSON.stringify(runtime);
   source[".cursor/registry/installation.json"] = JSON.stringify({
