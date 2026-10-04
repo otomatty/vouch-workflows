@@ -90,6 +90,8 @@ for (const harness of /** @type {const} */ (["claude", "codex", "cursor"]))
       "~alice",
       "~+",
       "~-1",
+      "/home/$USER",
+      "C:/Users/%USERNAME%",
     ])
       for (const suffix of [
         `.${harness}/${names[0]}`,

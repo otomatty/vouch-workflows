@@ -156,7 +156,7 @@ group(
         },
         t,
       );
-    for (const prefix of ["$HOME", "~alice"])
+    for (const prefix of ["$HOME", "~alice", "/home/$USER"])
       for (const suffix of [
         ".cursor/hooks.json",
         `.vouch/versions/${runtimeRoot.split(/[\\/]/).at(-2)}/cursor/hooks/vouch-guard-writes.mjs`,
