@@ -117,5 +117,44 @@ group(
       },
       t,
     );
+    for (const [suffix, permission] of [
+      ["notes.txt", "allow"],
+      ["vouch-guard-writes.mjs", "deny"],
+    ])
+      await test(
+        `recursive glob preserves its ${suffix} suffix and returns ${permission}`,
+        (t) => {
+          const before = tree(box.root);
+          const home = box.path("home").replaceAll("\\", "/");
+          const result = spawnSync(
+            process.execPath,
+            [
+              join(runtimeRoot, "hooks/vouch-launch.mjs"),
+              "guard",
+              "project",
+              box.path("project"),
+            ],
+            {
+              cwd: box.path("project"),
+              input: JSON.stringify(
+                cursorInput(box.path("project"), "preToolUse", {
+                  tool_name: "run_terminal_cmd",
+                  tool_input: { command: `rm "${home}"/**/${suffix}` },
+                }),
+              ),
+              encoding: "utf8",
+              windowsHide: true,
+              timeout: 4000,
+            },
+          );
+          t.assert.equal(result.status, 0, result.stderr);
+          const output = JSON.parse(result.stdout);
+          t.assert.equal(output.permission, permission, result.stdout);
+          if (permission === "deny")
+            t.assert.match(output.user_message, /VOUCH-GUARD-INSTALLATION/);
+          t.assert.deepEqual(tree(box.root), before);
+        },
+        t,
+      );
   },
 );

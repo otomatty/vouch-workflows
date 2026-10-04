@@ -23,6 +23,10 @@ for (const harness of /** @type {const} */ (["claude", "codex", "cursor"]))
     const home = box.path("home").replaceAll("\\", "/");
     const native = `${home}/.${harness}`;
     const entry = `${home}/.vouch/versions/hash/${harness}/hooks/vouch-guard-writes.mjs`;
+    await box.write(
+      `home/.vouch/versions/hash/${harness}/hooks/kept.mjs`,
+      "protected code",
+    );
     /** @param {string} command */
     const decide = (command) =>
       guardWrites(
@@ -44,6 +48,8 @@ for (const harness of /** @type {const} */ (["claude", "codex", "cursor"]))
       `"${home}/".${harness}*`,
       `"${native}/"**`,
       `"${home}/.vouch/versions/"*/${harness}/hooks/*.mjs`,
+      `"${home}"/**/kept.mjs`,
+      `"${home}"/**/**/${names[0]}`,
     ]) {
       // Claude protects settings rather than hooks; choose its known registration for this glob.
       const command = `rm ${pattern.replace(".*/hooks.json", ".*/*.json")}`;

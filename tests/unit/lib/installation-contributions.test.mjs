@@ -13,8 +13,8 @@ import {
 } from "../../../core/hooks/lib/installation-ownership.mjs";
 import { enableCodex } from "../../../core/hooks/lib/installation-toml.mjs";
 
-/** @param {string} harness @param {string} scope */
-function fixture(harness, scope) {
+/** @param {string} harness @param {string} scope @param {'project'|'user'} registrationScope */
+function fixture(harness, scope, registrationScope = "project") {
   const projectRoot = resolve("project with ' characters");
   const canonical = `.vouch/versions/${"a".repeat(64)}/${harness}`;
   const runtimeRoot = join(
@@ -32,7 +32,10 @@ function fixture(harness, scope) {
     ...Object.entries(activationFiles(source, harness, referenceRoot)).map(
       ([path, content]) => ({ path, kind: "file", content, previous: null }),
     ),
-    ...activationGuidance(harness, referenceRoot).map((item) => ({
+    ...(registrationScope === "project"
+      ? activationGuidance(harness, referenceRoot)
+      : []
+    ).map((item) => ({
       ...item,
       content:
         item.kind === "block"
@@ -44,7 +47,12 @@ function fixture(harness, scope) {
       path: registrationPath(harness),
       kind: "hooks",
       content: JSON.stringify(
-        registration(harness, runtimeRoot, "project", projectRoot),
+        registration(
+          harness,
+          runtimeRoot,
+          registrationScope,
+          registrationScope === "project" ? projectRoot : undefined,
+        ),
       ),
       previous: null,
     },
@@ -62,7 +70,7 @@ function fixture(harness, scope) {
   return {
     source,
     owned,
-    context: { harness, scope, runtimeRoot, projectRoot },
+    context: { harness, scope, runtimeRoot, projectRoot, registrationScope },
   };
 }
 
@@ -104,6 +112,33 @@ test("trusted contributions accept both scopes and reject jointly changed conten
         );
       }
     }
+});
+
+test("user-home receipts omit project guidance, retain native activation, and cannot invent file backups", (t) => {
+  for (const harness of ["claude", "codex", "cursor"]) {
+    const box = fixture(harness, "user", "user");
+    t.assert.doesNotThrow(() =>
+      verifyActivationContents(box.source, box.context, box.owned),
+    );
+    const entries = JSON.parse(JSON.stringify(box.owned));
+    const file = entries.find(
+      (/** @type {{kind:string}} */ item) => item.kind === "file",
+    );
+    file.previous = "invented user file";
+    t.assert.throws(
+      () => verifyActivationContents(box.source, box.context, entries),
+      /invalid owned contribution/,
+    );
+    t.assert.throws(
+      () =>
+        verifyActivationContents(
+          box.source,
+          { ...box.context, registrationScope: "project" },
+          box.owned,
+        ),
+      /ownership manifest/,
+    );
+  }
 });
 
 test("user statusline stays outside ownership while native hooks still match trusted commands", (t) => {
