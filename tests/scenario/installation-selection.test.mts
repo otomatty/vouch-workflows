@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { cp, mkdir } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { cursorInput, distribution, installRun } from "../helpers/install.mjs";
@@ -94,22 +95,23 @@ for (const harness of ["claude", "codex", "cursor"]) {
       undefined,
     );
   });
-  test(`${harness}: project installation remains usable after moving the checkout`, async (t) => {
+  test(`${harness}: project hooks and manual commands find the moved checkout from a subdirectory without variables`, async (t) => {
     const box = await sandbox(t);
     await mkdir(box.path("project"));
     distribution(t, box);
-    t.assert.equal(installRun("install", box, harness, "project").status, 0);
-    await cp(box.path("project"), box.path("moved 日本語 $ apostrophe'"), {
-      recursive: true,
-    });
+    const installed = installRun("install", box, harness, "project", [
+      "--intent",
+      "moved",
+    ]);
+    t.assert.equal(installed.status, 0, installed.stdout);
+    const root = box.path("moved 日本語 $ apostrophe'");
+    await cp(box.path("project"), root, { recursive: true });
+    await mkdir(join(root, "src/deep"), { recursive: true });
     const moved = installRun("doctor", box, harness, "project", [
       "--project",
-      box.path("moved 日本語 $ apostrophe'"),
+      root,
     ]);
     t.assert.equal(moved.status, 0, moved.stdout);
-    const config = JSON.parse(
-      await box.read("moved 日本語 $ apostrophe'/vouch/config.json"),
-    );
     const native = JSON.parse(
       await box.read(
         `moved 日本語 $ apostrophe'/.${harness}/${harness === "claude" ? "settings" : "hooks"}.json`,
@@ -119,44 +121,94 @@ for (const harness of ["claude", "codex", "cursor"]) {
       harness === "cursor"
         ? native.hooks.sessionStart[0]
         : native.hooks.SessionStart[0].hooks[0];
-    const variable =
-      harness === "claude"
-        ? "CLAUDE_PROJECT_DIR"
-        : harness === "cursor"
-          ? "CURSOR_PROJECT_DIR"
-          : "VOUCH_PROJECT_ROOT";
-    const root = box.path("moved 日本語 $ apostrophe'");
+    // Design D6: one shell-neutral command; only Claude expands its own variable in args.
+    if (harness !== "claude")
+      t.assert.doesNotMatch(
+        hook.command,
+        /\$\{|\$env:|%[A-Z_]+%|^&/,
+        "no shell variables",
+      );
+    const cwd = join(root, "src/deep");
     const input =
       harness === "cursor"
-        ? cursorInput(root, "sessionStart")
+        ? cursorInput(cwd, "sessionStart")
         : {
             hook_event_name: "SessionStart",
             session_id: "moved",
-            cwd: root,
+            cwd,
             source: "startup",
           };
-    const result = spawnSync(
+    const shell = (command: string) =>
+      process.platform === "win32"
+        ? ["powershell.exe", ["-NoProfile", "-Command", command]]
+        : ["/bin/sh", ["-c", command]];
+    const env = { ...process.env };
+    for (const name of [
+      "VOUCH_PROJECT_ROOT",
+      "CLAUDE_PROJECT_DIR",
+      "CURSOR_PROJECT_DIR",
+      "VOUCH_INTENT",
+    ])
+      delete env[name];
+    const [program, args] =
       harness === "claude"
-        ? process.execPath
-        : process.platform === "win32"
-          ? "powershell.exe"
-          : "/bin/sh",
-      harness === "claude"
-        ? hook.args.map((arg: string) =>
-            arg.replaceAll(`\${${variable}}`, root),
-          )
-        : process.platform === "win32"
-          ? ["-NoProfile", "-Command", hook.commandWindows ?? hook.command]
-          : ["-c", hook.command],
-      {
-        cwd: root,
-        env: { ...process.env, [variable]: root },
-        input: JSON.stringify(input),
-        encoding: "utf8",
-      },
-    );
+        ? [
+            process.execPath,
+            hook.args.map((arg: string) =>
+              arg.replaceAll("${CLAUDE_PROJECT_DIR}", root),
+            ),
+          ]
+        : shell(
+            process.platform === "win32" && hook.commandWindows
+              ? hook.commandWindows
+              : hook.command,
+          );
+    const result = spawnSync(program as string, args as string[], {
+      cwd,
+      env,
+      input: JSON.stringify(input),
+      encoding: "utf8",
+    });
     t.assert.equal(result.status, 0, result.stderr);
     t.assert.equal(result.stderr, "");
-    t.assert.equal(config.harnesses[harness].scope, "project");
+    const events = (
+      await box.read(
+        "moved 日本語 $ apostrophe'/vouch/intents/moved/audit/events.jsonl",
+      )
+    )
+      .trim()
+      .split("\n");
+    t.assert.equal(events.length, 1);
+    // The manual doctor command from the installed Skill runs from the same subdirectory.
+    const skill = await box.read(
+      `moved 日本語 $ apostrophe'/${harness === "codex" ? ".agents" : `.${harness}`}/skills/vouch/references/doctor.md`,
+    );
+    const command = /^(node .*doctor manual)$/m.exec(skill)?.[1];
+    t.assert.equal(typeof command, "string", "doctor command");
+    const [manual, words] = shell(command as string);
+    const doctor = spawnSync(manual as string, words as string[], {
+      cwd,
+      env,
+      encoding: "utf8",
+    });
+    t.assert.equal(doctor.status, 0, doctor.stdout + doctor.stderr);
+  });
+  test(`${harness}: installation refuses roots its commands cannot quote in every shell`, (t) => {
+    for (const name of [
+      'home "quoted"',
+      "home $dollar",
+      "home `tick`",
+      "home %VAR%",
+    ]) {
+      const box = { path: (path: string) => join(tmpdir(), name, path) };
+      const refused = installRun(
+        "install",
+        box as Parameters<typeof installRun>[1],
+        harness,
+        "user",
+      );
+      t.assert.equal(refused.status, 2, name);
+      t.assert.match(refused.stdout, /INSTALL-PATH/, name);
+    }
   });
 }
