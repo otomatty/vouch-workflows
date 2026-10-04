@@ -1,4 +1,4 @@
-/** @typedef {{section:string,key:string,line:string,previous:string|null}} Setting */
+/** @typedef {{section:string,key:string,line:string,previous:string|null,createdTable?:boolean}} Setting */
 
 /** Refuse multiline values before the line editor can mistake their contents for tables.
  * Ordinary quoted strings and comments may contain triple quotes. @param {string} text */
@@ -112,7 +112,13 @@ export function enableCodex(before) {
       ).test(previous)
     )
       continue;
-    settings.push({ section, key, line, previous });
+    settings.push({
+      section,
+      key,
+      line,
+      previous,
+      ...(start === -2 ? { createdTable: true } : {}),
+    });
     if (start === -2)
       text = `${text.replace(/\n*$/, "")}\n\n[${section}]\n${line}\n`;
     else {
@@ -140,6 +146,17 @@ export function removeCodex(text, content, previous) {
       throw new Error("INSTALL-CONFLICT: owned Codex setting changed");
     if (setting.previous === null) lines.splice(index, 1);
     else lines[index] = setting.previous;
+    if (setting.createdTable === true) {
+      const remaining = sectionBounds(lines.join("\n"), setting.section);
+      if (remaining.lines[remaining.start] !== `[${setting.section}]`)
+        throw new Error("INSTALL-CONFLICT: owned Codex table header changed");
+      if (
+        remaining.lines
+          .slice(remaining.start + 1, remaining.end)
+          .every((line) => /^\s*(?:#.*)?$/.test(line))
+      )
+        lines.splice(remaining.start, 1);
+    }
     text = lines.join("\n");
   }
   // Exact prior bytes when no unrelated setting was changed.
