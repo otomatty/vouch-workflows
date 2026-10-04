@@ -10,7 +10,8 @@
     "commands",
     "statusline",
     "files",
-    "gitTimeoutMs"
+    "gitTimeoutMs",
+    "assets"
   ],
   "properties": {
     "version": {
@@ -62,6 +63,40 @@
       "type": "integer",
       "minimum": 1,
       "maximum": 2000
+    },
+    "assets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["claude", "codex", "cursor"],
+      "properties": {
+        "claude": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^(AGENTS\\.md|CLAUDE\\.md|\\.(agents|claude|codex|cursor)/(skills|agents|templates)/[a-zA-Z0-9./-]+)$"
+          }
+        },
+        "codex": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^(AGENTS\\.md|CLAUDE\\.md|\\.(agents|claude|codex|cursor)/(skills|agents|templates)/[a-zA-Z0-9./-]+)$"
+          }
+        },
+        "cursor": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^(AGENTS\\.md|CLAUDE\\.md|\\.(agents|claude|codex|cursor)/(skills|agents|templates)/[a-zA-Z0-9./-]+)$"
+          }
+        }
+      }
     }
   }
 }
