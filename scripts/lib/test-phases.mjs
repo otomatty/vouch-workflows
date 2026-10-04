@@ -2,11 +2,40 @@
 const budget = /-performance\.test\.mjs$/;
 const nativeFile = /[/\\]native-environment\.test\.mjs$/;
 
+/** Keep the existing individual selections and partition the complete check without omissions.
+ * @param {string|undefined} selected @param {{suite:string,files:string[]}[]} catalog */
+export function selectTests(selected, catalog) {
+  if (
+    selected &&
+    !["unit", "hooks", "checks", "ordinary", "performance"].includes(selected)
+  )
+    throw new Error(`Unknown suite: ${selected}`);
+  return catalog
+    .filter(({ suite }) =>
+      selected === "unit"
+        ? suite === "unit"
+        : selected === "hooks" || selected === "performance"
+          ? suite === "hooks"
+          : selected === "checks"
+            ? suite !== "hooks"
+            : true,
+    )
+    .map(({ suite, files }) => ({
+      suite,
+      files:
+        suite === "hooks" && selected === "ordinary"
+          ? files.filter((file) => !budget.test(file))
+          : selected === "performance"
+            ? files.filter((file) => budget.test(file))
+            : files,
+    }));
+}
+
 /** Combine only tiers with identical timeout and coverage settings.
- * @param {{suite:string,files:string[]}[]} suites
+ * @param {{suite:string,files:string[]}[]} suites @param {boolean} [mergeHooks]
  * @returns {{suite:string,files:string[]}[]}
  */
-export function testGroups(suites) {
+export function testGroups(suites, mergeHooks = false) {
   const shared = suites.filter(({ suite }) =>
     ["content", "registry", "packaging"].includes(suite),
   );
@@ -17,6 +46,10 @@ export function testGroups(suites) {
   const distribution = shared
     .filter(({ suite }) => suite === "packaging")
     .flatMap(({ files }) => files.filter((file) => !nativeFile.test(file)));
+  const hooks = suites.filter(({ suite }) => suite === "hooks");
+  const ordinaryHooks = mergeHooks
+    ? hooks.flatMap(({ files }) => files.filter((file) => !budget.test(file)))
+    : [];
   return [
     {
       suite: "checks",
@@ -32,15 +65,19 @@ export function testGroups(suites) {
     ),
     { suite: "packaging", files: native },
     {
-      suite: "distribution",
+      suite: ordinaryHooks.length ? "integration" : "distribution",
       files: [
         ...distribution,
         ...suites
           .filter(({ suite }) => suite === "scenario")
           .flatMap(({ files }) => files),
+        ...ordinaryHooks,
       ],
     },
-    ...suites.filter(({ suite }) => suite === "hooks"),
+    ...hooks.map(({ suite, files }) => ({
+      suite,
+      files: mergeHooks ? files.filter((file) => budget.test(file)) : files,
+    })),
   ].filter(({ files }) => files.length > 0);
 }
 

@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import budgets from "../core/registry/budgets.json" with { type: "json" };
 import { createInstallationFixture } from "./lib/installation-fixture.mjs";
-import { testGroups, testPhases } from "./lib/test-phases.mjs";
+import { selectTests, testGroups, testPhases } from "./lib/test-phases.mjs";
 import { testTimeoutFor } from "./lib/time-budgets.mjs";
 
 /** @param {string} directory */
@@ -17,18 +17,23 @@ function files(directory) {
 }
 
 const selected = process.argv[2];
-if (selected && !["unit", "hooks", "checks"].includes(selected)) {
-  throw new Error(`Unknown suite: ${selected}`);
-}
 const checks = ["content", "registry", "packaging", "scenario", "unit"];
-const suites =
-  selected === "checks" ? checks : selected ? [selected] : [...checks, "hooks"];
+const suites = selectTests(
+  selected,
+  [...checks, "hooks"].map((suite) => ({
+    suite,
+    files: files(`tests/${suite}`),
+  })),
+);
 // A failing suite must not hide the results of later suites; the run still fails.
 /** @type {string[]} */ const failed = [];
-const groups = testGroups(
-  suites.map((suite) => ({ suite, files: files(`tests/${suite}`) })),
-);
-const fixture = suites.some((suite) => ["scenario", "hooks"].includes(suite))
+const groups = testGroups(suites, !selected || selected === "ordinary");
+const fixture = groups.some(
+  ({ suite, files }) =>
+    ["distribution", "integration"].includes(suite) ||
+    (suite === "hooks" &&
+      files.some((file) => !file.endsWith("-performance.test.mjs"))),
+)
   ? createInstallationFixture()
   : null;
 try {
@@ -41,12 +46,15 @@ try {
     const productHooks = readdirSync("core/hooks").filter((name) =>
       name.endsWith(".mjs"),
     );
-    if (suite === "hooks" && productHooks.length === 0)
+    const hookCoverage = ["hooks", "integration"].includes(suite);
+    if (hookCoverage && productHooks.length === 0)
       console.log(
         "Transport tests only; product hook coverage is not measured yet.",
       );
     // HOOK-13 budget files run last and alone, under the load they start themselves.
-    const sizes = ["scenario", "distribution", "hooks"].includes(suite)
+    const sizes = ["scenario", "distribution", "hooks", "integration"].includes(
+      suite,
+    )
       ? new Map(tests.map((file) => [file, statSync(file).size]))
       : undefined;
     for (const phase of testPhases(
@@ -67,7 +75,7 @@ try {
       };
       const measured =
         !phase.budget &&
-        (suite === "unit" || (suite === "hooks" && productHooks.length > 0));
+        (suite === "unit" || (hookCoverage && productHooks.length > 0));
       if (measured) {
         const coverage =
           suite === "unit" ? budgets.coverage.lib : budgets.coverage.hooks;
@@ -95,7 +103,7 @@ try {
       process.stdout.write(result.stdout ?? "");
       process.stderr.write(result.stderr ?? "");
       if (result.error) throw result.error;
-      if (suite === "hooks" && measured) {
+      if (hookCoverage && measured) {
         for (const name of productHooks) {
           const covered = result.stdout
             .split("\n")

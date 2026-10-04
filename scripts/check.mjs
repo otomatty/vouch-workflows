@@ -29,14 +29,14 @@ async function runTask(task) {
     });
   });
 }
-// These read the project or use isolated sandboxes. Hooks require every result first,
-// keeping static checks and other tiers out of the performance measurements.
+// Ordinary tests share one bounded pool. Performance requires every result first,
+// keeping static checks and other tiers out of the measurements.
 const staticResults = await Promise.all(
-  ["lint", "typecheck", "test:checks"].map(runTask),
+  ["lint", "typecheck", "test:ordinary"].map(runTask),
 );
 const failure = staticResults.find((status) => status !== 0);
 if (failure !== undefined) process.exit(failure);
-for (const task of ["test:hooks", "package", "package:check"]) {
+for (const task of ["test:performance", "package", "package:check"]) {
   const status = await runTask(task);
   if (status !== 0) process.exit(status);
 }
