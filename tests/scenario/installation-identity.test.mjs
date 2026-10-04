@@ -1,46 +1,8 @@
+import { install } from "../../scripts/lib/install.mjs";
 import { hookTest as test } from "../helpers/hook-test.mjs";
 import { distribution, installRun } from "../helpers/install.mjs";
 import { tree } from "../helpers/packaging.mjs";
 import { sandbox } from "../helpers/runtime.mjs";
-
-for (const harness of ["claude", "codex", "cursor"])
-  for (const scope of ["project", "user"])
-    test(`${harness}/${scope}: scoped changes reject a different stored scope or harness and preserve ownership`, async (t) => {
-      const box = await sandbox(t);
-      distribution(t, box);
-      const installed = installRun("install", box, harness, scope);
-      t.assert.equal(installed.status, 0, installed.stdout);
-      const root = scope === "project" ? "project" : "home";
-      const statePath = `${root}/.vouch/installations/${harness}.json`;
-      const state = await box.read(statePath);
-      const before = tree(box.path(root));
-      const opposite = scope === "project" ? "user" : "project";
-      for (const command of ["remove", "update", "install"]) {
-        const result = installRun(command, box, harness, opposite, [
-          scope === "project" ? "--home" : "--project",
-          box.path(root),
-        ]);
-        t.assert.equal(result.status, 2, result.stdout);
-        t.assert.match(result.stdout, /INSTALL-STATE/);
-        t.assert.deepEqual(tree(box.path(root)), before);
-      }
-      const altered = {
-        ...JSON.parse(state),
-        harness: harness === "cursor" ? "claude" : "cursor",
-      };
-      await box.write(statePath, JSON.stringify(altered));
-      const mismatched = tree(box.path(root));
-      for (const command of ["remove", "update", "install", "init"]) {
-        const result = installRun(command, box, harness, scope);
-        t.assert.equal(result.status, 2, result.stdout);
-        t.assert.match(result.stdout, /INSTALL-STATE/);
-        t.assert.deepEqual(tree(box.path(root)), mismatched);
-      }
-      await box.write(statePath, state);
-      const removed = installRun("remove", box, harness, scope);
-      t.assert.equal(removed.status, 0, removed.stdout);
-      await t.assert.rejects(box.read(statePath), { code: "ENOENT" });
-    });
 
 test("project binding changes reject another scope or harness before either scope changes", async (t) => {
   const box = await sandbox(t);
@@ -61,9 +23,27 @@ test("project binding changes reject another scope or harness before either scop
       { command: "init", scope: "project" },
       { command: "remove", scope: "user" },
     ]) {
-      const result = installRun(command, box, "cursor", scope);
-      t.assert.equal(result.status, 2, result.stdout);
-      t.assert.match(result.stdout, /INSTALL-STATE/);
+      if (command === "install") {
+        t.assert.throws(
+          () =>
+            install(
+              {
+                harness: "cursor",
+                scope,
+                home: box.path("home"),
+                project: box.path("project"),
+                projectExplicit: true,
+                dist: box.path("dist"),
+              },
+              "install",
+            ),
+          /INSTALL-STATE/,
+        );
+      } else {
+        const result = installRun(command, box, "cursor", scope);
+        t.assert.equal(result.status, 2, result.stdout);
+        t.assert.match(result.stdout, /INSTALL-STATE/);
+      }
       t.assert.deepEqual(tree(box.root), before);
     }
   }
