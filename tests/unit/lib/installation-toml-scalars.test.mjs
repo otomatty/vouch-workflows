@@ -78,6 +78,8 @@ test("Codex preserves every supported scalar spelling and nested value without c
     "''",
     '"a\\n\\t\\b\\f\\r\\"\\\\"',
     '"\\u0061 \\U0001F600"',
+    '"\\\\uD800"',
+    '"\\\\U00110000"',
     '"😀\t"',
     "'a\\b\t'",
     "1979-05-27",
