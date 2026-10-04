@@ -79,6 +79,7 @@ group(
       "reject disabled preexisting Codex hooks even when no TOML setting is owned",
       async (t) => {
         const path = "project/.codex/config.toml";
+        const original = await box.read(path);
         await box.write(
           path,
           (await box.read(path)).replace("hooks = true", "hooks = false"),
@@ -94,8 +95,41 @@ group(
           true,
         );
         t.assert.deepEqual(tree(box.path("project")), before);
+        await box.write(path, original);
       },
       t,
     );
+    for (const identity of [
+      { scope: "project" },
+      { digest: "f".repeat(64) },
+      { runtimeRoot: box.path("another-runtime") },
+    ])
+      await test(
+        `reject mismatched activation ${Object.keys(identity)[0]}`,
+        async (t) => {
+          const path = "project/.vouch/bindings/codex.json";
+          const original = await box.read(path);
+          await box.write(
+            path,
+            JSON.stringify({ ...JSON.parse(original), ...identity }),
+          );
+          try {
+            const before = tree(box.path("project"));
+            const result = doctor();
+            t.assert.equal(result.status, 2, result.stdout + result.stderr);
+            t.assert.equal(
+              JSON.parse(result.stdout).checks.some(
+                (/** @type {{id:string,ok:boolean}} */ check) =>
+                  check.id === "DOCTOR-ACTIVATION" && !check.ok,
+              ),
+              true,
+            );
+            t.assert.deepEqual(tree(box.path("project")), before);
+          } finally {
+            await box.write(path, original);
+          }
+        },
+        t,
+      );
   },
 );

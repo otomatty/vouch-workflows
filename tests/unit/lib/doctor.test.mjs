@@ -6,22 +6,24 @@ import { memoryFiles, sandbox } from "../../helpers/runtime.mjs";
 
 test("managed doctor inspects the selected runtime separately and detects missing or duplicate native registration", async (t) => {
   const box = await sandbox(t, { git: false });
-  const runtimeRoot = box.path("runtime");
+  const digest = "a".repeat(64);
+  const prefix = `.vouch/versions/${digest}/cursor`;
+  const runtimeRoot = box.path(prefix);
   for (const path of runtime.files)
-    await box.write(`runtime/${path}`, "source");
+    await box.write(`${prefix}/${path}`, "source");
   const expected = {
     version: 1,
     hooks: { sessionStart: [{ command: "node launcher session" }] },
   };
   await box.write(
-    "runtime/registry/installation.json",
+    `${prefix}/registry/installation.json`,
     JSON.stringify({ harness: "cursor", registration: "hooks.json" }),
   );
   await box.write(
-    "runtime/registry/registration.json",
+    `${prefix}/registry/registration.json`,
     JSON.stringify(expected),
   );
-  await box.write("runtime/hooks.json", JSON.stringify(expected));
+  await box.write(`${prefix}/hooks.json`, JSON.stringify(expected));
   const store = memoryFiles({ ".cursor/hooks.json": JSON.stringify(expected) });
   const owned = {
     kind: "hooks",
@@ -29,10 +31,29 @@ test("managed doctor inspects the selected runtime separately and detects missin
     content: JSON.stringify(expected),
     previous: null,
   };
-  const state = { v: 1, harness: "cursor", owned: [owned] };
-  store.data.set(".vouch/bindings/cursor.json", JSON.stringify(state));
+  const state = {
+    v: 1,
+    harness: "cursor",
+    scope: "project",
+    digest,
+    runtimeRoot: prefix,
+    owned: [owned],
+  };
+  const config = {
+    v: 1,
+    harnesses: {
+      cursor: {
+        scope: "project",
+        digest,
+        runtimeRoot: prefix,
+        registrationScope: "project",
+      },
+    },
+  };
+  store.data.set("vouch/config.json", JSON.stringify(config));
+  store.data.set(".vouch/installations/cursor.json", JSON.stringify(state));
   const managed = {
-    projectRoot: "/project",
+    projectRoot: box.root,
     installationRoot: "",
     runtimeRoot,
     harness: /** @type {const} */ ("cursor"),
@@ -61,10 +82,42 @@ test("managed doctor inspects the selected runtime separately and detects missin
     JSON.stringify({ ...state, owned: [] }),
     JSON.stringify({ ...state, owned: [{ ...owned, content: "null" }] }),
   ]) {
-    store.data.set(".vouch/bindings/cursor.json", value);
+    store.data.set(".vouch/installations/cursor.json", value);
     t.assert.equal((await inspect()).ok, false);
   }
-  store.data.delete(".vouch/bindings/cursor.json");
+  store.data.set(".cursor/hooks.json", JSON.stringify(expected));
+  for (const identity of [
+    { scope: "user" },
+    { digest: "f".repeat(64) },
+    { runtimeRoot: "alternate" },
+    { digest: 1 },
+    { runtimeRoot: null },
+  ]) {
+    store.data.set(
+      ".vouch/installations/cursor.json",
+      JSON.stringify({ ...state, ...identity }),
+    );
+    t.assert.equal((await inspect()).ok, false);
+  }
+  store.data.set(".vouch/installations/cursor.json", JSON.stringify(state));
+  for (const invalid of [
+    null,
+    {},
+    { ...config, harnesses: [] },
+    { ...config, harnesses: { cursor: null } },
+    {
+      ...config,
+      harnesses: {
+        cursor: { ...config.harnesses.cursor, runtimeRoot: "alternate" },
+      },
+    },
+  ]) {
+    store.data.set("vouch/config.json", JSON.stringify(invalid));
+    t.assert.equal((await inspect()).ok, false);
+  }
+  store.data.set("vouch/config.json", JSON.stringify(config));
+  t.assert.equal((await inspect()).ok, true);
+  store.data.delete(".vouch/installations/cursor.json");
   t.assert.equal((await inspect()).ok, false);
 });
 
