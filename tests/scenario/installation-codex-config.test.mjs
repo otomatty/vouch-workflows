@@ -7,6 +7,9 @@ import { sandbox } from "../helpers/runtime.mjs";
 
 /** @type {Record<string,string>} */
 const unfinished = {
+  "missing-value-eof": "bad =",
+  "missing-value-newline": "bad =\nnext = 1\n",
+  "missing-value-comment": "bad = # trailing",
   "unfinished-array-eof": "x = [1, 2",
   "unfinished-inline-eof": "x = { a = 1",
   "unfinished-inline-comment": "x = { a = 1 # trailing",
@@ -71,6 +74,7 @@ group(
                 quote === '"""' ||
                 quote === "unfinished-array-eof" ||
                 quote === "unfinished-inline-eof" ||
+                quote === "missing-value-eof" ||
                 quote === "closing-array-eof-comment"
               ) {
                 const result = installRun("install", box, "codex", scope);

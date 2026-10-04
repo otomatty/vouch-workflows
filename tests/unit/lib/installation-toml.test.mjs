@@ -7,6 +7,45 @@ import {
 
 const owned = { path: "owned", kind: "toml", content: "", previous: null };
 
+test("Codex rejects assignments without values before enabling or restoring settings", (t) => {
+  for (const prefix of [
+    "",
+    "[features]\nhooks = true\n[agents]\nmax_depth = 3\n",
+  ])
+    for (const invalid of [
+      "bad =",
+      "bad = \t\r\n",
+      "bad = # trailing",
+      "bad = # trailing\nnext = 1\n",
+      "bad =\nnext = 1\n",
+      "x = { a = }",
+      "x = { a =, b = 1 }",
+      "bad = = 1",
+    ]) {
+      const text = prefix + invalid;
+      t.assert.throws(
+        () => enableCodex(text),
+        /INSTALL-CONFIG:.*missing.*value/,
+      );
+      t.assert.throws(
+        () => removeCodex(text, "[]", null),
+        /INSTALL-CONFIG:.*missing.*value/,
+      );
+    }
+  for (const valid of [
+    'empty = ""',
+    "empty = ''",
+    "empty = []",
+    "empty = {}",
+    'x = { a = "", b = [], c = {} }',
+    'x = "= # , ] }"',
+  ]) {
+    const text = `[features]\nhooks = true\n[agents]\nmax_depth = 3\n${valid} # trailing`;
+    t.assert.equal(enableCodex(text).text, text);
+    t.assert.equal(removeCodex(text, "[]", null), text);
+  }
+});
+
 test("Codex refuses unfinished and mismatched inline tables before enabling or restoring settings", (t) => {
   for (const value of [
     "{ a = 1",

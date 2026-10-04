@@ -87,6 +87,11 @@ for (const scope of ["project", "user"])
           t,
         );
       for (const [name, invalid] of [
+        ["an assignment without a value cannot look active", "bad ="],
+        [
+          "a comment cannot supply a missing assignment value",
+          "bad = # trailing",
+        ],
         [
           "an EOF comment cannot hide an unmatched Codex array bracket",
           "x = ] # trailing",
