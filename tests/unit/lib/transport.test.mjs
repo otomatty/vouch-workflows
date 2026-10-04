@@ -1,3 +1,4 @@
+import { resolve } from "node:path";
 import { test } from "node:test";
 import {
   cursorInput,
@@ -132,6 +133,76 @@ test("unrecognized or incomplete Cursor events do not invent canonical evidence"
     },
   ])
     t.assert.equal(cursorInput(value, "/trusted"), null);
+});
+test("Cursor normalizes Delete and uses the actual shell working directory without changing other tool cwd", (t) => {
+  const root = resolve("project");
+  const cwd = resolve(root, "src");
+  for (const tool_name of ["Delete", "delete_file", "delete"])
+    t.assert.deepEqual(
+      cursorInput(
+        {
+          ...base,
+          hook_event_name: "preToolUse",
+          tool_name,
+          tool_input: { path: "file.mjs" },
+        },
+        root,
+      ),
+      {
+        session_id: "conversation",
+        cwd: root,
+        hook_event_name: "PreToolUse",
+        tool_name: "Delete",
+        tool_input: { path: "file.mjs", file_path: "file.mjs" },
+      },
+    );
+  for (const tool_name of ["Bash", "Shell", "shell", "run_terminal_cmd"])
+    for (const working_directory of [
+      resolve(root, "vouch/audit"),
+      "../vouch/audit",
+    ])
+      t.assert.equal(
+        cursorInput(
+          {
+            ...base,
+            cwd,
+            hook_event_name: "preToolUse",
+            tool_name,
+            tool_input: { command: "rm events.jsonl", working_directory },
+          },
+          root,
+        )?.cwd,
+        resolve(cwd, working_directory),
+      );
+  for (const tool_name of ["Write", "Delete", "unknown"])
+    t.assert.equal(
+      cursorInput(
+        {
+          ...base,
+          cwd,
+          hook_event_name: "preToolUse",
+          tool_name,
+          tool_input: { path: "file.mjs", working_directory: "../vouch/audit" },
+        },
+        root,
+      )?.cwd,
+      cwd,
+    );
+  t.assert.equal(
+    cursorInput(
+      {
+        ...base,
+        hook_event_name: "preToolUse",
+        tool_name: "Shell",
+        tool_input: {
+          command: "rm events.jsonl",
+          working_directory: "vouch/audit",
+        },
+      },
+      root,
+    )?.cwd,
+    resolve(root, "vouch/audit"),
+  );
 });
 test("Cursor responses convert shared denials and context without changing workflow decisions", (t) => {
   const denied = { status: 2, stdout: "", stderr: " reason \n" };

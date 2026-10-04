@@ -201,6 +201,8 @@ test("managed runtime aliases protect existing and missing targets across file, 
       },
     ],
     ["Write", { file_path: "links/selected/hooks/new.mjs", content: "tamper" }],
+    ["Delete", { file_path: "links/selected/hooks/lib/env.mjs" }],
+    ["Delete", { file_path: "links/home" }],
     [
       "apply_patch",
       {

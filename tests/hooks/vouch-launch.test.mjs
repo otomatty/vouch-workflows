@@ -69,6 +69,12 @@ group(
           tool_input: { path: "src/new.mjs", content: "implementation" },
         });
         t.assert.equal(denied.permission, "deny");
+        const deletion = send("guard", "preToolUse", {
+          tool_name: "Delete",
+          tool_input: { path: "src/new.mjs" },
+        });
+        t.assert.equal(deletion.permission, "deny");
+        t.assert.match(deletion.user_message, /VOUCH-BUILD-UNAPPROVED/);
         for (const topic of topics) {
           const confirmed = send("prompt", "beforeSubmitPrompt", {
             prompt: `vouch confirm ${topic}`,
@@ -204,6 +210,60 @@ group(
               permission: "allow",
             },
           );
+      },
+      t,
+    );
+    await test(
+      "Cursor Delete protects audit, runtime and approved files while permitting approved app deletions",
+      async (t) => {
+        for (const target of [
+          "vouch/intents/bridge/audit/events.jsonl",
+          "vouch/intents/bridge/intent.md",
+          "vouch/config.json",
+          join(runtime, "hooks/lib/env.mjs"),
+          "vouch/intents/bridge",
+        ]) {
+          const denied = send("guard", "preToolUse", {
+            tool_name: "Delete",
+            tool_input: { path: target },
+          });
+          t.assert.equal(denied.permission, "deny", target);
+          t.assert.match(denied.user_message, /VOUCH-GUARD-/);
+        }
+        t.assert.deepEqual(
+          send("guard", "preToolUse", {
+            tool_name: "Delete",
+            tool_input: { path: "src/new.mjs" },
+          }),
+          { permission: "allow" },
+        );
+      },
+      t,
+    );
+    await test(
+      "shell relative paths use the supplied working directory for write protection",
+      async (t) => {
+        for (const working_directory of [
+          box.path("project/vouch/intents/bridge/audit"),
+          "vouch/intents/bridge/audit",
+        ]) {
+          const denied = send("guard", "preToolUse", {
+            tool_name: "Shell",
+            tool_input: { command: "rm events.jsonl", working_directory },
+          });
+          t.assert.equal(denied.permission, "deny");
+          t.assert.match(denied.user_message, /VOUCH-GUARD-AUDIT/);
+        }
+        t.assert.deepEqual(
+          send("guard", "preToolUse", {
+            tool_name: "Shell",
+            tool_input: {
+              command: "cat events.jsonl",
+              working_directory: "vouch/intents/bridge/audit",
+            },
+          }),
+          { permission: "allow" },
+        );
       },
       t,
     );
