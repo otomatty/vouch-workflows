@@ -2,6 +2,7 @@ import { mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 import { pathToFileURL } from "node:url";
+import { registration as generatedRegistration } from "../../../core/hooks/lib/installation-registration.mjs";
 import {
   distributionDigest,
   runtimeContents,
@@ -177,13 +178,16 @@ test("native statusline skips inactive or unverified projects and uses registere
   );
   source["AGENTS.md"] = "source";
   source[".claude/registry/runtime.json"] = JSON.stringify(runtime);
-  const activationOwned = managedOwned("claude");
+  let activationOwned = managedOwned("claude");
   for (const entry of activationOwned) {
     await box.box.write(`project/${entry.path}`, entry.content);
     if (entry.kind === "file") source[entry.path] = entry.content;
   }
   box.binding.digest = distributionDigest(source);
   box.binding.runtimeRoot = `.vouch/versions/${box.binding.digest}/claude`;
+  activationOwned = managedOwned("claude", box.binding.runtimeRoot);
+  for (const entry of activationOwned)
+    await box.box.write(`project/${entry.path}`, entry.content);
   for (const [path, text] of Object.entries(
     runtimeContents(source, "claude", box.binding.runtimeRoot),
   ))
@@ -193,7 +197,12 @@ test("native statusline skips inactive or unverified projects and uses registere
       `project/${box.binding.runtimeRoot}/distribution/${path}`,
       text,
     );
-  const registration = { hooks: { SessionStart: [{ command: "owned hook" }] } };
+  const registration = generatedRegistration(
+    "claude",
+    box.box.path(`project/${box.binding.runtimeRoot}`),
+    "project",
+    box.root,
+  );
   await box.box.write(
     "project/.claude/settings.json",
     JSON.stringify(registration),

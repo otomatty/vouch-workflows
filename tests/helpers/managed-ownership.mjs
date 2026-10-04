@@ -1,6 +1,8 @@
-/** Independent complete activation fixtures for the three native layouts.
- * @param {'claude'|'codex'|'cursor'} harness */
-export function managedOwned(harness) {
+import { activationGuidance } from "../../core/hooks/lib/installation-contributions.mjs";
+import { block } from "../../core/hooks/lib/installation-ownership.mjs";
+/** Complete activation fixtures for the three native layouts.
+ * @param {'claude'|'codex'|'cursor'} harness @param {string} [referenceRoot] */
+export function managedOwned(harness, referenceRoot = "fixture-runtime") {
   const layouts = {
     claude: {
       file: [".claude/skills/vouch/SKILL.md", ".claude/agents/check.md"],
@@ -26,8 +28,26 @@ export function managedOwned(harness) {
     paths.map((path) => ({
       path,
       kind,
-      content: kind === "toml" ? "[]\n" : `fixture ${path}`,
-      previous: null,
+      content:
+        kind === "toml"
+          ? "[]\n"
+          : kind === "block"
+            ? block(
+                null,
+                harness,
+                activationGuidance(harness, referenceRoot).find(
+                  (item) => item.path === path,
+                )?.content ?? "",
+              )
+            : path === ".cursor/rules/vouch.mdc"
+              ? (activationGuidance(harness, referenceRoot).find(
+                  (item) => item.path === path,
+                )?.content ?? "")
+              : "fixture activation file",
+      previous:
+        kind === "toml"
+          ? "[features]\nhooks = true\n[agents]\nmax_depth = 3\n"
+          : null,
     })),
   );
 }

@@ -1,5 +1,8 @@
 import { test } from "node:test";
-import { restoreOwned } from "../../../core/hooks/lib/installation-ownership.mjs";
+import {
+  block,
+  restoreOwned,
+} from "../../../core/hooks/lib/installation-ownership.mjs";
 
 const owned = {
   path: "owned",
@@ -7,6 +10,18 @@ const owned = {
   content: "installed",
   previous: null,
 };
+
+test("managed documentation has fixed markers and preserves the original newline boundary", (t) => {
+  const expected =
+    "\n<!-- vouch:cursor:start -->\nread rules\n<!-- vouch:cursor:end -->\n";
+  t.assert.equal(block(null, "cursor", "read rules"), expected);
+  t.assert.equal(block("user\n", "cursor", "read rules"), expected);
+  t.assert.equal(block("user", "cursor", "read rules"), `\n${expected}`);
+  t.assert.throws(
+    () => block(expected, "cursor", "read rules"),
+    /INSTALL-CONFLICT/,
+  );
+});
 
 test("ownership requires valid metadata, exact file bytes and a unique documentation block", (t) => {
   t.assert.equal(restoreOwned("installed", owned), null);

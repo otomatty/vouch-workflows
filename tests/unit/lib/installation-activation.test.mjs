@@ -1,6 +1,7 @@
 import { resolve } from "node:path";
 import { test } from "node:test";
 import { verifyManagedActivation } from "../../../core/hooks/lib/installation-activation.mjs";
+import { registration as generatedRegistration } from "../../../core/hooks/lib/installation-registration.mjs";
 import {
   distributionDigest,
   runtimeContents,
@@ -16,7 +17,7 @@ function setup(scope = "project", harness = "claude") {
   );
   source["AGENTS.md"] = "content";
   source[`.${harness}/registry/runtime.json`] = JSON.stringify(runtime);
-  const activationOwned = managedOwned(harness);
+  let activationOwned = managedOwned(harness);
   for (const entry of activationOwned)
     if (entry.kind === "file" && !entry.path.includes("/rules/"))
       source[entry.path] = entry.content;
@@ -28,7 +29,13 @@ function setup(scope = "project", harness = "claude") {
     canonical,
   );
   const storedRoot = scope === "project" ? canonical : runtimeRoot;
-  const registration = { hooks: { SessionStart: [{ command: "owned" }] } };
+  activationOwned = managedOwned(harness, storedRoot);
+  const registration = generatedRegistration(
+    harness,
+    runtimeRoot,
+    "project",
+    projectRoot,
+  );
   const registrationPath = `.${harness}/${harness === "claude" ? "settings" : "hooks"}.json`;
   const state = {
     v: 1,

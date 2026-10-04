@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import { inspectInstallation } from "../../../core/hooks/lib/doctor.mjs";
+import { registration } from "../../../core/hooks/lib/installation-registration.mjs";
 import {
   distributionDigest,
   runtimeContents,
@@ -25,7 +26,7 @@ test("managed doctor inspects the selected runtime separately and detects missin
     registration: "hooks.json",
   });
   source[".cursor/registry/registration.json"] = JSON.stringify(expected);
-  const activationOwned = managedOwned("cursor");
+  let activationOwned = managedOwned("cursor");
   for (const entry of activationOwned)
     if (entry.kind === "file" && !entry.path.includes("/rules/"))
       source[entry.path] = entry.content;
@@ -39,16 +40,20 @@ test("managed doctor inspects the selected runtime separately and detects missin
   for (const [path, text] of Object.entries(source))
     await box.write(`${prefix}/distribution/${path}`, text);
   await box.write(`${prefix}/hooks.json`, JSON.stringify(expected));
+  activationOwned = managedOwned("cursor", prefix);
+  const active = JSON.parse(
+    JSON.stringify(registration("cursor", runtimeRoot, "project", box.root)),
+  );
   const store = memoryFiles({
     ...Object.fromEntries(
       activationOwned.map((entry) => [entry.path, entry.content]),
     ),
-    ".cursor/hooks.json": JSON.stringify(expected),
+    ".cursor/hooks.json": JSON.stringify(active),
   });
   const owned = {
     kind: "hooks",
     path: ".cursor/hooks.json",
-    content: JSON.stringify(expected),
+    content: JSON.stringify(active),
     previous: null,
   };
   const state = {
@@ -85,11 +90,11 @@ test("managed doctor inspects the selected runtime separately and detects missin
   store.data.set(
     ".cursor/hooks.json",
     JSON.stringify({
-      ...expected,
+      ...active,
       hooks: {
         sessionStart: [
-          ...expected.hooks.sessionStart,
-          ...expected.hooks.sessionStart,
+          ...active.hooks.sessionStart,
+          ...active.hooks.sessionStart,
         ],
       },
     }),
@@ -105,7 +110,7 @@ test("managed doctor inspects the selected runtime separately and detects missin
     store.data.set(".vouch/installations/cursor.json", value);
     t.assert.equal((await inspect()).ok, false);
   }
-  store.data.set(".cursor/hooks.json", JSON.stringify(expected));
+  store.data.set(".cursor/hooks.json", JSON.stringify(active));
   for (const identity of [
     { scope: "user" },
     { digest: "f".repeat(64) },
