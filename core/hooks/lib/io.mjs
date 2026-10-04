@@ -2,7 +2,12 @@ import operations from "../../registry/operations.json" with { type: "json" };
 import workflow from "../../registry/workflow.json" with { type: "json" };
 import { approvedText } from "./approval.mjs";
 import { createIntentAuditStore } from "./audit.mjs";
-import { readContext, readDoctorContext, readIntent } from "./env.mjs";
+import {
+  literalPathLoader,
+  readContext,
+  readDoctorContext,
+  readIntent,
+} from "./env.mjs";
 import { createFileStore, descriptorWriter, readDescriptor } from "./fs.mjs";
 import { isHookResult, parseInput } from "./validation.mjs";
 
@@ -21,6 +26,7 @@ export const runLauncher = async (entryUrl, launch) =>
 export function projectManual(action, at) {
   const encoded = Buffer.from(at).toString("base64");
   const code = [
+    ...(process.platform === "win32" ? [] : [literalPathLoader]),
     "const p=require('node:path'),u=require('node:url'),a=process.argv.slice(1);",
     `const at=Buffer.from('${encoded}','base64').toString();`,
     "delete process.env.VOUCH_PROJECT_ROOT;",

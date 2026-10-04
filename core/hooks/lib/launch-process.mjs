@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { childEnvironment } from "./env.mjs";
+import { childEnvironment, nodeArguments } from "./env.mjs";
 
 /** @param {string} entry @param {string[]} args @param {string} input
  * @param {{projectRoot:string,runtimeRoot:string,harness:import('./contracts.mjs').Harness,intent:string}} selected
@@ -11,7 +11,7 @@ export function executeProduct(
   selected,
   execute = spawnSync,
 ) {
-  const result = execute(process.execPath, [entry, ...args], {
+  const result = execute(process.execPath, nodeArguments(entry, args), {
     cwd: selected.projectRoot,
     input,
     encoding: "utf8",

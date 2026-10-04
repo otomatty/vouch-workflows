@@ -7,6 +7,7 @@ import {
 } from "../../core/hooks/lib/installation-activation.mjs";
 import {
   isSnapshotName,
+  nativePath,
   runtimeContents,
   distributionDigest as sourceDigest,
 } from "../../core/hooks/lib/installation-runtime.mjs";
@@ -204,8 +205,8 @@ function configureProject(changes, options, state, runtimeRoot) {
 function activate(changes, options, state, runtimeRoot) {
   const referenceRoot =
     state.scope === "project"
-      ? relative(options.project, runtimeRoot).replaceAll("\\", "/")
-      : runtimeRoot.replaceAll("\\", "/");
+      ? nativePath(relative(options.project, runtimeRoot))
+      : nativePath(runtimeRoot);
   configureProject(changes, options, state, runtimeRoot);
   for (const entry of activationGuidance(options.harness, referenceRoot)) {
     if (entry.kind === "block")

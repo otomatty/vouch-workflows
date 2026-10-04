@@ -1,5 +1,6 @@
 import { isAbsolute, join, relative } from "node:path";
 import { isDeepStrictEqual } from "node:util";
+import { nodeArguments } from "./env.mjs";
 import { removeCodex } from "./installation-toml.mjs";
 
 /** @typedef {Record<string,unknown>} ObjectValue */
@@ -161,18 +162,28 @@ export function registration(
         ? "CURSOR_PROJECT_DIR"
         : "VOUCH_PROJECT_ROOT";
   const local = projectRoot
-    ? relative(projectRoot, entry).replaceAll("\\", "/")
+    ? platform === "win32"
+      ? relative(projectRoot, entry).replaceAll("\\", "/")
+      : relative(projectRoot, entry)
     : null;
   const portable =
     local !== null && !isAbsolute(local) && !local.startsWith("../");
-  const base = [
-    portable ? `\${${variable}}/${local}` : entry,
-    "",
-    scope,
-    ...(projectRoot ? [`\${${variable}}`] : []),
-  ];
+  /** @param {string} action @param {NodeJS.Platform} targetPlatform */
+  const argumentsFor = (action, targetPlatform) =>
+    nodeArguments(
+      portable ? `\${${variable}}/${local}` : entry,
+      [action, scope, ...(projectRoot ? [`\${${variable}}`] : [])],
+      targetPlatform,
+      runtimeRoot.includes("\\"),
+    );
   /** @param {string} action @param {boolean} windows */
   const command = (action, windows) => {
+    const prefix = [
+      "node",
+      ...nodeArguments(entry, [], windows ? "win32" : "linux")
+        .slice(0, -1)
+        .map(sh),
+    ].join(" ");
     if (harness === "codex" && projectRoot) {
       const target = portable
         ? windows
@@ -190,7 +201,7 @@ export function registration(
         "vouch_project_root=$(pwd -P)",
         `while [ ! -f "$vouch_project_root/vouch/config.json" ] && [ "$vouch_project_root" != / ]; do vouch_project_root=\${vouch_project_root%/*}; [ -n "$vouch_project_root" ] || vouch_project_root=/; done`,
         '[ -f "$vouch_project_root/vouch/config.json" ] || exit 0',
-        `node ${target} ${sh(action)} ${sh(scope)} "$vouch_project_root"`,
+        `${prefix} ${target} ${sh(action)} ${sh(scope)} "$vouch_project_root"`,
       ].join("; ");
     }
     if (
@@ -201,7 +212,7 @@ export function registration(
         local,
       )
     )
-      return `node ${local} ${action} ${scope} .`;
+      return `${prefix} ${local} ${action} ${scope} .`;
     if (action === "statusline" && windows) {
       const encoded = Buffer.from(
         JSON.stringify({ entry, scope, project: Boolean(projectRoot) }),
@@ -209,7 +220,7 @@ export function registration(
       // Only fixed JavaScript and base64 reach the shell; paths are decoded inside Node.
       return `node -e "const v=JSON.parse(Buffer.from('${encoded}','base64').toString());process.argv=[process.execPath,v.entry,'statusline',v.scope];if(v.project)process.argv.push(process.env.CLAUDE_PROJECT_DIR||'');import(require('node:url').pathToFileURL(v.entry).href)"`;
     }
-    const args = base.map((word, i) => (i === 1 ? action : word));
+    const args = argumentsFor(action, windows ? "win32" : "linux");
     const quote = (/** @type {string} */ word) =>
       word.startsWith(`\${${variable}}`)
         ? `"\${${variable}:?${variable} required}${word.slice(variable.length + 3)}"`
@@ -228,7 +239,7 @@ export function registration(
       return {
         type: "command",
         command: "node",
-        args: base.map((word, i) => (i === 1 ? action : word)),
+        args: argumentsFor(action, platform),
       };
     return harness === "codex"
       ? {

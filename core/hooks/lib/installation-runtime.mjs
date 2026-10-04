@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import runtime from "../../registry/runtime.json" with { type: "json" };
+import { nodeArguments } from "./env.mjs";
 import { json } from "./installation-ownership.mjs";
 import { projectManual } from "./io.mjs";
 
@@ -103,10 +104,15 @@ const sh = (value) => `'${value.replaceAll("'", "'\\''")}'`;
 /** @param {string} value */
 const powershell = (value) => `'${value.replaceAll("'", "''")}'`;
 
+/** Preserve literal POSIX characters, normalizing only Windows separators.
+ * @param {string} path @param {NodeJS.Platform} [platform] */
+export const nativePath = (path, platform = process.platform) =>
+  platform === "win32" ? path.replaceAll("\\", "/") : path;
+
 /** A local Markdown destination, with syntax characters encoded rather than interpreted.
- * @param {string} path */
-export const markdownDestination = (path) =>
-  `<${encodeURI(path.replaceAll("\\", "/")).replace(/[()#?']/g, (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`)}>`;
+ * @param {string} path @param {NodeJS.Platform} [platform] */
+export const markdownDestination = (path, platform = process.platform) =>
+  `<${encodeURI(nativePath(path, platform)).replace(/[()#?']/g, (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`)}>`;
 
 /** Rebind all distributed references and route manual commands through activation.
  * @param {string} text @param {string} harness @param {string} runtimeRoot @param {NodeJS.Platform} [platform] */
@@ -117,14 +123,23 @@ export function installedText(
   platform = process.platform,
 ) {
   const prefix = `.${harness}`;
-  const at = runtimeRoot.replaceAll("\\", "/");
+  const at = nativePath(runtimeRoot, platform);
   const operations = "doctor|dod|lifecycle|migrate|question|report|statusline";
   const operation = `node ("?)\\.${harness}/hooks/vouch-(${operations})\\.mjs`;
   /** @param {string} action */
-  const manual = (action) =>
-    /^\.vouch\/versions\/[a-f0-9]{64}\/(claude|codex|cursor)$/.test(at)
-      ? projectManual(action, at)
-      : `node ${(platform === "win32" ? powershell : sh)(`${at}/hooks/vouch-launch.mjs`)} ${action} manual`;
+  const manual = (action) => {
+    if (/^\.vouch\/versions\/[a-f0-9]{64}\/(claude|codex|cursor)$/.test(at))
+      return projectManual(action, at);
+    const args = nodeArguments(
+      `${at}/hooks/vouch-launch.mjs`,
+      [action, "manual"],
+      platform,
+    );
+    return `node ${args
+      .slice(0, -2)
+      .map(platform === "win32" ? powershell : sh)
+      .join(" ")} ${action} manual`;
+  };
   /** @param {string} value */
   const rebind = (value) =>
     value.replace(
@@ -152,7 +167,7 @@ export function installedText(
         return width ? `${fence} ${body} ${fence}` : `${fence}${body}${fence}`;
       }
       if (link !== undefined)
-        return `](${markdownDestination(`${at}/${link.slice(prefix.length + 1)}`)})`;
+        return `](${markdownDestination(`${at}/${link.slice(prefix.length + 1)}`, platform)})`;
       return action ? manual(action) : `${at}/`;
     },
   );

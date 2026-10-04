@@ -98,3 +98,31 @@ export const childEnvironment = (selected, env = process.env) => ({
   VOUCH_HARNESS: selected.harness,
   VOUCH_INTENT: selected.intent,
 });
+
+// Node's default ESM resolver rejects encoded POSIX backslashes. Resolve only
+// those file URLs through its native-path resolver; keep ordinary imports intact.
+export const literalPathLoader = [
+  "require('node:module').registerHooks({resolve(s,c,next){",
+  "if(s.startsWith('.')||s.startsWith('file:')){const u=require('node:url'),v=new URL(s,c.parentURL);",
+  "if(v.protocol==='file:'&&/%5c/i.test(v.href)){try{return{url:u.pathToFileURL(require.resolve(u.fileURLToPath(v))).href,shortCircuit:true};}",
+  "catch(e){if(e.code==='MODULE_NOT_FOUND'){e.code='ERR_MODULE_NOT_FOUND';e.url=v.href;}throw e;}}}",
+  "return next(s,c);}});",
+].join("");
+
+/** Keep paths and user arguments as data, using fixed code only where Node needs it.
+ * @param {string} entry @param {string[]} args @param {NodeJS.Platform} [platform] @param {boolean} [literal] */
+export function nodeArguments(
+  entry,
+  args,
+  platform = process.platform,
+  literal = entry.includes("\\"),
+) {
+  return platform !== "win32" && literal
+    ? [
+        "-e",
+        `${literalPathLoader}import(require('node:url').pathToFileURL(process.argv[1]).href)`,
+        entry,
+        ...args,
+      ]
+    : [entry, ...args];
+}

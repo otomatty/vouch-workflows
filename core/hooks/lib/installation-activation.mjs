@@ -12,6 +12,7 @@ import {
 import {
   installedText,
   markdownDestination,
+  nativePath,
   verifyManagedRuntime,
 } from "./installation-runtime.mjs";
 import { enableCodex } from "./installation-toml.mjs";
@@ -157,8 +158,8 @@ export function verifyActivationContents(source, context, owned) {
   verifyActivationManifest(source, harness, owned, projectActivation);
   const referenceRoot =
     scope === "project"
-      ? relative(projectRoot, runtimeRoot).replaceAll("\\", "/")
-      : runtimeRoot.replaceAll("\\", "/");
+      ? nativePath(relative(projectRoot, runtimeRoot))
+      : nativePath(runtimeRoot);
   const expectedFiles = activationFiles(source, harness, referenceRoot);
   const guidance = projectActivation
     ? activationGuidance(harness, referenceRoot)
