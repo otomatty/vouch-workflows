@@ -26,13 +26,20 @@ export function testGroups(suites) {
         ),
       ),
     },
-    { suite: "distribution", files: distribution },
     ...suites.filter(
       (group) =>
         !shared.includes(group) && !["hooks", "scenario"].includes(group.suite),
     ),
     { suite: "packaging", files: native },
-    ...suites.filter(({ suite }) => suite === "scenario"),
+    {
+      suite: "distribution",
+      files: [
+        ...distribution,
+        ...suites
+          .filter(({ suite }) => suite === "scenario")
+          .flatMap(({ files }) => files),
+      ],
+    },
     ...suites.filter(({ suite }) => suite === "hooks"),
   ].filter(({ files }) => files.length > 0);
 }

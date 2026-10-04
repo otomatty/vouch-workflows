@@ -46,7 +46,7 @@ try {
         "Transport tests only; product hook coverage is not measured yet.",
       );
     // HOOK-13 budget files run last and alone, under the load they start themselves.
-    const sizes = ["scenario", "hooks"].includes(suite)
+    const sizes = ["scenario", "distribution", "hooks"].includes(suite)
       ? new Map(tests.map((file) => [file, statSync(file).size]))
       : undefined;
     for (const phase of testPhases(
