@@ -49,6 +49,11 @@ function rejectMultiline(text) {
 /** @param {string} text @param {string} section */
 function sectionBounds(text, section) {
   const lines = text.split("\n");
+  const managedKey = section === "features" ? "hooks" : "max_depth";
+  const managedName = `(?:${managedKey}|"${managedKey}"|'${managedKey}')`;
+  const nestedHeading = new RegExp(
+    `^\\s*\\[\\[?\\s*(?:${section}|"${section}"|'${section}')\\s*\\.\\s*${managedName}\\s*(?:\\.|\\])`,
+  );
   const heading = new RegExp(
     `^\\s*\\[\\s*(?:${section}|"${section}"|'${section}')\\s*\\]\\s*(?:#.*)?$`,
   );
@@ -59,6 +64,7 @@ function sectionBounds(text, section) {
     starts.length > 1 ||
     lines.some(
       (line) =>
+        nestedHeading.test(line) ||
         new RegExp(
           `^\\s*(?:${section}|"${section}"|'${section}')\\s*[.=]`,
         ).test(line) ||
@@ -74,6 +80,14 @@ function sectionBounds(text, section) {
   if (section && start < 0) return { lines, start: -2, end: lines.length };
   let end = start + 1;
   for (; end < lines.length && !/^\s*\[/.test(lines[end] ?? ""); end++);
+  if (
+    lines
+      .slice(start + 1, end)
+      .some((line) => new RegExp(`^\\s*${managedName}\\s*\\.`).test(line))
+  )
+    throw new Error(
+      "INSTALL-CONFIG: managed Codex setting has dotted children",
+    );
   return { lines, start, end };
 }
 
@@ -140,7 +154,7 @@ export function enableCodex(before) {
 export function removeCodex(text, content, previous) {
   if (text === null)
     throw new Error("INSTALL-CONFLICT: owned Codex configuration missing");
-  rejectMultiline(text);
+  enableCodex(text);
   const original = text;
   /** @type {Setting[]} */ const settings = JSON.parse(content);
   for (const setting of settings.reverse()) {
