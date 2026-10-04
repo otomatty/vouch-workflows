@@ -124,6 +124,50 @@ for (const { harness, names } of profiles) {
       }
       t.assert.equal(await box.read(`${native}/${names[0]}`), "original\n");
       t.assert.equal(await box.read(`${native}/notes.md`), "notes\n");
+      for (const name of [
+        "hooks.json",
+        "settings.json",
+        "settings.local.json",
+        "config.toml",
+      ].filter((name) => !names.some((owned) => owned === name))) {
+        await box.write(`${native}/${name}`, "ordinary user file\n");
+        const file = box.path(`${native}/${name}`);
+        const attempts = /** @type {[string,Record<string,unknown>][]} */ ([
+          ["Bash", { command: `echo changed > '${file}'` }],
+          ["Bash", { command: `rm '${file}'` }],
+        ]);
+        if (harness !== "codex")
+          attempts.push(
+            ["Write", { file_path: file, content: "changed" }],
+            [
+              "Edit",
+              {
+                file_path: file,
+                old_string: "ordinary",
+                new_string: "changed",
+              },
+            ],
+          );
+        if (harness !== "claude")
+          attempts.push([
+            "apply_patch",
+            {
+              command: `*** Begin Patch\n*** Update File: ${file}\n+changed\n*** End Patch`,
+            },
+          ]);
+        if (harness === "cursor")
+          attempts.push(["Delete", { file_path: file }]);
+        for (const [tool, input] of attempts)
+          t.assert.equal(
+            (await decide(tool, input)).decision,
+            "allow",
+            `${tool}: ${file} is not a ${harness} registration`,
+          );
+        t.assert.equal(
+          await box.read(`${native}/${name}`),
+          "ordinary user file\n",
+        );
+      }
       t.assert.equal(
         await box.read("project/vouch/intents/example/audit/events.jsonl"),
         "audit\n",

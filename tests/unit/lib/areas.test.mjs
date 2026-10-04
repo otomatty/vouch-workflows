@@ -19,7 +19,6 @@ test("managed installations protect version caches, selection and native registr
     ".vouch/versions/hash/cursor/hooks/a.mjs",
     "vouch/config.json",
     ".cursor/hooks.json",
-    ".cursor/config.toml",
   ])
     t.assert.deepEqual(classifySegments(path.split("/"), scope), {
       area: "installation",
@@ -29,6 +28,9 @@ test("managed installations protect version caches, selection and native registr
     "src/a.mjs",
     "vouch/rules.md",
     ".cursor/rules/unrelated.mdc",
+    ".cursor/config.toml",
+    ".cursor/settings.json",
+    ".cursor/settings.local.json",
   ])
     t.assert.equal(classifySegments(path.split("/"), scope), null);
 });
