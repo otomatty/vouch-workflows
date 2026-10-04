@@ -488,7 +488,10 @@ test("Cursor prompt permission survives successful execution, inactive bindings,
 
 test("launcher I/O wrapper owns the process exit boundary", async (t) => {
   const previous = process.exitCode;
-  await runLauncher(pathToFileURL("/nonexistent/hooks/vouch-launch.mjs").href);
+  await runLauncher(
+    pathToFileURL("/nonexistent/hooks/vouch-launch.mjs").href,
+    launch,
+  );
   t.assert.equal(process.exitCode, 2);
   process.exitCode = previous;
 });

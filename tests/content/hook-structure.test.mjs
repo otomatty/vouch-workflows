@@ -47,7 +47,7 @@ test("product hooks have a single run(main) entry and registered literal event t
       effects.map((node) => node.getText(source)),
       [
         name === "vouch-launch.mjs"
-          ? "runLauncher(import.meta.url);"
+          ? "runLauncher(import.meta.url, launch);"
           : command
             ? "runDoctor(main, import.meta.url);"
             : statusline

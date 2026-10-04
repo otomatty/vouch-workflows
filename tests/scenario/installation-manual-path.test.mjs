@@ -9,6 +9,7 @@ import { distribution, installRun } from "../helpers/install.mjs";
 import { tree } from "../helpers/packaging.mjs";
 import { sandbox } from "../helpers/runtime.mjs";
 
+/** @type {[{executable:string,args:string[]}, ...{executable:string,args:string[]}[]]} */
 const shells =
   process.platform === "win32"
     ? [
@@ -115,7 +116,7 @@ group(
         );
         t.assert.equal(
           (
-            await box.read("project/.codex/skills/vouch/references/doctor.md")
+            await box.read("project/.agents/skills/vouch/references/doctor.md")
           ).includes(command),
           true,
         );
