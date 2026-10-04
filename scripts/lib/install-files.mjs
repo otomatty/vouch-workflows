@@ -109,8 +109,12 @@ export function files(path) {
     const current = lstatSync(at);
     if (current.isSymbolicLink() || (current.isFile() && current.nlink !== 1))
       throw new Error(`INSTALL-LINK: ${at}`);
+    if (
+      entry.isFile() !== current.isFile() ||
+      entry.isDirectory() !== current.isDirectory()
+    )
+      throw new Error(`INSTALL-TYPE: ${at}`);
     if (entry.isFile()) {
-      if (!current.isFile()) throw new Error(`INSTALL-TYPE: ${at}`);
       result[part.replaceAll("\\", "/")] = decode(at, readFileSync(at));
     }
   }
