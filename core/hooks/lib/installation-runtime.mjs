@@ -62,6 +62,18 @@ async function inspectBatches(entries, inspect) {
   }
 }
 
+/** Canonical activation inventory; a source cannot waive its own missing assets.
+ * @param {Record<string,string>} source @param {string} harness */
+export function verifyDistributionAssets(source, harness) {
+  const assets =
+    runtime.assets[/** @type {import('./contracts.mjs').Harness} */ (harness)];
+  if (!assets)
+    throw new Error(`INSTALL-SOURCE: unsupported harness ${harness}`);
+  for (const path of assets)
+    if (!source[path])
+      throw new Error(`INSTALL-SOURCE: missing mandatory asset ${path}`);
+}
+
 /** Read-only archive validation; all I/O passes through the runtime FileStore.
  * @param {import('./runtime-contracts.mjs').FileStore} files
  * @param {{harness:string,scope:string,digest:string}} state @param {string} runtimeRoot */
@@ -93,6 +105,7 @@ export async function verifyManagedRuntime(files, state, runtimeRoot) {
   });
   if (distributionDigest(source) !== state.digest)
     throw new Error("INSTALL-VERSION: archived distribution has changed");
+  verifyDistributionAssets(source, state.harness);
   const prefix = `.${state.harness}/`;
   const inventory = json(source[`${prefix}registry/runtime.json`] ?? null);
   if (!Array.isArray(inventory.files) || !source["AGENTS.md"])

@@ -10,6 +10,7 @@ import {
   nativePath,
   runtimeContents,
   distributionDigest as sourceDigest,
+  verifyDistributionAssets,
 } from "../../core/hooks/lib/installation-runtime.mjs";
 import requiredRuntime from "../../core/registry/runtime.json" with {
   type: "json",
@@ -524,6 +525,7 @@ function validateReceipt(root, state, projectActivation) {
 
 /** @param {Record<string,string>} source @param {string} harness */
 function validateSource(source, harness) {
+  verifyDistributionAssets(source, harness);
   const prefix = `${nativeDirectory(harness)}/`;
   const inventory = json(source[`${prefix}registry/runtime.json`] ?? null);
   if (!Array.isArray(inventory.files) || !source["AGENTS.md"])
