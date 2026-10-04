@@ -7,6 +7,37 @@ import {
 
 const owned = { path: "owned", kind: "toml", content: "", previous: null };
 
+test("Codex requires separators between array elements and inline assignments", (t) => {
+  for (const value of [
+    "[1 2]",
+    "{ a = 1 b = 2 }",
+    '["a" "b"]',
+    "[[] []]",
+    "{ a = [1] b = {} }",
+    "{ a = 1, }",
+    "[1,,2]",
+    "{ a = 1,, b = 2 }",
+  ])
+    for (const prefix of [
+      "",
+      "[features]\nhooks = true\n[agents]\nmax_depth = 3\n",
+    ]) {
+      const text = `${prefix}bad = ${value} # trailing`;
+      t.assert.throws(() => enableCodex(text), /INSTALL-CONFIG/);
+      t.assert.throws(() => removeCodex(text, "[]", null), /INSTALL-CONFIG/);
+    }
+  for (const value of [
+    "[1, 2,]",
+    '[[], {}, "a , b"]',
+    '{ a = [1, 2], b = { c = "a = b, c" } }',
+    "1979-05-27 07:32:00Z",
+  ]) {
+    const text = `[features]\nhooks = true\n[agents]\nmax_depth = 3\nvalid = ${value}\n`;
+    t.assert.equal(enableCodex(text).text, text);
+    t.assert.equal(removeCodex(text, "[]", null), text);
+  }
+});
+
 test("Codex rejects assignments without values before enabling or restoring settings", (t) => {
   for (const prefix of [
     "",

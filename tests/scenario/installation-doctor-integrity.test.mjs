@@ -88,6 +88,11 @@ for (const scope of ["project", "user"])
           t,
         );
       for (const [name, invalid] of [
+        ["missing array separators cannot look active", "bad = [1 2]"],
+        [
+          "missing inline separators cannot look active",
+          "bad = { a = 1 b = 2 }",
+        ],
         ["an assignment without a value cannot look active", "bad ="],
         [
           "a comment cannot supply a missing assignment value",
