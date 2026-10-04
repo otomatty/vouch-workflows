@@ -19,7 +19,7 @@ test("tree reads reject an enumerated directory replaced by a file", async (t) =
     "readdirSync",
     (
       /** @type {import('node:fs').PathLike} */ path,
-      /** @type {Parameters<typeof fs.readdirSync>[1]} */ options = undefined,
+      /** @type {Parameters<typeof fs.readdirSync>[1]|undefined} */ options = undefined,
     ) => {
       const result = Reflect.apply(original, fs, [path, options]);
       if (String(path) === box.path("source")) {
