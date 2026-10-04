@@ -86,3 +86,8 @@ Windows の値（150秒）を使う経路は、`checkBudgetMs` のテストと C
 - 残る失敗3件は、この Issue で変えない予算によるものです。
   - HOOK-13 の p95 超過2件：Ubuntu Node 24 の承認の適用 240.9ms、Windows Node 24 の open の記録 202.7ms です。runner の遅れによるもので、[Issue #27](https://github.com/otomatty/vouch-workflows/issues/27) で扱います。Windows Node 24 は、予算テストの段を最後まで終えた後に失敗しました（90秒）。
   - 1ケース5秒の超過1件（Windows Node 24、39秒）：scenario の `copied codex registrations confirm, apply the approval and then admit implementation writes` が5000msで打ち切られました。同じ回の packaging では、PowerShell の最初の起動が `probeNode` の 4000ms に達し、`native-environment.test.mjs` の2件が失敗しました（[hook-startup.md](hook-startup.md) の残る課題）。どちらも静的検査の段で起き、hooks・配布は始まっていません。
+# PR #38 の追加回帰検証
+
+fce5ee1 の CI（run 37173152197）は Windows の両 Node でシェル確認まで合格したが、hooks の実行中に全体150秒の上限に達した。シナリオ階層は Node 22で47.5秒、Node 24で45.5秒だった。上限や性能計測を変更せず、導入記録の拒否確認をツールごとのファイルへ分け、同じファイルの長い処理が並列実行の末尾に残る費用を減らす。
+
+繰り返す不正記録への install / update の拒否は実際の導入APIで検査し、削除・初期化と正しい範囲の導入・解除は実CLIで検査する。全ツール・両スコープ・全コマンドの拒否と、各拒否後の全ファイル保持を維持する。テストケースの削除・スキップ、成功した実行の選別、同じコミットの再試行は行わない。ファイルの並列数、ケース5秒・ファイル90秒、性能の20標本・CPU数−1の負荷と200ms未満、全体150秒を保持する。
