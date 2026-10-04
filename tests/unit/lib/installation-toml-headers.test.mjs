@@ -11,6 +11,8 @@ test("Codex refuses malformed table headers and incomplete statements before edi
     "[provider]]",
     "[[provider]",
     "[[provider]]]",
+    "[ [provider]]",
+    "[[provider] ]",
     "[]",
     "[[]]",
     "[provider..model]",
