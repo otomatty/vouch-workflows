@@ -13,7 +13,7 @@ group(
     await test(
       "install the local Cursor runtime",
       async (t) => {
-        distribution(t, box);
+        distribution(t, box, "cursor");
         t.assert.equal(
           installRun("install", box, "cursor", "project").status,
           0,

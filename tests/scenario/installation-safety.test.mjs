@@ -8,7 +8,7 @@ import { hookTest as test } from "../helpers/hook-test.mjs";
 test("custom user home with shell metacharacters remains selectable without repeating the home flag to doctor", async (t) => {
   const box = await sandbox(t);
   await mkdir(box.path("project"));
-  distribution(t, box);
+  distribution(t, box, "codex");
   const home = box.path("日本語 home $ apostrophe'");
   const installed = installRun("install", box, "codex", "user", [
     "--home",
@@ -31,7 +31,7 @@ import { sandbox } from "../helpers/runtime.mjs";
 test("setup rejects malformed settings, duplicate owned hooks and incomplete runtime without replacing files", async (t) => {
   const box = await sandbox(t);
   await mkdir(box.path("project"));
-  distribution(t, box);
+  distribution(t, box, "cursor");
   await box.write("project/.cursor/hooks.json", "{malformed");
   t.assert.equal(installRun("install", box, "cursor", "project").status, 2);
   t.assert.equal(await box.read("project/.cursor/hooks.json"), "{malformed");
@@ -57,7 +57,7 @@ test("setup rejects malformed settings, duplicate owned hooks and incomplete run
 });
 test("setup refuses a linked registration without replacing it", async (t) => {
   const box = await sandbox(t);
-  distribution(t, box);
+  distribution(t, box, "cursor");
   await mkdir(box.path("project/.cursor"), { recursive: true });
   try {
     await symlink(
@@ -186,7 +186,7 @@ test("rollback attempts remaining files after a restoration fails and reports bo
 test("Codex setup preserves model, sandbox, provider and agent depth while owning only required hook settings", async (t) => {
   const box = await sandbox(t);
   await mkdir(box.path("project"));
-  distribution(t, box);
+  distribution(t, box, "codex");
   const original =
     'model = "mine"\nsandbox_mode = "read-only"\n[features] # keep\nhooks = false\n[agents]\nmax_depth = 4\n[model_providers.mine]\nname = "mine"\n';
   await box.write("project/.codex/config.toml", original);

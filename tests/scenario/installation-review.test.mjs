@@ -13,7 +13,7 @@ import { sandbox } from "../helpers/runtime.mjs";
 
 test("failed project removal preserves user state even when one project restoration is denied", async (t) => {
   const box = await sandbox(t);
-  distribution(t, box);
+  distribution(t, box, "cursor");
   await box.write("project/AGENTS.md", "existing guidance\n");
   t.assert.equal(installRun("install", box, "cursor", "user").status, 0);
   t.assert.equal(installRun("init", box, "cursor", "user").status, 0);
@@ -86,7 +86,7 @@ test("failed project removal preserves user state even when one project restorat
 
 test("user removal changes only an explicitly named project and holds both locks", async (t) => {
   const box = await sandbox(t);
-  distribution(t, box);
+  distribution(t, box, "cursor");
   t.assert.equal(installRun("install", box, "cursor", "user").status, 0);
   t.assert.equal(installRun("init", box, "cursor", "user").status, 0);
   const files = [
@@ -142,7 +142,7 @@ test("user removal changes only an explicitly named project and holds both locks
 
 test("user removal recognizes home case aliases while preserving a distinct home binding", async (t) => {
   const box = await sandbox(t);
-  distribution(t, box);
+  distribution(t, box, "cursor");
   t.assert.equal(installRun("install", box, "cursor", "user").status, 0);
   t.assert.equal(installRun("init", box, "cursor", "user").status, 0);
   const home = box.path("HOME");
@@ -236,7 +236,7 @@ test("lock creation preserves filesystem errors that are not lock conflicts", as
 
 test("activation guidance encodes Markdown paths and refuses control characters before installation", async (t) => {
   const box = await sandbox(t);
-  distribution(t, box);
+  distribution(t, box, "cursor");
   const home = box.path(
     process.platform === "win32"
       ? "home ) [injected] # `"
@@ -288,7 +288,7 @@ test("activation guidance encodes Markdown paths and refuses control characters 
 for (const scope of ["user", "project"])
   test(`${scope} setup rejects a different harness before changing fresh or installed files`, async (t) => {
     const box = await sandbox(t);
-    distribution(t, box);
+    distribution(t, box, "claude");
     await box.write("project/README.md", "existing project content\n");
     await box.write("home/README.md", "existing home content\n");
     const path = "dist/claude/.claude/registry/installation.json";
@@ -318,7 +318,7 @@ for (const scope of ["user", "project"])
 
 test("corrupt distribution descriptors cannot overwrite project files or omit their snapshots", async (t) => {
   const box = await sandbox(t);
-  distribution(t, box);
+  distribution(t, box, "codex");
   await box.write("project/README.md", "existing project content\n");
   const path = "dist/codex/.codex/registry/installation.json";
   const original = JSON.parse(await box.read(path));

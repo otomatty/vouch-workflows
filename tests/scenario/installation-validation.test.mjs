@@ -7,7 +7,7 @@ import { sandbox } from "../helpers/runtime.mjs";
 for (const scope of ["project", "user"])
   test(`${scope}: reject an invalid saved Intent without changing files and allow an explicit correction`, async (t) => {
     const box = await sandbox(t);
-    distribution(t, box);
+    distribution(t, box, "codex");
     t.assert.equal(installRun("install", box, "codex", scope).status, 0);
     if (scope === "user")
       t.assert.equal(installRun("init", box, "codex", scope).status, 0);

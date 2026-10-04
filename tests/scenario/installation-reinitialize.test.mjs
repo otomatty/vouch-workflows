@@ -7,7 +7,7 @@ import { sandbox } from "../helpers/runtime.mjs";
 for (const harness of ["claude", "codex", "cursor"])
   test(`${harness}: init repairs missing local activation and preserves other configuration and owned files`, async (t) => {
     const box = await sandbox(t);
-    distribution(t, box);
+    distribution(t, box, harness);
     const installed = installRun("install", box, harness, "project");
     t.assert.equal(installed.status, 0, installed.stdout);
     const { digest } = JSON.parse(installed.stdout);

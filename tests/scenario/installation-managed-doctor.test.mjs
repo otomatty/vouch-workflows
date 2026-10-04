@@ -30,7 +30,7 @@ group(
     await test(
       "install and activate the shared runtime with preexisting enabled Codex settings",
       async (t) => {
-        distribution(t, box);
+        distribution(t, box, "codex");
         await box.write(
           "project/.codex/config.toml",
           "[features]\nhooks = true\n\n[agents]\nmax_depth = 3\n",

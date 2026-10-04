@@ -14,7 +14,7 @@ group(
     await test(
       "install a runtime for the independent missing-file cases",
       async (t) => {
-        distribution(t, box);
+        distribution(t, box, "codex");
         const installed = installRun("install", box, "codex", "project");
         t.assert.equal(installed.status, 0, installed.stdout);
         runtimeRoot = JSON.parse(installed.stdout).runtimeRoot;

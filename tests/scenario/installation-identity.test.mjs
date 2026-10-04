@@ -14,7 +14,7 @@ group(
     await test(
       "install and bind the user runtime",
       async (t) => {
-        distribution(t, box);
+        distribution(t, box, "cursor");
         t.assert.equal(installRun("install", box, "cursor", "user").status, 0);
         t.assert.equal(installRun("init", box, "cursor", "user").status, 0);
         binding = await box.read(path);

@@ -9,7 +9,7 @@ export function installationIdentity(harness) {
   for (const scope of ["project", "user"])
     test(`${harness}/${scope}: scoped changes reject a different stored scope or harness and preserve ownership`, async (t) => {
       const box = await sandbox(t);
-      distribution(t, box);
+      distribution(t, box, harness);
       const installed = installRun("install", box, harness, scope);
       t.assert.equal(installed.status, 0, installed.stdout);
       const root = scope === "project" ? "project" : "home";

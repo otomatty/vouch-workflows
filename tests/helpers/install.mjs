@@ -8,12 +8,31 @@ import { packageRun } from "./packaging.mjs";
  * @type {Map<string,Buffer>|undefined} */
 let packaged;
 
-/** @param {import('node:test').TestContext} t @param {Awaited<ReturnType<import('./runtime.mjs').sandbox>>} box */
-export function distribution(t, box) {
+/** @param {import('node:test').TestContext} t @param {Awaited<ReturnType<import('./runtime.mjs').sandbox>>} box
+ * @param {string} [harness] */
+export function distribution(t, box, harness) {
+  const shared = process.env.VOUCH_TEST_DISTRIBUTION;
+  if (!packaged && shared) {
+    packaged = new Map(
+      readdirSync(shared, { recursive: true, withFileTypes: true })
+        .filter((entry) => entry.isFile())
+        .map((entry) => {
+          const path = join(entry.parentPath, entry.name);
+          return [relative(shared, path), readFileSync(path)];
+        }),
+    );
+    t.assert.equal(
+      packaged.size > 0,
+      true,
+      "shared distribution must contain files",
+    );
+  }
   const root = box.path("dist");
   if (packaged) {
     const directories = new Set();
     for (const [path, bytes] of packaged) {
+      if (harness && !path.replaceAll("\\", "/").startsWith(`${harness}/`))
+        continue;
       const target = join(root, path);
       const directory = dirname(target);
       if (!directories.has(directory)) {

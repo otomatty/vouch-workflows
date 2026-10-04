@@ -19,7 +19,7 @@ export function installationSelection(harness) {
         "install the user runtime and pin the project",
         async (t) => {
           await mkdir(box.path("project/src"), { recursive: true });
-          distribution(t, box);
+          distribution(t, box, harness);
           const user = installRun("install", box, harness, "user");
           t.assert.equal(user.status, 0, user.stdout);
           old = JSON.parse(user.stdout);
@@ -151,7 +151,7 @@ export function installationSelection(harness) {
   test(`${harness}: project installation remains usable after moving the checkout`, async (t) => {
     const box = await sandbox(t);
     await mkdir(box.path("project"));
-    distribution(t, box);
+    distribution(t, box, harness);
     t.assert.equal(
       installRun("install", box, harness, "project", ["--intent", "moved"])
         .status,

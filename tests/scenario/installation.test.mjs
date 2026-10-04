@@ -13,7 +13,7 @@ for (const harness of ["claude", "codex", "cursor"]) {
       await mkdir(box.path("project"), { recursive: true });
       await box.write("project/AGENTS.md", "# Existing project guidance\n");
       await box.write("project/vouch/rules.md", "keep existing rules\n");
-      distribution(t, box);
+      distribution(t, box, harness);
       const installed = installRun("install", box, harness, scope);
       t.assert.equal(installed.status, 0, installed.stdout + installed.stderr);
       const initial = JSON.parse(installed.stdout);

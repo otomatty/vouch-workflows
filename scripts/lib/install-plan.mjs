@@ -1,13 +1,7 @@
+import { restoreOwned } from "../../core/hooks/lib/installation-ownership.mjs";
 import { readScopedFile } from "./install-files.mjs";
-import {
-  addHooks,
-  block,
-  json,
-  pretty,
-  removeBlock,
-  removeHooks,
-} from "./install-settings.mjs";
-import { enableCodex, removeCodex } from "./install-toml.mjs";
+import { addHooks, block, json, pretty } from "./install-settings.mjs";
+import { enableCodex } from "./install-toml.mjs";
 
 /** @typedef {{path:string,kind:'file'|'block'|'hooks'|'toml',content:string,previous:string|null}} Owned */
 /** @typedef {{v:1,harness:string,scope:string,digest:string,runtimeRoot:string,owned:Owned[]}} Installation */
@@ -45,17 +39,7 @@ export function plan(root, prior) {
   }
   for (const entry of prior?.owned ?? []) {
     const text = current(entry.path);
-    let restored;
-    if (entry.kind === "file") {
-      if (text !== entry.content)
-        throw new Error(`INSTALL-CONFLICT: ${entry.path}`);
-      restored = entry.previous;
-    } else if (entry.kind === "block")
-      restored = removeBlock(text, entry.content, entry.previous);
-    else if (entry.kind === "hooks")
-      restored = removeHooks(text, entry.content, entry.previous);
-    else restored = removeCodex(text, entry.content, entry.previous);
-    put(entry.path, restored);
+    put(entry.path, restoreOwned(text, entry));
   }
   /** @param {string} path @param {Owned['kind']} kind @param {string} content @param {string} after */
   function claim(path, kind, content, after) {

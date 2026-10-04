@@ -33,7 +33,7 @@ group(
       "prepare the activated Cursor runtime and draft",
       async (t) => {
         await mkdir(box.path("project"));
-        distribution(t, box);
+        distribution(t, box, "cursor");
         const installed = installRun("install", box, "cursor", "project", [
           "--intent",
           "bridge",

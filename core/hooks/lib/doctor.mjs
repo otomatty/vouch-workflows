@@ -1,6 +1,7 @@
-import { isDeepStrictEqual } from "node:util";
 import runtime from "../../registry/runtime.json" with { type: "json" };
 import { createFileStore } from "./fs.mjs";
+import { restoreOwned } from "./installation-ownership.mjs";
+import { enableCodex } from "./installation-toml.mjs";
 
 /** @param {unknown} value @returns {value is Record<string,unknown>} */
 function object(value) {
@@ -144,36 +145,20 @@ export async function inspectInstallation(files, environment, git) {
         !Array.isArray(state.owned)
       )
         throw new Error("missing managed activation descriptor");
-      const entry = state.owned.find(
-        (item) => object(item) && item.kind === "hooks",
-      );
-      if (
-        !object(entry) ||
-        typeof entry.path !== "string" ||
-        typeof entry.content !== "string"
-      )
+      if (!state.owned.some((item) => object(item) && item.kind === "hooks"))
         throw new Error("missing owned registration");
-      const actual = JSON.parse((await files.readText(entry.path)) ?? "null");
-      const expected = JSON.parse(entry.content);
-      if (!contains(actual, expected))
-        throw new Error("active native registration differs");
-      if (!object(actual.hooks) || !object(expected.hooks))
-        throw new Error("invalid native registration");
-      for (const [event, registrations] of Object.entries(expected.hooks)) {
-        if (
-          !Array.isArray(registrations) ||
-          !Array.isArray(actual.hooks[event])
-        )
-          throw new Error("invalid native event");
-        for (const registration of registrations)
-          if (
-            actual.hooks[event].filter((/** @type {unknown} */ candidate) =>
-              isDeepStrictEqual(candidate, registration),
-            ).length !== 1
-          )
-            throw new Error("duplicate native registration");
+      for (const entry of state.owned) {
+        if (!object(entry) || typeof entry.path !== "string")
+          throw new Error("invalid owned activation entry");
+        restoreOwned(await files.readText(entry.path), entry);
       }
-      return `${harness}: project registration selects the managed runtime`;
+      if (
+        harness === "codex" &&
+        enableCodex(await files.readText(".codex/config.toml")).content !==
+          "[]\n"
+      )
+        throw new Error("active Codex hooks or agent depth differ");
+      return `${harness}: project owned activation selects the managed runtime`;
     });
   }
   return { v: 1, ok: checks.every((item) => item.ok), checks };
