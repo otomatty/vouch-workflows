@@ -11,20 +11,23 @@ import {
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 
 /** Every setup read/write rejects links, including existing ancestors.
- * @param {string} path @returns {import('node:fs').Stats|undefined} */
+ * @param {string} path @returns {{stat:import('node:fs').Stats|undefined,parentExists:boolean}} */
 function inspectPath(path) {
   const parent = dirname(path);
-  if (parent !== path && inspectPath(parent) === undefined) return;
+  const checkedParent = parent === path ? null : inspectPath(parent);
+  if (checkedParent && checkedParent.stat === undefined)
+    return { stat: undefined, parentExists: false };
   let stat;
   try {
     stat = lstatSync(path);
   } catch (error) {
-    if (/** @type {NodeJS.ErrnoException} */ (error).code === "ENOENT") return;
+    if (/** @type {NodeJS.ErrnoException} */ (error).code === "ENOENT")
+      return { stat: undefined, parentExists: checkedParent !== null };
     throw error;
   }
   if (stat.isSymbolicLink() || (stat.isFile() && stat.nlink !== 1))
     throw new Error(`INSTALL-LINK: ${path}`);
-  return stat;
+  return { stat, parentExists: true };
 }
 
 /** @param {string} root @param {string} path */
@@ -73,7 +76,7 @@ export function sameLocation(left, right) {
 
 /** @param {string} path @returns {string|null} */
 function read(path) {
-  const stat = inspectPath(path);
+  const { stat } = inspectPath(path);
   if (!stat) return null;
   if (!stat.isFile()) throw new Error(`INSTALL-TYPE: ${path}`);
   const bytes = readFileSync(path);
@@ -85,7 +88,7 @@ function read(path) {
 
 /** @param {string} path @returns {Record<string,string>} */
 export function files(path) {
-  const stat = inspectPath(path);
+  const { stat } = inspectPath(path);
   if (!stat?.isDirectory()) throw new Error(`INSTALL-SOURCE: ${path}`);
   /** @type {Record<string,string>} */ const result = {};
   for (const entry of readdirSync(path, {
@@ -148,9 +151,9 @@ export function commitChanges(changes) {
 
 /** @param {string} path @param {string|null} text */
 function write(path, text) {
-  const stat = inspectPath(path);
+  const { stat, parentExists } = inspectPath(path);
   if (text === null) return rmSync(path, { force: true });
-  mkdirSync(dirname(path), { recursive: true });
+  if (!parentExists) mkdirSync(dirname(path), { recursive: true });
   const temporary = `${path}.vouch-install-${process.pid}`;
   let created = false;
   try {
@@ -160,6 +163,7 @@ function write(path, text) {
     });
     created = true;
     renameSync(temporary, path);
+    created = false;
   } finally {
     if (created) rmSync(temporary, { force: true });
   }
