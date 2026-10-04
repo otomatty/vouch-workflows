@@ -1,5 +1,6 @@
 import { rm } from "node:fs/promises";
 import { test as group } from "node:test";
+import { install } from "../../scripts/lib/install.mjs";
 import { hookTest as test } from "../helpers/hook-test.mjs";
 import { distribution, installRun } from "../helpers/install.mjs";
 import { tree } from "../helpers/packaging.mjs";
@@ -85,13 +86,35 @@ for (const layout of ["project", "home", "binding"])
               await box.write(statePath, JSON.stringify(state));
               try {
                 const before = tree(box.root);
-                const result = installRun(
-                  action.command,
-                  box,
-                  "cursor",
-                  action.scope,
-                );
-                t.assert.equal(result.status, 2, result.stdout + result.stderr);
+                if (action.command === "install" || action.command === "update")
+                  t.assert.throws(
+                    () =>
+                      install(
+                        {
+                          harness: "cursor",
+                          scope: action.scope,
+                          home: box.path("home"),
+                          project: box.path("project"),
+                          projectExplicit: true,
+                          dist: box.path("dist"),
+                        },
+                        action.command === "update" ? "update" : "install",
+                      ),
+                    /INSTALL-STATE/,
+                  );
+                else {
+                  const result = installRun(
+                    action.command,
+                    box,
+                    "cursor",
+                    action.scope,
+                  );
+                  t.assert.equal(
+                    result.status,
+                    2,
+                    result.stdout + result.stderr,
+                  );
+                }
                 t.assert.deepEqual(tree(box.root), before);
               } finally {
                 const after = tree(box.root);
