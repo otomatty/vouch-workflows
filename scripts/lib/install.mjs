@@ -249,10 +249,12 @@ export function initialize(options) {
       throw new Error("INSTALL-VERSION: runtime path differs");
     const source = validateRuntime(runtimeRoot, selected, options.harness);
     const bindingPath = `.vouch/bindings/${options.harness}.json`;
-    const binding = readInstallation(readInside(options.project, bindingPath), {
-      harness: options.harness,
-      scope: "user",
-    });
+    const binding = local
+      ? null
+      : readInstallation(readInside(options.project, bindingPath), {
+          harness: options.harness,
+          scope: "user",
+        });
     if (local) plan(options.project, local); // Validate ownership without committing its removal plan.
     const changes = plan(options.project, binding);
     if (local) {
