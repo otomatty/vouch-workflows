@@ -121,7 +121,7 @@ Claude の管理する登録には読み取り専用の `statusLine` を含め�
 
 `doctor` は選択した配置・digest、所有する登録と文書、配布の原本と本体の一致を検査する。Skill の doctor も、本体を別の FileStore で読み、実際のプロジェクト登録の不足・重複を検査する。どちらもハーネスの信頼設定やモデルの遵守を証明しない。Codex の既存モデル・プロバイダー・sandbox と正の `agents.max_depth` は保持し、必要な `features.hooks` だけを有効化する。既存設定がない場合も `sandbox_mode` を生成せず、導入後に利用者が別の設定を追加しても、更新・解除で導入の所有外の sandbox 方針を残さない。対象テーブルのインライン・ドット形式など安全に追加できない TOML は、変更前に拒否する。
 
-ネイティブの本体参照と明示プロジェクト引数は Claude の `CLAUDE_PROJECT_DIR`、Codex の `VOUCH_PROJECT_ROOT`、Cursor の `CURSOR_PROJECT_DIR` を使う。Codex の起動時は対象ルートを `VOUCH_PROJECT_ROOT` に設定する。手動コマンドはプロジェクトルートから実行する。管理するランチャーは `init` / `install` の `--intent` で `vouch/config.json` に保存した Intent だけを使い、継承した `VOUCH_INTENT` では対象を変更しない。Intent の切り替えは `init --intent <Intent>` で明示する。旧来の製品フックの直接実行では従来の環境変数の契約を保持する。stdin の root・Intent・harness の主張から使用先を選ばない。
+ネイティブの本体参照と明示プロジェクト引数は Claude の `CLAUDE_PROJECT_DIR`、Cursor の `CURSOR_PROJECT_DIR` を使う。Codex のプロジェクト登録は作業ディレクトリから最寄りの `vouch/config.json` を持つ祖先を探し、そのルートを引数に渡す。`VOUCH_PROJECT_ROOT` の事前設定は不要とする。手動コマンドはプロジェクトルートから実行する。管理するランチャーは `init` / `install` の `--intent` で `vouch/config.json` に保存した Intent だけを使い、継承した `VOUCH_INTENT` では対象を変更しない。Intent の切り替えは `init --intent <Intent>` で明示する。旧来の製品フックの直接実行では従来の環境変数の契約を保持する。stdin の root・Intent・harness の主張から使用先を選ばない。
 
 プロジェクト内に本体を置いた Cursor のフックと Claude の statusLine は、プロジェクトルートを作業ディレクトリとして、OS に依存しない `node <本体の相対パス> <操作> project .` を登録する。最後の `.` はその作業ディレクトリの明示指定で、継承した root 環境変数より優先する。共有する登録に POSIX / PowerShell 専用の式を保存しない。個人共通の本体への接続は利用者の環境に依存し、別の利用者・OS ではその環境で `init` を行う。
 
