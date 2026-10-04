@@ -7,7 +7,7 @@ import { tree } from "../helpers/packaging.mjs";
 import { sandbox } from "../helpers/runtime.mjs";
 
 group(
-  "the installed user Cursor guard refuses an external glob that Bash expands to hooks.json",
+  "the installed user Cursor guard protects globbed registrations and the exact project root",
   async (t) => {
     const box = await sandbox(t);
     let runtimeRoot = "";
@@ -76,6 +76,44 @@ group(
           /VOUCH-GUARD-INSTALLATION/,
         );
         t.assert.deepEqual(tree(box.root), before);
+      },
+      t,
+    );
+    await test(
+      "Delete of dot or the absolute project root returns deny and preserves every file",
+      (t) => {
+        const before = tree(box.root);
+        for (const file_path of [".", box.path("project")]) {
+          const result = spawnSync(
+            process.execPath,
+            [
+              join(runtimeRoot, "hooks/vouch-launch.mjs"),
+              "guard",
+              "project",
+              box.path("project"),
+            ],
+            {
+              cwd: box.path("project"),
+              input: JSON.stringify(
+                cursorInput(box.path("project"), "preToolUse", {
+                  tool_name: "Delete",
+                  tool_input: { file_path },
+                }),
+              ),
+              encoding: "utf8",
+              windowsHide: true,
+              timeout: 4000,
+            },
+          );
+          t.assert.equal(result.status, 0, result.stderr);
+          const output = JSON.parse(result.stdout);
+          t.assert.equal(output.permission, "deny", file_path);
+          t.assert.match(
+            output.user_message,
+            /VOUCH-GUARD-(AUDIT|INSTALLATION)/,
+          );
+          t.assert.deepEqual(tree(box.root), before);
+        }
       },
       t,
     );

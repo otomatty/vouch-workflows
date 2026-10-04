@@ -101,6 +101,8 @@ test("Cursor Delete protects resolved external project ancestors in direct and m
     };
     for (const tool_name of ["Delete", "Write", "Edit"]) {
       for (const file_path of [
+        ".",
+        project,
         "..",
         box.path("workspace"),
         box.root,
