@@ -97,7 +97,7 @@ export function install(options, command) {
     validateSource(source, options.harness);
     const bindingPath = `.vouch/bindings/${options.harness}.json`;
     const binding =
-      options.scope === "project"
+      options.scope === "project" && !prior
         ? readInstallation(readInside(root, bindingPath), {
             harness: options.harness,
             scope: "user",
