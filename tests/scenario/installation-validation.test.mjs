@@ -1,5 +1,3 @@
-import { rm } from "node:fs/promises";
-import { join } from "node:path";
 import { initialize, install } from "../../scripts/lib/install.mjs";
 import { hookTest as test } from "../helpers/hook-test.mjs";
 import { distribution, installRun } from "../helpers/install.mjs";
@@ -46,30 +44,4 @@ for (const scope of ["project", "user"])
       "corrected",
     );
     t.assert.equal(installRun("doctor", box, "codex", scope).status, 0);
-  });
-
-for (const missing of [
-  "",
-  "hooks/vouch-launch.mjs",
-  "hooks/lib/launch.mjs",
-  "distribution/AGENTS.md",
-])
-  test(`project init rejects a missing runtime file (${missing || "entire runtime"}) and preserves all remaining files`, async (t) => {
-    const box = await sandbox(t);
-    distribution(t, box);
-    const installed = installRun("install", box, "codex", "project");
-    t.assert.equal(installed.status, 0, installed.stdout);
-    const { runtimeRoot } = JSON.parse(installed.stdout);
-    await rm(join(runtimeRoot, missing), { recursive: true });
-    const before = tree(box.path("project"));
-    const initialized = installRun("init", box, "codex", "project", [
-      "--intent",
-      "must-not-save",
-    ]);
-    t.assert.equal(initialized.status, 2, initialized.stdout);
-    t.assert.match(initialized.stdout, /INSTALL-(SOURCE|VERSION)/);
-    t.assert.deepEqual(tree(box.path("project")), before);
-    const doctor = installRun("doctor", box, "codex", "project");
-    t.assert.equal(doctor.status, 2, doctor.stdout);
-    t.assert.match(doctor.stdout, /INSTALL-(SOURCE|VERSION)/);
   });

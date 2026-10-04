@@ -244,6 +244,7 @@ export function initialize(options) {
       harness: options.harness,
       scope: "user",
     });
+    if (local) plan(options.project, local); // Validate ownership without committing its removal plan.
     const changes = plan(options.project, binding);
     if (local) {
       // The project installation already owns its activation documents and registration.
