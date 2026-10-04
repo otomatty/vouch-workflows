@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { hookTest as test } from "../helpers/hook-test.mjs";
 import { sandbox } from "../helpers/runtime.mjs";
 
@@ -12,14 +13,16 @@ function execute(box, options) {
     [
       resolve("scripts/test-phase.mjs"),
       JSON.stringify({
-        cwd: box.root,
         concurrency: 1,
         timeout: 1000,
-        execArgv: ["--import", resolve("tests/helpers/no-network.mjs")],
+        execArgv: [
+          "--import",
+          pathToFileURL(resolve("tests/helpers/no-network.mjs")).href,
+        ],
         ...options,
       }),
     ],
-    { encoding: "utf8", windowsHide: true, timeout: 4000, env },
+    { cwd: box.root, encoding: "utf8", windowsHide: true, timeout: 4000, env },
   );
 }
 
