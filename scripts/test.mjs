@@ -54,38 +54,40 @@ try {
       availableParallelism(),
       sizes,
     )) {
-      const flags = [
-        "--test",
-        `--test-timeout=${testTimeoutFor(suite, budgets.timing)}`,
-        `--test-concurrency=${phase.concurrency}`,
-        "--import=./tests/helpers/no-network.mjs",
-      ];
+      /** @type {import('node:test').RunOptions} */
+      const options = {
+        files: phase.files,
+        timeout: testTimeoutFor(suite, budgets.timing),
+        concurrency: phase.concurrency,
+        execArgv: ["--import", resolve("tests/helpers/no-network.mjs")],
+      };
       const measured =
         !phase.budget &&
         (suite === "unit" || (suite === "hooks" && productHooks.length > 0));
       if (measured) {
         const coverage =
           suite === "unit" ? budgets.coverage.lib : budgets.coverage.hooks;
-        flags.push(
-          "--experimental-test-coverage",
-          `--test-coverage-include=${suite === "unit" ? "core/hooks/lib/**/*.mjs" : "core/hooks/*.mjs"}`,
-          `--test-coverage-lines=${coverage.lines}`,
-          `--test-coverage-branches=${coverage.branches}`,
-        );
+        options.coverage = true;
+        options.coverageIncludeGlobs =
+          suite === "unit" ? "core/hooks/lib/**/*.mjs" : "core/hooks/*.mjs";
+        options.lineCoverage = coverage.lines;
+        options.branchCoverage = coverage.branches;
         if (suite === "unit")
-          flags.push(
-            `--test-coverage-functions=${budgets.coverage.lib.functions}`,
-          );
+          options.functionCoverage = budgets.coverage.lib.functions;
       }
-      const result = spawnSync(process.execPath, [...flags, ...phase.files], {
-        encoding: "utf8",
-        maxBuffer: 8 * 1024 * 1024,
-        windowsHide: true,
-        env: {
-          ...process.env,
-          ...(fixture ? { VOUCH_TEST_DISTRIBUTION: fixture.root } : {}),
+      const result = spawnSync(
+        process.execPath,
+        [resolve("scripts/test-phase.mjs"), JSON.stringify(options)],
+        {
+          encoding: "utf8",
+          maxBuffer: 8 * 1024 * 1024,
+          windowsHide: true,
+          env: {
+            ...process.env,
+            ...(fixture ? { VOUCH_TEST_DISTRIBUTION: fixture.root } : {}),
+          },
         },
-      });
+      );
       process.stdout.write(result.stdout ?? "");
       process.stderr.write(result.stderr ?? "");
       if (result.error) throw result.error;
