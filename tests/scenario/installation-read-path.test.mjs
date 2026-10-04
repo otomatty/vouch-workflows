@@ -9,6 +9,37 @@ import {
 import { hookTest as test } from "../helpers/hook-test.mjs";
 import { sandbox } from "../helpers/runtime.mjs";
 
+test("tree reads reject an enumerated directory replaced by a file", async (t) => {
+  const box = await sandbox(t, { git: false });
+  await box.write("source/original", "original bytes");
+  fs.mkdirSync(box.path("source/empty"));
+  const original = fs.readdirSync;
+  const mocked = t.mock.method(
+    fs,
+    "readdirSync",
+    (
+      /** @type {import('node:fs').PathLike} */ path,
+      /** @type {Parameters<typeof fs.readdirSync>[1]} */ options = undefined,
+    ) => {
+      const result = Reflect.apply(original, fs, [path, options]);
+      if (String(path) === box.path("source")) {
+        fs.rmdirSync(box.path("source/empty"));
+        fs.writeFileSync(box.path("source/empty"), "replacement bytes");
+      }
+      return result;
+    },
+  );
+  syncBuiltinESMExports();
+  try {
+    t.assert.throws(() => files(box.path("source")), /INSTALL-TYPE/);
+    t.assert.equal(await box.read("source/empty"), "replacement bytes");
+    t.assert.equal(await box.read("source/original"), "original bytes");
+  } finally {
+    mocked.mock.restore();
+    syncBuiltinESMExports();
+  }
+});
+
 test("tree reads validate their root once, then fresh canonical paths and file metadata without repeating ancestor probes", async (t) => {
   const box = await sandbox(t, { git: false });
   await box.write("source/a", "a bytes");

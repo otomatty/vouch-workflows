@@ -7,6 +7,23 @@ import {
 
 const owned = { path: "owned", kind: "toml", content: "", previous: null };
 
+test("Codex refuses unfinished ordinary strings before accepting apparent activation", (t) => {
+  for (const prefix of [
+    'name = "unfinished',
+    "name = 'unfinished",
+    'name = "escaped\\',
+  ])
+    for (const suffix of [
+      "",
+      "\n[features]\nhooks = true\n[agents]\nmax_depth = 3\n",
+    ])
+      for (const newline of ["\n", "\r\n"]) {
+        const text = `${prefix}${suffix}`.replaceAll("\n", newline);
+        t.assert.throws(() => enableCodex(text), /INSTALL-CONFIG/);
+        t.assert.throws(() => removeCodex(text, "[]", null), /INSTALL-CONFIG/);
+      }
+});
+
 test("Codex removal deletes owned empty table headers while preserving existing and populated tables", (t) => {
   const created = enableCodex(null);
   const unrelated = '[provider]\nmodel = "keep"\n';

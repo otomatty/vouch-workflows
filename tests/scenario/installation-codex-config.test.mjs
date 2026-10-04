@@ -4,6 +4,16 @@ import { distribution, installRun } from "../helpers/install.mjs";
 import { tree } from "../helpers/packaging.mjs";
 import { sandbox } from "../helpers/runtime.mjs";
 
+/** @type {Record<string,string>} */
+const unfinished = {
+  "unfinished-double":
+    'name = "unfinished\n[features]\nhooks = true\n[agents]\nmax_depth = 3\n',
+  "unfinished-single":
+    "name = 'unfinished\n[features]\nhooks = true\n[agents]\nmax_depth = 3\n",
+  "escaped-newline":
+    'name = "unfinished\\\n[features]\nhooks = true\n[agents]\nmax_depth = 3\n',
+};
+
 group(
   "Codex installation rejects multiline settings without changing either scope",
   async (t) => {
@@ -27,6 +37,7 @@ group(
         "array",
         "features-table",
         "agents-table",
+        ...Object.keys(unfinished),
       ])
         await test(
           `${scope}: reject the ${quote} multiline instruction`,
@@ -35,11 +46,12 @@ group(
             const original = await box.read(path);
             await box.write(
               path,
-              quote.endsWith("-table")
-                ? `[[${quote.slice(0, -6)}]]\ncustom = true\n`
-                : quote === "array"
-                  ? "[features]\nflags = [\n  [true, false],\n]\nhooks = false\n"
-                  : `developer_instructions = ${quote}\n[features]\nhooks = true\n[agents]\nmax_depth = 3\n${quote}\n`,
+              unfinished[quote] ??
+                (quote.endsWith("-table")
+                  ? `[[${quote.slice(0, -6)}]]\ncustom = true\n`
+                  : quote === "array"
+                    ? "[features]\nflags = [\n  [true, false],\n]\nhooks = false\n"
+                    : `developer_instructions = ${quote}\n[features]\nhooks = true\n[agents]\nmax_depth = 3\n${quote}\n`),
             );
             try {
               const project = tree(box.path("project"));
