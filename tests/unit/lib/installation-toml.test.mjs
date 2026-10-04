@@ -7,6 +7,25 @@ import {
 
 const owned = { path: "owned", kind: "toml", content: "", previous: null };
 
+test("Codex preserves unrelated table assignments named features or agents while refusing root collisions", (t) => {
+  for (const before of [
+    '[provider]\nfeatures = "local"\nagents = 3\n',
+    '["provider"]\n"features".custom = true\n\'agents\' = "local"\n',
+    '[[provider]]\nfeatures = "local"\nagents = 3\n',
+  ]) {
+    const enabled = enableCodex(before);
+    t.assert.equal(enabled.text.startsWith(before), true);
+    t.assert.match(enabled.text, /hooks = true/);
+    t.assert.match(enabled.text, /max_depth = 1/);
+    t.assert.equal(removeCodex(enabled.text, enabled.content, before), before);
+  }
+  for (const text of [
+    'features = "local"\n[provider]\n',
+    '"agents".custom = true\n[provider]\n',
+  ])
+    t.assert.throws(() => enableCodex(text), /INSTALL-CONFIG/);
+});
+
 test("Codex refuses escaped basic key and table names but preserves value escapes and literal names", (t) => {
   for (const text of [
     '[features]\n"ho\\u006fks" = false\n',
