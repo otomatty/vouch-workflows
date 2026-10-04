@@ -1,4 +1,6 @@
+import { spawnSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
 import { hookTest as test } from "../helpers/hook-test.mjs";
 import { intent, reviewBox } from "../helpers/intent-review.mjs";
 import {
@@ -13,6 +15,52 @@ const stream = "NativeModule stream";
 const promises = "NativeModule internal/fs/promises";
 const net = "NativeModule net";
 const crypto = "NativeModule crypto";
+
+test("product hooks run without loading the managed launcher or Cursor transport", async (t) => {
+  const box = await sandbox(t);
+  await box.write(
+    "reject-launcher.mjs",
+    `
+import { registerHooks } from "node:module";
+registerHooks({ resolve(specifier, context, next) {
+  const result = next(specifier, context);
+  if (/\\/lib\\/(?:launch|transport)\\.mjs$/.test(result.url))
+    throw new Error("UNEXPECTED-LAUNCHER-LOAD");
+  return result;
+} });
+`,
+  );
+  for (const [hook, fixture] of [
+    ["vouch-record-session-start", sessionFor(box.root)],
+    ["vouch-record-intent-review", promptFor(box.root)],
+  ]) {
+    const result = spawnSync(
+      process.execPath,
+      [
+        "--import",
+        box.path("reject-launcher.mjs"),
+        resolve(`core/hooks/${hook}.mjs`),
+      ],
+      {
+        input: JSON.stringify(
+          /** @type {import('../../core/hooks/lib/contracts.mjs').HarnessFixture} */ (
+            fixture
+          ).payload,
+        ),
+        env: {
+          ...process.env,
+          VOUCH_PROJECT_ROOT: box.root,
+          VOUCH_INTENT: "",
+          VOUCH_HARNESS: "claude",
+        },
+        encoding: "utf8",
+        timeout: 4000,
+      },
+    );
+    t.assert.equal(result.status, 0, result.stderr);
+    t.assert.equal(result.stderr, "");
+  }
+});
 
 /** @param {string} path @param {string[]} names */
 async function loaded(path, names) {
