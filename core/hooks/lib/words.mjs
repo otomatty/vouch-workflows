@@ -66,6 +66,8 @@ export function uncommented(text) {
 
 /** Require single-line value separators; quoted punctuation stays in one token. @param {string} text */
 export function validateTomlValues(text) {
+  /** @type {{table:boolean,array:boolean,names:string[]}[]} */ const statements =
+    [];
   for (const line of text.split("\n")) {
     /** @type {string[]} */ const tokens =
       line.match(
@@ -86,10 +88,20 @@ export function validateTomlValues(text) {
         !validTomlKey(tokens.slice(width, -width))
       )
         throw new Error("INSTALL-CONFIG: invalid Codex TOML table header");
+      statements.push({
+        table: true,
+        array: width === 2,
+        names: tomlKeyNames(tokens.slice(width, -width)),
+      });
       continue;
     }
     if (!validTomlKey(tokens.slice(0, assignment)))
       throw new Error("INSTALL-CONFIG: invalid Codex TOML assignment key");
+    statements.push({
+      table: false,
+      array: false,
+      names: tomlKeyNames(tokens.slice(0, assignment)),
+    });
     let at = assignment + 1;
     /** @returns {void} */
     function value() {
@@ -111,6 +123,8 @@ export function validateTomlValues(text) {
       }
       const inline = token === "{";
       const close = inline ? "}" : "]";
+      const members = new Set();
+      const parents = new Set();
       if (tokens[at] === close) {
         at++;
         return;
@@ -123,6 +137,20 @@ export function validateTomlValues(text) {
             throw new Error(
               "INSTALL-CONFIG: invalid Codex TOML inline table key",
             );
+          const names = tomlKeyNames(tokens.slice(start, at - 1));
+          const member = JSON.stringify(names);
+          for (let i = 1; i <= names.length; i++)
+            if (members.has(JSON.stringify(names.slice(0, i))))
+              throw new Error(
+                "INSTALL-CONFIG: duplicate Codex TOML inline key",
+              );
+          if (parents.has(member))
+            throw new Error(
+              "INSTALL-CONFIG: conflicting Codex TOML inline key",
+            );
+          members.add(member);
+          for (let i = 1; i < names.length; i++)
+            parents.add(JSON.stringify(names.slice(0, i)));
         }
         value();
         if (tokens[at] === close) {
@@ -144,6 +172,28 @@ export function validateTomlValues(text) {
     if (at !== tokens.length)
       throw new Error("INSTALL-CONFIG: missing Codex TOML value separator");
   }
+  return statements;
+}
+
+/** Normalize quoted and dotted spellings after key validation. @param {string[]} tokens */
+function tomlKeyNames(tokens) {
+  return (
+    tokens.join(" ").match(/"(?:\\.|[^"\\])*"|'[^']*'|[\w-]+/g) ?? []
+  ).map((name) => {
+    if (name.startsWith("'")) return name.slice(1, -1);
+    if (!name.startsWith('"')) return name;
+    return JSON.parse(
+      name.replace(
+        /\\(?:U([\da-fA-F]{8})|[btnfr"\\]|u[\da-fA-F]{4})/g,
+        (spelling, point) =>
+          point === undefined
+            ? spelling
+            : JSON.stringify(
+                String.fromCodePoint(Number.parseInt(point, 16)),
+              ).slice(1, -1),
+      ),
+    );
+  });
 }
 
 /** Bare, quoted and dotted keys share their grammar in every position. @param {string[]} tokens */
@@ -224,4 +274,13 @@ function validTomlScalar(token) {
     if (hours > 23 || minutes > 59) return false;
   }
   return true;
+}
+
+/** Valid TOML integers, retaining their original spelling. @param {string} line */
+export function positiveTomlDepth(line) {
+  const value =
+    /^\s*(?:max_depth|"max_depth"|'max_depth')\s*=\s*([+-]?(?:0|[1-9](?:_?\d)*)|0x[\da-fA-F](?:_?[\da-fA-F])*|0o[0-7](?:_?[0-7])*|0b[01](?:_?[01])*)\s*(?:#.*)?$/.exec(
+      line,
+    )?.[1];
+  return value !== undefined && BigInt(value.replaceAll("_", "")) > 0n;
 }

@@ -1,4 +1,4 @@
-import { validateTomlValues } from "./words.mjs";
+import { positiveTomlDepth, validateTomlValues } from "./words.mjs";
 
 /** @typedef {{section:string,key:string,line:string,previous:string|null,createdTable?:boolean}} Setting */
 
@@ -76,8 +76,63 @@ function rejectMultiline(text) {
     throw new Error(
       "INSTALL-CONFIG: unfinished Codex TOML array or inline table",
     );
-  validateTomlValues(text);
+  validateDefinitions(validateTomlValues(text));
 }
+/** @param {{table:boolean,array:boolean,names:string[]}[]} statements */
+function validateDefinitions(statements) {
+  const values = new Set();
+  const tables = new Set();
+  const implicit = new Set();
+  /** @type {Map<string,number>} */ const arrays = new Map();
+  /** @type {string[]} */ let table = [];
+  /** @param {string[]} parts */
+  function qualified(parts) {
+    let path = "";
+    for (const part of parts) {
+      path += `${JSON.stringify(part)}/`;
+      path += arrays.get(path) ?? "";
+    }
+    return path;
+  }
+  /** @param {string[]} names */
+  const arrayKey = (names) =>
+    `${qualified(names.slice(0, -1))}${JSON.stringify(names.at(-1))}/`;
+  for (const statement of statements) {
+    const names = statement.table
+      ? statement.names
+      : [...table, ...statement.names];
+    for (let i = 1; i <= names.length; i++)
+      if (values.has(qualified(names.slice(0, i))))
+        throw new Error(
+          "INSTALL-CONFIG: duplicate or conflicting Codex TOML key",
+        );
+    const name = qualified(names);
+    if (statement.table) {
+      const array = arrayKey(names);
+      if (statement.array) {
+        if (implicit.has(name) || (tables.has(name) && !arrays.has(array)))
+          throw new Error("INSTALL-CONFIG: conflicting Codex TOML array table");
+        arrays.set(array, (arrays.get(array) ?? 0) + 1);
+      } else if (tables.has(name) || arrays.has(array))
+        throw new Error(
+          "INSTALL-CONFIG: duplicate or conflicting Codex TOML table",
+        );
+      for (let i = 1; i < names.length; i++) {
+        const parent = names.slice(0, i);
+        if (!arrays.has(arrayKey(parent))) implicit.add(qualified(parent));
+      }
+      table = names;
+      tables.add(qualified(names));
+    } else {
+      if (tables.has(name))
+        throw new Error("INSTALL-CONFIG: conflicting Codex TOML key");
+      values.add(name);
+      for (let i = table.length + 1; i < names.length; i++)
+        tables.add(qualified(names.slice(0, i)));
+    }
+  }
+}
+
 /** @param {string} text @param {string} section */
 function sectionBounds(text, section) {
   const lines = text.split("\n");
@@ -125,15 +180,6 @@ function sectionBounds(text, section) {
   return { lines, start, end };
 }
 
-/** Valid TOML integers, retaining their original spelling. @param {string} line */
-function positiveDepth(line) {
-  const value =
-    /^\s*(?:max_depth|"max_depth"|'max_depth')\s*=\s*([+-]?(?:0|[1-9](?:_?\d)*)|0x[\da-fA-F](?:_?[\da-fA-F])*|0o[0-7](?:_?[0-7])*|0b[01](?:_?[01])*)\s*(?:#.*)?$/.exec(
-      line,
-    )?.[1];
-  return value !== undefined && BigInt(value.replaceAll("_", "")) > 0n;
-}
-
 /** @param {string|null} before */
 export function enableCodex(before) {
   let text = before ?? "";
@@ -159,7 +205,8 @@ export function enableCodex(before) {
     )
       throw new Error("INSTALL-CONFIG: duplicate Codex setting");
     const previous = index < 0 ? null : /** @type {string} */ (lines[index]);
-    if (key === "max_depth" && previous && positiveDepth(previous)) continue;
+    if (key === "max_depth" && previous && positiveTomlDepth(previous))
+      continue;
     const line = `${key} = ${value}`;
     if (
       previous &&
