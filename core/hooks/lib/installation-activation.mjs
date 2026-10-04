@@ -144,29 +144,38 @@ export function activationGuidance(harness, referenceRoot) {
 
 /** Compare contributions to setup-generated data, independently of mutable receipts.
  * @param {Record<string,string>} source
- * @param {{harness:string,scope:string,runtimeRoot:string,projectRoot:string}} context
+ * @param {{harness:string,scope:string,runtimeRoot:string,projectRoot:string,registrationScope?:'project'|'user'}} context
  * @param {unknown[]} owned */
 export function verifyActivationContents(source, context, owned) {
   const { harness, scope, runtimeRoot, projectRoot } = context;
-  verifyActivationManifest(source, harness, owned);
+  const projectActivation = context.registrationScope !== "user";
+  verifyActivationManifest(source, harness, owned, projectActivation);
   const referenceRoot =
     scope === "project"
       ? relative(projectRoot, runtimeRoot).replaceAll("\\", "/")
       : runtimeRoot.replaceAll("\\", "/");
   const expectedFiles = activationFiles(source, harness, referenceRoot);
-  const guidance = activationGuidance(harness, referenceRoot);
+  const guidance = projectActivation
+    ? activationGuidance(harness, referenceRoot)
+    : [];
   for (const entry of owned) {
     if (
       !object(entry) ||
       typeof entry.path !== "string" ||
       typeof entry.content !== "string" ||
-      (entry.previous !== null && typeof entry.previous !== "string")
+      (entry.previous !== null && typeof entry.previous !== "string") ||
+      (entry.kind === "file" && entry.previous !== null)
     )
       throw new Error("INSTALL-STATE: invalid owned contribution");
     let matches;
     if (entry.kind === "hooks") {
       const expected = /** @type {Record<string,unknown>} */ (
-        registration(harness, runtimeRoot, "project", projectRoot)
+        registration(
+          harness,
+          runtimeRoot,
+          projectActivation ? "project" : "user",
+          projectActivation ? projectRoot : undefined,
+        )
       );
       if (json(entry.previous).statusLine !== undefined)
         delete expected.statusLine;

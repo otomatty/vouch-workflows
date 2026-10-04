@@ -23,24 +23,31 @@ export function block(text, harness, body) {
 }
 
 /** Require the complete project activation set independently of the recorded list.
- * @param {Record<string,string>} source @param {string} harness @param {unknown[]} owned */
-export function verifyActivationManifest(source, harness, owned) {
+ * @param {Record<string,string>} source @param {string} harness @param {unknown[]} owned @param {boolean} [projectActivation] */
+export function verifyActivationManifest(
+  source,
+  harness,
+  owned,
+  projectActivation = true,
+) {
   const skills =
     harness === "codex" ? ".agents/skills/" : `.${harness}/skills/`;
   const expected = new Map([
-    ["AGENTS.md", "block"],
     [
       `.${harness}/${harness === "claude" ? "settings" : "hooks"}.json`,
       "hooks",
     ],
     [`${skills}vouch/SKILL.md`, "file"],
   ]);
+  if (projectActivation) expected.set("AGENTS.md", "block");
   for (const path of Object.keys(source))
     if (path.startsWith(skills) || path.startsWith(`.${harness}/agents/`))
       expected.set(path, "file");
-  if (harness === "claude") expected.set("CLAUDE.md", "block");
+  if (projectActivation && harness === "claude")
+    expected.set("CLAUDE.md", "block");
   if (harness === "codex") expected.set(".codex/config.toml", "toml");
-  if (harness === "cursor") expected.set(".cursor/rules/vouch.mdc", "file");
+  if (projectActivation && harness === "cursor")
+    expected.set(".cursor/rules/vouch.mdc", "file");
   if (
     owned.length !== expected.size ||
     [...expected].some(

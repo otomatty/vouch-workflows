@@ -140,6 +140,7 @@ export {};
  * @typedef {'audit'|'lock'|'installation'|'artifact'} GuardArea
  * @typedef {{area:GuardArea,ancestor:boolean}} GuardMatch `ancestor`: the path contains the area.
  * @typedef {object} GuardScope
+ * @property {(()=>Promise<string[]>)|undefined} [runtimeFiles]
  * @property {string[]|null} installation Normalized segments of the installation directory below the root, or null.
  * @property {string[]} installed Normalized protected entry names inside the installation directory.
  * @property {string} [managed] Native directory of a managed installation, including its activation configuration.

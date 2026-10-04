@@ -88,7 +88,9 @@ export function install(options, command) {
             scope: "user",
           })
         : null;
-    const changes = plan(root, prior ?? binding);
+    const receipt = prior ?? binding;
+    if (receipt) validateReceipt(root, receipt, options.scope === "project");
+    const changes = plan(root, receipt);
     if (binding) changes.put(bindingPath, null);
     const activation = activationFiles(source, options.harness, referenceRoot);
     for (const [path, content] of Object.entries(source)) {
@@ -257,6 +259,7 @@ export function initialize(options) {
       );
       plan(options.project, local); // Validate ownership without committing its removal plan.
     }
+    if (binding) validateReceipt(options.project, binding, true);
     const changes = plan(options.project, binding);
     if (local) {
       // The project installation already owns its activation documents and registration.
@@ -307,6 +310,7 @@ export function remove(options) {
         : null;
     const state = local ?? binding;
     if (!state) throw new Error("INSTALL-MISSING: scope is not installed");
+    validateReceipt(root, state, options.scope === "project");
     const changes = plan(root, state);
     changes.put(local ? statePath(options.harness) : bindingPath, null);
     if (options.scope === "project") deactivate(changes, options.harness);
@@ -337,6 +341,7 @@ export function remove(options) {
             ),
           )
         ) {
+          validateReceipt(options.project, binding, true);
           const project = plan(options.project, binding);
           deactivate(project, options.harness);
           project.put(path, null);
@@ -447,10 +452,7 @@ function validateIntent(value) {
 /** @param {string} runtimeRoot @param {import('./install-plan.mjs').Installation} state
  * @param {string} harness */
 function validateRuntime(runtimeRoot, state, harness) {
-  const source = files(join(runtimeRoot, "distribution"));
-  validateSource(source, harness);
-  if (sourceDigest(source) !== state.digest)
-    throw new Error("INSTALL-VERSION: archived distribution has changed");
+  const source = validateArchive(runtimeRoot, state, harness);
   const referenceRoot =
     state.scope === "project"
       ? `.vouch/versions/${state.digest}/${harness}`
@@ -461,6 +463,49 @@ function validateRuntime(runtimeRoot, state, harness) {
     if (readInside(runtimeRoot, target) !== expected)
       throw new Error(`INSTALL-VERSION: runtime has changed: ${target}`);
   return source;
+}
+
+/** @param {string} runtimeRoot @param {import('./install-plan.mjs').Installation} state @param {string} harness */
+function validateArchive(runtimeRoot, state, harness) {
+  const source = files(join(runtimeRoot, "distribution"));
+  validateSource(source, harness);
+  if (sourceDigest(source) !== state.digest)
+    throw new Error("INSTALL-VERSION: archived distribution has changed");
+  return source;
+}
+
+/** Validate only trusted restoration data; damaged executable files may still be removed safely.
+ * @param {string} root @param {import('./install-plan.mjs').Installation} state @param {boolean} projectActivation */
+function validateReceipt(root, state, projectActivation) {
+  if (
+    projectActivation &&
+    state.scope === "user" &&
+    !isAbsolute(state.runtimeRoot)
+  )
+    throw new Error("INSTALL-VERSION: user runtime must be absolute");
+  const runtimeRoot = resolve(root, state.runtimeRoot);
+  const storage =
+    projectActivation && state.scope === "user"
+      ? dirname(dirname(dirname(dirname(runtimeRoot))))
+      : root;
+  if (
+    !sameLocation(
+      runtimeRoot,
+      inside(storage, `.vouch/versions/${state.digest}/${state.harness}`),
+    )
+  )
+    throw new Error("INSTALL-VERSION: runtime path differs");
+  verifyActivationContents(
+    validateArchive(runtimeRoot, state, state.harness),
+    {
+      harness: state.harness,
+      scope: state.scope,
+      runtimeRoot,
+      projectRoot: root,
+      registrationScope: projectActivation ? "project" : "user",
+    },
+    state.owned,
+  );
 }
 
 /** @param {Record<string,string>} source @param {string} harness */

@@ -77,7 +77,7 @@ export async function guardWrites(input, ctx, entry) {
     const shown = at.inside ?? spelled;
     if (at.kind === "unresolved" || at.links > 1) found.push(["link", shown]);
     const match =
-      externalRuntimeMatch(at, scope) ??
+      (await externalRuntimeMatch(at, scope)) ??
       (at.inside === null
         ? at.contains && {
             area: /** @type {const} */ ("audit"),
@@ -246,7 +246,7 @@ export async function guardWrites(input, ctx, entry) {
       if (at.kind === "unresolved" || at.links > 1)
         result.push(["link", shown, false]);
       const match =
-        externalRuntimeMatch(at, scope) ??
+        (await externalRuntimeMatch(at, scope)) ??
         (at.inside === null
           ? at.contains && {
               area: /** @type {const} */ ("audit"),
@@ -259,6 +259,10 @@ export async function guardWrites(input, ctx, entry) {
     const lexical =
       external && scope.managed ? { installation: null, installed: [] } : scope;
     for (let i = 0; i < parts.length; i++) {
+      // An external recursive glob has already been checked against canonical paths.
+      // Its wildcard suffix (including a fragment after a quoted prefix) is not the project root.
+      if (external && scope.managed && (parts[i] === "" || parts[i] === "**"))
+        continue;
       const match = classifySegments(parts.slice(i), lexical);
       if (match && !match.ancestor) result.push([match.area, word, false]);
     }
