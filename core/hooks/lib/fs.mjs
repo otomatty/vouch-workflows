@@ -139,7 +139,7 @@ export async function createFileStore(root, operations = native) {
   }
 
   /** @param {string} path */
-  async function resolvePath(path) {
+  async function inspectPath(path) {
     // Reject ADS and ambiguous Win32 names on every host, while allowing a drive prefix.
     if (
       !path ||
@@ -155,6 +155,7 @@ export async function createFileStore(root, operations = native) {
         : inside;
     const target = join(base, local);
     let current = base;
+    /** @type {import('node:fs').Stats|undefined} */ let info;
     for (const part of local.split(sep).filter(Boolean)) {
       if (
         /[. ]$/.test(part) ||
@@ -162,8 +163,9 @@ export async function createFileStore(root, operations = native) {
       )
         throw new Error("FS-PATH: ambiguous or reserved filename");
       current = join(current, part);
+      info = undefined;
       try {
-        const info = await operations.lstat(current);
+        info = await operations.lstat(current);
         if (info.isSymbolicLink() || (info.isFile() && info.nlink !== 1))
           throw new Error("FS-LINK: linked path");
         if (!info.isFile() && !info.isDirectory())
@@ -172,15 +174,18 @@ export async function createFileStore(root, operations = native) {
         if (!hasCode(error, "ENOENT")) throw error;
       }
     }
-    return target;
+    return { target, info: local ? info : await operations.lstat(base) };
   }
 
   /** @param {string} path */
+  const resolvePath = async (path) => (await inspectPath(path)).target;
+
+  /** @param {string} path */
   async function readBytes(path) {
-    const target = await resolvePath(path);
+    const { target, info } = await inspectPath(path);
+    if (!info) return null;
     try {
-      if (!(await operations.lstat(target)).isFile())
-        throw new Error("FS-TYPE: regular file required");
+      if (!info.isFile()) throw new Error("FS-TYPE: regular file required");
       return Buffer.from(await operations.readFile(target));
     } catch (error) {
       if (hasCode(error, "ENOENT")) return null;
@@ -243,13 +248,13 @@ export async function createFileStore(root, operations = native) {
 
   /** @param {string} path */
   async function list(path) {
-    const target = await resolvePath(path);
+    const { target, info } = await inspectPath(path);
     const read = operations.readdir;
     if (!read) throw new Error("FS-LIST: listing unsupported");
+    if (!info) return null;
     let names;
     try {
-      if (!(await operations.lstat(target)).isDirectory())
-        throw new Error("FS-TYPE: directory required");
+      if (!info.isDirectory()) throw new Error("FS-TYPE: directory required");
       names = await read(target);
     } catch (error) {
       if (hasCode(error, "ENOENT")) return null;
