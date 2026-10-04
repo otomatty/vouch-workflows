@@ -8,7 +8,13 @@ import {
 const owned = { path: "owned", kind: "toml", content: "", previous: null };
 
 test("Codex refuses unbalanced arrays at EOF before accepting or editing settings", (t) => {
-  for (const text of ["x = [1, 2", "x = [[1], [2]", "x = 1]"])
+  for (const text of [
+    "x = [1, 2",
+    "x = [[1], [2]",
+    "x = 1]",
+    "x = ] # trailing",
+    "x = [1]] # trailing",
+  ])
     for (const before of [
       text,
       `[features]\nhooks = true\n[agents]\nmax_depth = +3\n${text}`,
@@ -19,6 +25,10 @@ test("Codex refuses unbalanced arrays at EOF before accepting or editing setting
         /INSTALL-CONFIG:.*array/,
       );
     }
+  const valid =
+    "[features]\nhooks = true\n[agents]\nmax_depth = 3\nx = [1, [2]] # trailing";
+  t.assert.equal(enableCodex(valid).text, valid);
+  t.assert.equal(removeCodex(valid, "[]", null), valid);
 });
 
 test("Codex retains every positive TOML integer spelling and replaces nonpositive depths", (t) => {

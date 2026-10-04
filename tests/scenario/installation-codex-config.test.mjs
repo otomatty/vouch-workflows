@@ -9,6 +9,8 @@ import { sandbox } from "../helpers/runtime.mjs";
 const unfinished = {
   "unfinished-array-eof": "x = [1, 2",
   "unfinished-nested-array-eof": "x = [[1], [2]",
+  "closing-array-eof-comment": "x = ] # trailing",
+  "extra-closing-array-eof-comment": "x = [1]] # trailing",
   "escaped-feature-key": '[features]\n"ho\\u006fks" = false\n',
   "escaped-agent-table": '["a\\u0067ents"]\nmax_depth = 3\n',
   "feature-subtable": "[features.hooks]\ncustom = true\n",
@@ -63,7 +65,11 @@ group(
             try {
               const project = tree(box.path("project"));
               const home = tree(box.path("home"));
-              if (quote === '"""' || quote === "unfinished-array-eof") {
+              if (
+                quote === '"""' ||
+                quote === "unfinished-array-eof" ||
+                quote === "closing-array-eof-comment"
+              ) {
                 const result = installRun("install", box, "codex", scope);
                 t.assert.equal(result.status, 2, result.stdout + result.stderr);
                 t.assert.match(result.stdout, /INSTALL-CONFIG/);

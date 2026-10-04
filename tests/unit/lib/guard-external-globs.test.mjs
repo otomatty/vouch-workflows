@@ -87,12 +87,17 @@ for (const harness of /** @type {const} */ (["claude", "codex", "cursor"]))
       "$env:USERPROFILE",
       "%USERPROFILE%",
       "~",
+      "~alice",
+      "~+",
+      "~-1",
     ])
       for (const suffix of [
         `.${harness}/${names[0]}`,
         `.vouch/versions/hash/${harness}/hooks/kept.mjs`,
       ]) {
-        const command = `rm "${prefix}/${suffix}"`;
+        const command = prefix.startsWith("~")
+          ? `rm ${prefix}/${suffix}`
+          : `rm "${prefix}/${suffix}"`;
         for (const cwd of [box.path("home"), "/outside"])
           for (const text of [command, `cd "${cwd}" && ${command}`]) {
             const result = await guardWrites(
