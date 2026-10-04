@@ -3,6 +3,7 @@ import { cp } from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { windowsShell } from "../../scripts/lib/powershell.mjs";
+import { hookTest as test } from "./hook-test.mjs";
 import { artifact, audit, intent, planned, topics } from "./intent-review.mjs";
 import { packageRun } from "./packaging.mjs";
 import { capturedPrompt, sandbox } from "./runtime.mjs";
@@ -58,26 +59,37 @@ function invoke(harness, registered, root, payload, env) {
 
 /**
  * Copied registrations confirm, apply the approval and then admit implementation writes.
- * One harness per test file keeps Node 22's five-second file limit (docs/development/approval-boundary.md).
+ * Sequential bounded leaves retain every copied-command operation and assertion.
  * @param {import('node:test').TestContext} t @param {'claude'|'codex'} harness
  */
 export async function exerciseApprovalDistribution(t, harness) {
-  const box = await sandbox(t);
+  /** @type {Awaited<ReturnType<typeof sandbox>>} */ let box;
+  let root = "";
   const folder = "日本語 project $ apostrophe'";
-  const root = box.path(folder);
   const home = `.${harness}`;
-  t.plan(8);
-  t.assert.equal(packageRun(["--out", box.path("dist")]).status, 0);
-  await cp(box.path(`dist/${harness}`), root, { recursive: true });
-  await box.write(`${folder}/${artifact}`, planned());
-  const settings = JSON.parse(
-    await box.read(
-      `${folder}/${home}/${harness === "claude" ? "settings" : "hooks"}.json`,
-    ),
+  /** @type {Registered} */ let prompt;
+  /** @type {Registered} */ let guard;
+  /** @type {Record<string,string>} */ let env = {};
+  await test(
+    "prepare the real distribution and copied registration",
+    async (leaf) => {
+      box = await sandbox(t);
+      root = box.path(folder);
+      leaf.plan(1);
+      leaf.assert.equal(packageRun(["--out", box.path("dist")]).status, 0);
+      await cp(box.path(`dist/${harness}`), root, { recursive: true });
+      await box.write(`${folder}/${artifact}`, planned());
+      const settings = JSON.parse(
+        await box.read(
+          `${folder}/${home}/${harness === "claude" ? "settings" : "hooks"}.json`,
+        ),
+      );
+      env = settings.env ?? {};
+      prompt = settings.hooks.UserPromptSubmit[0].hooks[0];
+      guard = settings.hooks.PreToolUse[0].hooks[0];
+    },
+    t,
   );
-  const env = settings.env ?? {};
-  const prompt = settings.hooks.UserPromptSubmit[0].hooks[0];
-  const guard = settings.hooks.PreToolUse[0].hooks[0];
   const field = harness === "claude" ? "prompt_id" : "turn_id";
   let count = 0;
   /** @param {string} text */
@@ -128,11 +140,33 @@ export async function exerciseApprovalDistribution(t, harness) {
           }).payload,
       env,
     );
-  const before = write();
-  const recorded = [
-    ...topics.map((target) => prepare(`vouch confirm ${target}`)),
-    prepare("vouch review"),
-  ];
+  await test(
+    "reject an implementation write before approval",
+    (t) => {
+      const before = write();
+      t.plan(1);
+      t.assert.deepEqual(
+        [before.status, /^VOUCH-BUILD-UNAPPROVED: /.test(before.stderr)],
+        [2, true],
+      );
+    },
+    t,
+  );
+  await test(
+    "record every confirmation and open the approval gate",
+    (t) => {
+      const recorded = [
+        ...topics.map((target) => prepare(`vouch confirm ${target}`)),
+        prepare("vouch review"),
+      ];
+      t.plan(1);
+      t.assert.deepEqual(
+        recorded.map((result) => result.status),
+        [2, 2, 2, 2],
+      );
+    },
+    t,
+  );
   const rows = () =>
     box.read(`${folder}/${audit}`).then((text) =>
       text
@@ -140,32 +174,31 @@ export async function exerciseApprovalDistribution(t, harness) {
         .split("\n")
         .map((line) => JSON.parse(line)),
     );
-  const gate = (await rows()).find((row) => row.type === "gate.opened");
-  const approved = send(`vouch approve ${gate?.id}`);
-  const after = write();
-  t.assert.deepEqual(
-    [before.status, /^VOUCH-BUILD-UNAPPROVED: /.test(before.stderr)],
-    [2, true],
+  await test(
+    "apply approval through the registration and admit implementation writes",
+    async (t) => {
+      const gate = (await rows()).find((row) => row.type === "gate.opened");
+      const approved = send(`vouch approve ${gate?.id}`);
+      const after = write();
+      t.plan(5);
+      t.assert.equal(approved.status, 2, approved.stderr);
+      t.assert.match(approved.stderr, /VOUCH-APPROVAL-APPLIED/);
+      t.assert.equal(
+        await box.read(`${folder}/${artifact}`),
+        planned().replace("status: draft", "status: approved"),
+      );
+      t.assert.deepEqual(
+        (await rows()).map((row) => [row.type, row.harness]),
+        [
+          ["checkpoint.confirmed", harness],
+          ["checkpoint.confirmed", harness],
+          ["checkpoint.confirmed", harness],
+          ["gate.opened", harness],
+          ["intent.approved", harness],
+        ],
+      );
+      t.assert.deepEqual([after.status, after.stderr], [0, ""]);
+    },
+    t,
   );
-  t.assert.deepEqual(
-    recorded.map((result) => result.status),
-    [2, 2, 2, 2],
-  );
-  t.assert.equal(approved.status, 2, approved.stderr);
-  t.assert.match(approved.stderr, /VOUCH-APPROVAL-APPLIED/);
-  t.assert.equal(
-    await box.read(`${folder}/${artifact}`),
-    planned().replace("status: draft", "status: approved"),
-  );
-  t.assert.deepEqual(
-    (await rows()).map((row) => [row.type, row.harness]),
-    [
-      ["checkpoint.confirmed", harness],
-      ["checkpoint.confirmed", harness],
-      ["checkpoint.confirmed", harness],
-      ["gate.opened", harness],
-      ["intent.approved", harness],
-    ],
-  );
-  t.assert.deepEqual([after.status, after.stderr], [0, ""]);
 }

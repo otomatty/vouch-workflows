@@ -9,11 +9,16 @@ import { distribution, installRun } from "../helpers/install.mjs";
 import { tree } from "../helpers/packaging.mjs";
 import { sandbox } from "../helpers/runtime.mjs";
 
-/** @type {[{executable:string,args:string[]}, ...{executable:string,args:string[]}[]]} */
+/** @typedef {{executable:string,args:string[],suffix?:string}} Shell */
+/** @type {[Shell, ...Shell[]]} */
 const shells =
   process.platform === "win32"
     ? [
-        { executable: windowsShell(), args: ["-NoProfile", "-Command"] },
+        {
+          executable: windowsShell(),
+          args: ["-NoProfile", "-Command"],
+          suffix: "; exit $LASTEXITCODE",
+        },
         {
           executable: join(
             process.env.ProgramFiles ?? "C:\\Program Files",
@@ -28,7 +33,7 @@ const digest = "a".repeat(64);
 const reference = (harness) => `.vouch/versions/${digest}/${harness}`;
 /** @param {typeof shells[number]} shell @param {string} command @param {string} cwd */
 const execute = (shell, command, cwd) =>
-  spawnSync(shell.executable, [...shell.args, command], {
+  spawnSync(shell.executable, [...shell.args, command + (shell.suffix ?? "")], {
     cwd,
     env: { ...process.env, VOUCH_PROJECT_ROOT: join(cwd, "wrong-project") },
     encoding: "utf8",
