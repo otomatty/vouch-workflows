@@ -8,7 +8,7 @@ import {
   normalizeSegment,
   parsePatch,
 } from "./areas.mjs";
-import { guardScope } from "./guard-scope.mjs";
+import { externalRuntimeMatch, guardScope } from "./guard-scope.mjs";
 import { parseShell, programOf, readsOnly } from "./shell.mjs";
 import { expandBraces, uncommented } from "./words.mjs";
 
@@ -77,12 +77,13 @@ export async function guardWrites(input, ctx, entry) {
     const shown = at.inside ?? spelled;
     if (at.kind === "unresolved" || at.links > 1) found.push(["link", shown]);
     const match =
-      at.inside === null
+      externalRuntimeMatch(at, scope) ??
+      (at.inside === null
         ? scope.managed &&
           split(spelled).some((part) => normalizeSegment(part) === ".vouch")
           ? { area: /** @type {const} */ ("installation"), ancestor: false }
           : null
-        : classifySegments(split(at.inside), scope);
+        : classifySegments(split(at.inside), scope));
     if (!match || match.ancestor) return;
     if (match.area !== "artifact") return void found.push([match.area, shown]);
     /** @type {string|null} */ let current = null;
@@ -243,12 +244,13 @@ export async function guardWrites(input, ctx, entry) {
       if (at.kind === "unresolved" || at.links > 1)
         result.push(["link", shown, false]);
       const match =
-        at.inside === null
+        externalRuntimeMatch(at, scope) ??
+        (at.inside === null
           ? at.contains && {
               area: /** @type {const} */ ("audit"),
               ancestor: true,
             }
-          : classifySegments(split(at.inside), scope);
+          : classifySegments(split(at.inside), scope));
       if (match) result.push([match.area, shown, match.ancestor]);
     }
     const parts = split(word);

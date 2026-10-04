@@ -25,10 +25,10 @@ export function createLocate(base, operations) {
   }
   /** @type {(canonical:string,kind:import('./runtime-contracts.mjs').PathLocation['kind'],links?:number) => import('./runtime-contracts.mjs').PathLocation} */
   function located(canonical, kind, links = 0) {
+    const external = outside(base, canonical);
     return {
-      inside: outside(base, canonical)
-        ? null
-        : relative(base, canonical).split(sep).join("/"),
+      inside: external ? null : relative(base, canonical).split(sep).join("/"),
+      ...(external ? { outside: canonical } : {}),
       contains: !outside(canonical, base),
       kind,
       links,
