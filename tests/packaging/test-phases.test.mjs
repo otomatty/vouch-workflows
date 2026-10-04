@@ -41,6 +41,26 @@ test("other tiers and hooks without budget files keep one CPU-parallel phase", (
   ]);
 });
 
+test("large ordinary files start first without changing measurement order or parallelism", (t) => {
+  const small = hooks("small.test.mjs");
+  const large = hooks("large.test.mjs");
+  const measured = hooks("record-performance.test.mjs");
+  const files = [small, measured, large];
+  const sizes = new Map([
+    [small, 10],
+    [large, 1000],
+    [measured, 2000],
+  ]);
+  t.assert.deepEqual(testPhases("hooks", files, 4, sizes), [
+    { files: [large, small], concurrency: 4, budget: false },
+    { files: [measured], concurrency: 1, budget: true },
+  ]);
+  t.assert.deepEqual(testPhases("scenario", [small, large], 4, sizes), [
+    { files: [large, small], concurrency: 4, budget: false },
+  ]);
+  t.assert.deepEqual(files, [small, measured, large]);
+});
+
 test("native shell lookup runs cold apart from the CPU-parallel packaging files", (t) => {
   const native = "/repo/tests/packaging/native-environment.test.mjs";
   const plain = "/repo/tests/packaging/skills.test.mjs";

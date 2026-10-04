@@ -11,127 +11,129 @@ const profiles = /** @type {const} */ ([
 ]);
 
 for (const { harness, names } of profiles) {
-  test(`${harness} user guard protects native registrations and their aliases without writing`, async (t) => {
-    const box = await sandbox(t, { git: false });
-    const project = box.path("project");
-    const native = `home/.${harness}`;
-    await box.write(
-      "project/vouch/intents/example/audit/events.jsonl",
-      "audit\n",
-    );
-    await box.write(`${native}/${names[0]}`, "original\n");
-    await box.write(`${native}/notes.md`, "notes\n");
-    await mkdir(box.path("project/aliases"));
-    await symlink(
-      box.path(native),
-      box.path("project/aliases/native"),
-      "junction",
-    );
-    const files = await createFileStore(project);
-    const ctx = {
-      projectRoot: project,
-      harness,
-      generation: "test",
-      ...fakeClock(),
-      readText: files.readText,
-      locate: files.locate,
-    };
-    /** @param {string} tool_name @param {Record<string, unknown>} tool_input */
-    const decide = (tool_name, tool_input) =>
-      guardWrites(
-        {
-          session_id: "s",
-          cwd: project,
-          hook_event_name: "PreToolUse",
-          tool_name,
-          tool_input,
-        },
-        ctx,
-        box.path(
-          `home/.vouch/versions/hash/${harness}/hooks/vouch-guard-writes.mjs`,
-        ),
+  for (const layout of ["outside", "nested"])
+    test(`${harness} ${layout} user guard protects native registrations and their aliases without writing`, async (t) => {
+      const box = await sandbox(t, { git: false });
+      const project = box.path("project");
+      const home = layout === "nested" ? "project/nested-home" : "home";
+      const native = `${home}/.${harness}`;
+      await box.write(
+        "project/vouch/intents/example/audit/events.jsonl",
+        "audit\n",
       );
-    for (const name of names) {
-      for (const file of [
-        box.path(`${native}/${name}`),
-        `aliases/native/${name}`,
-      ]) {
-        const attempts = /** @type {[string, Record<string, unknown>][]} */ ([
-          ["Bash", { command: `echo changed > '${file}'` }],
-          ["Bash", { command: `rm '${file}'` }],
-        ]);
-        if (harness !== "codex")
-          attempts.push(
-            ["Write", { file_path: file, content: "changed" }],
-            [
-              "Edit",
-              {
-                file_path: file,
-                old_string: "original",
-                new_string: "changed",
-              },
-            ],
-          );
-        if (harness !== "claude")
-          attempts.push([
-            "apply_patch",
-            {
-              command: `*** Begin Patch\n*** Update File: ${file}\n+changed\n*** End Patch`,
-            },
-          ]);
-        if (harness === "cursor")
-          attempts.push(["Delete", { file_path: file }]);
-        for (const [tool, input] of attempts) {
-          const result = await decide(tool, input);
-          t.assert.equal(result.decision, "deny", `${tool} ${file}`);
-          if (result.decision === "deny")
-            t.assert.match(result.reason, /^VOUCH-GUARD-INSTALLATION:/);
-        }
-        t.assert.equal(
-          (await decide("Bash", { command: `cat '${file}'` })).decision,
-          "allow",
+      await box.write(`${native}/${names[0]}`, "original\n");
+      await box.write(`${native}/notes.md`, "notes\n");
+      await mkdir(box.path("project/aliases"));
+      await symlink(
+        box.path(native),
+        box.path("project/aliases/native"),
+        "junction",
+      );
+      const files = await createFileStore(project);
+      const ctx = {
+        projectRoot: project,
+        harness,
+        generation: "test",
+        ...fakeClock(),
+        readText: files.readText,
+        locate: files.locate,
+      };
+      /** @param {string} tool_name @param {Record<string, unknown>} tool_input */
+      const decide = (tool_name, tool_input) =>
+        guardWrites(
+          {
+            session_id: "s",
+            cwd: project,
+            hook_event_name: "PreToolUse",
+            tool_name,
+            tool_input,
+          },
+          ctx,
+          box.path(
+            `${home}/.vouch/versions/hash/${harness}/hooks/vouch-guard-writes.mjs`,
+          ),
         );
+      for (const name of names) {
+        for (const file of [
+          box.path(`${native}/${name}`),
+          `aliases/native/${name}`,
+        ]) {
+          const attempts = /** @type {[string, Record<string, unknown>][]} */ ([
+            ["Bash", { command: `echo changed > '${file}'` }],
+            ["Bash", { command: `rm '${file}'` }],
+          ]);
+          if (harness !== "codex")
+            attempts.push(
+              ["Write", { file_path: file, content: "changed" }],
+              [
+                "Edit",
+                {
+                  file_path: file,
+                  old_string: "original",
+                  new_string: "changed",
+                },
+              ],
+            );
+          if (harness !== "claude")
+            attempts.push([
+              "apply_patch",
+              {
+                command: `*** Begin Patch\n*** Update File: ${file}\n+changed\n*** End Patch`,
+              },
+            ]);
+          if (harness === "cursor")
+            attempts.push(["Delete", { file_path: file }]);
+          for (const [tool, input] of attempts) {
+            const result = await decide(tool, input);
+            t.assert.equal(result.decision, "deny", `${tool} ${file}`);
+            if (result.decision === "deny")
+              t.assert.match(result.reason, /^VOUCH-GUARD-INSTALLATION:/);
+          }
+          t.assert.equal(
+            (await decide("Bash", { command: `cat '${file}'` })).decision,
+            "allow",
+          );
+        }
       }
-    }
-    for (const file of [box.path(native), "aliases/native"]) {
-      t.assert.equal(
-        (await decide("Bash", { command: `rm -rf '${file}'` })).decision,
-        "deny",
-      );
-      if (harness === "cursor")
+      for (const file of [box.path(native), "aliases/native"]) {
         t.assert.equal(
-          (await decide("Delete", { file_path: file })).decision,
+          (await decide("Bash", { command: `rm -rf '${file}'` })).decision,
           "deny",
         );
-      if (harness !== "codex")
+        if (harness === "cursor")
+          t.assert.equal(
+            (await decide("Delete", { file_path: file })).decision,
+            "deny",
+          );
+        if (harness !== "codex")
+          t.assert.equal(
+            (await decide("Write", { file_path: file, content: "ordinary" }))
+              .decision,
+            "allow",
+          );
+      }
+      for (const file of [
+        box.path(`unrelated/.${harness}/${names[0]}`),
+        box.path(`${native}/notes.md`),
+      ]) {
         t.assert.equal(
-          (await decide("Write", { file_path: file, content: "ordinary" }))
+          (await decide("Bash", { command: `echo changed > '${file}'` }))
             .decision,
           "allow",
         );
-    }
-    for (const file of [
-      box.path(`unrelated/.${harness}/${names[0]}`),
-      box.path(`${native}/notes.md`),
-    ]) {
+      }
+      t.assert.equal(await box.read(`${native}/${names[0]}`), "original\n");
+      t.assert.equal(await box.read(`${native}/notes.md`), "notes\n");
       t.assert.equal(
-        (await decide("Bash", { command: `echo changed > '${file}'` }))
-          .decision,
-        "allow",
+        await box.read("project/vouch/intents/example/audit/events.jsonl"),
+        "audit\n",
       );
-    }
-    t.assert.equal(await box.read(`${native}/${names[0]}`), "original\n");
-    t.assert.equal(await box.read(`${native}/notes.md`), "notes\n");
-    t.assert.equal(
-      await box.read("project/vouch/intents/example/audit/events.jsonl"),
-      "audit\n",
-    );
-    if (names.length > 1)
-      t.assert.equal(
-        (await files.locate(box.path(`${native}/${names[1]}`))).kind,
-        "missing",
-      );
-  });
+      if (names.length > 1)
+        t.assert.equal(
+          (await files.locate(box.path(`${native}/${names[1]}`))).kind,
+          "missing",
+        );
+    });
 }
 
 test("user guard follows a native registration directory junction into the project", async (t) => {
