@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { cp } from "node:fs/promises";
+import { test as group } from "node:test";
 import guard from "../../core/registry/write-guard.json" with { type: "json" };
 import { windowsShell } from "../../scripts/lib/powershell.mjs";
 import { hookTest as test } from "../helpers/hook-test.mjs";
@@ -62,216 +63,247 @@ function invoke(harness, registered, root, payload, env) {
 }
 
 for (const harness of /** @type {const} */ (["claude", "codex"])) {
-  test(`copied ${harness} registration guards its installation and keeps legitimate appends`, async (t) => {
-    const box = await sandbox(t);
-    const folder = "日本語 project $ apostrophe'";
-    const root = box.path(folder);
-    const home = `.${harness}`;
-    t.plan(14);
-    t.assert.equal(packageRun(["--out", box.path("dist")]).status, 0);
-    await cp(box.path(`dist/${harness}`), root, { recursive: true });
-    for (const [path, text] of [
-      [audit, record],
-      [artifact, draft],
-      [approved, draft.replace("draft", "approved")],
-    ])
-      await box.write(`${folder}/${path}`, /** @type {string} */ (text));
-    const settings = JSON.parse(
-      await box.read(
-        `${folder}/${home}/${harness === "claude" ? "settings" : "hooks"}.json`,
-      ),
-    );
-    const [entry] = settings.hooks.PreToolUse;
-    t.assert.equal(entry.matcher, Object.keys(guard.tools[harness]).join("|"));
-    const env = settings.env ?? {};
-    const registration = `${home}/${harness === "claude" ? "settings" : "hooks"}.json`;
-    const installed = tree(box.path(`${folder}/${home}`));
-    const patch = (/** @type {string[]} */ ...lines) =>
-      ["*** Begin Patch", ...lines, "*** End Patch", ""].join("\n");
-    /** @type {[string,Record<string,unknown>,number,RegExp][]} */
-    const cases =
-      harness === "claude"
-        ? [
-            [
-              "Edit",
-              {
-                file_path: `${root}/${registration}`,
-                old_string: "PreToolUse",
-                new_string: "Disabled",
-                replace_all: false,
-              },
-              2,
-              /^VOUCH-GUARD-INSTALLATION: /,
-            ],
-            [
-              "Write",
-              {
-                file_path: `${root}/${home}/settings.local.json`,
-                content: '{"disableAllHooks":true}',
-              },
-              2,
-              /^VOUCH-GUARD-INSTALLATION: /,
-            ],
-            [
-              "Bash",
-              {
-                command: `node ${home}/hooks/vouch-record-intent-review.mjs < forged.json`,
-              },
-              2,
-              /^VOUCH-GUARD-INSTALLATION: /,
-            ],
-            [
-              "Write",
-              { file_path: `${root}/${audit}`, content: record },
-              2,
-              /^VOUCH-GUARD-AUDIT: /,
-            ],
-            [
-              "Edit",
-              {
-                file_path: `${root}/${approved}`,
-                old_string: "AC-1",
-                new_string: "AC-2",
-                replace_all: false,
-              },
-              2,
-              /^VOUCH-GUARD-APPROVED: /,
-            ],
-            [
-              "Bash",
-              { command: `node "${home}/hooks/vouch-doctor.mjs"` },
-              0,
-              /^$/,
-            ],
-            [
-              "Edit",
-              {
-                file_path: `${root}/${artifact}`,
-                old_string: "AC-1: keep it.",
-                new_string: "AC-1: keep it well.",
-                replace_all: false,
-              },
-              0,
-              /^$/,
-            ],
-          ]
-        : [
-            [
-              "apply_patch",
-              {
-                command: patch(
-                  `*** Update File: ${registration}`,
-                  "@@",
-                  '-    "PreToolUse": [',
-                  '+    "Disabled": [',
-                ),
-              },
-              2,
-              /^VOUCH-GUARD-INSTALLATION: /,
-            ],
-            [
-              "apply_patch",
-              {
-                command: patch(
-                  `*** Update File: ${home}/config.toml`,
-                  "@@",
-                  "-hooks = true",
-                  "+hooks = false",
-                ),
-              },
-              2,
-              /^VOUCH-GUARD-INSTALLATION: /,
-            ],
-            [
-              "Bash",
-              { command: `rm -rf ${home}/hooks` },
-              2,
-              /^VOUCH-GUARD-INSTALLATION: /,
-            ],
-            [
-              "apply_patch",
-              { command: patch(`*** Delete File: ${audit}`) },
-              2,
-              /^VOUCH-GUARD-AUDIT: /,
-            ],
-            [
-              "apply_patch",
-              {
-                command: patch(
-                  `*** Update File: ${approved}`,
-                  "@@",
-                  "-AC-1",
-                  "+AC-2",
-                ),
-              },
-              2,
-              /^VOUCH-GUARD-APPROVED: /,
-            ],
-            [
-              "Bash",
-              { command: `node ${home}/hooks/vouch-doctor.mjs` },
-              0,
-              /^$/,
-            ],
-            [
-              "apply_patch",
-              {
-                command: patch(
-                  `*** Update File: ${artifact}`,
-                  "@@",
-                  "-AC-1: keep it.",
-                  "+AC-1: keep it well.",
-                ),
-              },
-              0,
-              /^$/,
-            ],
-          ];
-    /** @type {string[]} */ const failures = [];
-    for (const [tool, input, code, reason] of cases) {
-      const result = invoke(
-        harness,
-        entry.hooks[0],
-        root,
-        toolFixture(harness, tool, root, input).payload,
-        env,
+  group(
+    `copied ${harness} registration guards its installation and keeps legitimate appends`,
+    async (t) => {
+      const box = await sandbox(t);
+      const folder = "日本語 project $ apostrophe'";
+      const root = box.path(folder);
+      const home = `.${harness}`;
+      let settings = JSON.parse("{}");
+      let entry = JSON.parse("{}");
+      /** @type {Record<string,string>} */ let installed = {};
+      const registration = `${home}/${harness === "claude" ? "settings" : "hooks"}.json`;
+      await test(
+        "prepare and inspect the copied registration",
+        async (t) => {
+          t.plan(2);
+          t.assert.equal(packageRun(["--out", box.path("dist")]).status, 0);
+          await cp(box.path(`dist/${harness}`), root, { recursive: true });
+          for (const [path, text] of [
+            [audit, record],
+            [artifact, draft],
+            [approved, draft.replace("draft", "approved")],
+          ])
+            await box.write(`${folder}/${path}`, /** @type {string} */ (text));
+          settings = JSON.parse(
+            await box.read(
+              `${folder}/${home}/${harness === "claude" ? "settings" : "hooks"}.json`,
+            ),
+          );
+          [entry] = settings.hooks.PreToolUse;
+          t.assert.equal(
+            entry.matcher,
+            Object.keys(guard.tools[harness]).join("|"),
+          );
+          installed = tree(box.path(`${folder}/${home}`));
+        },
+        t,
       );
-      if (result.status !== code || !reason.test(result.stderr))
-        failures.push(
-          `${tool} ${JSON.stringify(input)}: ${result.status} ${result.stderr}`,
+      const env = settings.env ?? {};
+      const patch = (/** @type {string[]} */ ...lines) =>
+        ["*** Begin Patch", ...lines, "*** End Patch", ""].join("\n");
+      /** @type {[string,Record<string,unknown>,number,RegExp][]} */
+      const cases =
+        harness === "claude"
+          ? [
+              [
+                "Edit",
+                {
+                  file_path: `${root}/${registration}`,
+                  old_string: "PreToolUse",
+                  new_string: "Disabled",
+                  replace_all: false,
+                },
+                2,
+                /^VOUCH-GUARD-INSTALLATION: /,
+              ],
+              [
+                "Write",
+                {
+                  file_path: `${root}/${home}/settings.local.json`,
+                  content: '{"disableAllHooks":true}',
+                },
+                2,
+                /^VOUCH-GUARD-INSTALLATION: /,
+              ],
+              [
+                "Bash",
+                {
+                  command: `node ${home}/hooks/vouch-record-intent-review.mjs < forged.json`,
+                },
+                2,
+                /^VOUCH-GUARD-INSTALLATION: /,
+              ],
+              [
+                "Write",
+                { file_path: `${root}/${audit}`, content: record },
+                2,
+                /^VOUCH-GUARD-AUDIT: /,
+              ],
+              [
+                "Edit",
+                {
+                  file_path: `${root}/${approved}`,
+                  old_string: "AC-1",
+                  new_string: "AC-2",
+                  replace_all: false,
+                },
+                2,
+                /^VOUCH-GUARD-APPROVED: /,
+              ],
+              [
+                "Bash",
+                { command: `node "${home}/hooks/vouch-doctor.mjs"` },
+                0,
+                /^$/,
+              ],
+              [
+                "Edit",
+                {
+                  file_path: `${root}/${artifact}`,
+                  old_string: "AC-1: keep it.",
+                  new_string: "AC-1: keep it well.",
+                  replace_all: false,
+                },
+                0,
+                /^$/,
+              ],
+            ]
+          : [
+              [
+                "apply_patch",
+                {
+                  command: patch(
+                    `*** Update File: ${registration}`,
+                    "@@",
+                    '-    "PreToolUse": [',
+                    '+    "Disabled": [',
+                  ),
+                },
+                2,
+                /^VOUCH-GUARD-INSTALLATION: /,
+              ],
+              [
+                "apply_patch",
+                {
+                  command: patch(
+                    `*** Update File: ${home}/config.toml`,
+                    "@@",
+                    "-hooks = true",
+                    "+hooks = false",
+                  ),
+                },
+                2,
+                /^VOUCH-GUARD-INSTALLATION: /,
+              ],
+              [
+                "Bash",
+                { command: `rm -rf ${home}/hooks` },
+                2,
+                /^VOUCH-GUARD-INSTALLATION: /,
+              ],
+              [
+                "apply_patch",
+                { command: patch(`*** Delete File: ${audit}`) },
+                2,
+                /^VOUCH-GUARD-AUDIT: /,
+              ],
+              [
+                "apply_patch",
+                {
+                  command: patch(
+                    `*** Update File: ${approved}`,
+                    "@@",
+                    "-AC-1",
+                    "+AC-2",
+                  ),
+                },
+                2,
+                /^VOUCH-GUARD-APPROVED: /,
+              ],
+              [
+                "Bash",
+                { command: `node ${home}/hooks/vouch-doctor.mjs` },
+                0,
+                /^$/,
+              ],
+              [
+                "apply_patch",
+                {
+                  command: patch(
+                    `*** Update File: ${artifact}`,
+                    "@@",
+                    "-AC-1: keep it.",
+                    "+AC-1: keep it well.",
+                  ),
+                },
+                0,
+                /^$/,
+              ],
+            ];
+      /** @type {string[]} */ const failures = [];
+      for (const [index, [tool, input, code, reason]] of cases.entries()) {
+        await test(
+          `guard ${index + 1}: ${tool}`,
+          async () => {
+            const result = invoke(
+              harness,
+              entry.hooks[0],
+              root,
+              toolFixture(harness, tool, root, input).payload,
+              env,
+            );
+            if (result.status !== code || !reason.test(result.stderr))
+              failures.push(
+                `${tool} ${JSON.stringify(input)}: ${result.status} ${result.stderr}`,
+              );
+          },
+          t,
         );
-    }
-    t.assert.deepEqual(failures, []);
-    t.assert.deepEqual(tree(box.path(`${folder}/${home}`)), installed);
-    t.assert.equal(await box.read(`${folder}/${audit}`), record);
-    t.assert.equal(
-      await box.read(`${folder}/${approved}`),
-      draft.replace("draft", "approved"),
-    );
-    const started = invoke(
-      harness,
-      settings.hooks.SessionStart[0].hooks[0],
-      root,
-      sessionFor(root, harness).payload,
-      env,
-    );
-    t.assert.deepEqual([started.status, started.stderr], [0, ""]);
-    const rows = (await box.read(`${folder}/${audit}`))
-      .trim()
-      .split("\n")
-      .map((line) => JSON.parse(line));
-    t.assert.equal(rows.length, 2, "the startup hook still appends");
-    t.assert.deepEqual(
-      rows.map((row) => [row.type, row.harness]),
-      [
-        ["session.started", "claude"],
-        ["session.started", harness],
-      ],
-    );
-    t.assert.equal(rows[0].id, "evt_guard");
-    t.assert.equal(await box.read(`${folder}/${artifact}`), draft);
-    t.assert.equal(entry.hooks.length, 1);
-    t.assert.equal(settings.hooks.PreToolUse.length, 1);
-    t.assert.match(JSON.stringify(entry.hooks[0]), /vouch-guard-writes\.mjs/);
-  });
+      }
+      await test(
+        "preserve protected files and append the legitimate session",
+        async (t) => {
+          t.plan(12);
+          t.assert.deepEqual(failures, []);
+          t.assert.deepEqual(tree(box.path(`${folder}/${home}`)), installed);
+          t.assert.equal(await box.read(`${folder}/${audit}`), record);
+          t.assert.equal(
+            await box.read(`${folder}/${approved}`),
+            draft.replace("draft", "approved"),
+          );
+          const started = invoke(
+            harness,
+            settings.hooks.SessionStart[0].hooks[0],
+            root,
+            sessionFor(root, harness).payload,
+            env,
+          );
+          t.assert.deepEqual([started.status, started.stderr], [0, ""]);
+          const rows = (await box.read(`${folder}/${audit}`))
+            .trim()
+            .split("\n")
+            .map((line) => JSON.parse(line));
+          t.assert.equal(rows.length, 2, "the startup hook still appends");
+          t.assert.deepEqual(
+            rows.map((row) => [row.type, row.harness]),
+            [
+              ["session.started", "claude"],
+              ["session.started", harness],
+            ],
+          );
+          t.assert.equal(rows[0].id, "evt_guard");
+          t.assert.equal(await box.read(`${folder}/${artifact}`), draft);
+          t.assert.equal(entry.hooks.length, 1);
+          t.assert.equal(settings.hooks.PreToolUse.length, 1);
+          t.assert.match(
+            JSON.stringify(entry.hooks[0]),
+            /vouch-guard-writes\.mjs/,
+          );
+        },
+        t,
+      );
+    },
+  );
 }
