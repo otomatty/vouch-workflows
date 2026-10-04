@@ -1,9 +1,85 @@
 import fs from "node:fs";
 import { rename, symlink } from "node:fs/promises";
 import { syncBuiltinESMExports } from "node:module";
-import { commitChanges, readInside } from "../../scripts/lib/install-files.mjs";
+import {
+  commitChanges,
+  files,
+  readInside,
+} from "../../scripts/lib/install-files.mjs";
 import { hookTest as test } from "../helpers/hook-test.mjs";
 import { sandbox } from "../helpers/runtime.mjs";
+
+test("tree reads validate their root once, then fresh canonical paths and file metadata without repeating ancestor probes", async (t) => {
+  const box = await sandbox(t, { git: false });
+  await box.write("source/a", "a bytes");
+  await box.write("source/b", "b bytes");
+  const original = fs.lstatSync;
+  let roots = 0;
+  const mocked = t.mock.method(
+    fs,
+    "lstatSync",
+    (
+      /** @type {import('node:fs').PathLike} */ path,
+      /** @type {import('node:fs').StatOptions|undefined} */ options = undefined,
+    ) => {
+      if (String(path) === box.path("source")) roots++;
+      return Reflect.apply(original, fs, [path, options]);
+    },
+  );
+  syncBuiltinESMExports();
+  try {
+    t.assert.deepEqual(files(box.path("source")), {
+      a: "a bytes",
+      b: "b bytes",
+    });
+    t.assert.equal(roots, 1);
+    files(box.path("source"));
+    t.assert.equal(roots, 2);
+  } finally {
+    mocked.mock.restore();
+    syncBuiltinESMExports();
+  }
+});
+
+for (const ancestor of [false, true])
+  test(`tree reads reject a link introduced after the first file (ancestor=${ancestor})`, async (t) => {
+    const box = await sandbox(t, { git: false });
+    await box.write("parent/source/a", "original a");
+    await box.write("parent/source/b", "original b");
+    await box.write("outside/source/b", "outside bytes");
+    const original = fs.readFileSync;
+    let replaced = false;
+    const mocked = t.mock.method(
+      fs,
+      "readFileSync",
+      (.../** @type {Parameters<typeof fs.readFileSync>} */ args) => {
+        const result = Reflect.apply(original, fs, args);
+        if (!replaced && String(args[0]) === box.path("parent/source/a")) {
+          replaced = true;
+          if (ancestor) {
+            fs.renameSync(box.path("parent"), box.path("saved-parent"));
+            fs.symlinkSync(box.path("outside"), box.path("parent"), "junction");
+          } else {
+            fs.renameSync(box.path("parent/source/b"), box.path("saved-b"));
+            fs.symlinkSync(
+              box.path("outside/source/b"),
+              box.path("parent/source/b"),
+            );
+          }
+        }
+        return result;
+      },
+    );
+    syncBuiltinESMExports();
+    try {
+      t.assert.throws(() => files(box.path("parent/source")), /INSTALL-LINK/);
+      t.assert.equal(replaced, true);
+      t.assert.equal(await box.read("outside/source/b"), "outside bytes");
+    } finally {
+      mocked.mock.restore();
+      syncBuiltinESMExports();
+    }
+  });
 
 test("a replacement uses freshly verified existing parents and creates only missing parents", async (t) => {
   const box = await sandbox(t, { git: false });

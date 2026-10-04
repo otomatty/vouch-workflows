@@ -22,7 +22,7 @@ for (const scope of ["user", "project"])
     t.assert.equal(remaining.startsWith(addition), true);
     t.assert.doesNotMatch(
       remaining,
-      /sandbox_mode\s*=|hooks\s*=|max_depth\s*=/,
+      /sandbox_mode\s*=|hooks\s*=|max_depth\s*=|\[(features|agents)\]/,
     );
   });
 

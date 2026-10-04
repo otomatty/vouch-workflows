@@ -7,6 +7,46 @@ import {
 
 const owned = { path: "owned", kind: "toml", content: "", previous: null };
 
+test("Codex removal deletes owned empty table headers while preserving existing and populated tables", (t) => {
+  const created = enableCodex(null);
+  const unrelated = '[provider]\nmodel = "keep"\n';
+  const removed = removeCodex(
+    `${created.text}\n${unrelated}`,
+    created.content,
+    null,
+  );
+  t.assert.doesNotMatch(removed ?? "", /\[(features|agents)\]/);
+  t.assert.match(removed ?? "", /model = "keep"/);
+  const populated = removeCodex(
+    `${created.text}user_setting = true\n`,
+    created.content,
+    null,
+  );
+  t.assert.doesNotMatch(populated ?? "", /\[features\]/);
+  t.assert.match(populated ?? "", /\[agents\][\s\S]*user_setting = true/);
+  const before = "[features]\n# preexisting table\n[agents]\n";
+  const existing = enableCodex(before);
+  t.assert.match(
+    removeCodex(`${existing.text}\n${unrelated}`, existing.content, before) ??
+      "",
+    /\[features\]/,
+  );
+  const legacy = JSON.parse(created.content).map(
+    (/** @type {{createdTable?:boolean}} */ item) => {
+      delete item.createdTable;
+      return item;
+    },
+  );
+  t.assert.match(
+    removeCodex(
+      `${created.text}\n${unrelated}`,
+      JSON.stringify(legacy),
+      null,
+    ) ?? "",
+    /\[features\]/,
+  );
+});
+
 test("Codex cannot redefine an array of feature or agent tables as a normal table", (t) => {
   for (const section of ["features", "agents"])
     for (const name of [section, `"${section}"`, `'${section}'`]) {
