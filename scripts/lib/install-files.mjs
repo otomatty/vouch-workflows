@@ -4,6 +4,7 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  realpathSync,
   renameSync,
   rmSync,
   writeFileSync,
@@ -79,7 +80,11 @@ function read(path) {
   const { stat } = inspectPath(path);
   if (!stat) return null;
   if (!stat.isFile()) throw new Error(`INSTALL-TYPE: ${path}`);
-  const bytes = readFileSync(path);
+  return decode(path, readFileSync(path));
+}
+
+/** @param {string} path @param {Buffer} bytes */
+function decode(path, bytes) {
   const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
   if (!Buffer.from(text).equals(bytes))
     throw new Error(`INSTALL-ENCODING: ${path}`);
@@ -90,17 +95,24 @@ function read(path) {
 export function files(path) {
   const { stat } = inspectPath(path);
   if (!stat?.isDirectory()) throw new Error(`INSTALL-SOURCE: ${path}`);
+  const canonicalRoot = realpathSync.native(path);
   /** @type {Record<string,string>} */ const result = {};
   for (const entry of readdirSync(path, {
     recursive: true,
     withFileTypes: true,
   })) {
     const at = join(entry.parentPath, entry.name);
-    if (entry.isFile())
-      result[relative(path, at).replaceAll("\\", "/")] = /** @type {string} */ (
-        read(at)
-      );
-    else inspectPath(at);
+    const part = relative(path, at);
+    // Fresh resolution covers every ancestor; the final lstat also rejects hard links.
+    if (realpathSync.native(at) !== join(canonicalRoot, part))
+      throw new Error(`INSTALL-LINK: ${at}`);
+    const current = lstatSync(at);
+    if (current.isSymbolicLink() || (current.isFile() && current.nlink !== 1))
+      throw new Error(`INSTALL-LINK: ${at}`);
+    if (entry.isFile()) {
+      if (!current.isFile()) throw new Error(`INSTALL-TYPE: ${at}`);
+      result[part.replaceAll("\\", "/")] = decode(at, readFileSync(at));
+    }
   }
   return result;
 }
