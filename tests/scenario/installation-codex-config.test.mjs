@@ -6,6 +6,8 @@ import { sandbox } from "../helpers/runtime.mjs";
 
 /** @type {Record<string,string>} */
 const unfinished = {
+  "escaped-feature-key": '[features]\n"ho\\u006fks" = false\n',
+  "escaped-agent-table": '["a\\u0067ents"]\nmax_depth = 3\n',
   "feature-subtable": "[features.hooks]\ncustom = true\n",
   "agent-subtable": "[agents.max_depth]\ncustom = true\n",
   "unfinished-double":

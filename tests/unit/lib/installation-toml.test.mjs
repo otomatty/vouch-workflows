@@ -7,6 +7,25 @@ import {
 
 const owned = { path: "owned", kind: "toml", content: "", previous: null };
 
+test("Codex refuses escaped basic key and table names but preserves value escapes and literal names", (t) => {
+  for (const text of [
+    '[features]\n"ho\\u006fks" = false\n',
+    '[agents]\n"max_\\U00000064epth" = 0\n',
+    '["fe\\u0061tures"]\nhooks = true\n',
+    '[features."h\\u006foks"]\ncustom = true\n',
+    '"fea\\u0074ures".hooks = false\n',
+  ]) {
+    t.assert.throws(() => enableCodex(text), /INSTALL-CONFIG/);
+    t.assert.throws(() => removeCodex(text, "[]", null), /INSTALL-CONFIG/);
+  }
+  for (const text of [
+    'name = "escaped \\u0061 and \\U00000062"\n',
+    "'ho\\u006fks' = false\n",
+    "['fe\\u0061tures']\ncustom = true\n",
+  ])
+    t.assert.equal(enableCodex(text).text.startsWith(text), true);
+});
+
 test("Codex rejects tables and dotted children colliding with managed scalar keys", (t) => {
   for (const [section, key] of [
     ["features", "hooks"],
