@@ -53,6 +53,7 @@ function rejectMultiline(text) {
 /** @param {string} text @param {string} section */
 function sectionBounds(text, section) {
   const lines = text.split("\n");
+  const firstTable = lines.findIndex((line) => /^\s*\[/.test(line));
   const managedKey = section === "features" ? "hooks" : "max_depth";
   const managedName = `(?:${managedKey}|"${managedKey}"|'${managedKey}')`;
   const nestedHeading = new RegExp(
@@ -67,11 +68,12 @@ function sectionBounds(text, section) {
   if (
     starts.length > 1 ||
     lines.some(
-      (line) =>
+      (line, index) =>
         nestedHeading.test(line) ||
-        new RegExp(
-          `^\\s*(?:${section}|"${section}"|'${section}')\\s*[.=]`,
-        ).test(line) ||
+        ((firstTable < 0 || index < firstTable) &&
+          new RegExp(
+            `^\\s*(?:${section}|"${section}"|'${section}')\\s*[.=]`,
+          ).test(line)) ||
         new RegExp(
           `^\\s*\\[\\[\\s*(?:${section}|"${section}"|'${section}')\\s*\\]\\]`,
         ).test(line),
