@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { isAbsolute, resolve, win32 } from "node:path";
+import { performance } from "node:perf_hooks";
 
 /**
  * Keep OS lookup variables; replace task configuration and omit credentials.
@@ -52,6 +53,7 @@ export function nativeEnvironment(source, scope, platform = process.platform) {
  * @param {NodeJS.ProcessEnv} env @returns {string} */
 export function probeNode(env) {
   const windows = process.platform === "win32";
+  const started = performance.now();
   const result = spawnSync(
     windows
       ? resolve(
@@ -65,15 +67,37 @@ export function probeNode(env) {
           "-NonInteractive",
           "-Command",
           // Resolving an application never needs modules; a miss must not scan them.
-          "$PSModuleAutoLoadingPreference = 'None'; & node --version; exit $LASTEXITCODE",
+          "$PSModuleAutoLoadingPreference = 'None'; [Console]::Error.WriteLine('VOUCH-PROBE: shell-ready'); & node --version; $vouchProbeExit = $LASTEXITCODE; [Console]::Error.WriteLine('VOUCH-PROBE: node-finished'); exit $vouchProbeExit",
         ]
-      : ["-c", "node --version"],
+      : [
+          "-c",
+          "printf '%s\\n' 'VOUCH-PROBE: shell-ready' >&2; node --version; vouch_probe_exit=$?; printf '%s\\n' 'VOUCH-PROBE: node-finished' >&2; exit \"$vouch_probe_exit\"",
+        ],
     { env, encoding: "utf8", windowsHide: true, timeout: 4000 },
   );
   const version = result.stdout?.trim() ?? "";
-  if (result.error || result.status !== 0 || !/^v\d+\.\d+\.\d+$/.test(version))
-    throw new Error(
-      "NATIVE-NODE: named node could not run in the isolated shell",
+  if (
+    result.error ||
+    result.status !== 0 ||
+    !/^v\d+\.\d+\.\d+$/.test(version)
+  ) {
+    const stage = !result.stderr?.includes("VOUCH-PROBE: shell-ready")
+      ? "shell startup"
+      : !result.stderr.includes("VOUCH-PROBE: node-finished")
+        ? "node lookup or execution"
+        : result.error
+          ? "shell shutdown"
+          : "node result validation";
+    const startupError = /** @type {NodeJS.ErrnoException | undefined} */ (
+      result.error
     );
+    const code = startupError
+      ? (startupError.code ?? "SPAWN")
+      : `exit ${result.status}`;
+    throw new Error(
+      `NATIVE-NODE: named node could not run in the isolated shell; ${stage}; ${code}; ${(performance.now() - started).toFixed(1)} ms`,
+      { cause: startupError },
+    );
+  }
   return version;
 }
