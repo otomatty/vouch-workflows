@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { test as group } from "node:test";
+import { diagnose } from "../../scripts/lib/install.mjs";
 import { hookTest as test } from "../helpers/hook-test.mjs";
 import { distribution, installRun } from "../helpers/install.mjs";
 import { tree } from "../helpers/packaging.mjs";
@@ -117,6 +118,18 @@ for (const scope of ["project", "user"])
                     check.id === "DOCTOR-ACTIVATION" && !check.ok,
                 ),
                 true,
+              );
+              t.assert.deepEqual(tree(box.root), before);
+              t.assert.equal(
+                diagnose({
+                  harness: "codex",
+                  scope,
+                  home: box.path("home"),
+                  project: box.path("project"),
+                  projectExplicit: true,
+                  dist: box.path("dist"),
+                }).ok,
+                false,
               );
               t.assert.deepEqual(tree(box.root), before);
             } finally {
