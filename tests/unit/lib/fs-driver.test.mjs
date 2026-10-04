@@ -7,6 +7,51 @@ import { test } from "node:test";
 import { createFileStore } from "../../../core/hooks/lib/fs.mjs";
 import { sandbox } from "../../helpers/runtime.mjs";
 
+test("file store uses one fresh target inspection per read and list, and rechecks later links", async (t) => {
+  const box = await sandbox(t, { git: false });
+  const outside = await sandbox(t, { git: false });
+  await box.write("nested/file", "original bytes");
+  await outside.write("file", "outside bytes");
+  const base = await fs.realpath(box.root);
+  const target = join(base, "nested/file");
+  const directory = join(base, "nested");
+  /** @type {string[]} */ const inspected = [];
+  const files = await createFileStore(base, {
+    ...fs,
+    lstat: /** @type {typeof fs.lstat} */ (
+      /** @type {unknown} */ (
+        async (/** @type {string} */ path) => {
+          inspected.push(path);
+          return fs.lstat(path);
+        }
+      )
+    ),
+  });
+  for (const count of [1, 2]) {
+    t.assert.equal(await files.readText("nested/file"), "original bytes");
+    t.assert.equal(inspected.filter((path) => path === target).length, count);
+    t.assert.equal(
+      inspected.filter((path) => path === directory).length,
+      count,
+    );
+  }
+  inspected.length = 0;
+  for (const count of [1, 2]) {
+    t.assert.deepEqual(await files.list("nested"), [
+      { name: "file", kind: "file" },
+    ]);
+    t.assert.equal(
+      inspected.filter((path) => path === directory).length,
+      count,
+    );
+  }
+  await fs.rename(box.path("nested"), box.path("saved"));
+  await fs.symlink(outside.root, box.path("nested"), "junction");
+  await t.assert.rejects(files.readText("nested/file"), /FS-LINK/);
+  await t.assert.rejects(files.list("nested"), /FS-LINK/);
+  t.assert.equal(await outside.read("file"), "outside bytes");
+});
+
 test("native file store completes disk work without queued filesystem requests", async (t) => {
   const box = await sandbox(t, { git: false });
   let queued = 0;
