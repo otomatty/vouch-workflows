@@ -95,6 +95,7 @@ export async function verifyManagedRuntime(files, state, runtimeRoot) {
   ))
     if ((await files.readText(path)) !== expected)
       throw new Error(`INSTALL-VERSION: runtime has changed: ${path}`);
+  return source;
 }
 
 /** @param {string} value */

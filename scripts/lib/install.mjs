@@ -1,4 +1,5 @@
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { verifyActivationManifest } from "../../core/hooks/lib/installation-ownership.mjs";
 import {
   isSnapshotName,
   runtimeContents,
@@ -255,7 +256,10 @@ export function initialize(options) {
           harness: options.harness,
           scope: "user",
         });
-    if (local) plan(options.project, local); // Validate ownership without committing its removal plan.
+    if (local) {
+      verifyActivationManifest(source, options.harness, local.owned);
+      plan(options.project, local); // Validate ownership without committing its removal plan.
+    }
     const changes = plan(options.project, binding);
     if (local) {
       // The project installation already owns its activation documents and registration.
@@ -404,6 +408,8 @@ export function diagnose(options) {
     runtimeRoot !== inside(root, state.runtimeRoot)
   )
     throw new Error("INSTALL-VERSION: runtime path differs");
+  const source = validateRuntime(runtimeRoot, state, options.harness);
+  verifyActivationManifest(source, options.harness, state.owned);
   plan(options.project, state); // Read-only validation of the active project's registration and documents.
   if (
     options.harness === "codex" &&
@@ -413,7 +419,6 @@ export function diagnose(options) {
     throw new Error(
       "INSTALL-REGISTRATION: Codex hooks and agent depth are not enabled",
     );
-  validateRuntime(runtimeRoot, state, options.harness);
   return {
     v: 1,
     ok: true,

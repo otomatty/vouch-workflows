@@ -1,5 +1,9 @@
 import { isAbsolute, resolve } from "node:path";
-import { object, restoreOwned } from "./installation-ownership.mjs";
+import {
+  object,
+  restoreOwned,
+  verifyActivationManifest,
+} from "./installation-ownership.mjs";
 import { verifyManagedRuntime } from "./installation-runtime.mjs";
 import { enableCodex } from "./installation-toml.mjs";
 
@@ -60,9 +64,7 @@ export async function verifyManagedActivation(
         !selectedRoot.replaceAll("\\", "/").endsWith(`/${canonical}`)))
   )
     throw new Error("managed runtime path differs");
-  if (!state.owned.some((item) => object(item) && item.kind === "hooks"))
-    throw new Error("missing owned registration");
-  await verifyManagedRuntime(
+  const source = await verifyManagedRuntime(
     installationFiles,
     {
       harness,
@@ -71,9 +73,8 @@ export async function verifyManagedActivation(
     },
     selectedRoot,
   );
+  verifyActivationManifest(source, harness, state.owned);
   for (const entry of state.owned) {
-    if (!object(entry) || typeof entry.path !== "string")
-      throw new Error("invalid owned activation entry");
     restoreOwned(await files.readText(entry.path), entry);
   }
   if (
