@@ -109,16 +109,15 @@ export function install(options: Options, command: "install" | "update") {
           `${runtimeRelative}/${descriptor[key]}`,
           source[`${prefix}${descriptor[key]}`] ?? "",
         );
-    changes.hooks(
-      registrationPath(options.harness),
-      registration(
-        options.harness,
-        runtimeRoot,
-        options.scope,
-        options.scope === "project" ? options.project : undefined,
-      ),
-    );
-    if (options.harness === "codex") changes.codex(".codex/config.toml");
+    // Design D3: hooks run only from project registrations; a user installation
+    // places the runtime, Skills and agents, and `init` activates each project.
+    if (options.scope === "project") {
+      changes.hooks(
+        registrationPath(options.harness),
+        registration(options.harness, runtimeRoot, "project", options.project),
+      );
+      if (options.harness === "codex") changes.codex(".codex/config.toml");
+    }
     const state: import("./install-plan.mjs").Installation = {
       v: 1,
       harness: options.harness,

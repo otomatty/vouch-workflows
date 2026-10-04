@@ -79,7 +79,8 @@ export async function launch(
       stdout.write(`${JSON.stringify(cursorPass(action))}\n`);
   };
   try {
-    if (!product || !["manual", "project", "user"].includes(scope))
+    // Design D3: hooks are registered only in projects, so there is no user scope.
+    if (!product || !["manual", "project"].includes(scope))
       throw new Error("INSTALL-ARGS: unknown launcher operation or scope");
     const runtime = await createFileStore(runtimeRoot);
     const descriptor: unknown = JSON.parse(
@@ -134,17 +135,14 @@ export async function launch(
         .endsWith(`/.vouch/versions/${binding.digest}/${harness}`)
     )
       throw new Error("INSTALL-VERSION: activation digest and runtime differ");
-    if (
-      native &&
-      (selectedRoot !== runtimeRoot ||
-        (scope === "user" && binding.registrationScope === "project"))
-    ) {
+    // Design D2/D5: run only this runtime's code, compared by real path, never another's.
+    const own = (await runtime.locate(selectedRoot)).inside === "";
+    if (native && !own) {
       pass();
       return;
     }
-    if (selectedRoot !== runtimeRoot)
-      throw new Error("INSTALL-VERSION: invoke the selected runtime");
-    const intent = options.intent ?? project.config.intent ?? "";
+    if (!own) throw new Error("INSTALL-VERSION: invoke the selected runtime");
+    const intent = project.config.intent ?? "";
     if (
       typeof intent !== "string" ||
       (intent && !/^[a-z0-9][a-zA-Z0-9_-]{0,127}$/.test(intent))

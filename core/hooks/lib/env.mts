@@ -87,7 +87,6 @@ export function readLaunchEnvironment(
       env.VOUCH_PROJECT_ROOT !== undefined ||
       env.CLAUDE_PROJECT_DIR !== undefined ||
       env.CURSOR_PROJECT_DIR !== undefined,
-    ...(env.VOUCH_INTENT === undefined ? {} : { intent: env.VOUCH_INTENT }),
   };
 }
 
