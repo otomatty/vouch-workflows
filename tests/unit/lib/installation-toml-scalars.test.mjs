@@ -32,6 +32,7 @@ test("Codex refuses invalid TOML scalars in every value position before editing"
     '"bad\x01"',
     "'bad\x7f'",
     "2026-02-30",
+    "1900-02-29",
     "2026-13-01",
     "2026-01-00",
     "24:00:00",
