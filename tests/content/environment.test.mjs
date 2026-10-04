@@ -159,3 +159,27 @@ test("Windows CI jobs keep temporary files on the runner work volume before any 
   t.assert.notEqual(temp, -1, "HOOK-13: Windows temp on RUNNER_TEMP");
   t.assert.equal(temp < npm, true, "HOOK-13: set before npm ci and check");
 });
+
+test("CI preserves check failures and keeps only the startup diagnostic non-gating", (t) => {
+  const ci = readFileSync(
+    new URL("../../.github/workflows/ci.yml", import.meta.url),
+    "utf8",
+  );
+  const steps = ci.split(/\n(?= {6}- )/);
+  const check = steps.findIndex((step) => /run: npm run check/.test(step));
+  const diagnostic = steps.findIndex((step) =>
+    /run: node scripts\/benchmark-hook\.mjs --resume --load --profile/.test(
+      step,
+    ),
+  );
+  t.assert.notEqual(check, -1);
+  t.assert.equal(diagnostic > check, true);
+  t.assert.match(steps[diagnostic] ?? "", /continue-on-error: true/);
+  t.assert.match(steps[diagnostic] ?? "", /timeout-minutes: 1/);
+  t.assert.equal(
+    steps.filter(
+      (step, i) => i !== diagnostic && /continue-on-error:/.test(step),
+    ).length,
+    0,
+  );
+});
