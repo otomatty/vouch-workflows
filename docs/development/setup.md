@@ -6,7 +6,7 @@
 
 `.npmrc` は `engine-strict=true` と `save-exact=true` を設定しています。開発用の最小バージョンは Node.js 22.19.0、ローカルの基準は 24.13.0 です。22.19.0 はテスト機能と開発依存の要件を満たす共通の下限です。
 
-`.mjs` と JSDoc を `checkJs`、`strict`、`noEmit` で検査します。Node.js 向けの `NodeNext` 解決を使い、Bun の型は持ち込みません。
+ソースは TypeScript（`.mts`）で書き、`strict`、`noEmit`、`erasableSyntaxOnly`、`verbatimModuleSyntax` で検査します。実行用の `.mjs` は `npm run build` が生成します（[TypeScript の採用](typescript.md)）。Node.js 向けの `NodeNext` 解決を使い、Bun の型は持ち込みません。
 
 元資料の `docs/spec/` と `docs/aidlc-v2-reference/` は検査・自動整形の対象から外しています。fixture と golden も自動整形しません。
 

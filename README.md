@@ -24,17 +24,18 @@ Windows で既存の npm 起動スクリプトが `MODULE_NOT_FOUND` になる�
 
 lockfile を書き換えるときは npm 11.5.0〜11.6.2 を使いません。版と手順は [lockfile の生成](docs/development/lockfile.md) を参照してください。
 
-依存パッケージはすべて開発用です。利用者に配るコードは Node.js 組み込みモジュールだけで動く `.mjs` とし、ビルドを挟みません。
+依存パッケージはすべて開発用です。利用者に配るコードは Node.js 組み込みモジュールだけで動く `.mjs` です。ソースは TypeScript（`.mts`）で書き、`npm run build` が同じ場所に `.mjs` を生成します（[TypeScript の採用](docs/development/typescript.md)）。利用者側にビルドは要りません。
 
 ## コマンド
 
 | コマンド | 内容 |
 | --- | --- |
+| `npm run build` | `.mts` のソースから実行用の `.mjs` を生成（check・test・package・doctor は自動で実行） |
 | `npm run doctor` | Node.js、Git、固定バージョンの依存の導入状況 |
 | `npm run check` | Lint・型・非フック検査を並列に実行 → フック検査 → 配布生成・バイト一致。CI と共通の入口。全体の時間予算は既定90秒・Windows 150秒（[check 全体の時間予算](docs/development/check-budget.md)） |
 | `npm run lint` | Biome、markdownlint、dependency-cruiser、knip |
-| `npm run format` | JS / JSON の整形と安全な自動修正 |
-| `npm run typecheck` | `.mjs` の JSDoc を TypeScript 6 で検査 |
+| `npm run format` | TS / JSON の整形と安全な自動修正 |
+| `npm run typecheck` | `.mts` のソースを TypeScript 6 で検査 |
 | `npm test` | 実装済みのテスト階層を実行 |
 | `npm run test:unit` | lib の単体テスト。未実装なら失敗 |
 | `npm run test:hooks` | 共通 io とセッション開始フックの子プロセステスト・カバレッジ・時間予算 |
@@ -46,7 +47,7 @@ lockfile を書き換えるときは npm 11.5.0〜11.6.2 を使いません。�
 
 ## ワークフローの導入
 
-このリポジトリから次を実行します。`--harness` は `claude`・`codex`・`cursor` のいずれかです。利用者側の実行時依存は Node.js 22.19.0 以上と Git で、npm パッケージは不要です。
+準備として、このリポジトリで `npm ci` と `npm run package` を一度実行し、TypeScript のソースから実行用の `.mjs` と `dist/` を生成します。そのうえで次を実行します。`--harness` は `claude`・`codex`・`cursor` のいずれかです。導入後の利用者側の実行時依存は Node.js 22.19.0 以上と Git で、npm パッケージは不要です。
 
 ```sh
 # 個人共通に本体を導入し、作業先を有効化

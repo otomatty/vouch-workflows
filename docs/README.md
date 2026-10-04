@@ -21,6 +21,7 @@ Vouch を実装するときに参照する既存ファイルをまとめたも�
 | 文書 | 決定と適用範囲 |
 | --- | --- |
 | [導入範囲と対応ツール](development/distribution-scope.md) | 2026-10-03。対象は Claude Code・Codex CLI・Cursor。共通本体は個人共通・プロジェクト単位、規則・知識・成果物・監査ログはプロジェクトに配置する。導入範囲と対象ツールについて決定記録 §15 に優先する |
+| [TypeScript の採用](development/typescript.md) | 2026-10-04。ソースを `.mts` で書き、`npm run build` で `.mjs` を生成して配布する。実装ルール C2（`.mjs` ＋ JSDoc）に優先する |
 | [導入範囲の設計見直し](development/distribution-scope-review.md) | 2026-10-04。PR #38 のレビュー指摘を設計の原則（D1〜D9）で見直し、実装する範囲と実装しない範囲を定める。導入範囲と対応ツールの契約を更新する |
 
 ## aidlc-v2-reference/ — AI-DLC v2 から参照するもの
