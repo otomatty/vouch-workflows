@@ -138,7 +138,7 @@ export function install(options, command) {
       harness: options.harness,
       scope: options.scope,
       digest: hash,
-      runtimeRoot: runtimeRelative,
+      runtimeRoot: options.scope === "user" ? runtimeRoot : runtimeRelative,
       owned: changes.owned,
     };
     if (options.scope === "project")
