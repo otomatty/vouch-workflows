@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { mkdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -17,6 +18,13 @@ for (const harness of ["claude", "codex", "cursor"]) {
       t.assert.equal(installed.status, 0, installed.stdout + installed.stderr);
       const initial = JSON.parse(installed.stdout);
       t.assert.match(initial.digest, /^[a-f0-9]{64}$/);
+      // Design D3: a user installation registers no user-level hooks or Codex settings.
+      if (scope === "user")
+        for (const file of [
+          `.${harness}/${harness === "claude" ? "settings" : "hooks"}.json`,
+          ".codex/config.toml",
+        ])
+          t.assert.equal(existsSync(box.path(`home/${file}`)), false, file);
       const init = installRun("init", box, harness, scope, [
         "--intent",
         "scope-test",

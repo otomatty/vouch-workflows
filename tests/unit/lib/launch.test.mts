@@ -1,4 +1,4 @@
-import { mkdir } from "node:fs/promises";
+import { mkdir, symlink } from "node:fs/promises";
 import { test } from "node:test";
 import { pathToFileURL } from "node:url";
 import { runLauncher } from "../../../core/hooks/lib/io.mjs";
@@ -123,21 +123,21 @@ test("launcher selects only the configured project and Intent and routes manual 
   await launch(box.entry, failure.hooks);
   t.assert.equal(failure.seen.code, 2);
 });
-test("launcher ascends cwd, skips inactive projects, stale registrations and duplicate user hooks", async (t) => {
+test("launcher ascends cwd, skips inactive projects and stale registrations, and has no user hooks", async (t) => {
   const box = await setup(t);
   await mkdir(box.box.path("project/src"));
   const nested = ports(box.box.path("project/src"), ["doctor", "manual"]);
   await launch(box.entry, nested.hooks);
   t.assert.equal(nested.seen.calls.length, 1);
-  for (const args of [
-    ["session", "user"],
-    ["session", "project", box.box.root],
-  ]) {
-    const skipped = ports(box.root, args);
-    await launch(box.entry, skipped.hooks);
-    t.assert.equal(skipped.seen.calls.length, 0);
-    t.assert.equal(skipped.seen.stdout, "{}\n");
-  }
+  const skipped = ports(box.root, ["session", "project", box.box.root]);
+  await launch(box.entry, skipped.hooks);
+  t.assert.equal(skipped.seen.calls.length, 0);
+  t.assert.equal(skipped.seen.stdout, "{}\n");
+  // Design D3: user installations register no hooks, so the scope does not exist.
+  const user = ports(box.root, ["session", "user"]);
+  await launch(box.entry, user.hooks);
+  t.assert.equal(user.seen.calls.length, 0);
+  t.assert.match(user.seen.stderr, /INSTALL-ARGS/);
   const inactive = ports(box.box.root, ["doctor", "manual"]);
   await launch(box.entry, inactive.hooks);
   t.assert.equal(inactive.seen.code, 2);
@@ -145,7 +145,7 @@ test("launcher ascends cwd, skips inactive projects, stale registrations and dup
     "project/vouch/config.json",
     JSON.stringify({ v: 1, harnesses: {} }),
   );
-  const otherHarness = ports(box.root, ["session", "user"]);
+  const otherHarness = ports(box.root, ["session", "project", box.root]);
   await launch(box.entry, otherHarness.hooks);
   t.assert.equal(otherHarness.seen.stderr, "");
   t.assert.equal(otherHarness.seen.stdout, "{}\n");
@@ -158,6 +158,40 @@ test("launcher ascends cwd, skips inactive projects, stale registrations and dup
   const wrong = ports(box.root, ["doctor", "manual"]);
   await launch(box.entry, wrong.hooks);
   t.assert.match(wrong.seen.stderr, /INSTALL-VERSION/);
+});
+test("the launcher runs only its own runtime, compares it by real path and takes the Intent from configuration", async (t) => {
+  const box = await setup(t);
+  // A checkout opened through a link still selects this runtime.
+  await symlink(box.root, box.box.path("alias"), "junction");
+  const alias = box.box.path("alias");
+  const linked = ports(alias, ["session", "project", alias]);
+  Object.assign(linked.hooks.environment, { intent: "injected" });
+  await launch(box.entry, linked.hooks);
+  t.assert.equal(linked.seen.calls.length, 1, linked.seen.stderr);
+  t.assert.equal(
+    (linked.seen.calls[0]?.[3] as { intent: string }).intent,
+    "scope",
+  );
+  // Configuration naming another runtime never executes that runtime's code.
+  const other = `.vouch/versions/${"c".repeat(64)}/cursor`;
+  await box.box.write(`project/${other}/hooks/vouch-statusline.mjs`, "");
+  await box.box.write(
+    "project/vouch/config.json",
+    JSON.stringify({
+      ...box.config,
+      harnesses: {
+        cursor: { ...box.binding, digest: "c".repeat(64), runtimeRoot: other },
+      },
+    }),
+  );
+  for (const args of [
+    ["statusline", "manual"],
+    ["session", "project", box.root],
+  ]) {
+    const refused = ports(box.root, args);
+    await launch(box.entry, refused.hooks);
+    t.assert.equal(refused.seen.calls.length, 0, args.join(" "));
+  }
 });
 test("invalid activation and malformed native transport fail open while manual commands report errors", async (t) => {
   const box = await setup(t);

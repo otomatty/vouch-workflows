@@ -64,6 +64,16 @@ test("managed environment keeps runtime and project roots separate for all three
     ).explicit,
     true,
   );
+  // Only vouch/config.json selects the Intent; an inherited variable never does.
+  t.assert.equal(
+    "intent" in
+      readLaunchEnvironment(
+        { VOUCH_INTENT: "injected" },
+        ["node", "entry", "session"],
+        "/cwd",
+      ),
+    false,
+  );
 });
 
 test("Claude uses its exported project root only when an explicit root is absent", (t) => {

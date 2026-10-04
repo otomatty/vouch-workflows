@@ -6,7 +6,7 @@ import { cursorInput, distribution, installRun } from "../helpers/install.mjs";
 import { sandbox } from "../helpers/runtime.mjs";
 
 for (const harness of ["claude", "codex", "cursor"]) {
-  test(`${harness}: user update preserves project pins, project install takes precedence and duplicate hooks skip`, async (t) => {
+  test(`${harness}: user update preserves project pins and a project install takes precedence`, async (t) => {
     const box = await sandbox(t);
     await mkdir(box.path("project/src"), { recursive: true });
     distribution(t, box);
@@ -53,11 +53,6 @@ for (const harness of ["claude", "codex", "cursor"]) {
           encoding: "utf8",
         },
       );
-    for (const runtime of [old.runtimeRoot, next.runtimeRoot]) {
-      const skipped = run(runtime, "user");
-      t.assert.equal(skipped.status, 0, skipped.stderr);
-      t.assert.equal(skipped.stderr, "");
-    }
     t.assert.equal(run(old.runtimeRoot, "project").status, 0);
     await t.assert.rejects(
       box.read("project/vouch/intents/first/audit/events.jsonl"),
