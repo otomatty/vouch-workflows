@@ -64,6 +64,9 @@ for (const harness of /** @type {const} */ (["claude", "codex", "cursor"]))
       `rm "${native}/"cache*.txt`,
       `rm "${home}/unrelated/.${harness}/"*.json`,
       `rm "${home}"/.vouch/versions/other/*/hooks/*.mjs`,
+      `rm "${home}"/**/notes.txt`,
+      `rm "${home}"/**/cache*.txt`,
+      `rm "${home}"/**/**/notes.txt`,
     ]) {
       const result = await decide(command);
       t.assert.equal(
