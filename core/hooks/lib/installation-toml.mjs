@@ -82,6 +82,7 @@ function rejectMultiline(text) {
 function validateDefinitions(statements) {
   const values = new Set();
   const tables = new Set();
+  const headings = new Set();
   const implicit = new Set();
   /** @type {Map<string,number>} */ const arrays = new Map();
   /** @type {string[]} */ let table = [];
@@ -123,14 +124,18 @@ function validateDefinitions(statements) {
       }
       table = names;
       tables.add(qualified(names));
+      headings.add(qualified(names));
     } else {
       if (tables.has(name))
         throw new Error("INSTALL-CONFIG: conflicting Codex TOML key");
       values.add(name);
       for (let i = table.length + 1; i < names.length; i++) {
-        if (arrays.has(arrayKey(names.slice(0, i))))
+        if (
+          arrays.has(arrayKey(names.slice(0, i))) ||
+          headings.has(qualified(names.slice(0, i)))
+        )
           throw new Error(
-            "INSTALL-CONFIG: dotted Codex TOML key crosses an array table",
+            "INSTALL-CONFIG: dotted Codex TOML key redeclares a table",
           );
         tables.add(qualified(names.slice(0, i)));
       }
