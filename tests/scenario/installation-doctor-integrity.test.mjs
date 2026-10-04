@@ -46,7 +46,7 @@ for (const scope of ["project", "user"])
       const template = Object.keys(tree(runtimeRoot)).find(
         (path) => path.startsWith("templates/") && path.endsWith(".md"),
       );
-      t.assert.ok(template);
+      if (!template) throw new Error("TEST-FIXTURE: runtime template missing");
       for (const path of [
         "hooks/vouch-guard-writes.mjs",
         "registry/workflow.json",

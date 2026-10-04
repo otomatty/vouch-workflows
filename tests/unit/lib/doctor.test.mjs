@@ -1,28 +1,38 @@
 import { test } from "node:test";
 import { inspectInstallation } from "../../../core/hooks/lib/doctor.mjs";
+import {
+  distributionDigest,
+  runtimeContents,
+} from "../../../core/hooks/lib/installation-runtime.mjs";
 import runtime from "../../../core/registry/runtime.json" with { type: "json" };
 import { validator } from "../../helpers/registry.mjs";
 import { memoryFiles, sandbox } from "../../helpers/runtime.mjs";
 
 test("managed doctor inspects the selected runtime separately and detects missing or duplicate native registration", async (t) => {
   const box = await sandbox(t, { git: false });
-  const digest = "a".repeat(64);
-  const prefix = `.vouch/versions/${digest}/cursor`;
-  const runtimeRoot = box.path(prefix);
-  for (const path of runtime.files)
-    await box.write(`${prefix}/${path}`, "source");
   const expected = {
     version: 1,
     hooks: { sessionStart: [{ command: "node launcher session" }] },
   };
-  await box.write(
-    `${prefix}/registry/installation.json`,
-    JSON.stringify({ harness: "cursor", registration: "hooks.json" }),
+  const source = Object.fromEntries(
+    runtime.files.map((path) => [`.cursor/${path}`, "source"]),
   );
-  await box.write(
-    `${prefix}/registry/registration.json`,
-    JSON.stringify(expected),
-  );
+  source["AGENTS.md"] = "source";
+  source[".cursor/registry/runtime.json"] = JSON.stringify(runtime);
+  source[".cursor/registry/installation.json"] = JSON.stringify({
+    harness: "cursor",
+    registration: "hooks.json",
+  });
+  source[".cursor/registry/registration.json"] = JSON.stringify(expected);
+  const digest = distributionDigest(source);
+  const prefix = `.vouch/versions/${digest}/cursor`;
+  const runtimeRoot = box.path(prefix);
+  for (const [path, text] of Object.entries(
+    runtimeContents(source, "cursor", prefix),
+  ))
+    await box.write(`${prefix}/${path}`, text);
+  for (const [path, text] of Object.entries(source))
+    await box.write(`${prefix}/distribution/${path}`, text);
   await box.write(`${prefix}/hooks.json`, JSON.stringify(expected));
   const store = memoryFiles({ ".cursor/hooks.json": JSON.stringify(expected) });
   const owned = {
