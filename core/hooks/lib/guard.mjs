@@ -78,7 +78,12 @@ export async function guardWrites(input, ctx, entry) {
     if (at.kind === "unresolved" || at.links > 1) found.push(["link", shown]);
     const match =
       externalRuntimeMatch(at, scope) ??
-      (at.inside === null ? null : classifySegments(split(at.inside), scope));
+      (at.inside === null
+        ? at.contains && {
+            area: /** @type {const} */ ("audit"),
+            ancestor: true,
+          }
+        : classifySegments(split(at.inside), scope));
     if (!match || (match.ancestor && kind !== "delete")) return;
     if (match.area !== "artifact") return void found.push([match.area, shown]);
     /** @type {string|null} */ let current = null;
