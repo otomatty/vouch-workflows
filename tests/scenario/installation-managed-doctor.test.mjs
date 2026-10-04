@@ -125,6 +125,9 @@ group(
               true,
             );
             t.assert.deepEqual(tree(box.path("project")), before);
+            const installerDoctor = installRun("doctor", box, "codex", "user");
+            t.assert.equal(installerDoctor.status, 2, installerDoctor.stdout);
+            t.assert.deepEqual(tree(box.path("project")), before);
           } finally {
             await box.write(path, original);
           }
