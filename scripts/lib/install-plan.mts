@@ -1,4 +1,5 @@
 import { inside, read } from "./install-files.mjs";
+import { managedPath } from "./install-registration.mjs";
 import {
   addHooks,
   block,
@@ -119,5 +120,13 @@ export function readInstallation(text: string | null): Installation | null {
       (entry.previous !== null && typeof entry.previous !== "string")
     )
       throw new Error("INSTALL-STATE: invalid ownership record");
+    // Design D4: a record never widens the managed set; a file claim never restores bytes.
+    else if (
+      !managedPath(String(value.harness), entry.kind, entry.path) ||
+      (entry.kind === "file" && entry.previous !== null)
+    )
+      throw new Error(
+        `INSTALL-STATE: ownership outside the managed files: ${String(entry.path)}`,
+      );
   return value as Installation;
 }

@@ -87,6 +87,30 @@ export const skillsDirectory = (harness: string) =>
 export const registrationPath = (harness: string) =>
   `${nativeDirectory(harness)}/${harness === "claude" ? "settings.json" : "hooks.json"}`;
 
+const escaped = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** Design D4: the only paths an installation may create, edit or restore, by kind. */
+export function managedPath(harness: string, kind: string, path: string) {
+  const codexConfig = harness === "codex" && path === ".codex/config.toml";
+  if (kind === "hooks") return path === registrationPath(harness);
+  if (kind === "toml") return codexConfig;
+  if (kind === "block")
+    return (
+      path === "AGENTS.md" ||
+      (harness === "claude" && path === "CLAUDE.md") ||
+      codexConfig
+    );
+  if (kind !== "file") return false;
+  const owned = new RegExp(
+    `^(?:${escaped(skillsDirectory(harness))}|${escaped(nativeDirectory(harness))}/agents)/vouch[\\w.-]*(?:/\\w[\\w.-]*)*$`,
+  );
+  return (
+    codexConfig ||
+    (harness === "cursor" && path === ".cursor/rules/vouch.mdc") ||
+    owned.test(path)
+  );
+}
+
 /** Rebind all distributed references and route manual commands through activation. */
 export function installedText(
   text: string,
