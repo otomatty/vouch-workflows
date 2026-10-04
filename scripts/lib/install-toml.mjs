@@ -30,7 +30,7 @@ function sectionBounds(text, section) {
 
 /** @param {string|null} before */
 export function enableCodex(before) {
-  let text = before ?? 'sandbox_mode = "workspace-write"\n';
+  let text = before ?? "";
   /** @type {Setting[]} */ const settings = [];
   for (const [section, key, value] of [
     ["features", "hooks", "true"],
