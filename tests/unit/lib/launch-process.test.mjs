@@ -1,8 +1,6 @@
 import { test } from "node:test";
-import {
-  executeProduct,
-  nodeArguments,
-} from "../../../core/hooks/lib/launch-process.mjs";
+import { nodeArguments } from "../../../core/hooks/lib/env.mjs";
+import { executeProduct } from "../../../core/hooks/lib/launch-process.mjs";
 
 test("literal POSIX paths use fixed loader code with the entry and arguments kept as data", (t) => {
   const entry = "/tmp/home\\name/'$` runtime/entry.mjs";
