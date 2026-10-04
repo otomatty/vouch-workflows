@@ -65,6 +65,8 @@ Cursor の公式 [プラグイン仕様](https://github.com/cursor/plugins/blob/
 
 `init` がプロジェクト内の本体として選ぶのは `scope: project` の導入記録だけとし、個人共通の候補は `scope: user` に限る。個人共通の導入先と有効化するプロジェクトがファイルシステム上で同じ場所の場合、登録と所有記録が重なるため `INSTALL-SCOPE` で拒否する。別の `--project` を指定するよう案内し、既存の導入記録・設定・成果物は変更しない。既にプロジェクト単位で導入した本体の再初期化は保持する。
 
+プロジェクト単位の本体がある場合、`init` は選択した版の `vouch/config.json` の有効化も行う。設定ファイルの欠落や対象ツールの項目が失われた場合も `v`・導入範囲・digest・本体参照・登録範囲を再設定し、他のツールや利用者の項目は保持する。既存の管理文書・Skills・フック登録と所有記録は再作成せず、設定の未対応の版や不正な `harnesses` は変更前に拒否する。
+
 `install` と `update` は配布の `registry/installation.json` の `harness` が `--harness` と一致することを変更の計画前に検査する。不一致や欠落は `INSTALL-SOURCE` で拒否し、既存の導入記録・ネイティブ設定・プロジェクトのファイルを変更しない。別のツールの本体を登録してフックが未有効化として扱われる状態を作らない。
 
 既存の導入記録を変更・削除する `install` / `update` / `remove` は、保存した `harness` と `scope` が要求したツール・導入範囲と一致することを計画前に検査する。不一致は `INSTALL-STATE` で拒否し、同じ配置先の別スコープの導入を変更しない。`init` の導入候補もツールの一致を必須とし、プロジェクト接続の所有記録は対象ツールの `scope: user` に限る。不一致では既存ファイルを保持し、正しい範囲での再実行を可能にする。
@@ -120,5 +122,7 @@ Claude の管理する登録には読み取り専用の `statusLine` を含め�
 Cursor には `sessionStart`・`beforeSubmitPrompt`・`preToolUse`・`afterAgentResponse`・`stop` を登録する。入力の `conversation_id` / `generation_id` を共通入力へ写し、ツール名とパス名を変換する。`preToolUse` は許可時に `permission: allow`、拒否時に `permission: deny` と理由の `user_message` を返す。プロジェクト未有効化・重複登録・未知や欠損の入力・内部エラーで guard を実行しない場合も、許可の応答形式を維持する。プロンプトの拒否は `continue: false` と `user_message` へ、再開要約は `additional_context` へ変換する。回答の `text` は脇質問の回答として記録し、本文がない `afterAgentResponse` では回答を確定せず、後続の stop の本文を保存できるようにする。本文がある回答の後は重複追記しない。未知・欠損の入力と内部エラーは既存契約どおり fail-open にし、取得できない測定値や入力識別子を補わない。全ツール・全経路を機械的に強制する境界ではない。
 
 ランチャーは信頼済みの入口の配置名（`cursor` / `.cursor`）から Cursor の応答形式を保持する。導入記述子の欠落・不正 JSON・無効なツール名・配置との不一致で処理できない場合も、ネイティブ guard は有効な許可 JSON を返す。手動コマンドは診断を出して終了2とし、stdin や環境変数のツール名で応答形式や作業先を選ばない。
+
+Cursor の `beforeSubmitPrompt` は許可時に `continue: true` を返し、拒否時の `continue: false` と理由を保持する。未有効化・重複・欠損入力・記述子の破損・内部エラーの fail-open でも許可の応答形式を維持する。空の JSON を許可の代わりにしない。
 
 実機検証にはツールの実行ファイル・版・信頼設定と fixture の採取が必要で、この環境では Cursor の実行ファイルがない。新方式の Claude / Codex の実発火も今回の自動テストでは確認していない。正式対応の判定は引き続き上記の検証を条件とする。
