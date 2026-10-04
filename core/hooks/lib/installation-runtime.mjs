@@ -50,11 +50,24 @@ export function runtimeContents(source, harness, referenceRoot) {
   return result;
 }
 
+/** Finish every started read before returning, including failed batches.
+ * @template T @param {T[]} entries @param {(entry:T)=>Promise<void>} inspect */
+async function inspectBatches(entries, inspect) {
+  for (let at = 0; at < entries.length; at += 4) {
+    const results = await Promise.allSettled(
+      entries.slice(at, at + 4).map(inspect),
+    );
+    const failure = results.find((result) => result.status === "rejected");
+    if (failure) throw failure.reason;
+  }
+}
+
 /** Read-only archive validation; all I/O passes through the runtime FileStore.
  * @param {import('./runtime-contracts.mjs').FileStore} files
  * @param {{harness:string,scope:string,digest:string}} state @param {string} runtimeRoot */
 export async function verifyManagedRuntime(files, state, runtimeRoot) {
   /** @type {Record<string,string>} */ const source = {};
+  /** @type {string[]} */ const paths = [];
   /** @param {string} relative */
   async function collect(relative) {
     const at = relative ? `distribution/${relative}` : "distribution";
@@ -67,14 +80,17 @@ export async function verifyManagedRuntime(files, state, runtimeRoot) {
       else {
         if (entry.kind !== "file")
           throw new Error(`INSTALL-LINK: archived ${path}`);
-        const text = await files.readText(`distribution/${path}`);
-        if (text === null)
-          throw new Error(`INSTALL-VERSION: archived file missing: ${path}`);
-        source[path] = text;
+        paths.push(path);
       }
     }
   }
   await collect("");
+  await inspectBatches(paths, async (path) => {
+    const text = await files.readText(`distribution/${path}`);
+    if (text === null)
+      throw new Error(`INSTALL-VERSION: archived file missing: ${path}`);
+    source[path] = text;
+  });
   if (distributionDigest(source) !== state.digest)
     throw new Error("INSTALL-VERSION: archived distribution has changed");
   const prefix = `.${state.harness}/`;
@@ -91,11 +107,13 @@ export async function verifyManagedRuntime(files, state, runtimeRoot) {
     state.scope === "project"
       ? `.vouch/versions/${state.digest}/${state.harness}`
       : runtimeRoot;
-  for (const [path, expected] of Object.entries(
-    runtimeContents(source, state.harness, referenceRoot),
-  ))
-    if ((await files.readText(path)) !== expected)
-      throw new Error(`INSTALL-VERSION: runtime has changed: ${path}`);
+  await inspectBatches(
+    Object.entries(runtimeContents(source, state.harness, referenceRoot)),
+    async ([path, expected]) => {
+      if ((await files.readText(path)) !== expected)
+        throw new Error(`INSTALL-VERSION: runtime has changed: ${path}`);
+    },
+  );
   return source;
 }
 
