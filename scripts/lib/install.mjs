@@ -1,5 +1,9 @@
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
-import { verifyActivationManifest } from "../../core/hooks/lib/installation-ownership.mjs";
+import {
+  activationFiles,
+  activationGuidance,
+  verifyActivationContents,
+} from "../../core/hooks/lib/installation-activation.mjs";
 import {
   isSnapshotName,
   runtimeContents,
@@ -19,11 +23,9 @@ import {
 import { plan, readInstallation } from "./install-plan.mjs";
 import {
   installedText,
-  markdownDestination,
   nativeDirectory,
   registration,
   registrationPath,
-  skillsDirectory,
 } from "./install-registration.mjs";
 import { json, object, pretty } from "./install-settings.mjs";
 import { enableCodex } from "./install-toml.mjs";
@@ -88,6 +90,7 @@ export function install(options, command) {
         : null;
     const changes = plan(root, prior ?? binding);
     if (binding) changes.put(bindingPath, null);
+    const activation = activationFiles(source, options.harness, referenceRoot);
     for (const [path, content] of Object.entries(source)) {
       const archive = `${runtimeRelative}/distribution/${path}`;
       const existing = changes.current(archive);
@@ -108,16 +111,8 @@ export function install(options, command) {
         if (before !== null && before !== text)
           throw new Error(`INSTALL-CONFLICT: immutable runtime ${target}`);
         changes.put(target, text);
-      } else if (
-        path.startsWith(`${skillsDirectory(options.harness)}/`) ||
-        path.startsWith(`${prefix}agents/`)
-      ) {
-        changes.file(
-          path,
-          path.endsWith(".md") || path.endsWith(".toml")
-            ? installedText(content, options.harness, referenceRoot)
-            : content,
-        );
+      } else if (Object.hasOwn(activation, path)) {
+        changes.file(path, /** @type {string} */ (activation[path]));
       }
     }
     // Keep a distribution registration snapshot for runtime doctor; native registration is checked by setup doctor.
@@ -197,18 +192,11 @@ function activate(changes, options, state, runtimeRoot) {
       ? relative(options.project, runtimeRoot).replaceAll("\\", "/")
       : runtimeRoot.replaceAll("\\", "/");
   configureProject(changes, options, state, runtimeRoot);
-  changes.document(
-    "AGENTS.md",
-    options.harness,
-    `Vouch を ${options.harness} で利用する時は、選択した本体の [共通ルール](${markdownDestination(`${referenceRoot}/AGENTS.md`)}) を読む。規則と成果物はこのプロジェクトの vouch/ に保存する。`,
-  );
-  if (options.harness === "claude")
-    changes.document("CLAUDE.md", options.harness, "@AGENTS.md");
-  if (options.harness === "cursor")
-    changes.file(
-      ".cursor/rules/vouch.mdc",
-      `---\ndescription: Vouch workflow activation\nalwaysApply: true\n---\nRead [Vouch rules](${markdownDestination(`${referenceRoot}/AGENTS.md`)}) when using Vouch in this project.`,
-    );
+  for (const entry of activationGuidance(options.harness, referenceRoot)) {
+    if (entry.kind === "block")
+      changes.document(entry.path, options.harness, entry.content);
+    else changes.file(entry.path, entry.content);
+  }
 }
 
 /** @param {Options} options */
@@ -257,7 +245,16 @@ export function initialize(options) {
           scope: "user",
         });
     if (local) {
-      verifyActivationManifest(source, options.harness, local.owned);
+      verifyActivationContents(
+        source,
+        {
+          harness: options.harness,
+          scope: local.scope,
+          runtimeRoot,
+          projectRoot: options.project,
+        },
+        local.owned,
+      );
       plan(options.project, local); // Validate ownership without committing its removal plan.
     }
     const changes = plan(options.project, binding);
@@ -265,12 +262,10 @@ export function initialize(options) {
       // The project installation already owns its activation documents and registration.
       configureProject(changes, options, selected, runtimeRoot);
     } else {
-      for (const [path, text] of Object.entries(source))
-        if (
-          path.startsWith(`${skillsDirectory(options.harness)}/`) ||
-          path.startsWith(`${nativeDirectory(options.harness)}/agents/`)
-        )
-          changes.file(path, installedText(text, options.harness, runtimeRoot));
+      for (const [path, text] of Object.entries(
+        activationFiles(source, options.harness, runtimeRoot),
+      ))
+        changes.file(path, text);
       changes.hooks(
         registrationPath(options.harness),
         registration(options.harness, runtimeRoot, "project", options.project),
@@ -409,7 +404,16 @@ export function diagnose(options) {
   )
     throw new Error("INSTALL-VERSION: runtime path differs");
   const source = validateRuntime(runtimeRoot, state, options.harness);
-  verifyActivationManifest(source, options.harness, state.owned);
+  verifyActivationContents(
+    source,
+    {
+      harness: options.harness,
+      scope: state.scope,
+      runtimeRoot,
+      projectRoot: options.project,
+    },
+    state.owned,
+  );
   plan(options.project, state); // Read-only validation of the active project's registration and documents.
   if (
     options.harness === "codex" &&

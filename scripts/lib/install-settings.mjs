@@ -6,6 +6,7 @@ import {
 } from "../../core/hooks/lib/installation-ownership.mjs";
 
 export {
+  block,
   json,
   object,
   pretty,
@@ -41,11 +42,4 @@ export function addHooks(text, contribution) {
     actual[key] = value;
   }
   return pretty({ ...actual, hooks });
-}
-
-/** @param {string|null} text @param {string} harness @param {string} body */
-export function block(text, harness, body) {
-  if (text?.includes(`<!-- vouch:${harness}:start -->`))
-    throw new Error("INSTALL-CONFLICT: unmanaged Vouch block");
-  return `${text && !text.endsWith("\n") ? "\n" : ""}\n<!-- vouch:${harness}:start -->\n${body}\n<!-- vouch:${harness}:end -->\n`;
 }
