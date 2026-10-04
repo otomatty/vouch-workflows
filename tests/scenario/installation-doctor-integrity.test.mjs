@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { test as group } from "node:test";
 import { hookTest as test } from "../helpers/hook-test.mjs";
@@ -58,10 +59,13 @@ for (const scope of ["project", "user"])
           `reject nonempty content change: ${path}`,
           async (t) => {
             const target = join(runtimeRoot, path);
-            const original = tree(runtimeRoot)[path];
+            const original =
+              path === "distribution/extra-unrecorded.txt"
+                ? null
+                : await readFile(target, "utf8");
             await box.write(
               target,
-              `${original ?? ""}\nchanged nonempty bytes\n`,
+              `${original ?? ""}${path.endsWith(".json") ? " \n" : "\nchanged nonempty bytes\n"}`,
             );
             try {
               const before = tree(box.root);
@@ -76,7 +80,8 @@ for (const scope of ["project", "user"])
               );
               t.assert.deepEqual(tree(box.root), before);
             } finally {
-              if (original !== undefined) await box.write(target, original);
+              if (original !== null) await box.write(target, original);
+              else await rm(target);
             }
           },
           t,
