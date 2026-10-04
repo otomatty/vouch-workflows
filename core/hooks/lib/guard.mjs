@@ -241,7 +241,7 @@ export async function guardWrites(input, ctx, entry) {
       const key = `${cwd}\0${word}`;
       const at = seen.get(key) ?? (await ctx.locate(word, cwd ?? input.cwd));
       seen.set(key, at);
-      external = Boolean(at.outside) && !/^(?:\$|%[^%]+%|~)/.test(word);
+      external = Boolean(at.outside) && !/(?:\$|%[^%]+%|^~)/.test(word);
       const shown = at.inside ?? word;
       if (at.kind === "unresolved" || at.links > 1)
         result.push(["link", shown, false]);
