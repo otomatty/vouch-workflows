@@ -63,6 +63,38 @@ test("every managed harness and scope verifies transformed guidance and complete
     }
 });
 
+test("complete archive and runtime reads use separate bounded batches and reread every byte on the next verification", async (t) => {
+  const { store, state, root, source } = fixture();
+  const before = new Map(store.data);
+  const read = store.readText;
+  const active = { archive: 0, runtime: 0 };
+  const maximum = { archive: 0, runtime: 0 };
+  /** @type {Map<string,number>} */ const calls = new Map();
+  store.readText = async (path) => {
+    const phase = path.startsWith("distribution/") ? "archive" : "runtime";
+    t.assert.equal(active[phase === "archive" ? "runtime" : "archive"], 0);
+    active[phase] += 1;
+    maximum[phase] = Math.max(maximum[phase], active[phase]);
+    calls.set(path, (calls.get(path) ?? 0) + 1);
+    try {
+      await new Promise((done) => setImmediate(done));
+      return await read(path);
+    } finally {
+      active[phase] -= 1;
+    }
+  };
+  for (const count of [1, 2]) {
+    t.assert.deepEqual(await verifyManagedRuntime(store, state, root), source);
+    t.assert.deepEqual(maximum, { archive: 4, runtime: 4 });
+    t.assert.deepEqual(active, { archive: 0, runtime: 0 });
+    t.assert.deepEqual(
+      calls,
+      new Map([...before.keys()].map((path) => [path, count])),
+    );
+    t.assert.deepEqual(store.data, before);
+  }
+});
+
 test("archive digest ignores insertion order and includes every filename and exact content", (t) => {
   const source = { a: "first\n", b: "second" };
   t.assert.equal(
