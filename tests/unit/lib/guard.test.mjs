@@ -68,6 +68,60 @@ async function guardBox(t, harness = "claude") {
 
 const audit = `vouch/intents/${intent}/audit/events.jsonl`;
 
+test("managed guards allow unrelated resolved external .vouch files across file and shell tools", async (t) => {
+  const box = await sandbox(t, { git: false });
+  const root = box.path("project");
+  const outside = box.path("unrelated/.vouch/cache.txt");
+  await box.write("unrelated/.vouch/cache.txt", "application cache");
+  await mkdir(root);
+  const files = await createFileStore(root);
+  const ctx = {
+    projectRoot: root,
+    harness: /** @type {const} */ ("cursor"),
+    generation: "test",
+    ...fakeClock(),
+    readText: files.readText,
+    locate: files.locate,
+  };
+  for (const prefix of ["home", "project"]) {
+    const runtime = box.path(`${prefix}/.vouch/versions/hash/cursor`);
+    for (const [
+      tool_name,
+      tool_input,
+    ] of /** @type {[string,Record<string,unknown>][]} */ ([
+      ["Write", { file_path: outside, content: "new cache" }],
+      ["Edit", { file_path: outside, old_string: "cache", new_string: "data" }],
+      ["Delete", { file_path: outside }],
+      ["Write", { file_path: `${outside}.new`, content: "new cache" }],
+      ["Bash", { command: `echo data > '${outside}'` }],
+      ["Bash", { command: `rm '${outside}'` }],
+      [
+        "apply_patch",
+        {
+          command: `*** Begin Patch\n*** Update File: ${outside}\n+data\n*** End Patch`,
+        },
+      ],
+    ])) {
+      const result = await guardWrites(
+        {
+          session_id: "s",
+          cwd: root,
+          hook_event_name: "PreToolUse",
+          tool_name,
+          tool_input,
+        },
+        ctx,
+        `${runtime}/hooks/vouch-guard-writes.mjs`,
+      );
+      t.assert.equal(result.decision, "allow", `${prefix}: ${tool_name}`);
+    }
+  }
+  t.assert.equal(
+    await box.read("unrelated/.vouch/cache.txt"),
+    "application cache",
+  );
+});
+
 test("managed user runtime is protected outside the project and manual operations remain callable", async (t) => {
   const box = await sandbox(t, { git: false });
   await mkdir(box.path("project"));

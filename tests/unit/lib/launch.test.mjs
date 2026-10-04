@@ -1,4 +1,4 @@
-import { mkdir } from "node:fs/promises";
+import { mkdir, rm } from "node:fs/promises";
 import { test } from "node:test";
 import { pathToFileURL } from "node:url";
 import { runLauncher } from "../../../core/hooks/lib/io.mjs";
@@ -361,6 +361,41 @@ test("Cursor guard returns valid allow responses for active, inactive, absent an
   t.assert.equal(crashed.seen.code, 0);
   t.assert.deepEqual(JSON.parse(crashed.seen.stdout), { permission: "allow" });
 });
+test("damaged descriptors preserve the native adapter and manual failure without executing a product", async (t) => {
+  for (const harness of /** @type {const} */ (["cursor", "claude", "codex"])) {
+    const box = await setup(t, harness);
+    const path = `project/${box.binding.runtimeRoot}/registry/installation.json`;
+    for (const text of [
+      null,
+      "{",
+      "null",
+      "{}",
+      '{"harness":"unknown"}',
+      JSON.stringify({ harness: harness === "cursor" ? "claude" : "cursor" }),
+    ]) {
+      if (text === null) await rm(box.box.path(path));
+      else await box.box.write(path, text);
+      for (const action of ["guard", "session", "prompt", "stop", "doctor"]) {
+        const manual = action === "doctor";
+        const command = ports(
+          box.root,
+          manual ? [action, "manual"] : [action, "project", box.root],
+        );
+        await launch(box.entry, command.hooks);
+        t.assert.equal(command.seen.calls.length, 0);
+        t.assert.equal(command.seen.code, manual ? 2 : 0);
+        t.assert.match(command.seen.stderr, /VOUCH-LAUNCH/);
+        if (!manual && harness === "cursor")
+          t.assert.deepEqual(
+            JSON.parse(command.seen.stdout),
+            action === "guard" ? { permission: "allow" } : {},
+          );
+        else t.assert.equal(command.seen.stdout, "");
+      }
+    }
+  }
+});
+
 test("launcher I/O wrapper owns the process exit boundary", async (t) => {
   const previous = process.exitCode;
   await runLauncher(pathToFileURL("/nonexistent/hooks/vouch-launch.mjs").href);
