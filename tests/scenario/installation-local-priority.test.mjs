@@ -92,5 +92,60 @@ group(
         },
         t,
       );
+    for (const variant of [
+      "malformed-json",
+      "invalid-state",
+      "stale-ownership",
+    ])
+      await test(
+        `repair local activation while preserving an unselected ${variant} user binding`,
+        async (t) => {
+          const binding = "project/.vouch/bindings/cursor.json";
+          await box.write(
+            binding,
+            variant === "malformed-json"
+              ? "not JSON"
+              : variant === "invalid-state"
+                ? "{}"
+                : JSON.stringify({
+                    ...descriptor,
+                    scope: "user",
+                    runtimeRoot: box.path("unused-user-runtime"),
+                    owned: [
+                      {
+                        path: ".cursor/hooks.json",
+                        kind: "file",
+                        content: "stale-owned-bytes",
+                        previous: null,
+                      },
+                    ],
+                  }),
+          );
+          await box.write("project/vouch/config.json", config);
+          await rm(box.path("project/vouch/config.json"));
+          const before = tree(box.root);
+          const initialized = installRun("init", box, "cursor", "project", [
+            "--intent",
+            "local",
+          ]);
+          t.assert.equal(initialized.status, 0, initialized.stdout);
+          t.assert.equal(JSON.parse(initialized.stdout).scope, "project");
+          t.assert.equal(
+            JSON.parse(initialized.stdout).runtimeRoot,
+            runtimeRoot,
+          );
+          t.assert.equal(await box.read("project/vouch/config.json"), config);
+          const after = tree(box.root);
+          delete after["project/vouch/config.json"];
+          t.assert.deepEqual(after, before);
+          const doctor = installRun("doctor", box, "cursor", "project");
+          t.assert.equal(doctor.status, 0, doctor.stdout);
+          t.assert.deepEqual(tree(box.root), {
+            ...before,
+            "project/vouch/config.json": Buffer.from(config).toString("base64"),
+          });
+        },
+        t,
+      );
   },
 );
