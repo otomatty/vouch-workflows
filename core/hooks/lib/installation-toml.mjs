@@ -4,19 +4,36 @@
  * Ordinary quoted strings and comments may contain triple quotes. @param {string} text */
 function rejectMultiline(text) {
   let quote = "";
+  let value = false;
+  let arrayDepth = 0;
   for (let i = 0; i < text.length; i++) {
     const character = text[i] ?? "";
+    if (character === "\n") {
+      if (arrayDepth > 0)
+        throw new Error(
+          "INSTALL-CONFIG: unsupported multiline Codex TOML array",
+        );
+      value = false;
+    }
     if (quote) {
       if (quote === '"' && character === "\\") i++;
       else if (character === quote) quote = "";
       continue;
     }
     if (character === "#") {
+      if (arrayDepth > 0)
+        throw new Error(
+          "INSTALL-CONFIG: unsupported multiline Codex TOML array",
+        );
       const end = text.indexOf("\n", i);
       if (end < 0) return;
       i = end;
+      value = false;
       continue;
     }
+    if (character === "=") value = true;
+    else if (value && character === "[") arrayDepth++;
+    else if (value && character === "]") arrayDepth--;
     if (character !== '"' && character !== "'") continue;
     if (text.slice(i, i + 3) === character.repeat(3))
       throw new Error("INSTALL-CONFIG: unsupported multiline Codex TOML value");
