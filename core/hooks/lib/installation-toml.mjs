@@ -5,10 +5,13 @@
 function rejectMultiline(text) {
   let quote = "";
   let value = false;
+  let missingValue = false;
   /** @type {string[]} */ const containers = [];
   for (let i = 0; i < text.length; i++) {
     const character = text[i] ?? "";
     if (character === "\n") {
+      if (missingValue)
+        throw new Error("INSTALL-CONFIG: missing Codex TOML value");
       if (quote)
         throw new Error("INSTALL-CONFIG: unfinished Codex TOML string");
       if (containers.length > 0)
@@ -30,6 +33,8 @@ function rejectMultiline(text) {
       continue;
     }
     if (character === "#") {
+      if (missingValue)
+        throw new Error("INSTALL-CONFIG: missing Codex TOML value");
       if (containers.length > 0)
         throw new Error(
           "INSTALL-CONFIG: unsupported multiline Codex TOML array or inline table",
@@ -40,8 +45,17 @@ function rejectMultiline(text) {
       value = false;
       continue;
     }
-    if (character === "=") value = true;
-    else if (value && (character === "[" || character === "{"))
+    if (
+      missingValue &&
+      (/[,=]/.test(character) ||
+        (containers.length > 0 && /[\]}]/.test(character)))
+    )
+      throw new Error("INSTALL-CONFIG: missing Codex TOML value");
+    if (missingValue && !/[ \t\r]/.test(character)) missingValue = false;
+    if (character === "=") {
+      value = true;
+      missingValue = true;
+    } else if (value && (character === "[" || character === "{"))
       containers.push(character);
     else if (value && (character === "]" || character === "}")) {
       if (containers.pop() !== (character === "]" ? "[" : "{"))
@@ -54,6 +68,7 @@ function rejectMultiline(text) {
       throw new Error("INSTALL-CONFIG: unsupported multiline Codex TOML value");
     quote = character;
   }
+  if (missingValue) throw new Error("INSTALL-CONFIG: missing Codex TOML value");
   if (quote) throw new Error("INSTALL-CONFIG: unfinished Codex TOML string");
   if (containers.length > 0)
     throw new Error(

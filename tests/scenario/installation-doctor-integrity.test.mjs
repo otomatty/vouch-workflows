@@ -120,16 +120,17 @@ for (const scope of ["project", "user"])
                 true,
               );
               t.assert.deepEqual(tree(box.root), before);
-              t.assert.equal(
-                diagnose({
-                  harness: "codex",
-                  scope,
-                  home: box.path("home"),
-                  project: box.path("project"),
-                  projectExplicit: true,
-                  dist: box.path("dist"),
-                }).ok,
-                false,
+              t.assert.throws(
+                () =>
+                  diagnose({
+                    harness: "codex",
+                    scope,
+                    home: box.path("home"),
+                    project: box.path("project"),
+                    projectExplicit: true,
+                    dist: box.path("dist"),
+                  }),
+                /INSTALL-CONFIG/,
               );
               t.assert.deepEqual(tree(box.root), before);
             } finally {
