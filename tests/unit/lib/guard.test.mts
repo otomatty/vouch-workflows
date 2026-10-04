@@ -13,10 +13,10 @@ const record = `${JSON.stringify({ id: "evt_x", v: 1, type: "session.started", t
 
 async function guardBox(
   t: import("node:test").TestContext,
-  harness: "claude" | "codex" = "claude",
+  harness: "claude" | "codex" | "cursor" = "claude",
 ) {
   const box = await sandbox(t, { git: false });
-  const home = harness === "claude" ? ".claude" : ".codex";
+  const home = `.${harness}`;
   await box.write(
     `${home}/registry/installation.json`,
     JSON.stringify(
@@ -26,7 +26,13 @@ async function guardBox(
             registration: "settings.json",
             overrides: ["settings.local.json"],
           }
-        : { harness, registration: "hooks.json", configuration: "config.toml" },
+        : harness === "codex"
+          ? {
+              harness,
+              registration: "hooks.json",
+              configuration: "config.toml",
+            }
+          : { harness, registration: "hooks.json" },
     ),
   );
   await box.write(`${home}/hooks/vouch-guard-writes.mjs`, "// entry\n");
@@ -1308,4 +1314,29 @@ test("guardWrites treats git commands that are not read-only as removers of the 
   t.plan(cases.length);
   for (const [command, expected] of cases)
     t.assert.equal(await box.decide("Bash", { command }), expected, command);
+});
+
+test("Cursor Delete refuses protected files, their ancestors, the root and its ancestors", async (t) => {
+  const box = await guardBox(t, "cursor");
+  await box.write("src/app.mjs", "app\n");
+  const remove = (path: string) => box.decide("Delete", { file_path: path });
+  t.assert.equal(await remove(audit), "VOUCH-GUARD-AUDIT");
+  t.assert.equal(await remove(`vouch/intents/${intent}`), "VOUCH-GUARD-AUDIT");
+  t.assert.equal(await remove("vouch"), "VOUCH-GUARD-AUDIT");
+  t.assert.equal(await remove("."), "VOUCH-GUARD-AUDIT");
+  t.assert.equal(await remove(box.root), "VOUCH-GUARD-AUDIT");
+  t.assert.equal(await remove(join(box.root, "..")), "VOUCH-GUARD-AUDIT");
+  t.assert.equal(
+    await remove(".cursor/hooks.json"),
+    "VOUCH-GUARD-INSTALLATION",
+  );
+  t.assert.equal(await remove(done), "VOUCH-GUARD-APPROVED");
+  t.assert.equal(await remove(artifact), "allow");
+  t.assert.equal(await remove("src/app.mjs"), "allow");
+  t.assert.equal(await remove(join(box.root, "..", "sibling")), "allow");
+  // Write and Edit still ignore ancestor-only matches.
+  t.assert.equal(
+    await box.decide("Write", { file_path: "vouch", content: "x" }),
+    "allow",
+  );
 });

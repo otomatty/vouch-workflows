@@ -1,7 +1,9 @@
 import { test } from "node:test";
 import {
+  cursorIgnored,
   cursorInput,
   cursorOutput,
+  cursorPass,
 } from "../../../core/hooks/lib/transport.mjs";
 
 // These are synthetic protocol examples, not inventoried native captures.
@@ -134,11 +136,13 @@ test("unrecognized or incomplete Cursor events do not invent canonical evidence"
   ])
     t.assert.equal(cursorInput(value, "/trusted"), null);
 });
-test("Cursor responses convert shared denials and context without changing workflow decisions", (t) => {
+test("Cursor responses follow the native permission and continue contract on every path", (t) => {
   const denied = { status: 2, stdout: "", stderr: " reason \n" };
+  const allowed = { status: 0, stdout: "", stderr: "" };
+  const failed = { status: null, stdout: "context", stderr: "failure" };
   t.assert.deepEqual(cursorOutput("guard", denied), {
-    decision: "deny",
-    reason: "reason",
+    permission: "deny",
+    user_message: "reason",
   });
   t.assert.deepEqual(cursorOutput("prompt", denied), {
     continue: false,
@@ -149,17 +153,79 @@ test("Cursor responses convert shared denials and context without changing workf
     cursorOutput("session", { status: 0, stdout: " context \n", stderr: "" }),
     { additional_context: "context" },
   );
-  for (const action of ["session", "guard", "stop"])
+  for (const result of [allowed, failed]) {
+    t.assert.deepEqual(cursorOutput("guard", result), { permission: "allow" });
+    t.assert.deepEqual(cursorOutput("prompt", result), { continue: true });
+    t.assert.deepEqual(cursorOutput("session", result), {});
+    t.assert.deepEqual(cursorOutput("stop", result), {});
+  }
+  // Inactive, stale and failed launches answer with the same pass shapes.
+  t.assert.deepEqual(cursorPass("guard"), { permission: "allow" });
+  t.assert.deepEqual(cursorPass("prompt"), { continue: true });
+  t.assert.deepEqual(cursorPass("session"), {});
+  t.assert.deepEqual(cursorPass("stop"), {});
+});
+test("Cursor Delete is a guarded removal and Shell working directories anchor relative paths", (t) => {
+  for (const name of ["Delete", "delete_file"])
     t.assert.deepEqual(
-      cursorOutput(action, { status: 0, stdout: "", stderr: "" }),
-      {},
+      cursorInput(
+        {
+          ...base,
+          hook_event_name: "preToolUse",
+          tool_name: name,
+          tool_input: { path: "vouch/x" },
+        },
+        "/trusted",
+      ),
+      {
+        session_id: "conversation",
+        cwd: "/trusted",
+        hook_event_name: "PreToolUse",
+        tool_name: "Delete",
+        tool_input: { path: "vouch/x", file_path: "vouch/x" },
+      },
     );
-  t.assert.deepEqual(
-    cursorOutput("session", {
-      status: null,
-      stdout: "context",
-      stderr: "failure",
-    }),
-    {},
+  const shell = (fields: Record<string, unknown>) =>
+    cursorInput(
+      {
+        ...base,
+        hook_event_name: "preToolUse",
+        tool_name: "Shell",
+        tool_input: { command: "rm events.jsonl", ...fields },
+        cwd: "/native",
+      },
+      "/trusted",
+    )?.cwd;
+  t.assert.equal(shell({}), "/native");
+  t.assert.equal(shell({ working_directory: "/elsewhere" }), "/elsewhere");
+  t.assert.equal(shell({ working_directory: "sub/dir" }), "/native/sub/dir");
+  t.assert.equal(
+    cursorInput(
+      {
+        ...base,
+        hook_event_name: "preToolUse",
+        tool_name: "Write",
+        tool_input: { path: "a", working_directory: "/elsewhere" },
+        cwd: "/native",
+      },
+      "/trusted",
+    )?.cwd,
+    "/native",
   );
+});
+test("an afterAgentResponse without text leaves the answer to the later stop", (t) => {
+  t.assert.equal(
+    cursorIgnored({ ...base, hook_event_name: "afterAgentResponse" }),
+    true,
+  );
+  t.assert.equal(
+    cursorIgnored({ ...base, hook_event_name: "afterAgentResponse", text: "" }),
+    true,
+  );
+  for (const value of [
+    { ...base, hook_event_name: "afterAgentResponse", text: "answer" },
+    { ...base, hook_event_name: "stop" },
+    null,
+  ])
+    t.assert.equal(cursorIgnored(value), false);
 });

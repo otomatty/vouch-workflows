@@ -228,11 +228,54 @@ test("launcher preserves Claude and Codex native protocol and converts Cursor de
     t.assert.equal(denial.seen.code, harness === "cursor" ? 0 : 2);
     if (harness === "cursor")
       t.assert.deepEqual(JSON.parse(denial.seen.stdout), {
-        decision: "deny",
-        reason: "protected",
+        permission: "deny",
+        user_message: "protected",
       });
     else t.assert.equal(denial.seen.stderr, "protected");
   }
+});
+test("every Cursor path answers with a schema-valid permission or continue response", async (t) => {
+  const box = await setup(t);
+  const event = (fields: Record<string, unknown>) =>
+    (async function* () {
+      yield Buffer.from(
+        JSON.stringify({ conversation_id: "conversation", ...fields }),
+      );
+    })();
+  const allowed = ports(box.root, ["guard", "project", box.root]);
+  await launch(box.entry, allowed.hooks);
+  t.assert.deepEqual(JSON.parse(allowed.seen.stdout), { permission: "allow" });
+  const prompt = ports(box.root, ["prompt", "project", box.root]);
+  prompt.hooks.input = event({
+    hook_event_name: "beforeSubmitPrompt",
+    prompt: "hello",
+  });
+  await launch(box.entry, prompt.hooks);
+  t.assert.deepEqual(JSON.parse(prompt.seen.stdout), { continue: true });
+  const empty = ports(box.root, ["stop", "project", box.root]);
+  empty.hooks.input = event({ hook_event_name: "afterAgentResponse" });
+  await launch(box.entry, empty.hooks);
+  t.assert.equal(empty.seen.calls.length, 0, "no answer is recorded");
+  t.assert.deepEqual(JSON.parse(empty.seen.stdout), {});
+  t.assert.equal(empty.seen.stderr, "");
+  // Inactive projects, invalid activation and an unreadable descriptor still answer.
+  await box.box.write("project/vouch/config.json", "{");
+  for (const [action, expected] of [
+    ["guard", { permission: "allow" }],
+    ["prompt", { continue: true }],
+  ] as const) {
+    const failed = ports(box.root, [action, "project", box.root]);
+    await launch(box.entry, failed.hooks);
+    t.assert.deepEqual(JSON.parse(failed.seen.stdout), expected);
+  }
+  await box.box.write(
+    `project/.vouch/versions/${hash}/cursor/registry/installation.json`,
+    "missing harness",
+  );
+  const broken = ports(box.root, ["guard", "project", box.root]);
+  await launch(box.entry, broken.hooks);
+  t.assert.deepEqual(JSON.parse(broken.seen.stdout), { permission: "allow" });
+  t.assert.match(broken.seen.stderr, /VOUCH-LAUNCH/);
 });
 test("launcher I/O wrapper owns the process exit boundary", async (t) => {
   const previous = process.exitCode;

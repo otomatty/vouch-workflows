@@ -22,7 +22,8 @@ test("source launcher has an explicit manual failure and fail-open native bounda
     t.assert.match(result.stderr, /VOUCH-LAUNCH:/);
   }
 });
-test("synthetic Cursor bridge records confirmation and approval and returns native write denials", async (t) => {
+/** Synthetic transport examples only; these cases do not claim native Cursor execution. */
+async function cursorProject(t: import("node:test").TestContext) {
   const box = await sandbox(t);
   await mkdir(box.path("project"));
   distribution(t, box);
@@ -31,11 +32,10 @@ test("synthetic Cursor bridge records confirmation and approval and returns nati
     "bridge",
   ]);
   t.assert.equal(installed.status, 0, installed.stdout);
-  const runtime = JSON.parse(installed.stdout).runtimeRoot;
+  const runtime: string = JSON.parse(installed.stdout).runtimeRoot;
   const entry = join(runtime, "hooks/vouch-launch.mjs");
   await box.write("project/vouch/intents/bridge/intent.md", planned());
   let generation = 0;
-  /** Synthetic transport examples only; this test does not claim native Cursor execution. */
   function send(
     action: string,
     event: string,
@@ -53,11 +53,22 @@ test("synthetic Cursor bridge records confirmation and approval and returns nati
     t.assert.equal(result.status, 0, result.stderr);
     return JSON.parse(result.stdout);
   }
+  const audit = "project/vouch/intents/bridge/audit/events.jsonl";
+  const rows = async () =>
+    (await box.read(audit))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+  return { box, runtime, entry, send, audit, rows };
+}
+test("synthetic Cursor bridge records confirmation and approval and answers with native permissions", async (t) => {
+  const { box, send, audit, rows } = await cursorProject(t);
   const denied = send("guard", "preToolUse", {
     tool_name: "Write",
     tool_input: { path: "src/new.mjs", content: "implementation" },
   });
-  t.assert.equal(denied.decision, "deny");
+  t.assert.equal(denied.permission, "deny");
+  t.assert.match(denied.user_message, /VOUCH-BUILD-UNAPPROVED/);
   for (const topic of topics) {
     const confirmed = send("prompt", "beforeSubmitPrompt", {
       prompt: `vouch confirm ${topic}`,
@@ -65,20 +76,18 @@ test("synthetic Cursor bridge records confirmation and approval and returns nati
     t.assert.equal(confirmed.continue, false);
     t.assert.match(confirmed.user_message, /VOUCH-CHECKPOINT-RECORDED/);
   }
-  send("prompt", "beforeSubmitPrompt", { prompt: "vouch review" });
-  const path = "project/vouch/intents/bridge/audit/events.jsonl";
-  const before = await box.read(path);
-  const gate = before
-    .trim()
-    .split("\n")
-    .map((line) => JSON.parse(line))
-    .findLast((row) => row.type === "gate.opened");
+  t.assert.deepEqual(
+    send("prompt", "beforeSubmitPrompt", { prompt: "vouch review" }),
+    { continue: true },
+  );
+  const before = await box.read(audit);
+  const gate = (await rows()).findLast((row) => row.type === "gate.opened");
   send("prompt", "beforeSubmitPrompt", {
     prompt: `vouch approve ${gate.id}`,
     generation_id: undefined,
   });
   t.assert.equal(
-    await box.read(path),
+    await box.read(audit),
     before,
     "missing identity never invents approval evidence",
   );
@@ -90,31 +99,30 @@ test("synthetic Cursor bridge records confirmation and approval and returns nati
     await box.read("project/vouch/intents/bridge/intent.md"),
     /status: approved/,
   );
-  const rows = (await box.read(path))
-    .trim()
-    .split("\n")
-    .map((line) => JSON.parse(line));
+  const recorded = await rows();
   t.assert.equal(
-    rows.every(
+    recorded.every(
       (row) => row.harness === "cursor" && validator("audit-event")(row),
     ),
     true,
   );
-  t.assert.equal(rows.at(-1).submission.field, "turn_id");
+  t.assert.equal(recorded.at(-1).submission.field, "turn_id");
+});
+test("synthetic Cursor bridge keeps the answer for stop and refuses protected writes and deletes", async (t) => {
+  const { box, runtime, entry, send, audit, rows } = await cursorProject(t);
   send("prompt", "beforeSubmitPrompt", {
     prompt: "/vouch ask Why this design?",
     generation_id: "aside",
   });
-  send("stop", "afterAgentResponse", {
+  t.assert.deepEqual(
+    send("stop", "afterAgentResponse", { generation_id: "aside" }),
+    {},
+  );
+  send("stop", "stop", {
     text: "An evidence-based answer.",
     generation_id: "aside",
   });
-  send("stop", "stop", { generation_id: "aside" });
-  const aside = (await box.read(path))
-    .trim()
-    .split("\n")
-    .map((line) => JSON.parse(line))
-    .filter((row) => row.type === "aside.answered");
+  const aside = (await rows()).filter((row) => row.type === "aside.answered");
   t.assert.equal(aside.length, 1);
   t.assert.equal(aside[0].answer, "An evidence-based answer.");
   for (const target of [
@@ -122,13 +130,23 @@ test("synthetic Cursor bridge records confirmation and approval and returns nati
     ".cursor/hooks.json",
     join(runtime, "hooks/lib/env.mjs"),
   ]) {
-    const protectedResult = send("guard", "preToolUse", {
+    const refused = send("guard", "preToolUse", {
       tool_name: "Write",
       tool_input: { path: target, content: "tamper" },
     });
-    t.assert.equal(protectedResult.decision, "deny");
-    t.assert.match(protectedResult.reason, /VOUCH-GUARD-INSTALLATION/);
+    t.assert.equal(refused.permission, "deny");
+    t.assert.match(refused.user_message, /VOUCH-GUARD-INSTALLATION/);
   }
+  const before = await box.read(audit);
+  for (const target of [audit.slice("project/".length), "."]) {
+    const refused = send("guard", "preToolUse", {
+      tool_name: "Delete",
+      tool_input: { path: target },
+    });
+    t.assert.equal(refused.permission, "deny", target);
+    t.assert.match(refused.user_message, /VOUCH-GUARD-AUDIT/);
+  }
+  t.assert.equal(await box.read(audit), before);
   const doctor = spawnSync(process.execPath, [entry, "doctor", "manual"], {
     cwd: box.path("project"),
     encoding: "utf8",
