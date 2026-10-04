@@ -5,15 +5,15 @@
 function rejectMultiline(text) {
   let quote = "";
   let value = false;
-  let arrayDepth = 0;
+  /** @type {string[]} */ const containers = [];
   for (let i = 0; i < text.length; i++) {
     const character = text[i] ?? "";
     if (character === "\n") {
       if (quote)
         throw new Error("INSTALL-CONFIG: unfinished Codex TOML string");
-      if (arrayDepth > 0)
+      if (containers.length > 0)
         throw new Error(
-          "INSTALL-CONFIG: unsupported multiline Codex TOML array",
+          "INSTALL-CONFIG: unsupported multiline Codex TOML array or inline table",
         );
       value = false;
     }
@@ -30,9 +30,9 @@ function rejectMultiline(text) {
       continue;
     }
     if (character === "#") {
-      if (arrayDepth > 0)
+      if (containers.length > 0)
         throw new Error(
-          "INSTALL-CONFIG: unsupported multiline Codex TOML array",
+          "INSTALL-CONFIG: unsupported multiline Codex TOML array or inline table",
         );
       const end = text.indexOf("\n", i);
       if (end < 0) break;
@@ -41,16 +41,24 @@ function rejectMultiline(text) {
       continue;
     }
     if (character === "=") value = true;
-    else if (value && character === "[") arrayDepth++;
-    else if (value && character === "]") arrayDepth--;
+    else if (value && (character === "[" || character === "{"))
+      containers.push(character);
+    else if (value && (character === "]" || character === "}")) {
+      if (containers.pop() !== (character === "]" ? "[" : "{"))
+        throw new Error(
+          "INSTALL-CONFIG: mismatched Codex TOML array or inline table",
+        );
+    }
     if (character !== '"' && character !== "'") continue;
     if (text.slice(i, i + 3) === character.repeat(3))
       throw new Error("INSTALL-CONFIG: unsupported multiline Codex TOML value");
     quote = character;
   }
   if (quote) throw new Error("INSTALL-CONFIG: unfinished Codex TOML string");
-  if (arrayDepth !== 0)
-    throw new Error("INSTALL-CONFIG: unfinished Codex TOML array");
+  if (containers.length > 0)
+    throw new Error(
+      "INSTALL-CONFIG: unfinished Codex TOML array or inline table",
+    );
 }
 /** @param {string} text @param {string} section */
 function sectionBounds(text, section) {

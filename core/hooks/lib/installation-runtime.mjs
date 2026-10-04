@@ -34,6 +34,19 @@ export const distributionDigest = (source) =>
 export function runtimeContents(source, harness, referenceRoot) {
   const prefix = `.${harness}/`;
   /** @type {Record<string,string>} */ const result = {};
+  const descriptor = json(
+    source[`${prefix}registry/installation.json`] ?? null,
+  );
+  for (const kind of /** @type {const} */ (["registration", "configuration"])) {
+    const name = descriptor[kind];
+    if (name === undefined && kind === "configuration") continue;
+    if (!isSnapshotName(name, kind))
+      throw new Error(`INSTALL-SOURCE: invalid ${kind} snapshot`);
+    const text = source[`${prefix}${name}`];
+    if (text === undefined)
+      throw new Error(`INSTALL-SOURCE: missing ${kind} snapshot ${name}`);
+    result[name] = text;
+  }
   for (const [path, text] of Object.entries(source)) {
     if (
       path !== "AGENTS.md" &&
