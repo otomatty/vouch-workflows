@@ -61,6 +61,10 @@ Cursor の公式 [プラグイン仕様](https://github.com/cursor/plugins/blob/
 
 導入は Node と Git だけで実行する `node scripts/vouch.mjs` を入口とする。`install` / `update` / `remove` は `--harness claude|codex|cursor` と `--scope user|project` を要求する。個人共通の対象は `--home`、プロジェクト単位の対象は `--project` で明示できる。省略時はそれぞれ利用者のホーム、現在のプロジェクトを使う。個人共通の導入後は `init --harness <対象> --project <作業先> [--home <導入先>] [--intent <Intent>]` でプロジェクトを有効化する。`doctor` は有効な本体・範囲・登録を読み取りで検査する。
 
+Codexのプロジェクト登録は `VOUCH_PROJECT_ROOT` の事前設定を要求しない。実行時の作業ディレクトリから最も近い `vouch/config.json` を持つ祖先を探し、本体と対象プロジェクトを選ぶ。両導入範囲でルート・子ディレクトリ・移動後から起動でき、環境変数やstdinの偽のプロジェクト名をこの探索の代わりにしない。
+
+Codex TOMLの複数行文字列は自動編集の対象外とし、導入・有効化の診断で `INSTALL-CONFIG` として変更前に拒否する。文字列内の `[features]` / `hooks = true` / `[agents]` を有効化済みの設定と誤認せず、doctorも成功と報告しない。通常の引用文字列とコメントは保持する。
+
 本体は導入先の `.vouch/versions/<配布の digest>/<harness>/` に置く。配布の digest はファイル名とバイトから求め、既存の版を上書きしない。導入記録は `.vouch/installations/<harness>.json`、プロジェクトの有効化は `vouch/config.json` に記録する。プロジェクト内の本体は root 相対、個人共通の本体は絶対パスで指定する。`init` は既存のプロジェクト本体を個人共通の本体より優先する。
 
 `init` がプロジェクト内の本体として選ぶのは `scope: project` の導入記録だけとし、個人共通の候補は `scope: user` に限る。個人共通の導入先と有効化するプロジェクトがファイルシステム上で同じ場所の場合、登録と所有記録が重なるため `INSTALL-SCOPE` で拒否する。別の `--project` を指定するよう案内し、既存の導入記録・設定・成果物は変更しない。既にプロジェクト単位で導入した本体の再初期化は保持する。
