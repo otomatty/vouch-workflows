@@ -5,6 +5,8 @@ import { sandbox } from "../helpers/runtime.mjs";
 
 /** @param {Awaited<ReturnType<typeof sandbox>>} box @param {import('node:test').RunOptions} options */
 function execute(box, options) {
+  const env = { ...process.env };
+  delete env.NODE_TEST_CONTEXT;
   return spawnSync(
     process.execPath,
     [
@@ -17,7 +19,7 @@ function execute(box, options) {
         ...options,
       }),
     ],
-    { encoding: "utf8", windowsHide: true, timeout: 4000 },
+    { encoding: "utf8", windowsHide: true, timeout: 4000, env },
   );
 }
 
