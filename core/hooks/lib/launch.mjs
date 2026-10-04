@@ -138,15 +138,20 @@ export async function launch(entryUrl, ports) {
         .endsWith(`/.vouch/versions/${binding.digest}/${harness}`)
     )
       throw new Error("INSTALL-VERSION: activation digest and runtime differ");
+    const selected =
+      selectedRoot === runtimeRoot ? null : await runtime.locate(selectedRoot);
+    const sameRuntime =
+      selected === null ||
+      (selected.kind === "directory" && selected.inside === "");
     if (
       native &&
-      (selectedRoot !== runtimeRoot ||
+      (!sameRuntime ||
         (scope === "user" && binding.registrationScope === "project"))
     ) {
       if (harness === "cursor") passCursor();
       return;
     }
-    if (selectedRoot !== runtimeRoot && !display)
+    if (!sameRuntime && !display)
       throw new Error("INSTALL-VERSION: invoke the selected runtime");
     const intent = project.config.intent ?? "";
     if (

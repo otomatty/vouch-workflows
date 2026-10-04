@@ -97,6 +97,15 @@ function sectionBounds(text, section) {
   return { lines, start, end };
 }
 
+/** Valid TOML integers, retaining their original spelling. @param {string} line */
+function positiveDepth(line) {
+  const value =
+    /^\s*(?:max_depth|"max_depth"|'max_depth')\s*=\s*([+-]?(?:0|[1-9](?:_?\d)*)|0x[\da-fA-F](?:_?[\da-fA-F])*|0o[0-7](?:_?[0-7])*|0b[01](?:_?[01])*)\s*(?:#.*)?$/.exec(
+      line,
+    )?.[1];
+  return value !== undefined && BigInt(value.replaceAll("_", "")) > 0n;
+}
+
 /** @param {string|null} before */
 export function enableCodex(before) {
   let text = before ?? "";
@@ -122,14 +131,7 @@ export function enableCodex(before) {
     )
       throw new Error("INSTALL-CONFIG: duplicate Codex setting");
     const previous = index < 0 ? null : /** @type {string} */ (lines[index]);
-    if (
-      key === "max_depth" &&
-      previous &&
-      /^\s*(?:max_depth|"max_depth"|'max_depth')\s*=\s*[1-9]\d*\s*(?:#.*)?$/.test(
-        previous,
-      )
-    )
-      continue;
+    if (key === "max_depth" && previous && positiveDepth(previous)) continue;
     const line = `${key} = ${value}`;
     if (
       previous &&

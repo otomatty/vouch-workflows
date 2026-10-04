@@ -62,8 +62,13 @@ export async function verifyManagedActivation(
     throw new Error("managed activation identity differs");
   const selectedRoot = resolve(environment.projectRoot, activation.runtimeRoot);
   const canonical = `.vouch/versions/${state.digest}/${harness}`;
+  const invoked =
+    selectedRoot === environment.runtimeRoot
+      ? null
+      : await installationFiles.locate(environment.runtimeRoot);
   if (
-    selectedRoot !== environment.runtimeRoot ||
+    (invoked !== null &&
+      (invoked.kind !== "directory" || invoked.inside !== "")) ||
     resolve(environment.projectRoot, state.runtimeRoot) !== selectedRoot ||
     (state.scope === "project" &&
       selectedRoot !== resolve(environment.projectRoot, canonical)) ||
