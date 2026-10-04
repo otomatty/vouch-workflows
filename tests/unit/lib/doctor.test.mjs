@@ -5,6 +5,7 @@ import {
   runtimeContents,
 } from "../../../core/hooks/lib/installation-runtime.mjs";
 import runtime from "../../../core/registry/runtime.json" with { type: "json" };
+import { managedOwned } from "../../helpers/managed-ownership.mjs";
 import { validator } from "../../helpers/registry.mjs";
 import { memoryFiles, sandbox } from "../../helpers/runtime.mjs";
 
@@ -24,6 +25,10 @@ test("managed doctor inspects the selected runtime separately and detects missin
     registration: "hooks.json",
   });
   source[".cursor/registry/registration.json"] = JSON.stringify(expected);
+  const activationOwned = managedOwned("cursor");
+  for (const entry of activationOwned)
+    if (entry.kind === "file" && !entry.path.includes("/rules/"))
+      source[entry.path] = entry.content;
   const digest = distributionDigest(source);
   const prefix = `.vouch/versions/${digest}/cursor`;
   const runtimeRoot = box.path(prefix);
@@ -34,7 +39,12 @@ test("managed doctor inspects the selected runtime separately and detects missin
   for (const [path, text] of Object.entries(source))
     await box.write(`${prefix}/distribution/${path}`, text);
   await box.write(`${prefix}/hooks.json`, JSON.stringify(expected));
-  const store = memoryFiles({ ".cursor/hooks.json": JSON.stringify(expected) });
+  const store = memoryFiles({
+    ...Object.fromEntries(
+      activationOwned.map((entry) => [entry.path, entry.content]),
+    ),
+    ".cursor/hooks.json": JSON.stringify(expected),
+  });
   const owned = {
     kind: "hooks",
     path: ".cursor/hooks.json",
@@ -47,7 +57,7 @@ test("managed doctor inspects the selected runtime separately and detects missin
     scope: "project",
     digest,
     runtimeRoot: prefix,
-    owned: [owned],
+    owned: [...activationOwned, owned],
   };
   const config = {
     v: 1,

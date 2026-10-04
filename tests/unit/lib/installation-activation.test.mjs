@@ -6,15 +6,20 @@ import {
   runtimeContents,
 } from "../../../core/hooks/lib/installation-runtime.mjs";
 import runtime from "../../../core/registry/runtime.json" with { type: "json" };
+import { managedOwned } from "../../helpers/managed-ownership.mjs";
 import { memoryFiles } from "../../helpers/runtime.mjs";
 
-/** @param {'project'|'user'} [scope] @param {'claude'|'codex'} [harness] */
+/** @param {'project'|'user'} [scope] @param {'claude'|'codex'|'cursor'} [harness] */
 function setup(scope = "project", harness = "claude") {
   const source = Object.fromEntries(
     runtime.files.map((path) => [`.${harness}/${path}`, "content"]),
   );
   source["AGENTS.md"] = "content";
   source[`.${harness}/registry/runtime.json`] = JSON.stringify(runtime);
+  const activationOwned = managedOwned(harness);
+  for (const entry of activationOwned)
+    if (entry.kind === "file" && !entry.path.includes("/rules/"))
+      source[entry.path] = entry.content;
   const digest = distributionDigest(source);
   const canonical = `.vouch/versions/${digest}/${harness}`;
   const projectRoot = resolve("project");
@@ -32,6 +37,7 @@ function setup(scope = "project", harness = "claude") {
     digest,
     runtimeRoot: storedRoot,
     owned: [
+      ...activationOwned,
       {
         kind: "hooks",
         path: registrationPath,
@@ -53,6 +59,11 @@ function setup(scope = "project", harness = "claude") {
   };
   const statePath = `.vouch/${scope === "project" ? "installations" : "bindings"}/${harness}.json`;
   const files = memoryFiles({
+    ...Object.fromEntries(
+      activationOwned
+        .filter((entry) => entry.kind !== "toml")
+        .map((entry) => [entry.path, entry.content]),
+    ),
     [statePath]: JSON.stringify(state),
     "vouch/config.json": JSON.stringify(config),
     [registrationPath]: JSON.stringify(registration),
@@ -92,10 +103,10 @@ function setup(scope = "project", harness = "claude") {
 
 test("managed activation validation observes either scope and existing Codex enabled settings without writes", async (t) => {
   for (const scope of ["project", "user"])
-    for (const harness of ["claude", "codex"]) {
+    for (const harness of ["claude", "codex", "cursor"]) {
       const box = setup(
         /** @type {'project'|'user'} */ (scope),
-        /** @type {'claude'|'codex'} */ (harness),
+        /** @type {'claude'|'codex'|'cursor'} */ (harness),
       );
       const before = [new Map(box.files.data), new Map(box.installation.data)];
       t.assert.match(
@@ -208,4 +219,50 @@ test("matching user paths still require canonical version suffixes and Codex ena
     verifyManagedActivation(codex.files, codex.installation, codex.environment),
     /Codex hooks/,
   );
+});
+
+test("every harness and scope requires each activation entry exactly once with its expected kind", async (t) => {
+  for (const scope of ["project", "user"])
+    for (const harness of ["claude", "codex", "cursor"]) {
+      const original = setup(
+        /** @type {'project'|'user'} */ (scope),
+        /** @type {'claude'|'codex'|'cursor'} */ (harness),
+      );
+      const entries = original.state.owned;
+      const variants = [
+        ...entries.map((_entry, index) =>
+          entries.filter((_item, at) => at !== index),
+        ),
+        [...entries, entries[0]],
+        entries.map((entry, index) =>
+          index === 0 ? { ...entry, kind: "hooks" } : entry,
+        ),
+        entries.map((entry, index) =>
+          index === 0 ? { ...entry, path: ".other/owned" } : entry,
+        ),
+        entries.map((entry, index) => (index === 0 ? null : entry)),
+      ];
+      for (const owned of variants) {
+        original.files.data.set(
+          original.statePath,
+          JSON.stringify({ ...original.state, owned }),
+        );
+        const before = [
+          new Map(original.files.data),
+          new Map(original.installation.data),
+        ];
+        await t.assert.rejects(
+          verifyManagedActivation(
+            original.files,
+            original.installation,
+            original.environment,
+          ),
+          /ownership manifest/,
+        );
+        t.assert.deepEqual(
+          [original.files.data, original.installation.data],
+          before,
+        );
+      }
+    }
 });

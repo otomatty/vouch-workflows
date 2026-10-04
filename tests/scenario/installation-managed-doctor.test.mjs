@@ -161,5 +161,49 @@ group(
         },
         t,
       );
+    for (const kind of ["skill", "agent", "block", "toml"])
+      for (const route of ["distributed", "installer"])
+        await test(
+          `${route} doctor rejects a missing ${kind} hidden by a truncated ownership manifest`,
+          async (t) => {
+            const statePath = "project/.vouch/bindings/codex.json";
+            const original = await box.read(statePath);
+            const state = JSON.parse(original);
+            const entry = state.owned.find(
+              (/** @type {{path:string,kind:string}} */ item) =>
+                kind === "skill"
+                  ? item.path === ".agents/skills/vouch/SKILL.md"
+                  : kind === "agent"
+                    ? item.path.startsWith(".codex/agents/")
+                    : item.kind === kind,
+            );
+            if (!entry) throw new Error(`missing ${kind} fixture`);
+            const target = box.path(`project/${entry.path}`);
+            const saved = box.path("saved-manifest-entry");
+            await box.write(
+              statePath,
+              JSON.stringify({
+                ...state,
+                owned: state.owned.filter(
+                  (/** @type {{kind:string}} */ item) => item.kind === "hooks",
+                ),
+              }),
+            );
+            await rename(target, saved);
+            try {
+              const before = tree(box.root);
+              const result =
+                route === "distributed"
+                  ? doctor()
+                  : installRun("doctor", box, "codex", "user");
+              t.assert.equal(result.status, 2, result.stdout + result.stderr);
+              t.assert.deepEqual(tree(box.root), before);
+            } finally {
+              await rename(saved, target);
+              await box.write(statePath, original);
+            }
+          },
+          t,
+        );
   },
 );

@@ -9,6 +9,7 @@ import {
 import { runLauncher } from "../../../core/hooks/lib/io.mjs";
 import { launch } from "../../../core/hooks/lib/launch.mjs";
 import runtime from "../../../core/registry/runtime.json" with { type: "json" };
+import { managedOwned } from "../../helpers/managed-ownership.mjs";
 import { sandbox } from "../../helpers/runtime.mjs";
 
 const hash = "a".repeat(64);
@@ -176,6 +177,11 @@ test("native statusline skips inactive or unverified projects and uses registere
   );
   source["AGENTS.md"] = "source";
   source[".claude/registry/runtime.json"] = JSON.stringify(runtime);
+  const activationOwned = managedOwned("claude");
+  for (const entry of activationOwned) {
+    await box.box.write(`project/${entry.path}`, entry.content);
+    if (entry.kind === "file") source[entry.path] = entry.content;
+  }
   box.binding.digest = distributionDigest(source);
   box.binding.runtimeRoot = `.vouch/versions/${box.binding.digest}/claude`;
   for (const [path, text] of Object.entries(
@@ -199,6 +205,7 @@ test("native statusline skips inactive or unverified projects and uses registere
       harness: "claude",
       ...box.binding,
       owned: [
+        ...activationOwned,
         {
           path: ".claude/settings.json",
           kind: "hooks",
