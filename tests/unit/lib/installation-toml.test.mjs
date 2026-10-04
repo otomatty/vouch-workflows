@@ -7,6 +7,28 @@ import {
 
 const owned = { path: "owned", kind: "toml", content: "", previous: null };
 
+test("Codex rejects tables and dotted children colliding with managed scalar keys", (t) => {
+  for (const [section, key] of [
+    ["features", "hooks"],
+    ["agents", "max_depth"],
+  ])
+    for (const name of [key, `"${key}"`, `'${key}'`])
+      for (const text of [
+        `[${section}.${name}]\ncustom = true\n`,
+        `["${section}" . ${name} . nested]\ncustom = true\n`,
+        `[[ '${section}' . ${name} ]]\ncustom = true\n`,
+        `[${section}]\n${name}.custom = true\n`,
+      ]) {
+        t.assert.throws(() => enableCodex(text), /INSTALL-CONFIG/);
+        t.assert.throws(() => removeCodex(text, "[]", null), /INSTALL-CONFIG/);
+      }
+  for (const text of [
+    "[features.other]\ncustom = true\n",
+    "[agents.other]\ncustom = true\n",
+  ])
+    t.assert.equal(enableCodex(text).text.startsWith(text), true);
+});
+
 test("Codex refuses unfinished ordinary strings before accepting apparent activation", (t) => {
   for (const prefix of [
     'name = "unfinished',

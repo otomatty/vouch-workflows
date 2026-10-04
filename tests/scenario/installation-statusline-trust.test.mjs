@@ -16,13 +16,20 @@ group(
     let command = "";
     const marker = box.path("executed-untrusted-code");
     const malicious = `process.getBuiltinModule("node:fs").writeFileSync(${JSON.stringify(marker)}, "executed"); process.stdout.write("malicious output\\n");\n`;
-    const display = () => {
+    const display = (bash = false) => {
       /** @type {NodeJS.ProcessEnv} */
       const env = { ...process.env, CLAUDE_PROJECT_DIR: box.path("project") };
       delete env.VOUCH_PROJECT_ROOT;
       return spawnSync(
-        process.platform === "win32" ? windowsShell() : "sh",
         process.platform === "win32"
+          ? bash
+            ? join(
+                process.env.ProgramFiles ?? "C:\\Program Files",
+                "Git/bin/bash.exe",
+              )
+            : windowsShell()
+          : "sh",
+        process.platform === "win32" && !bash
           ? ["-NoProfile", "-Command", command]
           : ["-c", command],
         {
@@ -47,6 +54,17 @@ group(
           .statusLine.command;
         const before = tree(box.root);
         const result = display();
+        t.assert.equal(result.status, 0, result.stderr);
+        t.assert.match(result.stdout, /safe-intent/);
+        t.assert.deepEqual(tree(box.root), before);
+      },
+      t,
+    );
+    await test(
+      "the actual global registration also renders through Git Bash on Windows",
+      async (t) => {
+        const before = tree(box.root);
+        const result = display(true);
         t.assert.equal(result.status, 0, result.stderr);
         t.assert.match(result.stdout, /safe-intent/);
         t.assert.deepEqual(tree(box.root), before);

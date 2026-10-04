@@ -6,6 +6,8 @@ import { sandbox } from "../helpers/runtime.mjs";
 
 /** @type {Record<string,string>} */
 const unfinished = {
+  "feature-subtable": "[features.hooks]\ncustom = true\n",
+  "agent-subtable": "[agents.max_depth]\ncustom = true\n",
   "unfinished-double":
     'name = "unfinished\n[features]\nhooks = true\n[agents]\nmax_depth = 3\n',
   "unfinished-single":
