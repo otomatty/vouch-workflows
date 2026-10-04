@@ -208,8 +208,8 @@ test("managed runtime aliases protect existing and missing targets across file, 
           "*** Begin Patch\n*** Update File: links/selected/hooks/lib/env.mjs\n+tamper\n*** End Patch",
       },
     ],
-    ["Shell", { command: "echo tamper > links/selected/hooks/lib/env.mjs" }],
-    ["Shell", { command: "rm -rf links/home" }],
+    ["Bash", { command: "echo tamper > links/selected/hooks/lib/env.mjs" }],
+    ["Bash", { command: "rm -rf links/home" }],
   ])) {
     const result = await decide(tool, input);
     t.assert.equal(result.decision, "deny", tool);
@@ -226,7 +226,7 @@ test("managed runtime aliases protect existing and missing targets across file, 
       "Write",
       { file_path: "links/unrelated/file.mjs", content: "application" },
     ],
-    ["Shell", { command: "cat links/selected/hooks/lib/env.mjs" }],
+    ["Bash", { command: "cat links/selected/hooks/lib/env.mjs" }],
   ]))
     t.assert.equal((await decide(tool, input)).decision, "allow", tool);
   t.assert.equal(
