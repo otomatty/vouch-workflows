@@ -1,8 +1,27 @@
 import { test } from "node:test";
 import { restoreOwned } from "../../../core/hooks/lib/installation-ownership.mjs";
-import { enableCodex } from "../../../core/hooks/lib/installation-toml.mjs";
+import {
+  enableCodex,
+  removeCodex,
+} from "../../../core/hooks/lib/installation-toml.mjs";
 
 const owned = { path: "owned", kind: "toml", content: "", previous: null };
+
+test("Codex TOML rejects settings disguised inside multiline strings and keeps ordinary quoted strings", (t) => {
+  for (const quote of ['"""', "'''"]) {
+    const text = `developer_instructions = ${quote}\n[features]\nhooks = true\n[agents]\nmax_depth = 3\n${quote}\n`;
+    t.assert.throws(() => enableCodex(text), /INSTALL-CONFIG/);
+    t.assert.throws(() => removeCodex(text, "[]", null), /INSTALL-CONFIG/);
+  }
+  for (const text of [
+    `name = "''' is ordinary"\n`,
+    `name = '""" is ordinary'\n`,
+    `name = "escaped \\" and '''"\n`,
+    `# """ is a comment\n`,
+    `# ''' is a trailing comment`,
+  ])
+    t.assert.equal(enableCodex(text).text.startsWith(text), true);
+});
 
 test("Codex settings preserve existing positive depth and restore owned settings without overwriting unrelated edits", (t) => {
   const initial = enableCodex(null);

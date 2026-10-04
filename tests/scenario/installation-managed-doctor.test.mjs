@@ -99,6 +99,33 @@ group(
       },
       t,
     );
+    await test(
+      "reject hooks and depth declared only inside a multiline instruction",
+      async (t) => {
+        const path = "project/.codex/config.toml";
+        const original = await box.read(path);
+        await box.write(
+          path,
+          "developer_instructions = '''\n[features]\nhooks = true\n[agents]\nmax_depth = 3\n'''\n",
+        );
+        try {
+          const before = tree(box.path("project"));
+          const result = doctor();
+          t.assert.equal(result.status, 2, result.stdout + result.stderr);
+          t.assert.equal(
+            JSON.parse(result.stdout).checks.some(
+              (/** @type {{id:string,ok:boolean}} */ check) =>
+                check.id === "DOCTOR-ACTIVATION" && !check.ok,
+            ),
+            true,
+          );
+          t.assert.deepEqual(tree(box.path("project")), before);
+        } finally {
+          await box.write(path, original);
+        }
+      },
+      t,
+    );
     for (const identity of [
       { scope: "project" },
       { digest: "f".repeat(64) },
