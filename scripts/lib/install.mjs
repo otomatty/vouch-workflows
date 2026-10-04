@@ -237,10 +237,12 @@ export function initialize(options) {
       selected.runtimeRoot,
     );
     if (
-      runtimeRoot !==
-      inside(
-        local ? options.project : options.home,
-        `.vouch/versions/${selected.digest}/${options.harness}`,
+      !sameLocation(
+        runtimeRoot,
+        inside(
+          local ? options.project : options.home,
+          `.vouch/versions/${selected.digest}/${options.harness}`,
+        ),
       )
     )
       throw new Error("INSTALL-VERSION: runtime path differs");
