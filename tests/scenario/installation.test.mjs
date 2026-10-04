@@ -60,7 +60,21 @@ for (const harness of ["claude", "codex", "cursor"]) {
           await box.read("project/.claude/settings.json"),
         );
         t.assert.equal(statusLine.type, "command");
-        t.assert.match(statusLine.command, /vouch-launch\.mjs.*statusline/);
+        const encoded = statusLine.command.match(
+          /Buffer\.from\('([A-Za-z0-9+/=]+)','base64'\)/,
+        )?.[1];
+        if (encoded) {
+          t.assert.deepEqual(
+            JSON.parse(Buffer.from(encoded, "base64").toString()),
+            {
+              entry: join(initial.runtimeRoot, "hooks/vouch-launch.mjs"),
+              scope: "project",
+              project: true,
+            },
+          );
+          t.assert.match(statusLine.command, /'statusline'/);
+        } else
+          t.assert.match(statusLine.command, /vouch-launch\.mjs.*statusline/);
         const display = spawnSync(
           process.platform === "win32" ? windowsShell() : "sh",
           process.platform === "win32"
