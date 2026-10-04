@@ -68,6 +68,76 @@ async function guardBox(t, harness = "claude") {
 
 const audit = `vouch/intents/${intent}/audit/events.jsonl`;
 
+test("Cursor Delete protects resolved external project ancestors in direct and managed layouts", async (t) => {
+  for (const layout of ["direct", "project", "user"]) {
+    const box = await sandbox(t, { git: false });
+    const project = box.path("workspace/project");
+    const relativeRuntime =
+      layout === "user"
+        ? "home/.vouch/versions/hash/cursor"
+        : `workspace/project/${layout === "direct" ? ".cursor" : ".vouch/versions/hash/cursor"}`;
+    await box.write(
+      `${relativeRuntime}/registry/installation.json`,
+      '{"harness":"cursor","registration":"hooks.json"}',
+    );
+    await box.write(
+      `${relativeRuntime}/hooks/vouch-guard-writes.mjs`,
+      "// entry\n",
+    );
+    await box.write(`workspace/project/${audit}`, record);
+    await box.write(
+      "workspace/project/vouch/intents/260929-done/intent.md",
+      approvedText,
+    );
+    await box.write("workspace/unrelated/cache.txt", "application\n");
+    const files = await createFileStore(project);
+    const ctx = {
+      projectRoot: project,
+      harness: /** @type {const} */ ("cursor"),
+      generation: "test",
+      ...fakeClock(),
+      readText: files.readText,
+      locate: files.locate,
+    };
+    for (const tool_name of ["Delete", "Write", "Edit"]) {
+      for (const file_path of [
+        "..",
+        box.path("workspace"),
+        box.root,
+        box.path("workspace/unrelated"),
+      ]) {
+        const result = await guardWrites(
+          {
+            session_id: "s",
+            cwd: project,
+            hook_event_name: "PreToolUse",
+            tool_name,
+            tool_input: {
+              file_path,
+              content: "ordinary",
+              old_string: "old",
+              new_string: "new",
+            },
+          },
+          ctx,
+          box.path(`${relativeRuntime}/hooks/vouch-guard-writes.mjs`),
+        );
+        const protectedDelete =
+          tool_name === "Delete" &&
+          file_path !== box.path("workspace/unrelated");
+        t.assert.equal(
+          result.decision,
+          protectedDelete ? "deny" : "allow",
+          `${layout} ${tool_name} ${file_path}`,
+        );
+        if (result.decision === "deny")
+          t.assert.match(result.reason, /VOUCH-GUARD-(AUDIT|INSTALLATION)/);
+      }
+    }
+    t.assert.equal(await box.read(`workspace/project/${audit}`), record);
+  }
+});
+
 test("managed guards allow unrelated resolved external .vouch files across file and shell tools", async (t) => {
   const box = await sandbox(t, { git: false });
   const root = box.path("project");
