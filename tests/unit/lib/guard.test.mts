@@ -1340,3 +1340,61 @@ test("Cursor Delete refuses protected files, their ancestors, the root and its a
     "allow",
   );
 });
+
+test("an alias inside the project cannot reach the user runtime that runs the guard", async (t) => {
+  const box = await sandbox(t, { git: false });
+  const runtime = box.path("home/.vouch/versions/hash/cursor");
+  await box.write("home/.vouch/versions/hash/cursor/hooks/lib/env.mjs", "x\n");
+  await box.write("project/src/app.mjs", "app\n");
+  await symlink(runtime, box.path("project/selected"), "junction");
+  const files = await createFileStore(box.path("project"));
+  const ctx = {
+    projectRoot: box.path("project"),
+    harness: "cursor" as const,
+    generation: "test",
+    ...fakeClock(),
+    readText: files.readText,
+    locate: files.locate,
+  };
+  const decide = async (tool: string, tool_input: Record<string, unknown>) => {
+    const result = await guardWrites(
+      {
+        session_id: "s",
+        cwd: ctx.projectRoot,
+        hook_event_name: "PreToolUse",
+        tool_name: tool,
+        tool_input,
+      },
+      ctx,
+      `${runtime}/hooks/vouch-guard-writes.mjs`,
+    );
+    return result.decision === "deny"
+      ? (result.reason.split(":")[0] as string)
+      : "allow";
+  };
+  for (const [tool, input] of [
+    ["Write", { file_path: "selected/hooks/lib/env.mjs", content: "tamper" }],
+    [
+      "Edit",
+      {
+        file_path: "selected/hooks/lib/env.mjs",
+        old_string: "x",
+        new_string: "y",
+      },
+    ],
+    ["Delete", { file_path: "selected/hooks" }],
+    ["Bash", { command: "rm selected/hooks/lib/env.mjs" }],
+  ] as const)
+    t.assert.equal(await decide(tool, input), "VOUCH-GUARD-INSTALLATION", tool);
+  t.assert.equal(
+    await decide("Write", { file_path: "src/app.mjs", content: "ok" }),
+    "allow",
+  );
+  t.assert.equal(
+    await decide("Write", {
+      file_path: box.path("outside/unrelated.txt"),
+      content: "ok",
+    }),
+    "allow",
+  );
+});
