@@ -49,6 +49,32 @@ async function findProject(candidate, explicit) {
   }
 }
 
+/** Prove the replacement from trusted code without executing its JavaScript.
+ * @param {string} projectRoot @param {string} runtimeRoot
+ * @param {import('./contracts.mjs').Harness} harness */
+async function replacementActive(projectRoot, runtimeRoot, harness) {
+  try {
+    const files = await createFileStore(runtimeRoot);
+    const descriptor = JSON.parse(
+      (await files.readText("registry/installation.json")) ?? "null",
+    );
+    if (!object(descriptor) || descriptor.harness !== harness) return false;
+    const { verifyManagedActivation } = await import(
+      "./installation-activation.mjs"
+    );
+    await verifyManagedActivation(await createFileStore(projectRoot), files, {
+      projectRoot,
+      installationRoot: "",
+      runtimeRoot,
+      harness,
+      nodeVersion: process.versions.node,
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Managed process boundary; old direct product entrypoints remain compatible.
  * @param {string} entryUrl
  * @param {{finish:(code:number)=>void, stdout?:{write:(text:string)=>unknown},stderr?:{write:(text:string)=>unknown},
@@ -143,15 +169,21 @@ export async function launch(entryUrl, ports) {
     const sameRuntime =
       selected === null ||
       (selected.kind === "directory" && selected.inside === "");
+    const userNative = native && scope === "user";
     if (
       native &&
-      (!sameRuntime ||
-        (scope === "user" && binding.registrationScope === "project"))
+      (userNative
+        ? await replacementActive(
+            project.root,
+            selectedRoot,
+            /** @type {import('./contracts.mjs').Harness} */ (harness),
+          )
+        : !sameRuntime)
     ) {
       if (harness === "cursor") passCursor();
       return;
     }
-    if (!sameRuntime && !display)
+    if (!sameRuntime && !display && !userNative)
       throw new Error("INSTALL-VERSION: invoke the selected runtime");
     const intent = project.config.intent ?? "";
     if (
