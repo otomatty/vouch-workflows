@@ -35,7 +35,7 @@ function rejectMultiline(text) {
           "INSTALL-CONFIG: unsupported multiline Codex TOML array",
         );
       const end = text.indexOf("\n", i);
-      if (end < 0) return;
+      if (end < 0) break;
       i = end;
       value = false;
       continue;
