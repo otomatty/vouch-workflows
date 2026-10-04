@@ -1,8 +1,14 @@
 import { mkdir, rm } from "node:fs/promises";
+import { join } from "node:path";
 import { test } from "node:test";
 import { pathToFileURL } from "node:url";
+import {
+  distributionDigest,
+  runtimeContents,
+} from "../../../core/hooks/lib/installation-runtime.mjs";
 import { runLauncher } from "../../../core/hooks/lib/io.mjs";
 import { launch } from "../../../core/hooks/lib/launch.mjs";
+import runtime from "../../../core/registry/runtime.json" with { type: "json" };
 import { sandbox } from "../../helpers/runtime.mjs";
 
 const hash = "a".repeat(64);
@@ -163,8 +169,46 @@ test("an explicit dot project argument selects command cwd independently of inhe
     box.root,
   );
 });
-test("native statusline quietly skips inactive projects and renders the selected runtime", async (t) => {
+test("native statusline skips inactive or unverified projects and uses registered code to render a validated selection", async (t) => {
   const box = await setup(t, "claude");
+  const source = Object.fromEntries(
+    runtime.files.map((path) => [`.claude/${path}`, "source"]),
+  );
+  source["AGENTS.md"] = "source";
+  source[".claude/registry/runtime.json"] = JSON.stringify(runtime);
+  box.binding.digest = distributionDigest(source);
+  box.binding.runtimeRoot = `.vouch/versions/${box.binding.digest}/claude`;
+  for (const [path, text] of Object.entries(
+    runtimeContents(source, "claude", box.binding.runtimeRoot),
+  ))
+    await box.box.write(`project/${box.binding.runtimeRoot}/${path}`, text);
+  for (const [path, text] of Object.entries(source))
+    await box.box.write(
+      `project/${box.binding.runtimeRoot}/distribution/${path}`,
+      text,
+    );
+  const registration = { hooks: { SessionStart: [{ command: "owned hook" }] } };
+  await box.box.write(
+    "project/.claude/settings.json",
+    JSON.stringify(registration),
+  );
+  await box.box.write(
+    "project/.vouch/installations/claude.json",
+    JSON.stringify({
+      v: 1,
+      harness: "claude",
+      ...box.binding,
+      owned: [
+        {
+          path: ".claude/settings.json",
+          kind: "hooks",
+          content: JSON.stringify(registration),
+          previous: null,
+        },
+      ],
+    }),
+  );
+  await box.box.write("project/vouch/config.json", JSON.stringify(box.config));
   for (const root of [box.box.root, box.root]) {
     const display = ports(root, ["statusline", "user"], {
       status: 0,
@@ -178,18 +222,19 @@ test("native statusline quietly skips inactive projects and renders the selected
       display.seen.stdout,
       root === box.root ? "selected status\n" : "",
     );
+    if (root === box.root)
+      t.assert.equal(
+        display.seen.calls[0]?.[0],
+        join(box.runtime, "hooks/vouch-statusline.mjs"),
+      );
   }
   box.binding.digest = "b".repeat(64);
   box.binding.runtimeRoot = `.vouch/versions/${box.binding.digest}/claude`;
   await box.box.write("project/vouch/config.json", JSON.stringify(box.config));
   const pinned = ports(box.root, ["statusline", "user"]);
   await launch(box.entry, pinned.hooks);
-  t.assert.equal(
-    pinned.seen.calls[0]?.[0],
-    box.box.path(
-      `project/${box.binding.runtimeRoot}/hooks/vouch-statusline.mjs`,
-    ),
-  );
+  t.assert.equal(pinned.seen.calls.length, 0);
+  t.assert.match(pinned.seen.stderr, /VOUCH-LAUNCH/);
   const absent = ports(box.root, ["statusline", "user"]);
   await box.box.write(
     "project/vouch/config.json",

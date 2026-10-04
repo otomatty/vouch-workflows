@@ -17,6 +17,7 @@ group(
     const marker = box.path("executed-untrusted-code");
     const malicious = `process.getBuiltinModule("node:fs").writeFileSync(${JSON.stringify(marker)}, "executed"); process.stdout.write("malicious output\\n");\n`;
     const display = () => {
+      /** @type {NodeJS.ProcessEnv} */
       const env = { ...process.env, CLAUDE_PROJECT_DIR: box.path("project") };
       delete env.VOUCH_PROJECT_ROOT;
       return spawnSync(
