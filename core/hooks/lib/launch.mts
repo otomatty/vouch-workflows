@@ -1,8 +1,20 @@
-import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import {
+  basename,
+  dirname,
+  isAbsolute,
+  join,
+  relative,
+  resolve,
+} from "node:path";
 import { fileURLToPath } from "node:url";
 import { readLaunchEnvironment } from "./env.mjs";
 import { createFileStore, descriptorWriter, readDescriptor } from "./fs.mjs";
-import { cursorInput, cursorOutput } from "./transport.mjs";
+import {
+  cursorIgnored,
+  cursorInput,
+  cursorOutput,
+  cursorPass,
+} from "./transport.mjs";
 
 const actions = {
   session: "vouch-record-session-start.mjs",
@@ -58,11 +70,17 @@ export async function launch(
   const [action = "", scope = "manual", ...rest] = options.args;
   const product = actions[action];
   const native = ["session", "prompt", "guard", "stop"].includes(action);
-  let harness = "";
+  const runtimeRoot = resolve(dirname(fileURLToPath(entryUrl)), "..");
+  // The runtime directory names its harness, so a failure before the descriptor
+  // is read still answers Cursor in its own protocol.
+  let harness = basename(runtimeRoot).replace(/^\./, "");
+  const pass = () => {
+    if (harness === "cursor" && native)
+      stdout.write(`${JSON.stringify(cursorPass(action))}\n`);
+  };
   try {
     if (!product || !["manual", "project", "user"].includes(scope))
       throw new Error("INSTALL-ARGS: unknown launcher operation or scope");
-    const runtimeRoot = resolve(dirname(fileURLToPath(entryUrl)), "..");
     const runtime = await createFileStore(runtimeRoot);
     const descriptor: unknown = JSON.parse(
       (await runtime.readText("registry/installation.json")) ?? "null",
@@ -82,14 +100,14 @@ export async function launch(
         throw new Error(
           "INSTALL-INACTIVE: initialize this project before using Vouch",
         );
-      if (harness === "cursor") stdout.write("{}\n");
+      pass();
       return;
     }
     const binding = (project.config.harnesses as Record<string, unknown>)[
       harness
     ];
     if (binding === undefined && native) {
-      if (harness === "cursor") stdout.write("{}\n");
+      pass();
       return;
     }
     if (
@@ -121,7 +139,7 @@ export async function launch(
       (selectedRoot !== runtimeRoot ||
         (scope === "user" && binding.registrationScope === "project"))
     ) {
-      if (harness === "cursor") stdout.write("{}\n");
+      pass();
       return;
     }
     if (selectedRoot !== runtimeRoot)
@@ -144,7 +162,12 @@ export async function launch(
       }
       input = Buffer.concat(chunks).toString("utf8");
       if (harness === "cursor") {
-        const normalized = cursorInput(JSON.parse(input), project.root);
+        const event: unknown = JSON.parse(input);
+        if (cursorIgnored(event)) {
+          pass();
+          return ports.finish(0);
+        }
+        const normalized = cursorInput(event, project.root);
         if (normalized === null)
           throw new Error("HOOK-14: unsupported Cursor input");
         input = JSON.stringify(normalized);
@@ -176,7 +199,7 @@ export async function launch(
     stderr.write(
       `VOUCH-LAUNCH: ${error instanceof Error ? error.message : String(error)}\n`,
     );
-    if (harness === "cursor" && native) stdout.write("{}\n");
+    pass();
     ports.finish(native ? 0 : 2);
   }
 }

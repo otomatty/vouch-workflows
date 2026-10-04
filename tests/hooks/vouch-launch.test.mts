@@ -76,10 +76,11 @@ test("synthetic Cursor bridge records confirmation and approval and answers with
     t.assert.equal(confirmed.continue, false);
     t.assert.match(confirmed.user_message, /VOUCH-CHECKPOINT-RECORDED/);
   }
-  t.assert.deepEqual(
-    send("prompt", "beforeSubmitPrompt", { prompt: "vouch review" }),
-    { continue: true },
-  );
+  const review = send("prompt", "beforeSubmitPrompt", {
+    prompt: "vouch review",
+  });
+  t.assert.equal(review.continue, false);
+  t.assert.match(review.user_message, /VOUCH-REVIEW-RECORDED/);
   const before = await box.read(audit);
   const gate = (await rows()).findLast((row) => row.type === "gate.opened");
   send("prompt", "beforeSubmitPrompt", {

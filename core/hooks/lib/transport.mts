@@ -1,3 +1,5 @@
+import { resolve } from "node:path";
+
 // Native Cursor transport only; workflow decisions stay in shared product hooks.
 const object = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === "object" && !Array.isArray(value);
@@ -50,14 +52,21 @@ export function cursorInput(
       shell: "Bash",
       run_terminal_cmd: "Bash",
       apply_patch: "apply_patch",
+      Delete: "Delete",
+      delete_file: "Delete",
     } as Record<string, string>;
     const input = { ...value.tool_input };
     if (!Object.hasOwn(input, "file_path") && text(input.path))
       input.file_path = input.path;
+    const tool = names[value.tool_name] ?? value.tool_name;
     return {
       ...base,
+      // A shell runs where its working_directory says; relative words resolve there.
+      ...(tool === "Bash" && text(input.working_directory)
+        ? { cwd: resolve(base.cwd, input.working_directory) }
+        : {}),
       hook_event_name: "PreToolUse",
-      tool_name: names[value.tool_name] ?? value.tool_name,
+      tool_name: tool,
       tool_input: input,
       ...(text(value.tool_use_id) ? { tool_use_id: value.tool_use_id } : {}),
     };
@@ -75,16 +84,29 @@ export function cursorInput(
   return null;
 }
 
+/** Text-less afterAgentResponse: the later stop carries the answer, so nothing is recorded now. */
+export const cursorIgnored = (value: unknown) =>
+  object(value) &&
+  value.hook_event_name === "afterAgentResponse" &&
+  !text(value.text);
+
+/** Schema-valid pass responses; inactive and failed launches answer with these too. */
+export function cursorPass(action: string): Record<string, unknown> {
+  if (action === "guard") return { permission: "allow" };
+  if (action === "prompt") return { continue: true };
+  return {};
+}
+
 export function cursorOutput(
   action: string,
   result: { status: number | null; stdout: string; stderr: string },
-) {
+): Record<string, unknown> {
   const reason = result.stderr.trim();
   if (result.status === 2) {
-    if (action === "guard") return { decision: "deny", reason };
+    if (action === "guard") return { permission: "deny", user_message: reason };
     if (action === "prompt") return { continue: false, user_message: reason };
   }
   if (action === "session" && result.status === 0 && result.stdout.trim())
     return { additional_context: result.stdout.trim() };
-  return {};
+  return cursorPass(action);
 }

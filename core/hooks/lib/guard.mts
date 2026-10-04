@@ -68,26 +68,34 @@ export const guardWrites: import("./runtime-contracts.mjs").GuardWrites =
     async function target(
       spelled: string,
       approves: (current: string | null) => boolean,
+      removal = false,
     ) {
-      for (const reading of readings(spelled)) await place(reading, approves);
+      for (const reading of readings(spelled))
+        await place(reading, approves, removal);
     }
 
+    /** A removal also refuses ancestors: the root, directories above it and above protected files. */
     async function place(
       spelled: string,
       approves: (current: string | null) => boolean,
+      removal: boolean,
     ) {
       const at = await ctx.locate(spelled, input.cwd);
       const shown = at.inside ?? spelled;
       if (at.kind === "unresolved" || at.links > 1) found.push(["link", shown]);
       const match =
         at.inside === null
-          ? scope.managed &&
-            split(spelled).some((part) => normalizeSegment(part) === ".vouch")
-            ? { area: "installation" as const, ancestor: false }
-            : null
+          ? removal && at.contains
+            ? { area: "audit" as const, ancestor: true }
+            : scope.managed &&
+                split(spelled).some(
+                  (part) => normalizeSegment(part) === ".vouch",
+                )
+              ? { area: "installation" as const, ancestor: false }
+              : null
           : classifySegments(split(at.inside), scope);
-      if (!match || match.ancestor) return;
-      if (match.area !== "artifact")
+      if (!match || (match.ancestor && !removal)) return;
+      if (match.area !== "artifact" || match.ancestor)
         return void found.push([match.area, shown]);
       let current: string | null = null;
       try {
@@ -117,6 +125,8 @@ export const guardWrites: import("./runtime-contracts.mjs").GuardWrites =
             : current.replace(old, () => next),
         );
       });
+    } else if (kind === "delete") {
+      await target(subject, () => false, true);
     } else if (kind === "patch") {
       for (const operation of parsePatch(subject)) {
         const adds = approvedLines(operation.added.join("\n"));
