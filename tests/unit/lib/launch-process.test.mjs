@@ -12,8 +12,8 @@ test("literal POSIX paths use fixed loader code with the entry and arguments kep
       t.assert.deepEqual(args, [entry, "doctor", "manual"]);
     else {
       t.assert.equal(args[0], "-e");
-      t.assert.match(args[1], /registerHooks/);
-      t.assert.equal(args[1].includes(entry), false);
+      t.assert.match(args[1] ?? "", /registerHooks/);
+      t.assert.equal((args[1] ?? "").includes(entry), false);
       t.assert.deepEqual(args.slice(2), [entry, "doctor", "manual"]);
     }
   }
