@@ -1,6 +1,7 @@
 import { execFileSync, spawnSync } from "node:child_process";
 import { cp } from "node:fs/promises";
 import { join } from "node:path";
+import { windowsShell } from "../../scripts/lib/powershell.mjs";
 import { hookTest as test } from "../helpers/hook-test.mjs";
 import { packageRun } from "../helpers/packaging.mjs";
 import { validator } from "../helpers/registry.mjs";
@@ -26,7 +27,7 @@ function invoke(harness, registered, root, payload) {
         ]
       : process.platform === "win32"
         ? [
-            "powershell.exe",
+            windowsShell(),
             [
               "-NoProfile",
               "-NonInteractive",

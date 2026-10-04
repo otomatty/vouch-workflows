@@ -5,6 +5,7 @@ import { pathToFileURL } from "node:url";
 import operations from "../../core/registry/operations.json" with {
   type: "json",
 };
+import { windowsShell } from "../../scripts/lib/powershell.mjs";
 import { assertGolden } from "../helpers/golden.mjs";
 import { hookTest as test } from "../helpers/hook-test.mjs";
 import { packageRun } from "../helpers/packaging.mjs";
@@ -28,7 +29,7 @@ test("copied Codex shell registration records from a nested directory and replay
     "2026-09-28T00:00:00.000Z",
   ]) {
     const result = spawnSync(
-      process.platform === "win32" ? "powershell.exe" : "/bin/sh",
+      process.platform === "win32" ? windowsShell() : "/bin/sh",
       process.platform === "win32"
         ? ["-NoProfile", "-NonInteractive", "-Command", command.commandWindows]
         : ["-c", command.command],

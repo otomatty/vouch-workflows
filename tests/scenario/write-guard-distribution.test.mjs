@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { cp } from "node:fs/promises";
 import guard from "../../core/registry/write-guard.json" with { type: "json" };
+import { windowsShell } from "../../scripts/lib/powershell.mjs";
 import { hookTest as test } from "../helpers/hook-test.mjs";
 import { packageRun, tree } from "../helpers/packaging.mjs";
 import { sandbox, sessionFor } from "../helpers/runtime.mjs";
@@ -33,7 +34,7 @@ function invoke(harness, registered, root, payload, env) {
         ]
       : windows
         ? [
-            "powershell.exe",
+            windowsShell(),
             [
               "-NoProfile",
               "-NonInteractive",
