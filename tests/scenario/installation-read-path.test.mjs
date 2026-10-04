@@ -5,6 +5,95 @@ import { commitChanges, readInside } from "../../scripts/lib/install-files.mjs";
 import { hookTest as test } from "../helpers/hook-test.mjs";
 import { sandbox } from "../helpers/runtime.mjs";
 
+test("a replacement uses freshly verified existing parents and creates only missing parents", async (t) => {
+  const box = await sandbox(t, { git: false });
+  await box.write("existing/file", "original");
+  const original = fs.mkdirSync;
+  /** @type {string[]} */ const directories = [];
+  const mocked = t.mock.method(
+    fs,
+    "mkdirSync",
+    (
+      /** @type {import('node:fs').PathLike} */ path,
+      /** @type {import('node:fs').MakeDirectoryOptions|import('node:fs').Mode|null|undefined} */ options = undefined,
+    ) => {
+      directories.push(String(path));
+      return Reflect.apply(original, fs, [path, options]);
+    },
+  );
+  syncBuiltinESMExports();
+  try {
+    commitChanges([
+      {
+        path: box.path("existing/file"),
+        before: "original",
+        after: "new bytes",
+      },
+    ]);
+    t.assert.equal(await box.read("existing/file"), "new bytes");
+    t.assert.deepEqual(directories, []);
+    commitChanges([
+      {
+        path: box.path("new/deeper/file"),
+        before: null,
+        after: "created bytes",
+      },
+    ]);
+    t.assert.equal(await box.read("new/deeper/file"), "created bytes");
+    t.assert.deepEqual(directories, [box.path("new/deeper")]);
+  } finally {
+    mocked.mock.restore();
+    syncBuiltinESMExports();
+  }
+});
+
+test("successful rename retains a temporary path reused by another writer while a failed rename cleans its own temporary", async (t) => {
+  const box = await sandbox(t, { git: false });
+  await box.write("file", "original");
+  const temporary = box.path(`file.vouch-install-${process.pid}`);
+  const original = fs.renameSync;
+  let fail = false;
+  const failure = new Error("rename denied");
+  const mocked = t.mock.method(
+    fs,
+    "renameSync",
+    (
+      /** @type {import('node:fs').PathLike} */ from,
+      /** @type {import('node:fs').PathLike} */ to,
+    ) => {
+      if (fail) throw failure;
+      original(from, to);
+      fs.writeFileSync(from, "other writer's bytes", { flag: "wx" });
+    },
+  );
+  syncBuiltinESMExports();
+  try {
+    commitChanges([
+      { path: box.path("file"), before: "original", after: "new bytes" },
+    ]);
+    t.assert.equal(await box.read("file"), "new bytes");
+    t.assert.equal(fs.readFileSync(temporary, "utf8"), "other writer's bytes");
+    fs.rmSync(temporary);
+    fail = true;
+    t.assert.throws(
+      () =>
+        commitChanges([
+          {
+            path: box.path("file"),
+            before: "new bytes",
+            after: "failed bytes",
+          },
+        ]),
+      (error) => error === failure,
+    );
+    t.assert.equal(await box.read("file"), "new bytes");
+    t.assert.equal(fs.existsSync(temporary), false);
+  } finally {
+    mocked.mock.restore();
+    syncBuiltinESMExports();
+  }
+});
+
 test("a guarded installer read inspects the target once per operation without caching", async (t) => {
   const box = await sandbox(t, { git: false });
   await box.write("directory/file", "original");
