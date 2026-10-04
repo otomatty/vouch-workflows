@@ -2,7 +2,7 @@ import { mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 import { pathToFileURL } from "node:url";
-import { registration as generatedRegistration } from "../../../core/hooks/lib/installation-registration.mjs";
+import { registration as generatedRegistration } from "../../../core/hooks/lib/installation-ownership.mjs";
 import {
   distributionDigest,
   runtimeContents,

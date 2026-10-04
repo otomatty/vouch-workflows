@@ -1,4 +1,4 @@
-import { activationGuidance } from "../../core/hooks/lib/installation-contributions.mjs";
+import { activationGuidance } from "../../core/hooks/lib/installation-activation.mjs";
 import { block } from "../../core/hooks/lib/installation-ownership.mjs";
 /** Complete activation fixtures for the three native layouts.
  * @param {'claude'|'codex'|'cursor'} harness @param {string} [referenceRoot] */

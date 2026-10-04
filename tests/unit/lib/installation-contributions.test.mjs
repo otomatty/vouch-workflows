@@ -4,13 +4,13 @@ import {
   activationFiles,
   activationGuidance,
   verifyActivationContents,
-} from "../../../core/hooks/lib/installation-contributions.mjs";
-import { block } from "../../../core/hooks/lib/installation-ownership.mjs";
+} from "../../../core/hooks/lib/installation-activation.mjs";
 import {
+  block,
   registration,
   registrationPath,
   skillsDirectory,
-} from "../../../core/hooks/lib/installation-registration.mjs";
+} from "../../../core/hooks/lib/installation-ownership.mjs";
 import { enableCodex } from "../../../core/hooks/lib/installation-toml.mjs";
 
 /** @param {string} harness @param {string} scope */

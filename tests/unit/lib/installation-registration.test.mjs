@@ -5,7 +5,7 @@ import {
   registration,
   registrationPath,
   skillsDirectory,
-} from "../../../core/hooks/lib/installation-registration.mjs";
+} from "../../../core/hooks/lib/installation-ownership.mjs";
 
 test("native registrations keep each harness's event names, actions and project arguments", (t) => {
   const project = resolve("project");

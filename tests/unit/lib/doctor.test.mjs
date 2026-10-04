@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import { inspectInstallation } from "../../../core/hooks/lib/doctor.mjs";
-import { registration } from "../../../core/hooks/lib/installation-registration.mjs";
+import { registration } from "../../../core/hooks/lib/installation-ownership.mjs";
 import {
   distributionDigest,
   runtimeContents,

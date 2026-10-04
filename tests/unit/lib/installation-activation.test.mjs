@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
 import { test } from "node:test";
 import { verifyManagedActivation } from "../../../core/hooks/lib/installation-activation.mjs";
-import { registration as generatedRegistration } from "../../../core/hooks/lib/installation-registration.mjs";
+import { registration as generatedRegistration } from "../../../core/hooks/lib/installation-ownership.mjs";
 import {
   distributionDigest,
   runtimeContents,
