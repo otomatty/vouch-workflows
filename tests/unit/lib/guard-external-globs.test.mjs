@@ -81,6 +81,38 @@ for (const harness of /** @type {const} */ (["claude", "codex", "cursor"]))
         `${command}: ${JSON.stringify(result)}`,
       );
     }
+    for (const prefix of [
+      "$HOME",
+      `\${HOME}`,
+      "$env:USERPROFILE",
+      "%USERPROFILE%",
+      "~",
+    ])
+      for (const suffix of [
+        `.${harness}/${names[0]}`,
+        `.vouch/versions/hash/${harness}/hooks/kept.mjs`,
+      ]) {
+        const command = `rm "${prefix}/${suffix}"`;
+        for (const cwd of [box.path("home"), "/outside"])
+          for (const text of [command, `cd "${cwd}" && ${command}`]) {
+            const result = await guardWrites(
+              {
+                session_id: "test",
+                cwd,
+                hook_event_name: "PreToolUse",
+                tool_name: "Bash",
+                tool_input: { command: text },
+              },
+              ctx,
+              entry,
+            );
+            t.assert.equal(result.decision, "deny", `${cwd}: ${text}`);
+            if (result.decision === "deny")
+              t.assert.match(result.reason, /^VOUCH-GUARD-INSTALLATION:/);
+          }
+        const read = await decide(`cd "${home}" && cat "${prefix}/${suffix}"`);
+        t.assert.equal(read.decision, "allow");
+      }
     for (const name of names)
       t.assert.equal(
         await box.read(`home/.${harness}/${name}`),
