@@ -1,5 +1,5 @@
 import * as phases from "../../scripts/lib/test-phases.mjs";
-import { testPhases } from "../../scripts/lib/test-phases.mjs";
+import { selectTests, testPhases } from "../../scripts/lib/test-phases.mjs";
 import { hookTest as test } from "../helpers/hook-test.mjs";
 
 const hooks = (/** @type {string} */ name) => `/repo/tests/hooks/${name}`;
@@ -171,4 +171,59 @@ test("unit and hook selections retain their original coverage and measurement gr
     const selected = [{ suite, files: [`/repo/tests/${suite}/io.test.mjs`] }];
     t.assert.deepEqual(phases.testGroups(selected), selected);
   }
+});
+
+test("a shared ordinary pool preserves every file, unit coverage, cold probes and separate performance", (t) => {
+  const catalog = [
+    { suite: "content", files: ["/repo/tests/content/one.test.mjs"] },
+    {
+      suite: "packaging",
+      files: [
+        "/repo/tests/packaging/native-environment.test.mjs",
+        "/repo/tests/packaging/claude.test.mjs",
+      ],
+    },
+    { suite: "unit", files: ["/repo/tests/unit/clock-performance.test.mjs"] },
+    { suite: "scenario", files: ["/repo/tests/scenario/install.test.mjs"] },
+    {
+      suite: "hooks",
+      files: [hooks("cursor.test.mjs"), hooks("record-performance.test.mjs")],
+    },
+  ];
+  const ordinary = phases.testGroups(selectTests("ordinary", catalog), true);
+  const integration = ordinary.find(({ suite }) => suite === "integration");
+  t.assert.deepEqual(integration?.files, [
+    catalog[1]?.files[1],
+    catalog[3]?.files[0],
+    catalog[4]?.files[0],
+  ]);
+  t.assert.deepEqual(
+    testPhases("integration", integration?.files ?? [], 4).map(
+      ({ concurrency, budget }) => ({ concurrency, budget }),
+    ),
+    [{ concurrency: 4, budget: false }],
+  );
+  t.assert.deepEqual(
+    ordinary.find(({ suite }) => suite === "unit"),
+    catalog[2],
+  );
+  t.assert.deepEqual(
+    ordinary.find(({ suite }) => suite === "packaging")?.files,
+    [catalog[1]?.files[0]],
+  );
+  const performance = phases.testGroups(selectTests("performance", catalog));
+  t.assert.deepEqual(performance, [
+    { suite: "hooks", files: [catalog[4]?.files[1]] },
+  ]);
+  const complete = [...ordinary, ...performance].flatMap(({ files }) => files);
+  t.assert.deepEqual(
+    complete.sort(),
+    catalog.flatMap(({ files }) => files).sort(),
+  );
+  t.assert.equal(new Set(complete).size, complete.length);
+  t.assert.deepEqual(selectTests("unit", catalog), [catalog[2]]);
+  t.assert.deepEqual(selectTests("hooks", catalog), [catalog[4]]);
+  t.assert.deepEqual(selectTests("checks", catalog), catalog.slice(0, 4));
+  t.assert.deepEqual(selectTests(undefined, catalog), catalog);
+  t.assert.throws(() => selectTests("unknown", catalog), /Unknown suite/);
 });

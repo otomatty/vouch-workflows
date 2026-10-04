@@ -26,6 +26,7 @@ test("hooks, scenario and distribution files get the file limit while other tier
   t.assert.equal(testTimeoutFor("hooks", timing), 70);
   t.assert.equal(testTimeoutFor("scenario", timing), 70);
   t.assert.equal(testTimeoutFor("distribution", timing), 70);
+  t.assert.equal(testTimeoutFor("integration", timing), 70);
   for (const suite of ["checks", "packaging", "unit"])
     t.assert.equal(testTimeoutFor(suite, timing), 5, suite);
 });
