@@ -21,7 +21,13 @@ group(
       t,
     );
     for (const scope of ["project", "user"])
-      for (const quote of ['"""', "'''", "array"])
+      for (const quote of [
+        '"""',
+        "'''",
+        "array",
+        "features-table",
+        "agents-table",
+      ])
         await test(
           `${scope}: reject the ${quote} multiline instruction`,
           async (t) => {
@@ -29,9 +35,11 @@ group(
             const original = await box.read(path);
             await box.write(
               path,
-              quote === "array"
-                ? "[features]\nflags = [\n  [true, false],\n]\nhooks = false\n"
-                : `developer_instructions = ${quote}\n[features]\nhooks = true\n[agents]\nmax_depth = 3\n${quote}\n`,
+              quote.endsWith("-table")
+                ? `[[${quote.slice(0, -6)}]]\ncustom = true\n`
+                : quote === "array"
+                  ? "[features]\nflags = [\n  [true, false],\n]\nhooks = false\n"
+                  : `developer_instructions = ${quote}\n[features]\nhooks = true\n[agents]\nmax_depth = 3\n${quote}\n`,
             );
             try {
               const project = tree(box.path("project"));

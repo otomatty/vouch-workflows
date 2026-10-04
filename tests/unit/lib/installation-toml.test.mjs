@@ -7,6 +7,14 @@ import {
 
 const owned = { path: "owned", kind: "toml", content: "", previous: null };
 
+test("Codex cannot redefine an array of feature or agent tables as a normal table", (t) => {
+  for (const section of ["features", "agents"])
+    for (const name of [section, `"${section}"`, `'${section}'`]) {
+      const text = `[[ ${name} ]] # existing array table\ncustom = true\n`;
+      t.assert.throws(() => enableCodex(text), /INSTALL-CONFIG/);
+    }
+});
+
 test("Codex rejects multiline nested arrays before creating duplicate keys and preserves inline arrays", (t) => {
   for (const text of [
     "[features]\nflags = [\n  [true, false],\n]\nhooks = false\n",
