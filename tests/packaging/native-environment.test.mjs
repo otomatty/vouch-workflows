@@ -12,6 +12,47 @@ const scope = {
   intent: "260928-native-review",
 };
 
+test("native probe failures preserve the original startup error and the last completed stage", (t) => {
+  const failure = Object.assign(new Error("spawn timed out"), {
+    code: "ETIMEDOUT",
+  });
+  for (const { stderr, stage } of [
+    { stderr: "", stage: "shell startup" },
+    { stderr: "VOUCH-PROBE: shell-ready\n", stage: "node lookup or execution" },
+    {
+      stderr: "VOUCH-PROBE: shell-ready\nVOUCH-PROBE: node-finished\n",
+      stage: "shell shutdown",
+    },
+  ]) {
+    const mock = t.mock.method(childProcess, "spawnSync", () => ({
+      error: failure,
+      status: null,
+      stdout: "",
+      stderr,
+    }));
+    syncBuiltinESMExports();
+    try {
+      t.assert.throws(
+        () => probeNode({ PATH: "/unused" }),
+        (error) => {
+          t.assert.equal(error instanceof Error, true);
+          const captured = /** @type {Error} */ (error);
+          t.assert.equal(captured.cause, failure);
+          t.assert.equal(captured.message.includes(stage), true);
+          t.assert.match(
+            captured.message,
+            /NATIVE-NODE.*ETIMEDOUT.*\d+\.\d+ ms/,
+          );
+          return true;
+        },
+      );
+    } finally {
+      mock.mock.restore();
+      syncBuiltinESMExports();
+    }
+  }
+});
+
 test("isolated Windows environment preserves executable lookup without inheriting credentials", (t) => {
   const source = {
     pAtH: "C:/node;C:/Windows",
@@ -118,3 +159,6 @@ test("node preflight rejects a shell that cannot resolve node before the probe t
   const elapsed = performance.now() - started;
   t.assert.equal(elapsed < 4000, true, `${elapsed.toFixed(1)} ms`);
 });
+
+import childProcess from "node:child_process";
+import { syncBuiltinESMExports } from "node:module";
