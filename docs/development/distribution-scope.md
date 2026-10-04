@@ -1,6 +1,6 @@
 # 導入範囲と対応ツール
 
-2026-10-03、所有者が共通本体の個人共通・プロジェクト単位の導入と、Claude Code・Codex CLI・Cursor の3ツールを対象にする方針を決定した。本書は、決定記録 §15 のプロジェクト内配置と2ハーネスを前提とした範囲に優先する。元仕様は当時の記録として保持する。ステージ、承認、監査、品質、実行時依存の既存契約は引き続き参照する。
+2026-10-03、所有者が共通本体の個人共通・プロジェクト単位の導入と、Claude Code・Codex CLI・Cursor の3ツールを対象にする方針を決定した。本書は、決定記録 §15 のプロジェクト内配置と2ハーネスを前提とした範囲に優先する。元仕様は当時の記録として保持する。ステージ、承認、監査、品質、実行時依存の既存契約は引き続き参照する。2026-10-04 の[設計見直し](distribution-scope-review.md)の決定（D1〜D9）を本書に反映した。
 
 ## 確定した対象と導入範囲
 
@@ -22,7 +22,7 @@
 - プロジェクトが指定した本体・版を優先する。Skills、エージェント、レジストリ、フックは同じ版の組として選び、各ツールの同名 Skill の探索順だけに版選択を任せない。
 - 本体の導入とプロジェクトでの有効化を分離する。個人共通の導入は全リポジトリから利用可能にするためのもので、各プロジェクトへの適用は設定または明示呼び出しで決める。
 - 既存のツール設定と `AGENTS.md` を保持できる導入・更新・削除方式を定める。Vouch が管理する項目を識別し、既存ファイル全体の上書きを導入手順にしない。
-- 個人共通とプロジェクトの登録が共存する場合も、同じ操作のフックを二重に実行・記録しない。doctor は選択した本体・版・導入範囲と登録の重複を診断する。
+- フックは `init` または `install --scope project` が書くプロジェクトの登録だけから起動し、同じ操作を二重に実行・記録しない。個人共通の導入はユーザー単位のフックを登録しない。doctor は選択した本体・版・導入範囲と登録を診断する。
 - 共通の判断・検査・監査処理を `core/` に置き、ツールごとのイベント名、入力形式、遮断の返し方、登録形式は接続部分で扱う。対応数を増やしても、ワークフローの判断処理をツールごとに複製しない。
 
 具体的な配置と操作は下記の導入コマンドの契約に従う。従来の `dist/claude/`・`dist/codex/` の直接配置も保持し、新しい導入方式はランチャーを通す。
@@ -63,9 +63,9 @@ Cursor の公式 [プラグイン仕様](https://github.com/cursor/plugins/blob/
 
 本体は導入先の `.vouch/versions/<配布の digest>/<harness>/` に置く。配布の digest はファイル名とバイトから求め、既存の版を上書きしない。導入記録は `.vouch/installations/<harness>.json`、プロジェクトの有効化は `vouch/config.json` に記録する。プロジェクト内の本体は root 相対、個人共通の本体は絶対パスで指定する。`init` は既存のプロジェクト本体を個人共通の本体より優先する。
 
-ネイティブの Skills・エージェント・フックはツールの探索先に登録する。設定の他の項目と無関係なフックを維持し、所有するフックだけを置換・削除する。`AGENTS.md` / `CLAUDE.md` への追加は Vouch のマーカー付きブロックとし、削除時はそのブロックだけを除く。Cursor の `.cursor/rules/vouch.mdc` は所有する専用ファイルとして生成し、既存の同名ファイルとは衝突として扱う。管理対象のファイルが導入後に変更されていた場合は更新・削除を拒否し、変更を上書きしない。事前検査で衝突を確認してから変更し、変更中の失敗では元に戻す。
+ネイティブの Skills・エージェントはツールの探索先に、フックはプロジェクトの登録ファイルに登録する。設定の他の項目と無関係なフックを維持し、所有するフックだけを置換・削除する。インストーラが作成・編集・復元するのは、設計見直し D4 の固定の一覧にあるパスだけとする。導入記録の `owned` は読み込む時にこの一覧で検証し、一覧の外を指す記録は拒否する。`AGENTS.md` / `CLAUDE.md` への追加は Vouch のマーカー付きブロックとし、削除時はそのブロックだけを除く。Cursor の `.cursor/rules/vouch.mdc` は所有する専用ファイルとして生成し、既存の同名ファイルとは衝突として扱う。管理対象のファイルが導入後に変更されていた場合は更新・削除を拒否し、変更を上書きしない。事前検査で衝突を確認してから変更し、変更中の失敗では元に戻す。
 
-個人共通とプロジェクトのフックが共存する場合、プロジェクト登録を優先する。個人共通のフックは、有効化していないプロジェクトでは記録・ガードを行わない。ランチャーは本体と対象プロジェクトを分離し、既存の製品フックに検証済みの root と Intent を渡す。手動の doctor / DoD / lifecycle / question / migrate / report も同じ対象を使う。
+ランチャーは本体と対象プロジェクトを分離し、既存の製品フックに検証済みの root と Intent を渡す。手動の doctor / DoD / lifecycle / question / migrate / report も同じ対象を使う。ランチャーは自分自身の本体のコードだけを実行し、設定が別の本体を指す場合は実行せずに終える。本体とプロジェクトのパスは realpath で比べる。
 
 Cursor の接続ではネイティブの JSON 入出力と共通フックの入力・結果を変換する。ネイティブのイベント名・ツール名を共通処理に混入させず、監査の harness は `cursor` として区別する。確認・承認の入力識別子は Cursor が渡す `generation_id` を使い、欠損時には生成して補わない。採取できていない入力は synthetic として検査し、実機で確認したとは報告しない。
 
@@ -73,9 +73,9 @@ Cursor の接続ではネイティブの JSON 入出力と共通フックの入�
 
 | 対象 | 個人共通の接続先 | プロジェクトの接続先 |
 | --- | --- | --- |
-| Claude Code | `<home>/.claude/skills/`・`agents/`・`settings.json` | `.claude/skills/`・`agents/`・`settings.json`、`CLAUDE.md` |
-| Codex CLI | `<home>/.agents/skills/`、`<home>/.codex/agents/`・`hooks.json`・`config.toml` | `.agents/skills/`、`.codex/agents/`・`hooks.json`・`config.toml` |
-| Cursor | `<home>/.cursor/skills/`・`agents/`・`hooks.json` | `.cursor/skills/`・`agents/`・`hooks.json`、`.cursor/rules/vouch.mdc` |
+| Claude Code | `<home>/.claude/skills/`・`agents/` | `.claude/skills/`・`agents/`・`settings.json`、`CLAUDE.md` |
+| Codex CLI | `<home>/.agents/skills/`、`<home>/.codex/agents/` | `.agents/skills/`、`.codex/agents/`・`hooks.json`・`config.toml` |
+| Cursor | `<home>/.cursor/skills/`・`agents/` | `.cursor/skills/`・`agents/`・`hooks.json`、`.cursor/rules/vouch.mdc` |
 
 個人共通の本体を使うプロジェクトにも、その版の Skills・エージェントとプロジェクト用フックを接続する。プロジェクトで選ぶ版の組を固定し、ツールの探索順やグローバル側の更新で組が混ざらないようにする。本体のコード・レジストリ・テンプレートは個人共通に残し、規則・知識・監査をそこへ書かない。
 
@@ -83,10 +83,10 @@ Cursor の接続ではネイティブの JSON 入出力と共通フックの入�
 
 `remove --scope project` はプロジェクト本体の登録、または個人共通本体へのプロジェクト接続を解除する。`remove --scope user` は個人共通の登録と明示した対象プロジェクトの接続を解除し、他のプロジェクトには適用しない。どちらも版のディレクトリ、規則、知識、成果物、監査を保持する。未使用版の清掃は実装していない。
 
-`doctor` は選択した配置・digest、所有する登録と文書、配布の原本と本体の一致を検査する。Skill の doctor も、本体を別の FileStore で読み、実際のプロジェクト登録の不足・重複を検査する。どちらもハーネスの信頼設定やモデルの遵守を証明しない。Codex の既存モデル・プロバイダー・sandbox と正の `agents.max_depth` は保持し、必要な `features.hooks` だけを有効化する。対象テーブルのインライン・ドット形式など安全に追加できない TOML は、変更前に拒否する。
+`doctor` は選択した配置・digest、所有する登録と文書、配布の原本と本体の一致を検査する。Skill の doctor も、本体を別の FileStore で読み、実際のプロジェクト登録の不足・重複を検査する。どちらもハーネスの信頼設定やモデルの遵守を証明しない。Codex のプロジェクトの `.codex/config.toml` は、なければ所有ファイルとして作る。あれば `[features]`・`[agents]` がどの形でも定義されていない時だけマーカー付きのブロックを末尾に追記し、既にある表の中の値は編集せずに追記する行を示して中止する。`sandbox_mode` は書かず、TOML の構文は検証しない。ユーザー単位の `config.toml` は編集しない。
 
-ネイティブの本体参照と明示プロジェクト引数は Claude の `CLAUDE_PROJECT_DIR`、Codex の `VOUCH_PROJECT_ROOT`、Cursor の `CURSOR_PROJECT_DIR` を使う。Codex の起動時は対象ルートを `VOUCH_PROJECT_ROOT` に設定する。手動コマンドはプロジェクトルートから実行する。`VOUCH_INTENT` があればそれを優先し、なければ `init` / `install` の `--intent` で保存した設定を使う。stdin の root・Intent・harness の主張から使用先を選ばない。
+生成するコマンドは素の `node` で始め、パスを二重引用符で囲み、シェルの環境変数の展開を使わない。Claude のプロジェクト登録だけは、ハーネスが展開する `${CLAUDE_PROJECT_DIR}` の `args` 形式を使う。Codex・Cursor のプロジェクト単位のフックと、全ハーネスのプロジェクト単位の手動コマンドは、カレントディレクトリから上へランチャーを探す `node -e` の起動式を使う。導入先のパスに `"`・`$`・`` ` ``・`%`・`<`・`>`・改行、Windows 以外でバックスラッシュを含む場合は導入を拒否する。プロジェクト単位の本体はプロジェクトのルートを自分の位置から導き、個人共通の本体はカレントディレクトリから上へ `vouch/config.json` を探す。Intent は `init` / `install` の `--intent` で保存した設定だけを使い、`VOUCH_INTENT` で上書きしない。stdin の root・Intent・harness の主張から使用先を選ばない。
 
-Cursor には `sessionStart`・`beforeSubmitPrompt`・`preToolUse`・`afterAgentResponse`・`stop` を登録する。入力の `conversation_id` / `generation_id` を共通入力へ写し、ツール名とパス名を変換する。共通の拒否を `decision: deny` または `continue: false` へ、再開要約を `additional_context` へ変換する。回答の `text` は脇質問の回答として記録し、後続の stop では重複追記しない。未知・欠損の入力と内部エラーは既存契約どおり fail-open にし、取得できない測定値や入力識別子を補わない。全ツール・全経路を機械的に強制する境界ではない。
+Cursor には `sessionStart`・`beforeSubmitPrompt`・`preToolUse`・`afterAgentResponse`・`stop` を登録する。入力の `conversation_id` / `generation_id` を共通入力へ写し、ツール名とパス名を変換する。`Delete` はファイルの削除として、Shell の `working_directory` は相対パスの基点として扱う。preToolUse は `permission: allow` / `deny`（理由は `user_message`）、beforeSubmitPrompt は `continue: true` / `false` を返し、未有効化・入力不正・内部エラーを含む全経路でスキーマに合う応答を返す。再開要約は `additional_context` へ変換する。本文のある回答の `text` だけを脇質問の回答として記録し、後続の stop では重複追記しない。未知・欠損の入力と内部エラーは既存契約どおり fail-open にし、取得できない測定値や入力識別子を補わない。全ツール・全経路を機械的に強制する境界ではない。
 
 実機検証にはツールの実行ファイル・版・信頼設定と fixture の採取が必要で、この環境では Cursor の実行ファイルがない。新方式の Claude / Codex の実発火も今回の自動テストでは確認していない。正式対応の判定は引き続き上記の検証を条件とする。
