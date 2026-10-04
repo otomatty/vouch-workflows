@@ -1,4 +1,11 @@
-import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import {
+  basename,
+  dirname,
+  isAbsolute,
+  join,
+  relative,
+  resolve,
+} from "node:path";
 import { fileURLToPath } from "node:url";
 import { readLaunchEnvironment } from "./env.mjs";
 import { createFileStore, descriptorWriter, readDescriptor } from "./fs.mjs";
@@ -70,13 +77,17 @@ export async function launch(entryUrl, ports) {
     if (!product || !["manual", "project", "user"].includes(scope))
       throw new Error("INSTALL-ARGS: unknown launcher operation or scope");
     const runtimeRoot = resolve(dirname(fileURLToPath(entryUrl)), "..");
+    const locatedHarness = basename(runtimeRoot).replace(/^\./, "");
+    if (["claude", "codex", "cursor"].includes(locatedHarness))
+      harness = locatedHarness;
     const runtime = await createFileStore(runtimeRoot);
     /** @type {unknown} */ const descriptor = JSON.parse(
       (await runtime.readText("registry/installation.json")) ?? "null",
     );
     if (
       !object(descriptor) ||
-      !["claude", "codex", "cursor"].includes(String(descriptor.harness))
+      !["claude", "codex", "cursor"].includes(String(descriptor.harness)) ||
+      (harness !== "" && descriptor.harness !== harness)
     )
       throw new Error("INSTALL-RUNTIME: invalid runtime descriptor");
     harness = /** @type {string} */ (descriptor.harness);

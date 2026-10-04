@@ -78,12 +78,7 @@ export async function guardWrites(input, ctx, entry) {
     if (at.kind === "unresolved" || at.links > 1) found.push(["link", shown]);
     const match =
       externalRuntimeMatch(at, scope) ??
-      (at.inside === null
-        ? scope.managed &&
-          split(spelled).some((part) => normalizeSegment(part) === ".vouch")
-          ? { area: /** @type {const} */ ("installation"), ancestor: false }
-          : null
-        : classifySegments(split(at.inside), scope));
+      (at.inside === null ? null : classifySegments(split(at.inside), scope));
     if (!match || (match.ancestor && kind !== "delete")) return;
     if (match.area !== "artifact") return void found.push([match.area, shown]);
     /** @type {string|null} */ let current = null;
@@ -236,10 +231,12 @@ export async function guardWrites(input, ctx, entry) {
    * @returns {Promise<[Reason,string,boolean][]>} */
   async function named(word, cwd, seen) {
     /** @type {[Reason,string,boolean][]} */ const result = [];
+    let external = false;
     if (cwd !== null || isAbsolute(word)) {
       const key = `${cwd}\0${word}`;
       const at = seen.get(key) ?? (await ctx.locate(word, cwd ?? input.cwd));
       seen.set(key, at);
+      external = Boolean(at.outside);
       const shown = at.inside ?? word;
       if (at.kind === "unresolved" || at.links > 1)
         result.push(["link", shown, false]);
@@ -254,8 +251,10 @@ export async function guardWrites(input, ctx, entry) {
       if (match) result.push([match.area, shown, match.ancestor]);
     }
     const parts = split(word);
+    const lexical =
+      external && scope.managed ? { installation: null, installed: [] } : scope;
     for (let i = 0; i < parts.length; i++) {
-      const match = classifySegments(parts.slice(i), scope);
+      const match = classifySegments(parts.slice(i), lexical);
       if (match && !match.ancestor) result.push([match.area, word, false]);
     }
     const tail = parts.slice(-2).map(normalizeSegment).join("/");
