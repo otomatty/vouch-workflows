@@ -395,7 +395,8 @@ export function diagnose(options) {
     throw new Error("INSTALL-VERSION: active and installed versions differ");
   if (
     runtimeRoot !==
-    inside(root, `.vouch/versions/${state.digest}/${options.harness}`)
+      inside(root, `.vouch/versions/${state.digest}/${options.harness}`) ||
+    runtimeRoot !== inside(root, state.runtimeRoot)
   )
     throw new Error("INSTALL-VERSION: runtime path differs");
   plan(options.project, state); // Read-only validation of the active project's registration and documents.
