@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { hookTest as test } from "../helpers/hook-test.mjs";
 import { intent, reviewBox } from "../helpers/intent-review.mjs";
 import {
@@ -38,7 +39,7 @@ registerHooks({ resolve(specifier, context, next) {
       process.execPath,
       [
         "--import",
-        box.path("reject-launcher.mjs"),
+        pathToFileURL(box.path("reject-launcher.mjs")).href,
         resolve(`core/hooks/${hook}.mjs`),
       ],
       {
