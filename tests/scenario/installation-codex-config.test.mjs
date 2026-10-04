@@ -1,4 +1,5 @@
 import { test as group } from "node:test";
+import { install } from "../../scripts/lib/install.mjs";
 import { hookTest as test } from "../helpers/hook-test.mjs";
 import { distribution, installRun } from "../helpers/install.mjs";
 import { tree } from "../helpers/packaging.mjs";
@@ -62,9 +63,27 @@ group(
             try {
               const project = tree(box.path("project"));
               const home = tree(box.path("home"));
-              const result = installRun("install", box, "codex", scope);
-              t.assert.equal(result.status, 2, result.stdout + result.stderr);
-              t.assert.match(result.stdout, /INSTALL-CONFIG/);
+              if (quote === '"""' || quote === "unfinished-array-eof") {
+                const result = installRun("install", box, "codex", scope);
+                t.assert.equal(result.status, 2, result.stdout + result.stderr);
+                t.assert.match(result.stdout, /INSTALL-CONFIG/);
+              } else {
+                t.assert.throws(
+                  () =>
+                    install(
+                      {
+                        harness: "codex",
+                        scope,
+                        home: box.path("home"),
+                        project: box.path("project"),
+                        projectExplicit: true,
+                        dist: box.path("dist"),
+                      },
+                      "install",
+                    ),
+                  /INSTALL-CONFIG/,
+                );
+              }
               t.assert.deepEqual(tree(box.path("project")), project);
               t.assert.deepEqual(tree(box.path("home")), home);
             } finally {

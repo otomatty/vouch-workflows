@@ -33,12 +33,19 @@ export async function managedDoctor(t) {
   const digest = distributionDigest(source);
   const prefix = `.vouch/versions/${digest}/cursor`;
   const runtimeRoot = box.path(prefix);
-  for (const [path, text] of Object.entries(
-    runtimeContents(source, "cursor", prefix),
-  ))
-    await box.write(`${prefix}/${path}`, text);
-  for (const [path, text] of Object.entries(source))
-    await box.write(`${prefix}/distribution/${path}`, text);
+  const prepared = [
+    ...Object.entries(runtimeContents(source, "cursor", prefix)).map(
+      ([path, text]) => ({ path: `${prefix}/${path}`, text }),
+    ),
+    ...Object.entries(source).map(([path, text]) => ({
+      path: `${prefix}/distribution/${path}`,
+      text,
+    })),
+  ];
+  for (let at = 0; at < prepared.length; at += 4)
+    await Promise.all(
+      prepared.slice(at, at + 4).map(({ path, text }) => box.write(path, text)),
+    );
   await box.write(`${prefix}/hooks.json`, JSON.stringify(expected));
   activationOwned = managedOwned("cursor", prefix);
   const active = JSON.parse(
