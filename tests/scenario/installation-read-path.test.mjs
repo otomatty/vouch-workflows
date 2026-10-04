@@ -46,24 +46,38 @@ for (const ancestor of [false, true])
     const box = await sandbox(t, { git: false });
     await box.write("parent/source/a", "original a");
     await box.write("parent/source/b", "original b");
+    await box.write("outside/source/a", "outside bytes");
     await box.write("outside/source/b", "outside bytes");
     const original = fs.readFileSync;
     let replaced = false;
     const mocked = t.mock.method(
       fs,
       "readFileSync",
-      (.../** @type {Parameters<typeof fs.readFileSync>} */ args) => {
-        const result = Reflect.apply(original, fs, args);
-        if (!replaced && String(args[0]) === box.path("parent/source/a")) {
+      (
+        /** @type {import('node:fs').PathOrFileDescriptor} */ path,
+        /** @type {Parameters<typeof fs.readFileSync>[1]} */ options = undefined,
+      ) => {
+        const result = Reflect.apply(original, fs, [path, options]);
+        if (
+          !replaced &&
+          [box.path("parent/source/a"), box.path("parent/source/b")].includes(
+            String(path),
+          )
+        ) {
           replaced = true;
+          const other =
+            String(path) === box.path("parent/source/a") ? "b" : "a";
           if (ancestor) {
             fs.renameSync(box.path("parent"), box.path("saved-parent"));
             fs.symlinkSync(box.path("outside"), box.path("parent"), "junction");
           } else {
-            fs.renameSync(box.path("parent/source/b"), box.path("saved-b"));
+            fs.renameSync(
+              box.path(`parent/source/${other}`),
+              box.path("saved-b"),
+            );
             fs.symlinkSync(
-              box.path("outside/source/b"),
-              box.path("parent/source/b"),
+              box.path(`outside/source/${other}`),
+              box.path(`parent/source/${other}`),
             );
           }
         }
@@ -80,6 +94,24 @@ for (const ancestor of [false, true])
       syncBuiltinESMExports();
     }
   });
+
+test("tree reads reject hard links and retain strict UTF-8 byte validation", async (t) => {
+  const box = await sandbox(t, { git: false });
+  await box.write("outside", "outside bytes");
+  await box.write("source/file", "original");
+  fs.rmSync(box.path("source/file"));
+  fs.linkSync(box.path("outside"), box.path("source/file"));
+  t.assert.throws(() => files(box.path("source")), /INSTALL-LINK/);
+  t.assert.equal(await box.read("outside"), "outside bytes");
+  fs.rmSync(box.path("source/file"));
+  fs.writeFileSync(box.path("source/file"), Buffer.from([0xff]));
+  t.assert.throws(() => files(box.path("source")), TypeError);
+  fs.writeFileSync(
+    box.path("source/file"),
+    Buffer.from([0xef, 0xbb, 0xbf, 0x61]),
+  );
+  t.assert.throws(() => files(box.path("source")), /INSTALL-ENCODING/);
+});
 
 test("a replacement uses freshly verified existing parents and creates only missing parents", async (t) => {
   const box = await sandbox(t, { git: false });

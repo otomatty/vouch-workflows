@@ -24,6 +24,15 @@ test("Codex removal deletes owned empty table headers while preserving existing 
   );
   t.assert.doesNotMatch(populated ?? "", /\[features\]/);
   t.assert.match(populated ?? "", /\[agents\][\s\S]*user_setting = true/);
+  t.assert.throws(
+    () =>
+      removeCodex(
+        created.text.replace("[features]", '["features"]'),
+        created.content,
+        null,
+      ),
+    /INSTALL-CONFLICT/,
+  );
   const before = "[features]\n# preexisting table\n[agents]\n";
   const existing = enableCodex(before);
   t.assert.match(
