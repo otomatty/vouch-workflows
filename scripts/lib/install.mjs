@@ -1,4 +1,5 @@
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { verifyRegistration } from "../../core/hooks/lib/doctor.mjs";
 import {
   activationFiles,
   activationGuidance,
@@ -77,6 +78,18 @@ export function install(options, command) {
       const text = source[`${prefix}${path}`];
       if (text === undefined)
         throw new Error(`INSTALL-SOURCE: missing ${key} snapshot ${path}`);
+      if (key === "registration") {
+        try {
+          verifyRegistration(
+            JSON.parse(text),
+            JSON.parse(source[`${prefix}registry/registration.json`] ?? ""),
+          );
+        } catch (error) {
+          throw new Error(
+            `INSTALL-SOURCE: invalid registration snapshot ${path}: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
+      }
       snapshots.push({ path, text });
     }
     validateSource(source, options.harness);

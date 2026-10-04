@@ -31,6 +31,19 @@ function contains(actual, expected, key = "") {
   return actual === expected;
 }
 
+/** The installer and distributed doctor accept the same registration snapshot.
+ * @param {unknown} actual @param {unknown} expected */
+export function verifyRegistration(actual, expected) {
+  if (
+    !object(expected) ||
+    !object(expected.hooks) ||
+    Object.keys(expected.hooks).length === 0
+  )
+    throw new Error("invalid registration template");
+  if (!contains(actual, expected))
+    throw new Error("required registration differs from installed template");
+}
+
 /** @param {string} version */
 function supportedNode(version) {
   if (!/^\d+\.\d+\.\d+$/.test(version)) return false;
@@ -109,16 +122,10 @@ export async function inspectInstallation(files, environment, git) {
       /** @type {unknown} */ const expected = JSON.parse(
         await read("registry/registration.json"),
       );
-      if (
-        !object(expected) ||
-        !object(expected.hooks) ||
-        Object.keys(expected.hooks).length === 0
-      )
-        throw new Error("invalid registration template");
-      if (!contains(JSON.parse(await read(descriptor.registration)), expected))
-        throw new Error(
-          "required registration differs from installed template",
-        );
+      verifyRegistration(
+        JSON.parse(await read(descriptor.registration)),
+        expected,
+      );
       return descriptor.registration;
     });
     if (descriptor.configuration) {

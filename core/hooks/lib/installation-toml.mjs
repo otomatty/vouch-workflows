@@ -49,6 +49,8 @@ function rejectMultiline(text) {
     quote = character;
   }
   if (quote) throw new Error("INSTALL-CONFIG: unfinished Codex TOML string");
+  if (arrayDepth !== 0)
+    throw new Error("INSTALL-CONFIG: unfinished Codex TOML array");
 }
 /** @param {string} text @param {string} section */
 function sectionBounds(text, section) {
