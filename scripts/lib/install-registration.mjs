@@ -27,6 +27,26 @@ export function registration(harness, runtimeRoot, scope, projectRoot) {
   ];
   /** @param {string} action @param {boolean} windows */
   const command = (action, windows) => {
+    if (harness === "codex" && projectRoot) {
+      const target = portable
+        ? windows
+          ? `"$vouchProjectRoot/${local}"`
+          : `"$vouch_project_root/${local}"`
+        : (windows ? powershell : sh)(entry);
+      if (windows)
+        return [
+          "$vouchProjectRoot = (Get-Location).ProviderPath",
+          "while ($vouchProjectRoot -and !(Test-Path -LiteralPath \"$vouchProjectRoot/vouch/config.json\" -PathType Leaf)) { $vouchParent = [System.IO.Directory]::GetParent($vouchProjectRoot); $vouchProjectRoot = if ($null -eq $vouchParent) { '' } else { $vouchParent.FullName } }",
+          "if (!$vouchProjectRoot) { exit 0 }",
+          `& node ${target} ${powershell(action)} ${powershell(scope)} "$vouchProjectRoot"`,
+        ].join("; ");
+      return [
+        "vouch_project_root=$(pwd -P)",
+        `while [ ! -f "$vouch_project_root/vouch/config.json" ] && [ "$vouch_project_root" != / ]; do vouch_project_root=\${vouch_project_root%/*}; [ -n "$vouch_project_root" ] || vouch_project_root=/; done`,
+        '[ -f "$vouch_project_root/vouch/config.json" ] || exit 0',
+        `node ${target} ${sh(action)} ${sh(scope)} "$vouch_project_root"`,
+      ].join("; ");
+    }
     if (
       (harness === "cursor" || action === "statusline") &&
       portable &&
