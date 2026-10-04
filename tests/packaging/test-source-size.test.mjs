@@ -49,6 +49,7 @@ import '../core/product.mjs';
 import '../helpers/../outside.mjs';
 import '../helpers/data.json' with { type: 'json' };
 throw new Error('source must never execute');
+const example = "import '../helpers/missing.mjs'";
 `;
   let reads = 0;
   const sizes = source.testSourceSizes([file], helpers, (path) => {

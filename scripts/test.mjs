@@ -1,11 +1,12 @@
 import { spawnSync } from "node:child_process";
-import { readdirSync, statSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { availableParallelism } from "node:os";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import budgets from "../core/registry/budgets.json" with { type: "json" };
 import { createInstallationFixture } from "./lib/installation-fixture.mjs";
 import { selectTests, testGroups, testPhases } from "./lib/test-phases.mjs";
+import { testSourceSizes } from "./lib/test-source-size.mjs";
 import { testTimeoutFor } from "./lib/time-budgets.mjs";
 
 /** @param {string} directory */
@@ -55,7 +56,13 @@ try {
     const sizes = ["scenario", "distribution", "hooks", "integration"].includes(
       suite,
     )
-      ? new Map(tests.map((file) => [file, statSync(file).size]))
+      ? testSourceSizes(
+          tests.filter(
+            (file) =>
+              suite !== "hooks" || !file.endsWith("-performance.test.mjs"),
+          ),
+          resolve("tests/helpers"),
+        )
       : undefined;
     for (const phase of testPhases(
       suite,
