@@ -156,5 +156,45 @@ group(
         },
         t,
       );
+    for (const suffix of [
+      ".cursor/hooks.json",
+      `.vouch/versions/${runtimeRoot.split(/[\\/]/).at(-2)}/cursor/hooks/vouch-guard-writes.mjs`,
+    ])
+      await test(
+        `an external tool cwd cannot bypass protection through $HOME/${suffix}`,
+        (t) => {
+          const before = tree(box.root);
+          const result = spawnSync(
+            process.execPath,
+            [
+              join(runtimeRoot, "hooks/vouch-launch.mjs"),
+              "guard",
+              "project",
+              box.path("project"),
+            ],
+            {
+              cwd: box.path("project"),
+              input: JSON.stringify(
+                cursorInput(box.path("project"), "preToolUse", {
+                  tool_name: "run_terminal_cmd",
+                  tool_input: {
+                    command: `rm "$HOME/${suffix}"`,
+                    working_directory: box.path("home"),
+                  },
+                }),
+              ),
+              encoding: "utf8",
+              windowsHide: true,
+              timeout: 4000,
+            },
+          );
+          t.assert.equal(result.status, 0, result.stderr);
+          const output = JSON.parse(result.stdout);
+          t.assert.equal(output.permission, "deny", result.stdout);
+          t.assert.match(output.user_message, /VOUCH-GUARD-INSTALLATION/);
+          t.assert.deepEqual(tree(box.root), before);
+        },
+        t,
+      );
   },
 );
