@@ -13,23 +13,14 @@ export async function guardScope(ctx, entry) {
     ? {
         managed: `.${ctx.harness}`,
         runtime: resolve(dirname(hook)),
-        ...(location.outside
-          ? {
-              externalRuntime: location.outside,
-              externalRegistrations: await Promise.all(
-                nativeRegistrationNames.map((name) =>
-                  ctx.locate(
-                    resolve(
-                      runtimeRoot,
-                      "../../../..",
-                      `.${ctx.harness}`,
-                      name,
-                    ),
-                  ),
-                ),
-              ),
-            }
-          : {}),
+        ...(location.outside ? { externalRuntime: location.outside } : {}),
+        nativeRegistrations: await Promise.all(
+          nativeRegistrationNames.map((name) =>
+            ctx.locate(
+              resolve(runtimeRoot, "../../../..", `.${ctx.harness}`, name),
+            ),
+          ),
+        ),
       }
     : {};
   const home = location.inside;
@@ -65,7 +56,7 @@ function contains(root, target) {
   return !isAbsolute(part) && part !== ".." && !part.startsWith(`..${sep}`);
 }
 
-/** Canonical external paths retain protection through aliases and junctions.
+/** Canonical managed paths retain protection through aliases and junctions.
  * @param {import('./runtime-contracts.mjs').PathLocation} at
  * @param {import('./runtime-contracts.mjs').GuardScope} scope
  * @returns {import('./runtime-contracts.mjs').GuardMatch|null} */
@@ -76,7 +67,7 @@ export function externalRuntimeMatch(at, scope) {
     if (contains(at.outside, scope.externalRuntime))
       return { area: "installation", ancestor: true };
   }
-  for (const registration of scope.externalRegistrations ?? []) {
+  for (const registration of scope.nativeRegistrations ?? []) {
     const root = at.outside ? registration.outside : registration.inside;
     const target = at.outside ?? at.inside;
     if (root === undefined || root === null || target === null) continue;
