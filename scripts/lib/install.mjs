@@ -166,6 +166,7 @@ function configureProject(changes, options, state, runtimeRoot) {
     throw new Error("INSTALL-CONFIG: unsupported project configuration");
   if (config.harnesses !== undefined && !object(config.harnesses))
     throw new Error("INSTALL-CONFIG: harnesses must be an object");
+  validateIntent(options.intent ?? config.intent);
   const harnesses = {
     .../** @type {Record<string,unknown>} */ (config.harnesses ?? {}),
   };
@@ -237,6 +238,7 @@ export function initialize(options) {
       local ? options.project : options.home,
       selected.runtimeRoot,
     );
+    const source = validateRuntime(runtimeRoot, selected, options.harness);
     const bindingPath = `.vouch/bindings/${options.harness}.json`;
     const binding = readInstallation(readInside(options.project, bindingPath), {
       harness: options.harness,
@@ -247,9 +249,6 @@ export function initialize(options) {
       // The project installation already owns its activation documents and registration.
       configureProject(changes, options, selected, runtimeRoot);
     } else {
-      const source = files(join(runtimeRoot, "distribution"));
-      if (sourceDigest(source) !== selected.digest)
-        throw new Error("INSTALL-VERSION: distribution has changed");
       for (const [path, text] of Object.entries(source))
         if (
           path.startsWith(`${skillsDirectory(options.harness)}/`) ||
@@ -353,6 +352,7 @@ function deactivate(changes, harness) {
 /** @param {Options} options */
 export function diagnose(options) {
   const config = json(readInside(options.project, "vouch/config.json"));
+  validateIntent(config.intent);
   const binding = object(config.harnesses)
     ? config.harnesses[options.harness]
     : undefined;
@@ -400,13 +400,38 @@ export function diagnose(options) {
     throw new Error(
       "INSTALL-REGISTRATION: Codex hooks and agent depth are not enabled",
     );
+  validateRuntime(runtimeRoot, state, options.harness);
+  return {
+    v: 1,
+    ok: true,
+    harness: options.harness,
+    scope: binding.scope,
+    digest: state.digest,
+    runtimeRoot,
+    projectRoot: options.project,
+  };
+}
+
+/** @param {unknown} value */
+function validateIntent(value) {
+  const intent = value ?? "";
+  if (
+    typeof intent !== "string" ||
+    (intent && !/^[a-z0-9][a-zA-Z0-9_-]{0,127}$/.test(intent))
+  )
+    throw new Error("INSTALL-CONFIG: invalid Intent");
+}
+
+/** @param {string} runtimeRoot @param {import('./install-plan.mjs').Installation} state
+ * @param {string} harness */
+function validateRuntime(runtimeRoot, state, harness) {
   const source = files(join(runtimeRoot, "distribution"));
   if (sourceDigest(source) !== state.digest)
     throw new Error("INSTALL-VERSION: archived distribution has changed");
-  const prefix = `${nativeDirectory(options.harness)}/`;
+  const prefix = `${nativeDirectory(harness)}/`;
   const referenceRoot =
-    binding.scope === "project"
-      ? `.vouch/versions/${state.digest}/${options.harness}`
+    state.scope === "project"
+      ? `.vouch/versions/${state.digest}/${harness}`
       : runtimeRoot;
   for (const [path, text] of Object.entries(source)) {
     if (
@@ -420,18 +445,10 @@ export function diagnose(options) {
     if (
       readInside(runtimeRoot, target) !==
       (path.endsWith(".md")
-        ? installedText(text, options.harness, referenceRoot)
+        ? installedText(text, harness, referenceRoot)
         : text)
     )
       throw new Error(`INSTALL-VERSION: runtime has changed: ${target}`);
   }
-  return {
-    v: 1,
-    ok: true,
-    harness: options.harness,
-    scope: binding.scope,
-    digest: state.digest,
-    runtimeRoot,
-    projectRoot: options.project,
-  };
+  return source;
 }

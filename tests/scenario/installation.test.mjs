@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { mkdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { windowsShell } from "../../scripts/lib/powershell.mjs";
 import { hookTest as test } from "../helpers/hook-test.mjs";
 import { cursorInput, distribution, installRun } from "../helpers/install.mjs";
 import { sandbox } from "../helpers/runtime.mjs";
@@ -61,7 +62,7 @@ for (const harness of ["claude", "codex", "cursor"]) {
         t.assert.equal(statusLine.type, "command");
         t.assert.match(statusLine.command, /vouch-launch\.mjs.*statusline/);
         const display = spawnSync(
-          process.platform === "win32" ? "powershell.exe" : "sh",
+          process.platform === "win32" ? windowsShell() : "sh",
           process.platform === "win32"
             ? ["-NoProfile", "-Command", statusLine.command]
             : ["-c", statusLine.command],

@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { cp, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { test as group } from "node:test";
+import { windowsShell } from "../../scripts/lib/powershell.mjs";
 import { hookTest as test } from "./hook-test.mjs";
 import { cursorInput, distribution, installRun } from "./install.mjs";
 import { sandbox } from "./runtime.mjs";
@@ -209,7 +210,7 @@ export function installationSelection(harness) {
       harness === "claude"
         ? process.execPath
         : process.platform === "win32"
-          ? "powershell.exe"
+          ? windowsShell()
           : "/bin/sh",
       harness === "claude"
         ? hook.args.map((/** @type {string} */ arg) =>

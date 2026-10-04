@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
-import { isAbsolute, resolve, win32 } from "node:path";
+import { isAbsolute, win32 } from "node:path";
 import { performance } from "node:perf_hooks";
+import { windowsShell } from "./powershell.mjs";
 
 /**
  * Keep OS lookup variables; replace task configuration and omit credentials.
@@ -55,12 +56,7 @@ export function probeNode(env) {
   const windows = process.platform === "win32";
   const started = performance.now();
   const result = spawnSync(
-    windows
-      ? resolve(
-          env.SYSTEMROOT ?? "C:/Windows",
-          "System32/WindowsPowerShell/v1.0/powershell.exe",
-        )
-      : "/bin/sh",
+    windows ? windowsShell() : "/bin/sh",
     windows
       ? [
           "-NoProfile",

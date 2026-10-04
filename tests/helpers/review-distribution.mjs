@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { cp, mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import { windowsShell } from "../../scripts/lib/powershell.mjs";
 import { artifact, audit, draft, intent } from "./intent-review.mjs";
 import { packageRun } from "./packaging.mjs";
 import { capturedPrompt, sandbox } from "./runtime.mjs";
@@ -38,7 +39,7 @@ export async function exerciseReviewDistribution(t, harness) {
       harness === "claude"
         ? process.execPath
         : windows
-          ? "powershell.exe"
+          ? windowsShell()
           : "/bin/sh";
     const args =
       harness === "claude"

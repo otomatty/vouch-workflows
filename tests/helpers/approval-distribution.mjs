@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { cp } from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import { windowsShell } from "../../scripts/lib/powershell.mjs";
 import { artifact, audit, intent, planned, topics } from "./intent-review.mjs";
 import { packageRun } from "./packaging.mjs";
 import { capturedPrompt, sandbox } from "./runtime.mjs";
@@ -26,7 +27,7 @@ function invoke(harness, registered, root, payload, env) {
         ]
       : windows
         ? [
-            "powershell.exe",
+            windowsShell(),
             [
               "-NoProfile",
               "-NonInteractive",
