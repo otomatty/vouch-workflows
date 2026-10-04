@@ -55,11 +55,11 @@ test("project binding changes reject another scope or harness before either scop
       JSON.stringify({ ...JSON.parse(binding), ...identity }),
     );
     const before = tree(box.root);
-    for (const [command, scope] of [
-      ["remove", "project"],
-      ["install", "project"],
-      ["init", "project"],
-      ["remove", "user"],
+    for (const { command, scope } of [
+      { command: "remove", scope: "project" },
+      { command: "install", scope: "project" },
+      { command: "init", scope: "project" },
+      { command: "remove", scope: "user" },
     ]) {
       const result = installRun(command, box, "cursor", scope);
       t.assert.equal(result.status, 2, result.stdout);
