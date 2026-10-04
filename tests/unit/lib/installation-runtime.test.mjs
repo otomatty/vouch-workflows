@@ -2,12 +2,29 @@ import { test } from "node:test";
 import {
   distributionDigest,
   installedText,
+  isSnapshotName,
   markdownDestination,
   runtimeContents,
   verifyManagedRuntime,
 } from "../../../core/hooks/lib/installation-runtime.mjs";
 import runtime from "../../../core/registry/runtime.json" with { type: "json" };
 import { memoryFiles } from "../../helpers/runtime.mjs";
+
+test("snapshot validation accepts simple lowercase native filenames and rejects nested or incompatible names", (t) => {
+  t.assert.equal(isSnapshotName("hooks.json", "registration"), true);
+  t.assert.equal(isSnapshotName("custom-config.toml", "configuration"), true);
+  for (const value of [
+    null,
+    123,
+    "",
+    "registry/runtime.json",
+    "Invalid.json",
+    "hooks1.json",
+    "hooks.toml",
+  ])
+    t.assert.equal(isSnapshotName(value, "registration"), false);
+  t.assert.equal(isSnapshotName("config.json", "configuration"), false);
+});
 
 /** @param {string} [harness] @param {string} [scope] */
 function fixture(harness = "codex", scope = "user") {
