@@ -102,10 +102,12 @@ test("identical validation settings share a phase without losing files or overla
       suite: "checks",
       files: [content, registry],
     },
-    { suite: "distribution", files: [skills, ...distribution] },
     unit,
     { suite: "packaging", files: [native] },
-    scenario,
+    {
+      suite: "distribution",
+      files: [skills, ...distribution, ...scenario.files],
+    },
     hook,
   ]);
   t.assert.deepEqual(
@@ -122,6 +124,45 @@ test("identical validation settings share a phase without losing files or overla
   t.assert.deepEqual(testPhases("packaging", nativeFiles, 4), [
     { files: [native], concurrency: 1, budget: false },
   ]);
+});
+
+test("distribution and scenario share uninstrumented CPU slots while unit, cold probes and hooks retain distinct groups", (t) => {
+  const suites = [
+    {
+      suite: "packaging",
+      files: [
+        "/repo/tests/packaging/native-environment.test.mjs",
+        "/repo/tests/packaging/claude.test.mjs",
+      ],
+    },
+    { suite: "scenario", files: ["/repo/tests/scenario/install.test.mjs"] },
+    { suite: "unit", files: ["/repo/tests/unit/lib/io.test.mjs"] },
+    {
+      suite: "hooks",
+      files: [hooks("io.test.mjs"), hooks("record-performance.test.mjs")],
+    },
+  ];
+  const groups = phases.testGroups(suites);
+  const combined = groups.find(({ suite }) => suite === "distribution");
+  t.assert.deepEqual(combined?.files, [
+    suites[0]?.files[1],
+    suites[1]?.files[0],
+  ]);
+  t.assert.deepEqual(
+    groups.flatMap(({ files }) => files).sort(),
+    suites.flatMap(({ files }) => files).sort(),
+  );
+  t.assert.equal(new Set(groups.flatMap(({ files }) => files)).size, 6);
+  t.assert.deepEqual(
+    testPhases("distribution", combined?.files ?? [], 4).map(
+      ({ concurrency, budget }) => ({ concurrency, budget }),
+    ),
+    [{ concurrency: 4, budget: false }],
+  );
+  t.assert.deepEqual(
+    groups.filter(({ suite }) => suite === "unit" || suite === "hooks"),
+    [suites[2], suites[3]],
+  );
 });
 
 test("unit and hook selections retain their original coverage and measurement groups", (t) => {
