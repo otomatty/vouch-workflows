@@ -1,4 +1,7 @@
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import requiredRuntime from "../../core/registry/runtime.json" with {
+  type: "json",
+};
 import {
   commitChanges,
   digest,
@@ -54,7 +57,6 @@ export function install(options, command) {
     const prefix = `${nativeDirectory(options.harness)}/`;
     if (!source[`${prefix}registry/installation.json`])
       throw new Error("INSTALL-SOURCE: incomplete distribution");
-    const inventory = json(source[`${prefix}registry/runtime.json`] ?? null);
     const descriptor = json(
       source[`${prefix}registry/installation.json`] ?? null,
     );
@@ -74,11 +76,7 @@ export function install(options, command) {
         throw new Error(`INSTALL-SOURCE: missing ${key} snapshot ${path}`);
       snapshots.push({ path, text });
     }
-    if (!Array.isArray(inventory.files) || !source["AGENTS.md"])
-      throw new Error("INSTALL-SOURCE: runtime inventory or guidance missing");
-    for (const path of inventory.files)
-      if (typeof path !== "string" || !source[`${prefix}${path}`])
-        throw new Error(`INSTALL-SOURCE: missing runtime ${String(path)}`);
+    validateSource(source, options.harness);
     const bindingPath = `.vouch/bindings/${options.harness}.json`;
     const binding =
       options.scope === "project"
@@ -435,6 +433,7 @@ function validateIntent(value) {
  * @param {string} harness */
 function validateRuntime(runtimeRoot, state, harness) {
   const source = files(join(runtimeRoot, "distribution"));
+  validateSource(source, harness);
   if (sourceDigest(source) !== state.digest)
     throw new Error("INSTALL-VERSION: archived distribution has changed");
   const prefix = `${nativeDirectory(harness)}/`;
@@ -460,4 +459,18 @@ function validateRuntime(runtimeRoot, state, harness) {
       throw new Error(`INSTALL-VERSION: runtime has changed: ${target}`);
   }
   return source;
+}
+
+/** @param {Record<string,string>} source @param {string} harness */
+function validateSource(source, harness) {
+  const prefix = `${nativeDirectory(harness)}/`;
+  const inventory = json(source[`${prefix}registry/runtime.json`] ?? null);
+  if (!Array.isArray(inventory.files) || !source["AGENTS.md"])
+    throw new Error("INSTALL-SOURCE: runtime inventory or guidance missing");
+  for (const path of requiredRuntime.files)
+    if (!inventory.files.includes(path) || !source[`${prefix}${path}`])
+      throw new Error(`INSTALL-SOURCE: missing mandatory runtime ${path}`);
+  for (const path of inventory.files)
+    if (typeof path !== "string" || !source[`${prefix}${path}`])
+      throw new Error(`INSTALL-SOURCE: missing runtime ${String(path)}`);
 }
