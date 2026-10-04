@@ -13,11 +13,16 @@ group(
     let originalRoot = "";
     await test(
       "install and initialize the original user runtime",
-      (t) => {
+    async (t) => {
         distribution(t, box, "cursor");
         const installed = installRun("install", box, "cursor", "user");
         t.assert.equal(installed.status, 0, installed.stdout);
-        originalRoot = JSON.parse(installed.stdout).runtimeRoot;
+      originalRoot = JSON.parse(installed.stdout).runtimeRoot;
+      t.assert.equal(
+        JSON.parse(await box.read("home/.vouch/installations/cursor.json"))
+          .runtimeRoot,
+        originalRoot,
+      );
         t.assert.equal(installRun("init", box, "cursor", "user").status, 0);
       },
       t,
