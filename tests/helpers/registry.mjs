@@ -1,5 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
-import { Ajv2020 } from "ajv/dist/2020.js";
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
 
 /** @param {string} path */
 export function readJson(path) {
@@ -7,12 +9,15 @@ export function readJson(path) {
 }
 
 /** Immutable schema snapshot for this test process, never a cache of input verdicts.
- * @type {Ajv2020|undefined} */
+ * @type {import('ajv/dist/2020.js').Ajv2020|undefined} */
 let ajv;
 
 /** @param {string} name */
 export function validator(name) {
   if (!ajv) {
+    const { Ajv2020 } = /** @type {typeof import('ajv/dist/2020.js')} */ (
+      require("ajv/dist/2020.js")
+    );
     const prepared = new Ajv2020({ strict: true, allErrors: true });
     for (const file of readdirSync("core/registry").filter((f) =>
       f.endsWith(".schema.json"),
