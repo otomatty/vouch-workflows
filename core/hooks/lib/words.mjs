@@ -184,12 +184,12 @@ function validTomlScalar(token) {
   if (!match) return false;
   const [, date, clock, offset, onlyClock] = match;
   if (date) {
-    const parsed = new Date(`${date}T00:00:00Z`);
-    if (
-      Number.isNaN(parsed.valueOf()) ||
-      parsed.toISOString().slice(0, 10) !== date
-    )
-      return false;
+    const [year = 0, month = 0, day = 0] = date.split("-").map(Number);
+    const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+    const days =
+      [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1] ??
+      0;
+    if (day < 1 || day > days) return false;
   }
   const time = clock ?? onlyClock;
   if (time) {
