@@ -10,10 +10,17 @@ test("a guarded installer read inspects the target once per operation without ca
   await box.write("directory/file", "original");
   const original = fs.lstatSync;
   /** @type {string[]} */ const queried = [];
-  fs.lstatSync = (...args) => {
-    queried.push(String(args[0]));
-    return Reflect.apply(original, fs, args);
-  };
+  const mocked = t.mock.method(
+    fs,
+    "lstatSync",
+    (
+      /** @type {import('node:fs').PathLike} */ path,
+      /** @type {import('node:fs').StatOptions|undefined} */ options = undefined,
+    ) => {
+      queried.push(String(path));
+      return Reflect.apply(original, fs, [path, options]);
+    },
+  );
   syncBuiltinESMExports();
   try {
     for (const count of [1, 2]) {
@@ -32,7 +39,7 @@ test("a guarded installer read inspects the target once per operation without ca
     t.assert.equal(queried.includes(box.path("missing/deeper")), false);
     t.assert.equal(queried.includes(box.path("missing/deeper/file")), false);
   } finally {
-    fs.lstatSync = original;
+    mocked.mock.restore();
     syncBuiltinESMExports();
   }
 });
@@ -67,10 +74,17 @@ test("installer metadata errors still propagate and replacement preserves permis
   const mode = fs.lstatSync(target).mode & 0o777;
   const original = fs.lstatSync;
   const failure = new Error("metadata denied");
-  fs.lstatSync = (...args) => {
-    if (String(args[0]) === target) throw failure;
-    return Reflect.apply(original, fs, args);
-  };
+  const mocked = t.mock.method(
+    fs,
+    "lstatSync",
+    (
+      /** @type {import('node:fs').PathLike} */ path,
+      /** @type {import('node:fs').StatOptions|undefined} */ options = undefined,
+    ) => {
+      if (String(path) === target) throw failure;
+      return Reflect.apply(original, fs, [path, options]);
+    },
+  );
   syncBuiltinESMExports();
   try {
     t.assert.throws(
@@ -78,7 +92,7 @@ test("installer metadata errors still propagate and replacement preserves permis
       (error) => error === failure,
     );
   } finally {
-    fs.lstatSync = original;
+    mocked.mock.restore();
     syncBuiltinESMExports();
   }
   commitChanges([{ path: target, before: "original", after: "updated" }]);
