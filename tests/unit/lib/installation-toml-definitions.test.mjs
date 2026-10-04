@@ -14,6 +14,8 @@ test("Codex rejects duplicate fully qualified keys and table/value conflicts bef
     "x = 1\n[x]\na = 2",
     "[x]\na = 1\n[[x]]\na = 2",
     "[[x]]\na = 1\n[x]\na = 2",
+    "[x.a]\nb = 1\n[[x]]\nc = 2",
+    "[[x.a]]\nb = 1\n[[x]]\nc = 2",
     "x.a = 1\nx = 2",
     "x = 1\nx.a = 2",
     "x.a = 1\n[x]\nb = 2",
@@ -25,9 +27,13 @@ test("Codex rejects duplicate fully qualified keys and table/value conflicts bef
     "x = { a.b = 1, a = 2 }",
     "x = { a = 1, a.b = 2 }",
   ]) {
-    const text = `${enabled}${invalid}\n`;
-    t.assert.throws(() => enableCodex(text), /INSTALL-CONFIG/);
-    t.assert.throws(() => removeCodex(text, "[]", null), /INSTALL-CONFIG/);
+    const text = `${invalid}\n${enabled}`;
+    t.assert.throws(() => enableCodex(text), /INSTALL-CONFIG/, text);
+    t.assert.throws(
+      () => removeCodex(text, "[]", null),
+      /INSTALL-CONFIG/,
+      text,
+    );
   }
 });
 test("Codex preserves independent tables and repeated array-table elements with nested tables", (t) => {
@@ -37,6 +43,7 @@ test("Codex preserves independent tables and repeated array-table elements with 
     "[[provider]]\n[provider.options]\nmodel = 1\n[[provider]]\n[provider.options]\nmodel = 2",
     "[[provider]]\n[[provider.tools]]\nmodel = 1\n[[provider.tools]]\nmodel = 2\n[[provider]]\n[[provider.tools]]\nmodel = 3",
     "[x.a]\nb = 1\n[x]\nc = 2",
+    "[[x.a]]\nb = 1\n[x]\nc = 2",
     "x.a = 1\nx.b = 2",
     "x = { a.b = 1, a.c = 2 }",
     'x = { "\\u0061" = 1, "\\\\u0061" = 2 }',
