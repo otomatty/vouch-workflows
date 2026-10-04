@@ -13,6 +13,8 @@
 | `audit.mjs` | `createAuditStore(files, path)`, `createIntentAuditStore(files, intent)`, `findEvent(store, id)` | `find(id)` は全ログ検証後に検索。`append(events)` はバッチをコピー・検証し、既存行保存と重複排除。破損・ID衝突は書かずに拒否 |
 | `io.mjs` | `run(main, options?)` | stdin のサイズ・JSON・スキーマ・パスを検査し main を呼ぶ。例外は ID 付き stderr と終了0、遮断は理由付き終了2 |
 
+管理する手動コマンドの起動コードも `io.mjs` が生成し、起動失敗の終了2をこの境界に置く。`vouch-launch.mjs` は起動処理を `runLauncher` に渡して一度だけ実行する。I/O境界から選択処理を読み込む依存を持たせず、導入内容の生成・診断との循環参照を作らない。
+
 フックの stdin・stderr と組み込みモジュールの読込は [記録フックの起動費用](hook-startup.md)で定めます。`run()` は不正入力なら main を呼びません。未知のトップレベル入力フィールドを取り除き、`tool_input` のキーは各ツールの入力として保持します。1 MiB 以上は拒否します。パスの字句上の `../` だけでは判定せず、解決先と実在する祖先を検査します。root と同じディレクトリを指す別の綴り（8.3 短縮名・junction・subst・記号リンク）の扱いは [root の別名と包含判定](root-alias.md)で定めます。
 
 `HookMain` の返値は内部用です。正常時の stdout は、許可した結果の `context`（平文）をイベントの追記が成功した後に書く場合を除いて空で、遮断理由は stderr に出します。内部のイベントや `decision: allow` をハーネス向け JSON として直接出力しません。`context` は SessionStart の再開要約に使います（[再開・ask・report](resume.md)）。
