@@ -1,4 +1,4 @@
-// Shell word expansion and comments for the guard's word passes; see docs/development/write-guard.md.
+// Shell word expansion/comments and single-line TOML value tokens.
 
 /** A `{x..y}` body: letters in order, or an integer sequence by its first value. @param {string} body */
 function sequence(body) {
@@ -62,4 +62,143 @@ export function uncommented(text) {
     else return kept + text.slice(i);
   }
   return kept;
+}
+
+/** Require single-line value separators; quoted punctuation stays in one token. @param {string} text */
+export function validateTomlValues(text) {
+  for (const line of text.split("\n")) {
+    /** @type {string[]} */ const tokens =
+      line.match(
+        /"(?:\\.|[^"\\])*"|'[^']*'|#[^\n]*|[^\s#,"'=[\]{}]+|[=,[\]{}]/g,
+      ) ?? [];
+    const comment = tokens.findIndex((token) => token.startsWith("#"));
+    if (comment >= 0) tokens.splice(comment);
+    const assignment = tokens.indexOf("=");
+    if (assignment < 0) continue;
+    let at = assignment + 1;
+    /** @returns {void} */
+    function value() {
+      let token = tokens[at++];
+      if (!token || /^[,=\]}]$/.test(token))
+        throw new Error("INSTALL-CONFIG: missing Codex TOML value");
+      if (token !== "[" && token !== "{") {
+        // TOML permits one space between a date and its time.
+        if (
+          /^\d{4}-\d\d-\d\d$/.test(token) &&
+          /^\d\d:\d\d:\d\d(?:\.\d+)?(?:[Zz]|[+-]\d\d:\d\d)?$/.test(
+            tokens[at] ?? "",
+          )
+        )
+          token += ` ${tokens[at++]}`;
+        if (!validTomlScalar(token))
+          throw new Error("INSTALL-CONFIG: invalid Codex TOML scalar");
+        return;
+      }
+      const inline = token === "{";
+      const close = inline ? "}" : "]";
+      if (tokens[at] === close) {
+        at++;
+        return;
+      }
+      while (at < tokens.length) {
+        if (inline) {
+          const start = at;
+          while (at < tokens.length && tokens[at] !== "=") at++;
+          const key = tokens.slice(start, at).join(" ");
+          if (
+            !/^(?:[\w-]+|"(?:\\.|[^"\\])*"|'[^']*')(?:\s*\.\s*(?:[\w-]+|"(?:\\.|[^"\\])*"|'[^']*'))*$/.test(
+              key,
+            ) ||
+            tokens[at++] !== "="
+          )
+            throw new Error(
+              "INSTALL-CONFIG: invalid Codex TOML inline table key",
+            );
+        }
+        value();
+        if (tokens[at] === close) {
+          at++;
+          return;
+        }
+        if (tokens[at++] !== ",")
+          throw new Error("INSTALL-CONFIG: missing Codex TOML value separator");
+        if (tokens[at] === close && !inline) {
+          at++;
+          return;
+        }
+      }
+      throw new Error(
+        "INSTALL-CONFIG: unfinished Codex TOML array or inline table",
+      );
+    }
+    value();
+    if (at !== tokens.length)
+      throw new Error("INSTALL-CONFIG: missing Codex TOML value separator");
+  }
+}
+
+/** Scalar grammar only; the editor separately refuses multiline strings. @param {string} token */
+function validTomlScalar(token) {
+  if (
+    [...token].some((character) => {
+      const code = character.charCodeAt(0);
+      return (code < 32 && code !== 9) || code === 127;
+    })
+  )
+    return false;
+  if (token.startsWith("'")) return true;
+  if (token.startsWith('"')) {
+    if (
+      !/^"(?:[^"\\]|\\(?:[btnfr"\\]|u[\da-fA-F]{4}|U[\da-fA-F]{8}))*"$/.test(
+        token,
+      )
+    )
+      return false;
+    return [
+      ...token.matchAll(/\\(?:u([\da-fA-F]{4})|U([\da-fA-F]{8})|[btnfr"\\])/g),
+    ].every((match) => {
+      if (match[1] === undefined && match[2] === undefined) return true;
+      const point = Number.parseInt(match[1] ?? match[2] ?? "", 16);
+      return point <= 0x10ffff && (point < 0xd800 || point > 0xdfff);
+    });
+  }
+  if (token === "true" || token === "false") return true;
+  if (
+    /^[+-]?(?:0|[1-9](?:_?\d)*)$|^0x[\da-fA-F](?:_?[\da-fA-F])*$|^0o[0-7](?:_?[0-7])*$|^0b[01](?:_?[01])*$/.test(
+      token,
+    )
+  ) {
+    const number = BigInt(token.replaceAll("_", ""));
+    return number >= -(1n << 63n) && number < 1n << 63n;
+  }
+  if (
+    /^[+-]?(?:(?:0|[1-9](?:_?\d)*)(?:\.\d(?:_?\d)*(?:[eE][+-]?\d(?:_?\d)*)?|[eE][+-]?\d(?:_?\d)*)|inf|nan)$/.test(
+      token,
+    )
+  )
+    return true;
+  const match =
+    /^(?:(\d{4}-\d\d-\d\d)(?:[Tt ](\d\d:\d\d:\d\d(?:\.\d+)?)([Zz]|[+-]\d\d:\d\d)?)?|(\d\d:\d\d:\d\d(?:\.\d+)?))$/.exec(
+      token,
+    );
+  if (!match) return false;
+  const [, date, clock, offset, onlyClock] = match;
+  if (date) {
+    const parsed = new Date(`${date}T00:00:00Z`);
+    if (
+      Number.isNaN(parsed.valueOf()) ||
+      parsed.toISOString().slice(0, 10) !== date
+    )
+      return false;
+  }
+  const time = clock ?? onlyClock;
+  if (time) {
+    const [hours = 0, minutes = 0, seconds = 0] = time.split(":").map(Number);
+    if (hours > 23 || minutes > 59 || seconds >= 60) return false;
+  }
+  if (offset && offset !== "Z" && offset !== "z") {
+    const [hours = 0, minutes = 0] = offset.slice(1).split(":").map(Number);
+    if (hours > 23 || minutes > 59) return false;
+  }
+  return true;
 }
