@@ -9,9 +9,10 @@ test("guard scope derives managed protection from the trusted entry rather than 
     generation: "test",
     ...fakeClock(),
     readText: async () => null,
-    locate: async () => ({
+    locate: async (path: string) => ({
       inside: null,
       contains: false,
+      canonical: path,
       kind: "missing" as const,
       links: 0,
     }),
@@ -21,6 +22,7 @@ test("guard scope derives managed protection from the trusted entry rather than 
     "/home/.vouch/versions/hash/cursor/hooks/vouch-guard-writes.mjs",
   );
   t.assert.equal(scope.managed, ".cursor");
+  t.assert.equal(scope.runtimeRoot, "/home/.vouch/versions/hash/cursor");
   t.assert.equal(scope.installation, null);
   t.assert.deepEqual(
     (await guardScope(context, "/other/hooks/guard.mjs")).installed,

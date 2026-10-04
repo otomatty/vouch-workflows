@@ -446,7 +446,13 @@ test("io leaves PreToolUse paths to main and supplies the file store's locate", 
     t.assert.deepEqual(
       located,
       pre
-        ? { inside: "nested/file", contains: false, kind: "missing", links: 0 }
+        ? {
+            inside: "nested/file",
+            contains: false,
+            canonical: "/memory/nested/file",
+            kind: "missing",
+            links: 0,
+          }
         : undefined,
     );
     t.assert.equal(port.output.stderr.includes("FS-ESCAPE"), !pre);

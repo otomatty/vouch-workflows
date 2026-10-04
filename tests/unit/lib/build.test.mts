@@ -138,6 +138,7 @@ test("vouch artifacts before approval, outside paths and unscoped sessions are n
         locate: async () => ({
           inside: null,
           contains: false,
+          canonical: "/elsewhere/app.js",
           kind: "missing",
           links: 0,
         }),

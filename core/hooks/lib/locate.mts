@@ -32,6 +32,7 @@ export function createLocate(
         ? null
         : relative(base, canonical).split(sep).join("/"),
       contains: !outside(canonical, base),
+      canonical,
       kind,
       links,
     };

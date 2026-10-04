@@ -1,4 +1,4 @@
-import { isAbsolute, resolve } from "node:path";
+import { isAbsolute, resolve, sep } from "node:path";
 import runtime from "../../registry/runtime.json" with { type: "json" };
 import guard from "../../registry/write-guard.json" with { type: "json" };
 import {
@@ -47,6 +47,10 @@ const reasons = {
 export type Reason = keyof typeof reasons;
 const order = Object.keys(reasons);
 const split = (path: string) => path.replaceAll("\\", "/").split("/");
+/** The same real directory or one below it. */
+const within = (path: string, root: string) =>
+  path === root || path.startsWith(root.endsWith(sep) ? root : root + sep);
+
 /** A backslash as a separator, then as the platform reads it. */
 const readings = (path: string) =>
   path.includes("\\") ? [path.replaceAll("\\", "/"), path] : [path];
@@ -87,12 +91,11 @@ export const guardWrites: import("./runtime-contracts.mjs").GuardWrites =
         at.inside === null
           ? removal && at.contains
             ? { area: "audit" as const, ancestor: true }
-            : scope.managed &&
-                split(spelled).some(
-                  (part) => normalizeSegment(part) === ".vouch",
-                )
-              ? { area: "installation" as const, ancestor: false }
-              : null
+            : runtimeMatch(at, removal) ||
+              (scope.managed &&
+              split(spelled).some((part) => normalizeSegment(part) === ".vouch")
+                ? { area: "installation" as const, ancestor: false }
+                : null)
           : classifySegments(split(at.inside), scope);
       if (!match || (match.ancestor && !removal)) return;
       if (match.area !== "artifact" || match.ancestor)
@@ -105,6 +108,20 @@ export const guardWrites: import("./runtime-contracts.mjs").GuardWrites =
       }
       if ((current !== null && declaresApproved(current)) || approves(current))
         found.push(["approved", shown]);
+    }
+
+    /** Design D5: outside the root, the running runtime is matched by its real path. */
+    function runtimeMatch(
+      at: import("./runtime-contracts.mjs").PathLocation,
+      removal: boolean,
+    ) {
+      const root = scope.runtimeRoot;
+      if (!root) return null;
+      if (within(at.canonical, root))
+        return { area: "installation" as const, ancestor: false };
+      return removal && within(root, at.canonical)
+        ? { area: "installation" as const, ancestor: true }
+        : null;
     }
 
     if (kind === "write") {
@@ -260,10 +277,9 @@ export const guardWrites: import("./runtime-contracts.mjs").GuardWrites =
           result.push(["link", shown, false]);
         const match =
           at.inside === null
-            ? at.contains && {
-                area: "audit" as const,
-                ancestor: true,
-              }
+            ? at.contains
+              ? { area: "audit" as const, ancestor: true }
+              : runtimeMatch(at, true)
             : classifySegments(split(at.inside), scope);
         if (match) result.push([match.area, shown, match.ancestor]);
       }

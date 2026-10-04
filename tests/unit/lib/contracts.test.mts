@@ -93,6 +93,7 @@ test("JSDoc rejects impossible decision and audit discriminants", (t) => {
           locate: async () => ({
             inside: null,
             contains: false,
+            canonical: "/outside",
             kind: "missing",
             links: 0,
           }),

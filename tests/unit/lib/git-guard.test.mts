@@ -70,6 +70,7 @@ function context(
     locate: async (path) => ({
       inside: path === "/project" ? inside : null,
       contains: false,
+      canonical: path,
       kind: "directory",
       links: 0,
     }),

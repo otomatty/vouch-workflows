@@ -117,6 +117,7 @@ export function memoryFiles(
       return {
         inside,
         contains: inside === "",
+        canonical: `/memory/${inside}`,
         kind: data.has(inside) ? "file" : directory ? "directory" : "missing",
         links: data.has(inside) ? 1 : 0,
       };

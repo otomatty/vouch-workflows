@@ -8,10 +8,15 @@ export async function guardScope(
   entry: string,
 ): Promise<import("./runtime-contracts.mjs").GuardScope> {
   const hook = entry.startsWith("file:") ? fileURLToPath(entry) : entry;
+  const root = await ctx.locate(dirname(dirname(hook)));
   const managed = /(?:^|[/\\])\.vouch[/\\]versions[/\\]/.test(hook)
-    ? { managed: `.${ctx.harness}`, runtime: resolve(dirname(hook)) }
+    ? {
+        managed: `.${ctx.harness}`,
+        runtime: resolve(dirname(hook)),
+        runtimeRoot: root.canonical,
+      }
     : {};
-  const home = (await ctx.locate(dirname(dirname(hook)))).inside;
+  const home = root.inside;
   if (!home) return { installation: null, installed: [], ...managed };
   let installed = ["*"];
   try {

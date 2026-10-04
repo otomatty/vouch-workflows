@@ -29,6 +29,8 @@ export type PathLocation = {
   inside: string | null;
   /** The canonical path is the root or one of its ancestors. */
   contains: boolean;
+  /** Absolute canonical path after following links; lexical below the deepest existing ancestor. */
+  canonical: string;
   /** After following links; unresolved is a dangling or looping link, or a target that could not be examined after it was found. */
   kind: "file" | "directory" | "missing" | "other" | "unresolved";
   /** Hard link count of an existing regular file; 0 otherwise. */
@@ -209,6 +211,8 @@ export type GuardScope = {
   managed?: string;
   /** Trusted absolute hooks directory for managed manual commands outside the project. */
   runtime?: string;
+  /** Canonical root of the managed runtime running the guard; aliases resolve to it. */
+  runtimeRoot?: string;
 };
 /** Segments are root-relative; glob segments may match any name at their position. */
 export type ClassifySegments = (
