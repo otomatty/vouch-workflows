@@ -127,8 +127,13 @@ function validateDefinitions(statements) {
       if (tables.has(name))
         throw new Error("INSTALL-CONFIG: conflicting Codex TOML key");
       values.add(name);
-      for (let i = table.length + 1; i < names.length; i++)
+      for (let i = table.length + 1; i < names.length; i++) {
+        if (arrays.has(arrayKey(names.slice(0, i))))
+          throw new Error(
+            "INSTALL-CONFIG: dotted Codex TOML key crosses an array table",
+          );
         tables.add(qualified(names.slice(0, i)));
+      }
     }
   }
 }
