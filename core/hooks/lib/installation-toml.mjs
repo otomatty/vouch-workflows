@@ -9,6 +9,8 @@ function rejectMultiline(text) {
   for (let i = 0; i < text.length; i++) {
     const character = text[i] ?? "";
     if (character === "\n") {
+      if (quote)
+        throw new Error("INSTALL-CONFIG: unfinished Codex TOML string");
       if (arrayDepth > 0)
         throw new Error(
           "INSTALL-CONFIG: unsupported multiline Codex TOML array",
@@ -16,8 +18,11 @@ function rejectMultiline(text) {
       value = false;
     }
     if (quote) {
-      if (quote === '"' && character === "\\") i++;
-      else if (character === quote) quote = "";
+      if (quote === '"' && character === "\\") {
+        if (text[i + 1] === "\n" || text[i + 1] === "\r")
+          throw new Error("INSTALL-CONFIG: unfinished Codex TOML string");
+        i++;
+      } else if (character === quote) quote = "";
       continue;
     }
     if (character === "#") {
@@ -39,6 +44,7 @@ function rejectMultiline(text) {
       throw new Error("INSTALL-CONFIG: unsupported multiline Codex TOML value");
     quote = character;
   }
+  if (quote) throw new Error("INSTALL-CONFIG: unfinished Codex TOML string");
 }
 /** @param {string} text @param {string} section */
 function sectionBounds(text, section) {
