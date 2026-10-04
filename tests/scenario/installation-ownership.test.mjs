@@ -3,6 +3,29 @@ import { hookTest as test } from "../helpers/hook-test.mjs";
 import { distribution, installRun } from "../helpers/install.mjs";
 import { sandbox } from "../helpers/runtime.mjs";
 
+for (const scope of ["user", "project"])
+  test(`${scope}: fresh Codex setup does not leave a sandbox default after unrelated settings are added`, async (t) => {
+    const box = await sandbox(t);
+    distribution(t, box);
+    const config = `${scope === "user" ? "home" : "project"}/.codex/config.toml`;
+    const installed = installRun("install", box, "codex", scope);
+    t.assert.equal(installed.status, 0, installed.stdout);
+    const addition = 'model = "user-choice"\n';
+    await box.write(config, addition + (await box.read(config)));
+    const updated = installRun("update", box, "codex", scope);
+    t.assert.equal(updated.status, 0, updated.stdout);
+    t.assert.equal((await box.read(config)).startsWith(addition), true);
+    t.assert.doesNotMatch(await box.read(config), /sandbox_mode\s*=/);
+    const removed = installRun("remove", box, "codex", scope);
+    t.assert.equal(removed.status, 0, removed.stdout);
+    const remaining = await box.read(config);
+    t.assert.equal(remaining.startsWith(addition), true);
+    t.assert.doesNotMatch(
+      remaining,
+      /sandbox_mode\s*=|hooks\s*=|max_depth\s*=/,
+    );
+  });
+
 test("install/update/remove preserve unrelated settings and detect edits to owned files", async (t) => {
   const box = await sandbox(t);
   await mkdir(box.path("project"), { recursive: true });
