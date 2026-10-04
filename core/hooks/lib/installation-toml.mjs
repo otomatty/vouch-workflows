@@ -1,6 +1,6 @@
 /** @typedef {{section:string,key:string,line:string,previous:string|null,createdTable?:boolean}} Setting */
 
-/** Refuse multiline values before the line editor can mistake their contents for tables.
+/** Refuse names and values the line editor cannot safely recognize.
  * Ordinary quoted strings and comments may contain triple quotes. @param {string} text */
 function rejectMultiline(text) {
   let quote = "";
@@ -19,6 +19,10 @@ function rejectMultiline(text) {
     }
     if (quote) {
       if (quote === '"' && character === "\\") {
+        if (!value)
+          throw new Error(
+            "INSTALL-CONFIG: unsupported escaped Codex TOML name",
+          );
         if (text[i + 1] === "\n" || text[i + 1] === "\r")
           throw new Error("INSTALL-CONFIG: unfinished Codex TOML string");
         i++;
