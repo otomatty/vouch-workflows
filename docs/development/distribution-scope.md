@@ -141,4 +141,6 @@ Cursor の `beforeSubmitPrompt` は許可時に `continue: true` を返し、拒
 
 配布 doctor は、導入記録を読み出した場所に応じた scope、digest、runtimeRoot と、プロジェクトが選択した有効化・実行中の正規の版パスを比較する。所有ファイルが一致していても識別情報が不一致なら `DOCTOR-ACTIVATION` と終了2で報告し、既存ファイルを保持する。
 
+導入CLIの doctor も、導入記録の runtimeRoot が選択した正規の版パスと一致することを検査する。scope・digest・runtimeRoot の同じ不一致を両方の doctor が拒否し、診断で既存ファイルを変更しない。
+
 実機検証にはツールの実行ファイル・版・信頼設定と fixture の採取が必要で、この環境では Cursor の実行ファイルがない。新方式の Claude / Codex の実発火も今回の自動テストでは確認していない。正式対応の判定は引き続き上記の検証を条件とする。
