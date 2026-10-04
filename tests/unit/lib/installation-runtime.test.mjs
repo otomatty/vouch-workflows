@@ -169,7 +169,9 @@ test("missing archives, vanished entries, links, other nodes and read failures a
 test("guidance rebinding preserves Markdown syntax and shell quoting on both host families", (t) => {
   t.assert.equal(
     markdownDestination("owner's/(path)#?\\file"),
-    "<owner%27s/%28path%29%23%3F/file>",
+    process.platform === "win32"
+      ? "<owner%27s/%28path%29%23%3F/file>"
+      : "<owner%27s/%28path%29%23%3F%5Cfile>",
   );
   for (const platform of ["linux", "win32"]) {
     const text = installedText(
@@ -196,4 +198,43 @@ test("guidance rebinding preserves Markdown syntax and shell quoting on both hos
     'developer_instructions = "hello\\n"\n',
   );
   t.assert.equal(installedText("unchanged", "claude", "/runtime"), "unchanged");
+});
+
+test("references preserve literal POSIX backslashes and normalize Windows separators", (t) => {
+  t.assert.equal(
+    markdownDestination("/tmp/home\\name/file", "linux"),
+    "</tmp/home%5Cname/file>",
+  );
+  t.assert.equal(
+    markdownDestination("C:\\home\\name\\file", "win32"),
+    "<C:/home/name/file>",
+  );
+  for (const harness of ["claude", "codex", "cursor"])
+    for (const platform of /** @type {const} */ (["linux", "win32"])) {
+      const root =
+        platform === "linux"
+          ? "/tmp/home\\name/runtime"
+          : "C:\\home\\name\\runtime";
+      const reference = platform === "linux" ? root : "C:/home/name/runtime";
+      const text = installedText(
+        `[rules](.${harness}/AGENTS.md) and \`node .${harness}/hooks/vouch-doctor.mjs\``,
+        harness,
+        root,
+        platform,
+      );
+      t.assert.equal(
+        text.includes(`${reference}/hooks/vouch-launch.mjs`),
+        true,
+        text,
+      );
+      t.assert.equal(
+        text.includes(
+          platform === "linux"
+            ? "home%5Cname/runtime/AGENTS.md"
+            : "home/name/runtime/AGENTS.md",
+        ),
+        true,
+        text,
+      );
+    }
 });
