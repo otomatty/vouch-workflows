@@ -1,10 +1,13 @@
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import {
+  runtimeContents,
+  distributionDigest as sourceDigest,
+} from "../../core/hooks/lib/installation-runtime.mjs";
 import requiredRuntime from "../../core/registry/runtime.json" with {
   type: "json",
 };
 import {
   commitChanges,
-  digest,
   files,
   inside,
   readInside,
@@ -29,15 +32,6 @@ const statePath = (harness) => `.vouch/installations/${harness}.json`;
 /** @param {Options} options */
 const scopeRoot = (options) =>
   options.scope === "user" ? options.home : options.project;
-/** @param {Record<string,string>} source */
-const sourceDigest = (source) =>
-  digest(
-    Object.keys(source)
-      .sort()
-      .map((path) => `${JSON.stringify(path)}:${digest(source[path] ?? "")}\n`)
-      .join(""),
-  );
-
 /** @param {Options} options @param {'install'|'update'} command */
 export function install(options, command) {
   const root = scopeRoot(options);
@@ -437,28 +431,15 @@ function validateRuntime(runtimeRoot, state, harness) {
   validateSource(source, harness);
   if (sourceDigest(source) !== state.digest)
     throw new Error("INSTALL-VERSION: archived distribution has changed");
-  const prefix = `${nativeDirectory(harness)}/`;
   const referenceRoot =
     state.scope === "project"
       ? `.vouch/versions/${state.digest}/${harness}`
       : runtimeRoot;
-  for (const [path, text] of Object.entries(source)) {
-    if (
-      path !== "AGENTS.md" &&
-      !path.startsWith(`${prefix}hooks/`) &&
-      !path.startsWith(`${prefix}registry/`) &&
-      !path.startsWith(`${prefix}templates/`)
-    )
-      continue;
-    const target = path === "AGENTS.md" ? path : path.slice(prefix.length);
-    if (
-      readInside(runtimeRoot, target) !==
-      (path.endsWith(".md")
-        ? installedText(text, harness, referenceRoot)
-        : text)
-    )
+  for (const [target, expected] of Object.entries(
+    runtimeContents(source, harness, referenceRoot),
+  ))
+    if (readInside(runtimeRoot, target) !== expected)
       throw new Error(`INSTALL-VERSION: runtime has changed: ${target}`);
-  }
   return source;
 }
 

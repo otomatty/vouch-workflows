@@ -1,6 +1,7 @@
 import runtime from "../../registry/runtime.json" with { type: "json" };
 import { createFileStore } from "./fs.mjs";
 import { restoreOwned } from "./installation-ownership.mjs";
+import { verifyManagedRuntime } from "./installation-runtime.mjs";
 import { enableCodex } from "./installation-toml.mjs";
 
 /** @param {unknown} value @returns {value is Record<string,unknown>} */
@@ -186,6 +187,15 @@ export async function inspectInstallation(files, environment, git) {
         throw new Error("managed runtime path differs");
       if (!state.owned.some((item) => object(item) && item.kind === "hooks"))
         throw new Error("missing owned registration");
+      await verifyManagedRuntime(
+        installationFiles,
+        {
+          harness,
+          scope: String(state.scope),
+          digest: state.digest,
+        },
+        selectedRoot,
+      );
       for (const entry of state.owned) {
         if (!object(entry) || typeof entry.path !== "string")
           throw new Error("invalid owned activation entry");

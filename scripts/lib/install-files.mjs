@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import {
   existsSync,
   lstatSync,
@@ -10,9 +9,6 @@ import {
   writeFileSync,
 } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
-
-/** @param {string} text */
-export const digest = (text) => createHash("sha256").update(text).digest("hex");
 
 /** Every setup read/write rejects links, including existing ancestors.
  * @param {string} path @returns {import('node:fs').Stats|undefined} */

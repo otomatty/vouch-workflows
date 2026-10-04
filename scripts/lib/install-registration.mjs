@@ -133,56 +133,7 @@ export const skillsDirectory = (harness) =>
 export const registrationPath = (harness) =>
   `${nativeDirectory(harness)}/${harness === "claude" ? "settings.json" : "hooks.json"}`;
 
-/** A local Markdown destination, with syntax characters encoded rather than interpreted.
- * @param {string} path */
-export const markdownDestination = (path) =>
-  `<${encodeURI(path.replaceAll("\\", "/")).replace(/[()#?']/g, (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`)}>`;
-
-/** Rebind all distributed references and route manual commands through activation.
- * @param {string} text @param {string} harness @param {string} runtimeRoot */
-export function installedText(text, harness, runtimeRoot) {
-  const prefix = `.${harness}`;
-  const at = runtimeRoot.replaceAll("\\", "/");
-  const operations = "doctor|dod|lifecycle|migrate|question|report|statusline";
-  const operation = `node ("?)\\.${harness}/hooks/vouch-(${operations})\\.mjs`;
-  /** @param {string} action */
-  const manual = (action) =>
-    `node ${(process.platform === "win32" ? powershell : sh)(`${at}/hooks/vouch-launch.mjs`)} ${action} manual`;
-  /** @param {string} value */
-  const rebind = (value) =>
-    value.replace(
-      new RegExp(`${operation}\\1|\\.${harness}/`, "g"),
-      (_match, _quote, action) => (action ? manual(action) : `${at}/`),
-    );
-  text = text.replace(
-    new RegExp(
-      [
-        "`([^`\\r\\n]+)`",
-        `\\]\\((\\.${harness}/[^)\\s]+)\\)`,
-        `${operation}\\3`,
-        `\\.${harness}/`,
-      ].join("|"),
-      "g",
-    ),
-    (_match, code, link, _quote, action) => {
-      if (code !== undefined) {
-        const body = rebind(code);
-        const width = Math.max(
-          0,
-          ...(body.match(/`+/g) ?? []).map((word) => word.length),
-        );
-        const fence = "`".repeat(width + 1);
-        return width ? `${fence} ${body} ${fence}` : `${fence}${body}${fence}`;
-      }
-      if (link !== undefined)
-        return `](${markdownDestination(`${at}/${link.slice(prefix.length + 1)}`)})`;
-      return action ? manual(action) : `${at}/`;
-    },
-  );
-  if (harness === "codex" && text.includes("developer_instructions = '''\n"))
-    text = text.replace(
-      /developer_instructions = '''\n([\s\S]*)'''\n$/,
-      (_match, body) => `developer_instructions = ${JSON.stringify(body)}\n`,
-    );
-  return text;
-}
+export {
+  installedText,
+  markdownDestination,
+} from "../../core/hooks/lib/installation-runtime.mjs";
