@@ -1,4 +1,6 @@
 // Native Cursor transport only; workflow decisions stay in shared product hooks.
+import { resolve } from "node:path";
+
 /** @param {unknown} value @returns {value is Record<string,unknown>} */
 const object = (value) =>
   value !== null && typeof value === "object" && !Array.isArray(value);
@@ -44,6 +46,9 @@ export function cursorInput(value, root) {
       StrReplace: "Edit",
       str_replace: "Edit",
       edit_file: "Edit",
+      Delete: "Delete",
+      delete_file: "Delete",
+      delete: "Delete",
       Bash: "Bash",
       Shell: "Bash",
       shell: "Bash",
@@ -53,10 +58,14 @@ export function cursorInput(value, root) {
     const input = { ...value.tool_input };
     if (!Object.hasOwn(input, "file_path") && text(input.path))
       input.file_path = input.path;
+    const tool = names[value.tool_name] ?? value.tool_name;
     return {
       ...base,
+      ...(tool === "Bash" && text(input.working_directory)
+        ? { cwd: resolve(base.cwd, input.working_directory) }
+        : {}),
       hook_event_name: "PreToolUse",
-      tool_name: names[value.tool_name] ?? value.tool_name,
+      tool_name: tool,
       tool_input: input,
       ...(text(value.tool_use_id) ? { tool_use_id: value.tool_use_id } : {}),
     };

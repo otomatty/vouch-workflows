@@ -84,7 +84,7 @@ export async function guardWrites(input, ctx, entry) {
           ? { area: /** @type {const} */ ("installation"), ancestor: false }
           : null
         : classifySegments(split(at.inside), scope));
-    if (!match || match.ancestor) return;
+    if (!match || (match.ancestor && kind !== "delete")) return;
     if (match.area !== "artifact") return void found.push([match.area, shown]);
     /** @type {string|null} */ let current = null;
     try {
@@ -96,7 +96,7 @@ export async function guardWrites(input, ctx, entry) {
       found.push(["approved", shown]);
   }
 
-  if (kind === "write") {
+  if (kind === "write" || kind === "delete") {
     const content = tool.content;
     await target(
       subject,
