@@ -32,4 +32,10 @@ jobs:
           echo "TEMP=$RUNNER_TEMP" >> "$GITHUB_ENV"
       - run: npm ci
       - run: npm run doctor
-      - run: npm run check
+      - id: check
+        run: npm run check
+      # Diagnostic only, after the unchanged gate; profiler overhead is never a budget result.
+      - name: Diagnose process startup and populated resume
+        if: always() && runner.os == 'Windows' && steps.check.outcome != 'skipped'
+        timeout-minutes: 1
+        run: node scripts/benchmark-hook.mjs --resume --load --profile

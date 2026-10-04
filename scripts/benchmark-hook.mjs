@@ -3,7 +3,6 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
-  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
@@ -14,10 +13,23 @@ import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
 import budgets from "../core/registry/budgets.json" with { type: "json" };
 import operations from "../core/registry/operations.json" with { type: "json" };
+import { planned } from "../tests/helpers/intent-review.mjs";
+import {
+  asked,
+  auditPath,
+  card,
+  decisions,
+  defaulted,
+  home,
+  jsonl,
+  intent as resumeIntent,
+} from "../tests/helpers/resume.mjs";
+import { profileSummary } from "./lib/benchmark-profile.mjs";
 
 // Developer-only alternating measurements. The contract test remains the budget gate.
 // --load keeps CPU-count - 1 background workers spawning no-op hooks, like a parallel suite.
-// --profile samples each hook's main thread and reports its CPU time by category.
+// --profile samples each main thread; times may include blocking I/O and idle time.
+// --resume compares populated replay with empty/no-op processes, retaining each profile.
 /** @param {string} path @param {string} event */
 function captured(path, event) {
   const fixture = JSON.parse(
@@ -37,6 +49,10 @@ function captured(path, event) {
 }
 const startup = captured("codex/0.153.4/SessionStart.json", "SessionStart");
 const prompt = captured("claude/UserPromptSubmit.json", "UserPromptSubmit");
+const resumed = captured(
+  "claude/2.1.283/linux/print/SessionStart.resume.json",
+  "SessionStart",
+);
 const hook = (/** @type {string} */ name) =>
   fileURLToPath(new URL(`../core/hooks/${name}.mjs`, import.meta.url));
 const preload = `--import=${new URL("../tests/helpers/fixed-clock.mjs", import.meta.url).href}`;
@@ -54,6 +70,7 @@ const components = {
 };
 
 const profile = process.argv.includes("--profile");
+const resume = process.argv.includes("--resume");
 
 /** @param {string} root @param {string} mode @param {number} i */
 function execution(root, mode, i) {
@@ -64,6 +81,7 @@ function execution(root, mode, i) {
         "--cpu-prof",
         "--cpu-prof-interval=100",
         `--cpu-prof-dir=${join(root, "profiles", mode)}`,
+        `--cpu-prof-name=sample-${i}.cpuprofile`,
       ]
     : [];
   const args = [
@@ -88,8 +106,13 @@ function execution(root, mode, i) {
   /** @type {NodeJS.ProcessEnv} */ const env = {
     ...process.env,
     VOUCH_PROJECT_ROOT: root,
-    VOUCH_HARNESS: review ? "claude" : "codex",
-    VOUCH_INTENT: mode === "noop" || mode === "load" ? "" : mode,
+    VOUCH_HARNESS: review || mode === "resume" ? "claude" : "codex",
+    VOUCH_INTENT:
+      mode === "noop" || mode === "load"
+        ? ""
+        : mode === "resume"
+          ? resumeIntent
+          : mode,
     VOUCH_TEST_TIME: "2026-09-27T00:00:00.000Z",
   };
   delete env.NODE_V8_COVERAGE;
@@ -100,7 +123,9 @@ function execution(root, mode, i) {
         prompt: "vouch review",
         prompt_id: `${mode}-${i}`,
       }
-    : { ...startup.payload, cwd: root, session_id: `${mode}-${i}` };
+    : mode === "resume"
+      ? { ...resumed.payload, cwd: root }
+      : { ...startup.payload, cwd: root, session_id: `${mode}-${i}` };
   return { args, env, input: JSON.stringify(input) };
 }
 
@@ -127,66 +152,38 @@ if (process.argv[2] === "--load-worker") {
       windowsHide: true,
     });
   }
+  process.exit(0);
 }
 
 const load = process.argv.includes("--load");
 const root = mkdtempSync(join(tmpdir(), "vouch-benchmark-hook-"));
 mkdirSync(join(root, "vouch/intents/review"), { recursive: true });
 writeFileSync(join(root, "vouch/intents/review/intent.md"), draft);
-const modes = profile
-  ? ["esm-empty", "noop", "record", "record-clock", "review"]
-  : [
-      "empty",
-      "esm-empty",
-      "preload-empty",
-      ...Object.keys(components),
-      "noop",
-      "record",
-      "record-clock",
-      "review",
-    ];
-
-/** @param {{functionName:string,url:string}} frame */
-function category(frame) {
-  const { functionName: name, url } = frame;
-  if (url.includes("/core/hooks/lib/validation.mjs")) return "hook validation";
-  if (url.includes("/core/hooks/")) return "hook code";
-  if (url.startsWith("node:internal/modules/")) return "module loader";
-  if (url.startsWith("node:internal/bootstrap/")) return "builtin compile";
-  if (url.startsWith("node:")) return "node other";
-  if (!url) return name.startsWith("(") ? name : `native ${name}`;
-  return "other";
+if (resume) {
+  const questions = Array.from({ length: 40 }, (_, i) => asked(`Q-${i + 1}`));
+  mkdirSync(join(root, home, "audit"), { recursive: true });
+  writeFileSync(join(root, home, "intent.md"), planned());
+  writeFileSync(join(root, home, "decisions.md"), decisions(card()));
+  writeFileSync(
+    join(root, auditPath),
+    jsonl([...questions, ...questions.slice(0, 20).map(defaulted)]),
+  );
 }
+const modes = resume
+  ? ["esm-empty", "noop", "resume"]
+  : profile
+    ? ["esm-empty", "noop", "record", "record-clock", "review"]
+    : [
+        "empty",
+        "esm-empty",
+        "preload-empty",
+        ...Object.keys(components),
+        "noop",
+        "record",
+        "record-clock",
+        "review",
+      ];
 
-/**
- * Main-thread CPU per execution by category; wall time minus this is process creation,
- * work before the profiler starts, other threads and exit.
- * @param {string} mode
- */
-function profiled(mode) {
-  const directory = join(root, "profiles", mode);
-  const files = readdirSync(directory);
-  /** @type {Record<string,number>} */ const totals = {};
-  for (const file of files) {
-    /** @type {{nodes:{id:number,callFrame:{functionName:string,url:string}}[],samples:number[],timeDeltas:number[]}} */
-    const cpu = JSON.parse(readFileSync(join(directory, file), "utf8"));
-    const frames = new Map(cpu.nodes.map((node) => [node.id, node.callFrame]));
-    cpu.samples.forEach((id, index) => {
-      const frame = frames.get(id);
-      const key = frame ? category(frame) : "unknown";
-      totals[key] =
-        (totals[key] ?? 0) + (cpu.timeDeltas[index + 1] ?? 0) / 1000;
-    });
-  }
-  const perRun = Object.entries(totals)
-    .map(([name, ms]) => ({ name, ms: ms / files.length }))
-    .sort((a, b) => b.ms - a.ms);
-  return {
-    executions: files.length,
-    sampled_ms: perRun.reduce((sum, entry) => sum + entry.ms, 0),
-    categories: perRun.filter((entry) => entry.ms >= 0.05),
-  };
-}
 const workers = load
   ? Array.from({ length: Math.max(1, availableParallelism() - 1) }, () =>
       spawn(
@@ -199,7 +196,7 @@ const workers = load
       ),
     )
   : [];
-/** @type {{mode:string,ms:number}[]} */ const samples = [];
+/** @type {{mode:string,index:number,ms:number}[]} */ const samples = [];
 try {
   for (let i = 0; i < budgets.timing.samples; i++)
     for (const mode of modes) {
@@ -229,9 +226,11 @@ try {
         throw new Error(
           `Benchmark failed: ${result.error?.message ?? result.stderr}`,
         );
-      samples.push({ mode, ms: elapsed });
+      samples.push({ mode, index: i, ms: elapsed });
     }
-  for (const mode of ["record", "record-clock", "review"]) {
+  for (const mode of modes.filter((mode) =>
+    ["record", "record-clock", "review"].includes(mode),
+  )) {
     const rows = readFileSync(
       join(root, "vouch/intents", mode, "audit/events.jsonl"),
       "utf8",
@@ -249,6 +248,19 @@ try {
     )
       throw new Error("Benchmark did not record every expected event");
   }
+  if (resume) {
+    const rows = readFileSync(join(root, auditPath), "utf8")
+      .trim()
+      .split("\n")
+      .map((row) => JSON.parse(row));
+    if (
+      rows.length !== 61 ||
+      rows.filter((row) => row.type === "session.resumed").length !== 1
+    )
+      throw new Error(
+        "Benchmark resume did not preserve the initial audit and replay one session",
+      );
+  }
   console.log(
     JSON.stringify(
       {
@@ -257,7 +269,9 @@ try {
         cpus: availableParallelism(),
         loadWorkers: workers.length,
         synthetic: true,
-        fixtureVersions: [startup.version, prompt.version],
+        fixtureVersions: resume
+          ? [resumed.version]
+          : [startup.version, prompt.version],
         budgetGate: false,
         scope: profile
           ? "profiled executions; wall times include profiler overhead"
@@ -272,7 +286,14 @@ try {
             samples: values.length,
             p50_ms: values[Math.ceil(values.length * 0.5) - 1],
             p95_ms: values[Math.ceil(values.length * 0.95) - 1],
-            ...(profile ? { profile: profiled(mode) } : {}),
+            ...(profile
+              ? {
+                  profile: profileSummary(
+                    join(root, "profiles", mode),
+                    samples.filter((sample) => sample.mode === mode),
+                  ),
+                }
+              : {}),
           };
         }),
         samples,
