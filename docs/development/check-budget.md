@@ -39,6 +39,8 @@
 
 ## 契約
 
+PR #38 の通常検査は `test:ordinary` が実行し、静的検査と同時に開始する。ケース5秒・ファイル90秒が共通する配布・scenario・通常hooksは、CPU数を上限とする一つの integration グループで実行する。このグループ全体で従来のhooksカバレッジを収集し、全製品入口の行・分岐と欠落検査を維持する。unitの関数100%・行・分岐カバレッジと5秒ファイル制限、coldなネイティブpreflightは独立した段で維持する。全ファイルを一度ずつ実行する。`test:performance` は lint・型検査・全通常検査の成功後に実行し、全20標本・CPU数−1の負荷・単独実行と元の閾値を維持する。失敗した通常検査の後に性能検査を開始しない。従来の `test:checks` / `test:hooks` の個別実行も保持する。全体の90秒／Windows150秒と並列数は変更しない。
+
 1. `budgets.schema.json` の `timing.checkTimeoutMs` は、必須の `default` と任意の `win32` を持つオブジェクトです。どちらも正の整数で、その他のキーは拒否します。`timing.testFileTimeoutMs` は必須の正の整数です。
 2. `scripts/check.mjs` は、実行中の OS（`process.platform`）の値を check 全体の締め切りに使います。その OS の値がなければ `default` を使います。成功時には所要時間と予算を表示します。
 3. `scripts/test.mjs` と `scripts/benchmark-suite.mjs` は、hooks・scenario と下記の distribution のファイル単位の `--test-timeout` に `testFileTimeoutMs` を使います。その他の階層は `testTimeoutMs`（5秒）です。どちらも `checkTimeoutMs` を読みません。
