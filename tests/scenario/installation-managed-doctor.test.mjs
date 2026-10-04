@@ -205,5 +205,50 @@ group(
           },
           t,
         );
+    for (const kind of ["hooks", "skill", "agent", "block"])
+      for (const route of ["distributed", "installer"])
+        await test(
+          `${route} doctor rejects jointly changed ${kind} bytes and ownership content`,
+          async (t) => {
+            const statePath = "project/.vouch/bindings/codex.json";
+            const original = await box.read(statePath);
+            const state = JSON.parse(original);
+            const entry = state.owned.find(
+              (/** @type {{path:string,kind:string}} */ item) =>
+                kind === "skill"
+                  ? item.path === ".agents/skills/vouch/SKILL.md"
+                  : kind === "agent"
+                    ? item.path.startsWith(".codex/agents/")
+                    : item.kind === kind,
+            );
+            if (!entry) throw new Error(`missing ${kind} fixture`);
+            const path = `project/${entry.path}`;
+            const beforeText = await box.read(path);
+            const oldContent = entry.content;
+            entry.content =
+              kind === "hooks"
+                ? oldContent.replaceAll("vouch-launch.mjs", "other-launch.mjs")
+                : `${oldContent}\nchanged owned contribution\n`;
+            t.assert.notEqual(entry.content, oldContent);
+            await box.write(
+              path,
+              beforeText.replace(oldContent, entry.content),
+            );
+            await box.write(statePath, JSON.stringify(state));
+            try {
+              const before = tree(box.root);
+              const result =
+                route === "distributed"
+                  ? doctor()
+                  : installRun("doctor", box, "codex", "user");
+              t.assert.equal(result.status, 2, result.stdout + result.stderr);
+              t.assert.deepEqual(tree(box.root), before);
+            } finally {
+              await box.write(path, beforeText);
+              await box.write(statePath, original);
+            }
+          },
+          t,
+        );
   },
 );
