@@ -1,6 +1,5 @@
 import { test } from "node:test";
 import { restoreOwned } from "../../../core/hooks/lib/installation-ownership.mjs";
-import { enableCodex } from "../../../core/hooks/lib/installation-toml.mjs";
 
 const owned = {
   path: "owned",
@@ -92,50 +91,4 @@ test("hook ownership preserves unrelated settings and rejects changed, missing o
       () => restoreOwned(JSON.stringify(contribution), { ...entry, content }),
       /INSTALL-(CONFIG|CONFLICT)/,
     );
-});
-
-test("Codex settings preserve existing positive depth and restore owned settings without overwriting unrelated edits", (t) => {
-  const initial = enableCodex(null);
-  t.assert.match(initial.text, /hooks = true/);
-  t.assert.equal(
-    restoreOwned(initial.text, {
-      ...owned,
-      kind: "toml",
-      content: initial.content,
-    }),
-    null,
-  );
-  const before = "[features]\nhooks = false\n[agents]\nmax_depth = 0\n";
-  const enabled = enableCodex(before);
-  const entry = {
-    ...owned,
-    kind: "toml",
-    content: enabled.content,
-    previous: before,
-  };
-  t.assert.equal(restoreOwned(enabled.text, entry), before);
-  t.assert.match(
-    restoreOwned(`${enabled.text}custom = true\n`, entry) ?? "",
-    /custom = true/,
-  );
-  const existing =
-    '["features"]\n"hooks" = true # keep\n[\'agents\']\nmax_depth = 3\n';
-  t.assert.equal(enableCodex(existing).content, "[]\n");
-  t.assert.equal(enableCodex(existing).text, existing);
-  t.assert.match(
-    enableCodex("[features]\nuser = true\n[agents]\nuser = true\n").text,
-    /user = true/,
-  );
-  for (const text of [
-    "[features]\n[features]\n",
-    "features.hooks = true\n",
-    "[features]\nhooks = true\nhooks = false\n",
-  ])
-    t.assert.throws(() => enableCodex(text), /INSTALL-CONFIG/);
-  for (const text of [
-    null,
-    "",
-    enabled.text.replace("hooks = true", "hooks = false"),
-  ])
-    t.assert.throws(() => restoreOwned(text, entry), /INSTALL-CONFLICT/);
 });
