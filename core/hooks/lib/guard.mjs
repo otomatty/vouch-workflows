@@ -255,7 +255,9 @@ export async function guardWrites(input, ctx, entry) {
           : classifySegments(split(at.inside), scope));
       if (match) result.push([match.area, shown, match.ancestor]);
     }
-    const parts = split(word);
+    const parts = split(word).map((part) =>
+      /(?:\$|%[^%]+%)/.test(part) ? "*" : part,
+    );
     const lexical =
       external && scope.managed ? { installation: null, installed: [] } : scope;
     for (let i = 0; i < parts.length; i++) {

@@ -34,7 +34,7 @@ for (const harness of /** @type {const} */ (["claude", "codex", "cursor"]))
         const input = {
           session_id: "test",
           cwd,
-          hook_event_name: "PreToolUse",
+          hook_event_name: /** @type {const} */ ("PreToolUse"),
           tool_name: "Bash",
           tool_input: { command: `X=; rm "${path}"` },
         };

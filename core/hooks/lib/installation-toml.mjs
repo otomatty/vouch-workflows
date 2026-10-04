@@ -74,6 +74,77 @@ function rejectMultiline(text) {
     throw new Error(
       "INSTALL-CONFIG: unfinished Codex TOML array or inline table",
     );
+  validateSeparators(text);
+}
+/** Require single-line value separators; quoted punctuation stays in one token. @param {string} text */
+function validateSeparators(text) {
+  for (const line of text.split("\n")) {
+    /** @type {string[]} */ const tokens =
+      line.match(
+        /"(?:\\.|[^"\\])*"|'[^']*'|#[^\n]*|[^\s#,"'=[\]{}]+|[=,[\]{}]/g,
+      ) ?? [];
+    const comment = tokens.findIndex((token) => token.startsWith("#"));
+    if (comment >= 0) tokens.splice(comment);
+    const assignment = tokens.indexOf("=");
+    if (assignment < 0) continue;
+    let at = assignment + 1;
+    /** @returns {void} */
+    function value() {
+      const token = tokens[at++];
+      if (!token || /^[,=\]}]$/.test(token))
+        throw new Error("INSTALL-CONFIG: missing Codex TOML value");
+      if (token !== "[" && token !== "{") {
+        // TOML permits one space between a date and its time.
+        if (
+          /^\d{4}-\d\d-\d\d$/.test(token) &&
+          /^\d\d:\d\d:\d\d(?:\.\d+)?(?:[Zz]|[+-]\d\d:\d\d)?$/.test(
+            tokens[at] ?? "",
+          )
+        )
+          at++;
+        return;
+      }
+      const inline = token === "{";
+      const close = inline ? "}" : "]";
+      if (tokens[at] === close) {
+        at++;
+        return;
+      }
+      while (at < tokens.length) {
+        if (inline) {
+          const start = at;
+          while (at < tokens.length && tokens[at] !== "=") at++;
+          const key = tokens.slice(start, at).join(" ");
+          if (
+            !/^(?:[\w-]+|"(?:\\.|[^"\\])*"|'[^']*')(?:\s*\.\s*(?:[\w-]+|"(?:\\.|[^"\\])*"|'[^']*'))*$/.test(
+              key,
+            ) ||
+            tokens[at++] !== "="
+          )
+            throw new Error(
+              "INSTALL-CONFIG: invalid Codex TOML inline table key",
+            );
+        }
+        value();
+        if (tokens[at] === close) {
+          at++;
+          return;
+        }
+        if (tokens[at++] !== ",")
+          throw new Error("INSTALL-CONFIG: missing Codex TOML value separator");
+        if (tokens[at] === close && !inline) {
+          at++;
+          return;
+        }
+      }
+      throw new Error(
+        "INSTALL-CONFIG: unfinished Codex TOML array or inline table",
+      );
+    }
+    value();
+    if (at !== tokens.length)
+      throw new Error("INSTALL-CONFIG: missing Codex TOML value separator");
+  }
 }
 /** @param {string} text @param {string} section */
 function sectionBounds(text, section) {
