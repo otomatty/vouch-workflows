@@ -74,7 +74,22 @@ export function validateTomlValues(text) {
     const comment = tokens.findIndex((token) => token.startsWith("#"));
     if (comment >= 0) tokens.splice(comment);
     const assignment = tokens.indexOf("=");
-    if (assignment < 0) continue;
+    if (assignment < 0) {
+      if (tokens.length === 0) continue;
+      const width = tokens[0] === "[" && tokens[1] === "[" ? 2 : 1;
+      if (
+        (width === 2 &&
+          (!line.trimStart().startsWith("[[") ||
+            !/\]\]\s*(?:#.*)?$/.test(line))) ||
+        !tokens.slice(0, width).every((token) => token === "[") ||
+        !tokens.slice(-width).every((token) => token === "]") ||
+        !validTomlKey(tokens.slice(width, -width))
+      )
+        throw new Error("INSTALL-CONFIG: invalid Codex TOML table header");
+      continue;
+    }
+    if (!validTomlKey(tokens.slice(0, assignment)))
+      throw new Error("INSTALL-CONFIG: invalid Codex TOML assignment key");
     let at = assignment + 1;
     /** @returns {void} */
     function value() {
@@ -104,13 +119,7 @@ export function validateTomlValues(text) {
         if (inline) {
           const start = at;
           while (at < tokens.length && tokens[at] !== "=") at++;
-          const key = tokens.slice(start, at).join(" ");
-          if (
-            !/^(?:[\w-]+|"(?:\\.|[^"\\])*"|'[^']*')(?:\s*\.\s*(?:[\w-]+|"(?:\\.|[^"\\])*"|'[^']*'))*$/.test(
-              key,
-            ) ||
-            tokens[at++] !== "="
-          )
+          if (!validTomlKey(tokens.slice(start, at)) || tokens[at++] !== "=")
             throw new Error(
               "INSTALL-CONFIG: invalid Codex TOML inline table key",
             );
@@ -135,6 +144,20 @@ export function validateTomlValues(text) {
     if (at !== tokens.length)
       throw new Error("INSTALL-CONFIG: missing Codex TOML value separator");
   }
+}
+
+/** Bare, quoted and dotted keys share their grammar in every position. @param {string[]} tokens */
+function validTomlKey(tokens) {
+  return (
+    /^(?:[\w-]+|"(?:\\.|[^"\\])*"|'[^']*')(?:\s*\.\s*(?:[\w-]+|"(?:\\.|[^"\\])*"|'[^']*'))*$/.test(
+      tokens.join(" "),
+    ) &&
+    tokens.every(
+      (token) =>
+        (!token.startsWith('"') && !token.startsWith("'")) ||
+        validTomlScalar(token),
+    )
+  );
 }
 
 /** Scalar grammar only; the editor separately refuses multiline strings. @param {string} token */
