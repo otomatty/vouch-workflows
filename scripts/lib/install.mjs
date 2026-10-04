@@ -217,11 +217,12 @@ export function initialize(options) {
       readInside(options.project, statePath(options.harness)),
       { harness: options.harness },
     );
-    const userState = readInstallation(
-      readInside(options.home, statePath(options.harness)),
-      { harness: options.harness },
-    );
     const local = projectState?.scope === "project" ? projectState : null;
+    const userState = local
+      ? null
+      : readInstallation(readInside(options.home, statePath(options.harness)), {
+          harness: options.harness,
+        });
     const global = userState?.scope === "user" ? userState : null;
     const selected = local ?? global;
     if (!selected)
