@@ -86,29 +86,39 @@ for (const scope of ["project", "user"])
           },
           t,
         );
-      await test(
-        "an EOF comment cannot hide an unmatched Codex array bracket from doctor",
-        async (t) => {
-          const path = "project/.codex/config.toml";
-          const original = await box.read(path);
-          await box.write(path, `${original}\nx = ] # trailing`);
-          try {
-            const before = tree(box.root);
-            const result = doctor();
-            t.assert.equal(result.status, 2, result.stdout + result.stderr);
-            t.assert.equal(
-              JSON.parse(result.stdout).checks.some(
-                (/** @type {{id:string,ok:boolean}} */ check) =>
-                  check.id === "DOCTOR-ACTIVATION" && !check.ok,
-              ),
-              true,
-            );
-            t.assert.deepEqual(tree(box.root), before);
-          } finally {
-            await box.write(path, original);
-          }
-        },
-        t,
-      );
+      for (const [name, invalid] of [
+        [
+          "an EOF comment cannot hide an unmatched Codex array bracket",
+          "x = ] # trailing",
+        ],
+        [
+          "an unfinished inline table cannot look like active Codex settings",
+          "x = { a = 1 # trailing",
+        ],
+      ])
+        await test(
+          `${name} from doctor`,
+          async (t) => {
+            const path = "project/.codex/config.toml";
+            const original = await box.read(path);
+            await box.write(path, `${original}\n${invalid}`);
+            try {
+              const before = tree(box.root);
+              const result = doctor();
+              t.assert.equal(result.status, 2, result.stdout + result.stderr);
+              t.assert.equal(
+                JSON.parse(result.stdout).checks.some(
+                  (/** @type {{id:string,ok:boolean}} */ check) =>
+                    check.id === "DOCTOR-ACTIVATION" && !check.ok,
+                ),
+                true,
+              );
+              t.assert.deepEqual(tree(box.root), before);
+            } finally {
+              await box.write(path, original);
+            }
+          },
+          t,
+        );
     },
   );
