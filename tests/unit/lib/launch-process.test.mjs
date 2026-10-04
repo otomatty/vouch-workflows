@@ -1,5 +1,31 @@
 import { test } from "node:test";
-import { executeProduct } from "../../../core/hooks/lib/launch-process.mjs";
+import {
+  executeProduct,
+  nodeArguments,
+} from "../../../core/hooks/lib/launch-process.mjs";
+
+test("literal POSIX paths use fixed loader code with the entry and arguments kept as data", (t) => {
+  const entry = "/tmp/home\\name/'$` runtime/entry.mjs";
+  for (const platform of /** @type {const} */ (["linux", "win32"])) {
+    const args = nodeArguments(entry, ["doctor", "manual"], platform);
+    if (platform === "win32")
+      t.assert.deepEqual(args, [entry, "doctor", "manual"]);
+    else {
+      t.assert.equal(args[0], "-e");
+      t.assert.match(args[1], /registerHooks/);
+      t.assert.equal(args[1].includes(entry), false);
+      t.assert.deepEqual(args.slice(2), [entry, "doctor", "manual"]);
+    }
+  }
+  t.assert.deepEqual(nodeArguments("/normal/entry.mjs", ["guard"], "linux"), [
+    "/normal/entry.mjs",
+    "guard",
+  ]);
+  t.assert.equal(
+    nodeArguments("/entry.mjs", ["guard"], "linux", true)[0],
+    "-e",
+  );
+});
 
 test("process launcher passes only trusted selection and never builds a shell command", (t) => {
   const selected = {

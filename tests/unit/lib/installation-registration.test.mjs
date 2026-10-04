@@ -57,9 +57,10 @@ test("native registrations keep each harness's event names, actions and project 
         if (harness === "claude") {
           const hook = spec.hooks.SessionStart[0].hooks[0];
           t.assert.equal(hook.command, "node");
-          t.assert.equal(hook.args[1], "session");
-          t.assert.equal(hook.args[2], activeProject ? "project" : "user");
-          t.assert.equal(hook.args.length, activeProject ? 4 : 3);
+          const args = hook.args[0] === "-e" ? hook.args.slice(2) : hook.args;
+          t.assert.equal(args[1], "session");
+          t.assert.equal(args[2], activeProject ? "project" : "user");
+          t.assert.equal(args.length, activeProject ? 4 : 3);
           t.assert.match(spec.statusLine.command, /node/);
         } else if (harness === "codex") {
           const hook = spec.hooks.PreToolUse[0].hooks[0];
@@ -71,7 +72,11 @@ test("native registrations keep each harness's event names, actions and project 
           }
         } else {
           t.assert.match(spec.hooks.preToolUse[0].command, /guard/);
-          if (root === runtime && activeProject)
+          if (
+            root === runtime &&
+            activeProject &&
+            !(platform === "linux" && root.includes("\\"))
+          )
             t.assert.equal(
               spec.hooks.preToolUse[0].command,
               `node ${canonical}/hooks/vouch-launch.mjs guard project .`,
@@ -99,4 +104,41 @@ test("Windows statusline carries paths as data and different-volume Cursor comma
     ),
   );
   t.assert.match(cursor.hooks.preToolUse[0].command, /^& node /);
+});
+
+test("all native registrations bootstrap literal POSIX backslashes for user and connected project runtimes", (t) => {
+  for (const harness of ["claude", "codex", "cursor"])
+    for (const platform of /** @type {const} */ (["linux", "win32"]))
+      for (const project of [undefined, resolve("project")]) {
+        const spec = JSON.parse(
+          JSON.stringify(
+            registration(
+              harness,
+              resolve("home\\name/runtime"),
+              "user",
+              project,
+              platform,
+            ),
+          ),
+        );
+        const hook =
+          harness === "cursor"
+            ? spec.hooks.preToolUse[0]
+            : spec.hooks.PreToolUse[0].hooks[0];
+        if (harness === "claude")
+          t.assert.equal(hook.args[0] === "-e", platform === "linux");
+        else
+          t.assert.equal(
+            (platform === "win32" && harness === "codex"
+              ? hook.commandWindows
+              : hook.command
+            ).includes("registerHooks"),
+            platform === "linux",
+          );
+        if (harness === "claude")
+          t.assert.equal(
+            spec.statusLine.command.includes("registerHooks"),
+            platform === "linux",
+          );
+      }
 });
