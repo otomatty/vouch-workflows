@@ -1,56 +1,58 @@
 import { isAbsolute, join, relative } from "node:path";
 
-const sh = (value: string) => `'${value.replaceAll("'", "'\\''")}'`;
-const powershell = (value: string) => `'${value.replaceAll("'", "''")}'`;
+/** Design D6: characters that no shell reads alike inside a double-quoted word. */
+export function assertQuotable(path: string) {
+  if (
+    /["$`%<>\n\r]/.test(path) ||
+    (process.platform !== "win32" && path.includes("\\"))
+  )
+    throw new Error(
+      `INSTALL-PATH: ${path} contains characters hook commands cannot quote in every shell`,
+    );
+}
 
+/** Walks up from the working directory to a project-relative launcher; no variables, quotes or `$`. */
+const findUp =
+  "const p=require('path'),f=require('fs');const r=process.argv[1];for(let d=process.cwd();;){const c=p.join(d,r);if(f.existsSync(c)){process.argv.splice(1,1,c);import(require('url').pathToFileURL(c).href);break}const u=p.dirname(d);if(u===d){console.error('VOUCH-LAUNCH: launcher not found: '+r);process.exit(1)}d=u}";
+
+/** One command that sh, Git Bash, PowerShell and cmd all run the same way. */
+export function launchCommand(entry: string, words: string[]) {
+  const path = entry.replaceAll("\\", "/");
+  const launcher = isAbsolute(entry) ? `"${path}"` : `-e "${findUp}" "${path}"`;
+  return `node ${launcher} ${words.join(" ")}`;
+}
+
+/** Project registrations only (design D3); the launcher finds the project itself. */
 export function registration(
   harness: string,
   runtimeRoot: string,
-  scope: string,
-  projectRoot: string | undefined,
+  projectRoot: string,
 ) {
   const entry = join(runtimeRoot, "hooks/vouch-launch.mjs");
-  const variable =
-    harness === "claude"
-      ? "CLAUDE_PROJECT_DIR"
-      : harness === "cursor"
-        ? "CURSOR_PROJECT_DIR"
-        : "VOUCH_PROJECT_ROOT";
-  const local = projectRoot
-    ? relative(projectRoot, entry).replaceAll("\\", "/")
-    : null;
-  const portable =
-    local !== null && !isAbsolute(local) && !local.startsWith("../");
-  const base = [
-    portable ? `\${${variable}}/${local}` : entry,
-    "",
-    scope,
-    ...(projectRoot ? [`\${${variable}}`] : []),
-  ];
+  const local = relative(projectRoot, entry).replaceAll("\\", "/");
+  const inside = !isAbsolute(local) && !local.startsWith("../");
   const hook = (action: string) => {
-    const args = base.map((word, i) => (i === 1 ? action : word));
-    if (harness === "claude") return { type: "command", command: "node", args };
-    const quote = (word: string) =>
-      word.startsWith(`\${${variable}}`)
-        ? `"\${${variable}:?${variable} required}${word.slice(variable.length + 3)}"`
-        : sh(word);
-    const quoteWindows = (word: string) =>
-      word.startsWith(`\${${variable}}`)
-        ? `"$env:${variable}${word.slice(variable.length + 3)}"`
-        : powershell(word);
-    const command = `node ${args.map(quote).join(" ")}`;
+    // Claude expands its own variable in args without a shell.
+    if (harness === "claude")
+      return {
+        type: "command",
+        command: "node",
+        args: [
+          inside ? `\${CLAUDE_PROJECT_DIR}/${local}` : entry,
+          action,
+          "project",
+          `\${CLAUDE_PROJECT_DIR}`,
+        ],
+      };
+    const command = launchCommand(inside ? local : entry, [action, "project"]);
+    // PowerShell reports a native exit code only when asked to; Cursor reads JSON, not codes.
     return harness === "codex"
       ? {
           type: "command",
           command,
-          commandWindows: `& node ${args.map(quoteWindows).join(" ")}; exit $LASTEXITCODE`,
+          commandWindows: `${command}; exit $LASTEXITCODE`,
         }
-      : {
-          command:
-            process.platform === "win32"
-              ? `& node ${args.map(quoteWindows).join(" ")}`
-              : command,
-        };
+      : { command };
   };
   if (harness === "cursor")
     return {
@@ -126,7 +128,7 @@ export function installedText(
       "g",
     ),
     (_match, _quote, action) =>
-      `node ${(process.platform === "win32" ? powershell : sh)(`${at}/hooks/vouch-launch.mjs`)} ${action} manual`,
+      launchCommand(`${at}/hooks/vouch-launch.mjs`, [action, "manual"]),
   );
   text = text.replaceAll(`${prefix}/`, `${at}/`);
   if (harness === "codex" && text.includes("developer_instructions = '''\n"))

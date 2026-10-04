@@ -155,7 +155,7 @@ for (const harness of ["claude", "codex", "cursor"]) {
         ? [
             process.execPath,
             hook.args.map((arg: string) =>
-              arg.replaceAll("${CLAUDE_PROJECT_DIR}", root),
+              arg.replaceAll(`\${CLAUDE_PROJECT_DIR}`, root),
             ),
           ]
         : shell(

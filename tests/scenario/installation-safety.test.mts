@@ -2,11 +2,12 @@ import { mkdir, rm, symlink } from "node:fs/promises";
 import { test } from "node:test";
 import { commitChanges } from "../../scripts/lib/install-files.mjs";
 
-test("custom user home with shell metacharacters remains selectable without repeating the home flag to doctor", async (t) => {
+test("custom user home with spaces, non-ASCII and apostrophes remains selectable without repeating the home flag to doctor", async (t) => {
   const box = await sandbox(t);
   await mkdir(box.path("project"));
   distribution(t, box);
-  const home = box.path("日本語 home $ apostrophe'");
+  // Design D6: `$`, quotes and percent signs are refused (installation-selection tests).
+  const home = box.path("日本語 home apostrophe'");
   const installed = installRun("install", box, "codex", "user", [
     "--home",
     home,

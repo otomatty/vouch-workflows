@@ -114,7 +114,7 @@ export function install(options: Options, command: "install" | "update") {
     if (options.scope === "project") {
       changes.hooks(
         registrationPath(options.harness),
-        registration(options.harness, runtimeRoot, "project", options.project),
+        registration(options.harness, runtimeRoot, options.project),
       );
       if (options.harness === "codex") changes.codex(".codex/config.toml");
     }
@@ -230,7 +230,7 @@ export function initialize(options: Options) {
           changes.file(path, installedText(text, options.harness, runtimeRoot));
       changes.hooks(
         registrationPath(options.harness),
-        registration(options.harness, runtimeRoot, "project", options.project),
+        registration(options.harness, runtimeRoot, options.project),
       );
       if (options.harness === "codex") changes.codex(".codex/config.toml");
       activate(changes, options, selected, runtimeRoot);

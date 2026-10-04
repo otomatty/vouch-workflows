@@ -3,6 +3,7 @@ import { homedir } from "node:os";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { diagnose, initialize, install, remove } from "./lib/install.mjs";
+import { assertQuotable } from "./lib/install-registration.mjs";
 
 try {
   const [command, ...args] = process.argv.slice(2);
@@ -67,6 +68,11 @@ try {
     dist,
     ...(flags["--intent"] === undefined ? {} : { intent: flags["--intent"] }),
   };
+  // Design D6: generated commands and links embed these roots in double quotes.
+  if (["install", "update", "init"].includes(command)) {
+    assertQuotable(options.home);
+    assertQuotable(options.project);
+  }
   const result =
     command === "install" || command === "update"
       ? install(options, command)
