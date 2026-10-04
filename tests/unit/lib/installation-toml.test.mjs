@@ -7,6 +7,21 @@ import {
 
 const owned = { path: "owned", kind: "toml", content: "", previous: null };
 
+test("Codex rejects multiline nested arrays before creating duplicate keys and preserves inline arrays", (t) => {
+  for (const text of [
+    "[features]\nflags = [\n  [true, false],\n]\nhooks = false\n",
+    "[agents]\nflags = [ # nested values\n  [true, false],\n]\nmax_depth = 3\n",
+  ]) {
+    t.assert.throws(() => enableCodex(text), /INSTALL-CONFIG/);
+    t.assert.throws(() => removeCodex(text, "[]", null), /INSTALL-CONFIG/);
+  }
+  for (const text of [
+    "[features]\nflags = [[true, false], [false, true]] # [ ignored\nhooks = true\n[agents]\nmax_depth = 3\n",
+    'name = "[ = # ]"\n[features]\nhooks = true\n[agents]\nmax_depth = 3\n',
+  ])
+    t.assert.equal(enableCodex(text).text, text);
+});
+
 test("Codex TOML rejects settings disguised inside multiline strings and keeps ordinary quoted strings", (t) => {
   for (const quote of ['"""', "'''"]) {
     const text = `developer_instructions = ${quote}\n[features]\nhooks = true\n[agents]\nmax_depth = 3\n${quote}\n`;
