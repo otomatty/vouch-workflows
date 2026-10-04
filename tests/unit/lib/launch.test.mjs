@@ -1,4 +1,4 @@
-import { mkdir, rm } from "node:fs/promises";
+import { mkdir, rm, symlink } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 import { pathToFileURL } from "node:url";
@@ -93,6 +93,35 @@ function ports(root, args, result = { status: 0, stdout: "", stderr: "" }) {
   };
   return { hooks, seen };
 }
+test("all managed launchers execute the same runtime through a project junction", async (t) => {
+  for (const harness of ["claude", "codex", "cursor"]) {
+    const box = await setup(
+      t,
+      /** @type {'claude'|'codex'|'cursor'} */ (harness),
+    );
+    const alias = box.box.path("alias");
+    await symlink(box.root, alias, "junction");
+    for (const args of [
+      ["session", "project", alias],
+      ["doctor", "manual"],
+    ]) {
+      const command = ports(alias, args);
+      await launch(box.entry, command.hooks);
+      t.assert.equal(command.seen.stderr, "");
+      t.assert.equal(command.seen.calls.length, 1, `${harness}/${args[0]}`);
+      t.assert.equal(
+        command.seen.calls[0]?.[0],
+        join(
+          box.runtime,
+          "hooks",
+          args[0] === "session"
+            ? "vouch-record-session-start.mjs"
+            : "vouch-doctor.mjs",
+        ),
+      );
+    }
+  }
+});
 test("launcher selects only the configured project and Intent and routes manual arguments unchanged", async (t) => {
   const box = await setup(t);
   const native = ports(box.root, ["session", "project", box.root], {

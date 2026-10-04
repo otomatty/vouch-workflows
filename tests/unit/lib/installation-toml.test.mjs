@@ -7,6 +7,31 @@ import {
 
 const owned = { path: "owned", kind: "toml", content: "", previous: null };
 
+test("Codex retains every positive TOML integer spelling and replaces nonpositive depths", (t) => {
+  for (const value of [
+    "+3",
+    "1_000",
+    "+1_000",
+    "0xF_F",
+    "0o7_7",
+    "0b1_01",
+    "9223372036854775807",
+  ])
+    for (const key of ["max_depth", '"max_depth"', "'max_depth'"]) {
+      const before = `[features]\nhooks = true\n[agents]\n${key} = ${value} # retain exact bytes\n`;
+      const enabled = enableCodex(before);
+      t.assert.equal(enabled.text, before, value);
+      t.assert.equal(enabled.content, "[]\n");
+      t.assert.equal(removeCodex(before, enabled.content, before), before);
+    }
+  for (const value of ["0", "+0", "-0", "-1_000", "0x0", "0o0", "0b0"]) {
+    const before = `[features]\nhooks = true\n[agents]\nmax_depth = ${value}\n`;
+    const enabled = enableCodex(before);
+    t.assert.match(enabled.text, /max_depth = 1\n/);
+    t.assert.equal(removeCodex(enabled.text, enabled.content, before), before);
+  }
+});
+
 test("Codex preserves unrelated table assignments named features or agents while refusing root collisions", (t) => {
   for (const before of [
     '[provider]\nfeatures = "local"\nagents = 3\n',
