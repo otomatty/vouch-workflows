@@ -69,9 +69,12 @@ group(
             timeout: 4000,
           },
         );
-        t.assert.equal(result.status, 2, result.stderr);
+        t.assert.equal(result.status, 0, result.stderr);
         t.assert.equal(JSON.parse(result.stdout).permission, "deny");
-        t.assert.match(result.stderr, /VOUCH-GUARD-INSTALLATION/);
+        t.assert.match(
+          JSON.parse(result.stdout).user_message,
+          /VOUCH-GUARD-INSTALLATION/,
+        );
         t.assert.deepEqual(tree(box.root), before);
       },
       t,

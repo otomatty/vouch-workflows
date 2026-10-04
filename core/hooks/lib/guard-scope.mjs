@@ -1,7 +1,11 @@
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import guard from "../../registry/write-guard.json" with { type: "json" };
-import { nativeRegistrationNames, normalizeSegment } from "./areas.mjs";
+import {
+  matches,
+  nativeRegistrationNames,
+  normalizeSegment,
+} from "./areas.mjs";
 
 /** @param {import('./contracts.mjs').ReadyHookContext} ctx @param {string} entry
  * @returns {Promise<import('./runtime-contracts.mjs').GuardScope>} */
@@ -56,24 +60,53 @@ function contains(root, target) {
   return !isAbsolute(part) && part !== ".." && !part.startsWith(`..${sep}`);
 }
 
+/** Match a shell pattern only against a known canonical protected location.
+ * @param {string} root @param {string} target
+ * @returns {import('./runtime-contracts.mjs').GuardMatch|null} */
+function knownMatch(root, target) {
+  if (contains(root, target)) return { area: "installation", ancestor: false };
+  if (contains(target, root)) return { area: "installation", ancestor: true };
+  if (!/[*?[]/.test(target)) return null;
+  /** @param {string} value */
+  const segments = (value) =>
+    value
+      .replaceAll("\\", "/")
+      .split("/")
+      .filter(Boolean)
+      .map(normalizeSegment);
+  const parts = segments(target);
+  const names = segments(root);
+  const star = parts.indexOf("**");
+  const prefix = star < 0 ? parts : parts.slice(0, star);
+  for (let i = 0; i < Math.min(prefix.length, names.length); i++)
+    if (
+      !matches(
+        /** @type {string} */ (prefix[i]),
+        /** @type {string} */ (names[i]),
+      )
+    )
+      return null;
+  return {
+    area: "installation",
+    ancestor: star < 0 && prefix.length < names.length,
+  };
+}
+
 /** Canonical managed paths retain protection through aliases and junctions.
  * @param {import('./runtime-contracts.mjs').PathLocation} at
  * @param {import('./runtime-contracts.mjs').GuardScope} scope
  * @returns {import('./runtime-contracts.mjs').GuardMatch|null} */
 export function externalRuntimeMatch(at, scope) {
   if (at.outside && scope.externalRuntime) {
-    if (contains(scope.externalRuntime, at.outside))
-      return { area: "installation", ancestor: false };
-    if (contains(at.outside, scope.externalRuntime))
-      return { area: "installation", ancestor: true };
+    const match = knownMatch(scope.externalRuntime, at.outside);
+    if (match) return match;
   }
   for (const registration of scope.nativeRegistrations ?? []) {
     const root = at.outside ? registration.outside : registration.inside;
     const target = at.outside ?? at.inside;
     if (root === undefined || root === null || target === null) continue;
-    if (contains(root, target))
-      return { area: "installation", ancestor: false };
-    if (contains(target, root)) return { area: "installation", ancestor: true };
+    const match = knownMatch(root, target);
+    if (match) return match;
   }
   return null;
 }

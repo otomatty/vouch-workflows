@@ -41,6 +41,7 @@ for (const harness of /** @type {const} */ (["claude", "codex", "cursor"]))
       `"${native}/"${names[0]?.replace(/^./, "?")}`,
       `"${native}/"${names[0]?.replace(/^(.)/, "[$1]")}`,
       `"${home}/".*/hooks.json`,
+      `"${home}/".${harness}*`,
       `"${native}/"**`,
       `"${home}/.vouch/versions/"*/${harness}/hooks/*.mjs`,
     ]) {
@@ -49,7 +50,12 @@ for (const harness of /** @type {const} */ (["claude", "codex", "cursor"]))
       const result = await decide(command);
       t.assert.equal(result.decision, "deny", command);
       if (result.decision === "deny")
-        t.assert.match(result.reason, /^VOUCH-GUARD-INSTALLATION:/);
+        t.assert.match(
+          result.reason,
+          pattern.includes("**")
+            ? /^VOUCH-GUARD-(INSTALLATION|AUDIT):/
+            : /^VOUCH-GUARD-INSTALLATION:/,
+        );
     }
     const redirected = await decide(`echo changed > "${native}/"*.json`);
     t.assert.equal(redirected.decision, "deny");
@@ -57,9 +63,15 @@ for (const harness of /** @type {const} */ (["claude", "codex", "cursor"]))
       `cat "${native}/"*.json`,
       `rm "${native}/"cache*.txt`,
       `rm "${home}/unrelated/.${harness}/"*.json`,
-      `rm "${home}/.vouch/versions/other/"*/hooks/*.mjs`,
-    ])
-      t.assert.equal((await decide(command)).decision, "allow", command);
+      `rm "${home}"/.vouch/versions/other/*/hooks/*.mjs`,
+    ]) {
+      const result = await decide(command);
+      t.assert.equal(
+        result.decision,
+        "allow",
+        `${command}: ${JSON.stringify(result)}`,
+      );
+    }
     for (const name of names)
       t.assert.equal(
         await box.read(`home/.${harness}/${name}`),

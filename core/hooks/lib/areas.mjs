@@ -26,7 +26,7 @@ export function normalizeSegment(segment) {
 }
 
 /** A glob segment may match the name at its position. @param {string} segment @param {string} name */
-function matches(segment, name) {
+export function matches(segment, name) {
   if (!/[*?[]/.test(segment)) return segment === name;
   let pattern = "";
   for (let i = 0; i < segment.length; i++) {
