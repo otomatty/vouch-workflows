@@ -1,8 +1,6 @@
 import runtime from "../../registry/runtime.json" with { type: "json" };
 import { createFileStore } from "./fs.mjs";
-import { restoreOwned } from "./installation-ownership.mjs";
-import { verifyManagedRuntime } from "./installation-runtime.mjs";
-import { enableCodex } from "./installation-toml.mjs";
+import { verifyManagedActivation } from "./installation-activation.mjs";
 
 /** @param {unknown} value @returns {value is Record<string,unknown>} */
 function object(value) {
@@ -133,84 +131,14 @@ export async function inspectInstallation(files, environment, git) {
     }
   }
   if (environment.runtimeRoot && environment.harness) {
-    const harness = environment.harness;
-    await check("DOCTOR-ACTIVATION", async () => {
-      const localState = await files.readText(
-        `.vouch/installations/${harness}.json`,
-      );
-      const stateText =
-        localState ?? (await files.readText(`.vouch/bindings/${harness}.json`));
-      /** @type {unknown} */ const state = JSON.parse(stateText ?? "null");
-      if (
-        !object(state) ||
-        state.v !== 1 ||
-        state.harness !== harness ||
-        !Array.isArray(state.owned)
-      )
-        throw new Error("missing managed activation descriptor");
-      const config = JSON.parse(
-        (await files.readText("vouch/config.json")) ?? "null",
-      );
-      const activation =
-        object(config) && object(config.harnesses)
-          ? config.harnesses[harness]
-          : null;
-      if (
-        !object(config) ||
-        config.v !== 1 ||
-        !object(activation) ||
-        state.scope !== (localState === null ? "user" : "project") ||
-        typeof state.digest !== "string" ||
-        !/^[a-f0-9]{64}$/.test(state.digest) ||
-        typeof state.runtimeRoot !== "string" ||
-        activation.scope !== state.scope ||
-        activation.digest !== state.digest ||
-        typeof activation.runtimeRoot !== "string" ||
-        activation.registrationScope !== "project"
-      )
-        throw new Error("managed activation identity differs");
-      const selectedRoot = resolve(
-        environment.projectRoot,
-        activation.runtimeRoot,
-      );
-      const canonical = `.vouch/versions/${state.digest}/${harness}`;
-      if (
-        selectedRoot !== environment.runtimeRoot ||
-        resolve(environment.projectRoot, state.runtimeRoot) !== selectedRoot ||
-        (state.scope === "project" &&
-          selectedRoot !== resolve(environment.projectRoot, canonical)) ||
-        (state.scope === "user" &&
-          (!isAbsolute(state.runtimeRoot) ||
-            !isAbsolute(activation.runtimeRoot) ||
-            !selectedRoot.replaceAll("\\", "/").endsWith(`/${canonical}`)))
-      )
-        throw new Error("managed runtime path differs");
-      if (!state.owned.some((item) => object(item) && item.kind === "hooks"))
-        throw new Error("missing owned registration");
-      await verifyManagedRuntime(
-        installationFiles,
-        {
-          harness,
-          scope: String(state.scope),
-          digest: state.digest,
-        },
-        selectedRoot,
-      );
-      for (const entry of state.owned) {
-        if (!object(entry) || typeof entry.path !== "string")
-          throw new Error("invalid owned activation entry");
-        restoreOwned(await files.readText(entry.path), entry);
-      }
-      if (
-        harness === "codex" &&
-        enableCodex(await files.readText(".codex/config.toml")).content !==
-          "[]\n"
-      )
-        throw new Error("active Codex hooks or agent depth differ");
-      return `${harness}: project owned activation selects the managed runtime`;
-    });
+    const managed = {
+      ...environment,
+      runtimeRoot: environment.runtimeRoot,
+      harness: environment.harness,
+    };
+    await check("DOCTOR-ACTIVATION", () =>
+      verifyManagedActivation(files, installationFiles, managed),
+    );
   }
   return { v: 1, ok: checks.every((item) => item.ok), checks };
 }
-
-import { isAbsolute, resolve } from "node:path";

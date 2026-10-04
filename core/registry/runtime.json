@@ -38,6 +38,7 @@
     "hooks/lib/git.mjs",
     "hooks/lib/guard-scope.mjs",
     "hooks/lib/guard.mjs",
+    "hooks/lib/installation-activation.mjs",
     "hooks/lib/installation-ownership.mjs",
     "hooks/lib/installation-runtime.mjs",
     "hooks/lib/installation-toml.mjs",

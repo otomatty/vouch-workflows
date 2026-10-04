@@ -154,6 +154,22 @@ export async function launch(entryUrl, ports) {
       (intent && !/^[a-z0-9][a-zA-Z0-9_-]{0,127}$/.test(intent))
     )
       throw new Error("INSTALL-CONFIG: invalid Intent");
+    if (display) {
+      const { verifyManagedActivation } = await import(
+        "./installation-activation.mjs"
+      );
+      await verifyManagedActivation(
+        await createFileStore(project.root),
+        await createFileStore(selectedRoot),
+        {
+          projectRoot: project.root,
+          installationRoot: "",
+          runtimeRoot: selectedRoot,
+          harness: /** @type {import('./contracts.mjs').Harness} */ (harness),
+          nodeVersion: process.versions.node,
+        },
+      );
+    }
     let input = "";
     if (native) {
       const chunks = [];
@@ -176,7 +192,7 @@ export async function launch(entryUrl, ports) {
     }
     const execute =
       ports.execute ?? (await import("./launch-process.mjs")).executeProduct;
-    const productRoot = display ? selectedRoot : runtimeRoot;
+    const productRoot = runtimeRoot;
     const result = execute(
       join(productRoot, "hooks", product),
       scope === "project" ? rest.slice(1) : rest,
