@@ -10,22 +10,23 @@
   },
   "packageManager": "npm@11.19.0",
   "scripts": {
-    "check": "node scripts/check.mjs",
+    "build": "node scripts/build.mts",
+    "check": "npm run build && node scripts/check.mjs",
     "lint": "npm run lint:js && npm run lint:md && npm run lint:deps && npm run lint:unused",
     "lint:js": "biome check .",
     "lint:md": "markdownlint-cli2",
     "lint:deps": "depcruise --config .dependency-cruiser.cjs core harness scripts tests",
-    "lint:unused": "knip",
+    "lint:unused": "knip --no-gitignore",
     "format": "biome check --write .",
     "typecheck": "tsc --project tsconfig.json && tsc --project tsconfig.tests.json",
-    "test": "node scripts/test.mjs",
+    "test": "npm run build && node scripts/test.mjs",
     "test:unit": "node scripts/test.mjs unit",
     "test:checks": "node scripts/test.mjs checks",
     "test:hooks": "node scripts/test.mjs hooks",
-    "package": "node scripts/package.mjs",
-    "package:check": "node scripts/package.mjs --check",
+    "package": "npm run build && node scripts/package.mjs",
+    "package:check": "npm run build && node scripts/package.mjs --check",
     "mutate": "stryker run",
-    "doctor": "node scripts/doctor.mjs"
+    "doctor": "npm run build && node scripts/doctor.mjs"
   },
   "overrides": {
     "typed-rest-client": {

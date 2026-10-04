@@ -1,0 +1,43 @@
+import { parseAgent, TOOLS } from "../../scripts/lib/agents.mjs";
+
+/** Claude tool names per vocabulary word (subagent `tools` / `disallowedTools`). */
+const names = {
+  read: ["Read", "Grep", "Glob"],
+  edit: ["Edit", "Write"],
+  shell: ["Bash"],
+  web: ["WebFetch", "WebSearch"],
+  delegate: ["Agent"],
+  ask: ["AskUserQuestion"],
+} as Record<string, string[]>;
+/** The builder works each Unit in its own worktree (decision record §15). */
+const isolation = {
+  "vouch-builder": "worktree",
+} as Record<string, string>;
+
+const tools = (words: string[]) =>
+  words
+    .filter((word) => TOOLS.includes(word))
+    .flatMap((word) => names[word] ?? [])
+    .join(", ");
+
+/** Claude agent Markdown; the body stays byte-for-byte. */
+const claudeAgent: import("../../scripts/package.mjs").Render = (
+  name,
+  text,
+) => {
+  const agent = parseAgent(text);
+  if (name !== `${agent.name}.md`)
+    throw new Error(`AGENT-FORMAT: ${name} is not ${agent.name}.md`);
+  const lines = [
+    "---",
+    `name: ${agent.name}`,
+    `description: ${JSON.stringify(agent.description)}`,
+    `tools: ${tools(agent.tools)}`,
+    `disallowedTools: ${tools(agent.disallowed)}`,
+  ];
+  const mode = isolation[agent.name];
+  if (mode) lines.push(`isolation: ${mode}`);
+  return [name, `${lines.join("\n")}\n---\n${agent.body}`];
+};
+
+export default claudeAgent;

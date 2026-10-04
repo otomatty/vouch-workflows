@@ -4,22 +4,17 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "lib": ["ES2023"],
-    "allowJs": true,
-    "checkJs": true,
     "strict": true,
     "noEmit": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "resolveJsonModule": true,
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
     "types": ["node"],
     "skipLibCheck": true
   },
-  "include": [
-    "core/**/*.mjs",
-    "harness/**/*.mjs",
-    "scripts/**/*.mjs",
-    "*.config.mjs"
-  ],
+  "include": ["core/**/*.mts", "harness/**/*.mts", "scripts/**/*.mts"],
   "exclude": [
     "node_modules",
     "dist",

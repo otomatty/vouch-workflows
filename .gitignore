@@ -11,3 +11,10 @@ graphify-out/
 !.env.example
 .DS_Store
 Thumbs.db
+# Generated from .mts sources by scripts/build.mts (docs/development/typescript.md)
+/core/**/*.mjs
+/harness/**/*.mjs
+/scripts/**/*.mjs
+/tests/**/*.mjs
+!/tests/fixtures/**/*.mjs
+!/tests/golden/**/*.mjs

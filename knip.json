@@ -22,7 +22,10 @@
     "tests/golden/**",
     "tests/eval/**",
     "docs/**",
-    "dist/**"
+    "dist/**",
+    "core/hooks/lib/contracts.mjs",
+    "core/hooks/lib/migration-contracts.mjs",
+    "core/hooks/lib/runtime-contracts.mjs"
   ],
   "ignoreDependencies": ["@stryker-mutator/command-runner"],
   "ignoreBinaries": ["script"]
