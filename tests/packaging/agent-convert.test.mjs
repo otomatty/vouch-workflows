@@ -1,7 +1,7 @@
-import { test } from "node:test";
 import claudeAgent from "../../harness/claude/agent-markdown.mjs";
 import codexAgent, { fromToml } from "../../harness/codex/agent-toml.mjs";
 import { parseAgent, renderAgent } from "../../scripts/lib/agents.mjs";
+import { hookTest as test } from "../helpers/hook-test.mjs";
 
 const source = [
   "---",

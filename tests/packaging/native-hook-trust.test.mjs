@@ -1,6 +1,6 @@
 import { resolve } from "node:path";
-import { test } from "node:test";
 import { projectHookConfig } from "../../scripts/lib/codex-hook-trust.mjs";
+import { hookTest as test } from "../helpers/hook-test.mjs";
 
 const source = resolve("isolated/.codex/hooks.json");
 const commands = ["record startup", "record review"];

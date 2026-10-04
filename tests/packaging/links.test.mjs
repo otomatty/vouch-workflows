@@ -1,5 +1,5 @@
 import { symlink } from "node:fs/promises";
-import { test } from "node:test";
+import { hookTest as test } from "../helpers/hook-test.mjs";
 import { packageRun } from "../helpers/packaging.mjs";
 import { sandbox } from "../helpers/runtime.mjs";
 

@@ -1,4 +1,3 @@
-import { test } from "node:test";
 import {
   promptCarried,
   propagationCases,
@@ -8,6 +7,7 @@ import {
 import observed from "../fixtures/native/hook-propagation-linux.json" with {
   type: "json",
 };
+import { hookTest as test } from "../helpers/hook-test.mjs";
 
 /** @typedef {import('../../scripts/native-contracts.mjs').PropagationObservation} Observation */
 

@@ -1,6 +1,6 @@
-import { test } from "node:test";
 import * as phases from "../../scripts/lib/test-phases.mjs";
 import { testPhases } from "../../scripts/lib/test-phases.mjs";
+import { hookTest as test } from "../helpers/hook-test.mjs";
 
 const hooks = (/** @type {string} */ name) => `/repo/tests/hooks/${name}`;
 
@@ -80,9 +80,9 @@ test("identical validation settings share a phase without losing files or overla
   t.assert.deepEqual(groups, [
     {
       suite: "checks",
-      files: [content, registry, skills],
+      files: [content, registry],
     },
-    { suite: "distribution", files: distribution },
+    { suite: "distribution", files: [skills, ...distribution] },
     unit,
     { suite: "packaging", files: [native] },
     scenario,
@@ -97,7 +97,7 @@ test("identical validation settings share a phase without losing files or overla
   const nativeFiles =
     groups.find(({ suite }) => suite === "packaging")?.files ?? [];
   t.assert.deepEqual(testPhases("checks", sharedFiles, 4), [
-    { files: [content, registry, skills], concurrency: 4, budget: false },
+    { files: [content, registry], concurrency: 4, budget: false },
   ]);
   t.assert.deepEqual(testPhases("packaging", nativeFiles, 4), [
     { files: [native], concurrency: 1, budget: false },

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
-import { test } from "node:test";
 import guard from "../../core/registry/write-guard.json" with { type: "json" };
+import { hookTest as test } from "../helpers/hook-test.mjs";
 import { readJson } from "../helpers/registry.mjs";
 
 test("both registrations route exactly the guarded tools to the guard entry", (t) => {

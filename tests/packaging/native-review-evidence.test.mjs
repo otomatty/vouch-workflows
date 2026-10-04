@@ -1,8 +1,8 @@
-import { test } from "node:test";
 import { verifyNativeReview } from "../../scripts/lib/native-review-evidence.mjs";
 import capture from "../fixtures/native/codex-review-0.153.4.json" with {
   type: "json",
 };
+import { hookTest as test } from "../helpers/hook-test.mjs";
 
 const observed = {
   events: capture.observation.events,

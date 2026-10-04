@@ -1,4 +1,3 @@
-import { test } from "node:test";
 import {
   guardCases,
   verifyGuard,
@@ -6,6 +5,7 @@ import {
 import observed from "../fixtures/native/write-guard-linux.json" with {
   type: "json",
 };
+import { hookTest as test } from "../helpers/hook-test.mjs";
 
 /** @typedef {import('../../scripts/native-contracts.mjs').GuardRun} GuardRun */
 /** @typedef {import('../../scripts/native-contracts.mjs').GuardObservation} GuardObservation */

@@ -1,9 +1,9 @@
 import { readFileSync } from "node:fs";
-import { test } from "node:test";
 import {
   checkBudgetMs,
   testTimeoutFor,
 } from "../../scripts/lib/time-budgets.mjs";
+import { hookTest as test } from "../helpers/hook-test.mjs";
 
 // Distinct values show which key each choice reads.
 const timing = {

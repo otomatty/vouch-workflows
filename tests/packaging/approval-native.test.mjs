@@ -1,4 +1,3 @@
-import { test } from "node:test";
 import {
   approvalSteps,
   verifyApproval,
@@ -6,6 +5,7 @@ import {
 import observed from "../fixtures/native/approval-linux.json" with {
   type: "json",
 };
+import { hookTest as test } from "../helpers/hook-test.mjs";
 
 /** @typedef {import('../../scripts/native-contracts.mjs').ApprovalRun} ApprovalRun */
 

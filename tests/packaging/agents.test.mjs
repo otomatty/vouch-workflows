@@ -1,8 +1,8 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { test } from "node:test";
 import { fromToml } from "../../harness/codex/agent-toml.mjs";
 import { parseAgent } from "../../scripts/lib/agents.mjs";
+import { hookTest as test } from "../helpers/hook-test.mjs";
 import { packageRun, tree } from "../helpers/packaging.mjs";
 import { sandbox } from "../helpers/runtime.mjs";
 

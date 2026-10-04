@@ -1,8 +1,8 @@
 import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
-import { test } from "node:test";
 import budgets from "../../core/registry/budgets.json" with { type: "json" };
 import { checkBudgetMs } from "../../scripts/lib/time-budgets.mjs";
+import { hookTest as test } from "../helpers/hook-test.mjs";
 import { sandbox } from "../helpers/runtime.mjs";
 
 /** Exercise the real check entry with small task processes and an isolated journal.
