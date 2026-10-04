@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { readdirSync } from "node:fs";
+import { readdirSync, statSync } from "node:fs";
 import { availableParallelism } from "node:os";
 import { resolve } from "node:path";
 import budgets from "../core/registry/budgets.json" with { type: "json" };
@@ -45,7 +45,15 @@ try {
         "Transport tests only; product hook coverage is not measured yet.",
       );
     // HOOK-13 budget files run last and alone, under the load they start themselves.
-    for (const phase of testPhases(suite, tests, availableParallelism())) {
+    const sizes = ["scenario", "hooks"].includes(suite)
+      ? new Map(tests.map((file) => [file, statSync(file).size]))
+      : undefined;
+    for (const phase of testPhases(
+      suite,
+      tests,
+      availableParallelism(),
+      sizes,
+    )) {
       const flags = [
         "--test",
         `--test-timeout=${testTimeoutFor(suite, budgets.timing)}`,

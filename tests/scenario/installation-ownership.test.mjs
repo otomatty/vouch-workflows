@@ -6,7 +6,7 @@ import { sandbox } from "../helpers/runtime.mjs";
 for (const scope of ["user", "project"])
   test(`${scope}: fresh Codex setup does not leave a sandbox default after unrelated settings are added`, async (t) => {
     const box = await sandbox(t);
-    distribution(t, box);
+    distribution(t, box, "codex");
     const config = `${scope === "user" ? "home" : "project"}/.codex/config.toml`;
     const installed = installRun("install", box, "codex", scope);
     t.assert.equal(installed.status, 0, installed.stdout);
@@ -38,7 +38,7 @@ test("install/update/remove preserve unrelated settings and detect edits to owne
   };
   await box.write("project/.claude/settings.json", JSON.stringify(existing));
   await box.write("project/AGENTS.md", "Keep my instructions.\n");
-  distribution(t, box);
+  distribution(t, box, "claude");
   for (const command of ["install", "update"]) {
     const result = installRun(command, box, "claude", "project");
     t.assert.equal(result.status, 0, result.stdout + result.stderr);

@@ -43,18 +43,19 @@ export function testGroups(suites) {
  * @param {string} suite
  * @param {string[]} files
  * @param {number} cpus
+ * @param {ReadonlyMap<string,number>} [sizes] Source sizes for scheduling ordinary files first.
  * @returns {{files:string[],concurrency:number,budget:boolean}[]}
  */
-export function testPhases(suite, files, cpus) {
+export function testPhases(suite, files, cpus, sizes = new Map()) {
   const budgets =
     suite === "hooks" ? files.filter((file) => budget.test(file)) : [];
   const native =
     suite === "packaging" ? files.filter((file) => nativeFile.test(file)) : [];
   return [
     {
-      files: files.filter(
-        (file) => !budgets.includes(file) && !native.includes(file),
-      ),
+      files: files
+        .filter((file) => !budgets.includes(file) && !native.includes(file))
+        .sort((a, b) => (sizes.get(b) ?? 0) - (sizes.get(a) ?? 0)),
       concurrency: cpus,
       budget: false,
     },

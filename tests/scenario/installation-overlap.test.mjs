@@ -9,7 +9,7 @@ import { sandbox } from "../helpers/runtime.mjs";
 for (const harness of ["claude", "codex", "cursor"]) {
   test(`${harness}: init rejects a user installation as its own project without changing files`, async (t) => {
     const box = await sandbox(t);
-    distribution(t, box);
+    distribution(t, box, harness);
     await box.write("home/vouch/config.json", '{"intent":"existing"}\n');
     await box.write("home/vouch/rules.md", "existing rules\n");
     t.assert.equal(installRun("install", box, harness, "user").status, 0);
@@ -67,7 +67,7 @@ for (const harness of ["claude", "codex", "cursor"]) {
 
   test(`${harness}: init keeps a project installation active when home names the same directory`, async (t) => {
     const box = await sandbox(t);
-    distribution(t, box);
+    distribution(t, box, harness);
     const options = ["--home", box.path("project")];
     t.assert.equal(
       installRun("install", box, harness, "project", options).status,
