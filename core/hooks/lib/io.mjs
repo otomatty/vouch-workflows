@@ -4,12 +4,11 @@ import { approvedText } from "./approval.mjs";
 import { createIntentAuditStore } from "./audit.mjs";
 import { readContext, readDoctorContext, readIntent } from "./env.mjs";
 import { createFileStore, descriptorWriter, readDescriptor } from "./fs.mjs";
-import { launch } from "./launch.mjs";
 import { isHookResult, parseInput } from "./validation.mjs";
 
 /** Managed activation wrapper; only this I/O boundary sets the process exit code. @param {string} entryUrl */
-export const runLauncher = (entryUrl) =>
-  launch(entryUrl, {
+export const runLauncher = async (entryUrl) =>
+  (await import("./launch.mjs")).launch(entryUrl, {
     finish: (code) => {
       process.exitCode = code;
     },
