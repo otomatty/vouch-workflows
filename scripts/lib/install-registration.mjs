@@ -56,6 +56,13 @@ export function registration(harness, runtimeRoot, scope, projectRoot) {
       )
     )
       return `node ${local} ${action} ${scope} .`;
+    if (action === "statusline" && windows) {
+      const encoded = Buffer.from(
+        JSON.stringify({ entry, scope, project: Boolean(projectRoot) }),
+      ).toString("base64");
+      // Only fixed JavaScript and base64 reach the shell; paths are decoded inside Node.
+      return `node -e "const v=JSON.parse(Buffer.from('${encoded}','base64').toString());process.argv=[process.execPath,v.entry,'statusline',v.scope];if(v.project)process.argv.push(process.env.CLAUDE_PROJECT_DIR||'');import(require('node:url').pathToFileURL(v.entry).href)"`;
+    }
     const args = base.map((word, i) => (i === 1 ? action : word));
     const quote = (/** @type {string} */ word) =>
       word.startsWith(`\${${variable}}`)
