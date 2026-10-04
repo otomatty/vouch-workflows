@@ -16,6 +16,7 @@ test("Codex rejects duplicate fully qualified keys and table/value conflicts bef
     "[[x]]\na = 1\n[x]\na = 2",
     "[x.a]\nb = 1\n[[x]]\nc = 2",
     "[[x.a]]\nb = 1\n[[x]]\nc = 2",
+    "[[x.y]]\na = 1\n[x]\ny.z = 2",
     "x.a = 1\nx = 2",
     "x = 1\nx.a = 2",
     "x.a = 1\n[x]\nb = 2",
