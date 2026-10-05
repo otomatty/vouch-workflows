@@ -68,7 +68,7 @@ node scripts/vouch.mjs update --harness cursor --scope user
 node scripts/vouch.mjs remove --harness cursor --scope project --project /path/to/project
 ```
 
-`remove --scope project` は対象プロジェクトでの有効化と管理する接続を除去します。`remove --scope user` は個人共通の登録を除去し、明示した作業先の有効化も解除します。他のプロジェクトの固定版が使えなくならないよう、版ごとの本体は保持します。規則・成果物・監査ログは削除しません。管理対象に利用者の編集がある場合は更新・削除を止め、既存設定を上書きしません。
+`remove --scope project` は対象プロジェクトでの有効化と管理する接続を除去します。`remove --scope user` は個人共通の本体の導入記録と Skill・エージェントを除去し、明示した作業先の有効化も解除します。他のプロジェクトの固定版が使えなくならないよう、版ごとの本体は保持します。規則・成果物・監査ログは削除しません。管理対象に利用者の編集がある場合は更新・削除を止め、既存設定を上書きしません。
 
 Cursor は Agent の Skills・エージェント・Rules と JSON フックの接続を生成します。手製のプロトコル入力による検証と実機の検証を区別し、現時点では正式な実機対応を宣言しません。Claude / Codex の従来の実機記録も、新しい導入方式を実機で検証した証拠とは扱いません。
 
