@@ -1,12 +1,11 @@
 // Compile every TypeScript source to the .mjs file beside it; see docs/development/typescript.md.
 // Runs directly through Node's type stripping, so it imports nothing from this repository.
+import { createHash } from "node:crypto";
 import {
   existsSync,
   readdirSync,
   readFileSync,
-  statSync,
   unlinkSync,
-  utimesSync,
   writeFileSync,
 } from "node:fs";
 import { basename, join, relative } from "node:path";
@@ -16,9 +15,12 @@ const root = fileURLToPath(new URL("../", import.meta.url));
 const roots = ["core", "harness", "scripts", "tests"];
 const skipped =
   /(?:^|\/)(?:node_modules|tests\/fixtures|tests\/golden)(?:\/|$)/;
-const header = (name: string) =>
-  `// Generated from ${name} by scripts/build.mts; edit the .mts source.\n`;
-const generated = /^\/\/ Generated from [^\s]+\.mts by scripts\/build\.mts;/;
+// The header carries a digest of the source and of this script, so a build skips a file
+// only when neither changed, whatever the file times say.
+const self = readFileSync(fileURLToPath(import.meta.url));
+const header = (name: string, digest: string) =>
+  `// Generated from ${name} by scripts/build.mts (${digest}); edit the .mts source.\n`;
+const generated = /^\/\/ Generated from [^\s]+\.mts by scripts\/build\.mts[ ;]/;
 
 function walk(directory: string): string[] {
   const path = relative(root, directory).replaceAll("\\", "/");
@@ -36,13 +38,13 @@ let ts: typeof import("typescript") | undefined;
 let written = 0;
 for (const source of sources) {
   const target = source.replace(/\.mts$/, ".mjs");
-  if (
-    existsSync(target) &&
-    statSync(target).mtimeMs >= statSync(source).mtimeMs
-  )
+  const code = readFileSync(source, "utf8");
+  const digest = createHash("sha256").update(self).update(code).digest("hex");
+  const head = header(basename(source), digest.slice(0, 16));
+  if (existsSync(target) && readFileSync(target, "utf8").startsWith(head))
     continue;
   ts ??= (await import("typescript")).default;
-  const result = ts.transpileModule(readFileSync(source, "utf8"), {
+  const result = ts.transpileModule(code, {
     fileName: source,
     reportDiagnostics: true,
     compilerOptions: {
@@ -58,15 +60,8 @@ for (const source of sources) {
     throw new Error(
       `BUILD-SYNTAX: ${relative(root, source)}: ${ts.flattenDiagnosticMessageText(errors[0]?.messageText ?? "", "\n")}`,
     );
-  const text = header(basename(source)) + result.outputText;
-  if (!existsSync(target) || readFileSync(target, "utf8") !== text) {
-    writeFileSync(target, text);
-    written++;
-  } else {
-    // A touched but unchanged source must not be transpiled again by every later build.
-    const now = new Date();
-    utimesSync(target, now, now);
-  }
+  writeFileSync(target, head + result.outputText);
+  written++;
 }
 // A generated file whose source was removed must not keep running.
 let removed = 0;
