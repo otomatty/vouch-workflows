@@ -4,7 +4,7 @@ on:
   push:
     paths:
       - .github/workflows/benchmark.yml
-      - scripts/benchmark-*.mjs
+      - scripts/benchmark-*.mts
       - core/hooks/**
 permissions:
   contents: read
@@ -30,14 +30,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
+      # The entry points are generated from TypeScript sources; the build needs dependencies.
+      - run: |
+          npm ci
+          npm run build
       - run: node scripts/benchmark-hook.mjs | tee benchmark-hook.json
       - run: node scripts/benchmark-hook.mjs --load | tee benchmark-hook-load.json
       - run: node scripts/benchmark-hook.mjs --profile | tee benchmark-hook-profile.json
       - run: node scripts/benchmark-audit.mjs | tee benchmark-audit.json
       - run: node scripts/benchmark-shell.mjs | tee benchmark-shell.json
-      - run: |
-          npm ci
-          node scripts/benchmark-suite.mjs | tee benchmark-suite.json
+      - run: node scripts/benchmark-suite.mjs | tee benchmark-suite.json
       # The real CPU-parallel hooks suite for the budget tests' raw samples, alternating the
       # default temp directory with RUNNER_TEMP on the job's work volume.
       - run: |

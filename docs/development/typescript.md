@@ -16,6 +16,7 @@
 - import の指定子は実行時の名前（`./x.mjs`）で書く。TypeScript は同じ場所の `x.mts` を型の参照先として解決する。文書とレジストリが名指す `x.mjs` は実行時のモジュールであり、そのソースは同じ場所の `x.mts` である。
 - `tsconfig.json` は `erasableSyntaxOnly` と `verbatimModuleSyntax` を有効にする。`enum`・`namespace`・引数プロパティなど、型の除去だけで JavaScript にならない構文は使わない。型だけの import は `import type` で書く。
 - `scripts/build.mts` はリポジトリの他のファイルを import せず、Node.js 22.18 以降の型除去で直接実行する。開発用の下限 22.19.0 はこれを満たす。
+- 生成物の更新時刻がソースより新しければ変換しない。git の操作などでソースの更新時刻だけが進み、変換結果が同じ場合は、生成物の更新時刻を進めて次回から変換を省く。何もしないビルドは TypeScript を読み込まない。
 
 本番の実行時に `.mts` を Node の型除去で直接動かす方式は採らない。Node 22.22 で最小のフックを比べると、起動の中央値が約52ms から約118〜135ms に延び、記録系フックの p95 200ms 未満の予算を圧迫するためである。
 
@@ -23,13 +24,13 @@
 
 | 操作 | 前にビルドする | 対象 |
 | --- | --- | --- |
-| `npm run check`・`npm test`・`npm run package`・`npm run package:check`・`npm run doctor` | する | — |
-| `npm run test:unit`・`test:hooks`・`test:checks`・`npm run lint` | しない | check の中で並列に動き、Stryker も呼ぶため |
+| `npm run check`・`npm test`・`npm run test:unit`・`test:hooks`・`test:checks`・`npm run lint`・`npm run package`・`npm run package:check`・`npm run doctor` | する | 生成物を実行するか読むため。check の中では最初のビルドの後なので何も書かない |
+| `node scripts/*.mjs` の直接実行（ベンチマーク・導入など） | 事前に `npm run build` が必要 | Benchmark ワークフローは `npm ci` の直後にビルドする |
 | Biome・`npm run typecheck` | — | `.mts` のソース |
 | dependency-cruiser・knip | — | 生成した `.mjs`（実行時の依存グラフ）。knip は生成物を読むため `--no-gitignore` で動かす |
 | 行数予算（HOOK-12）・カバレッジ | — | 生成した `.mjs`（配布される実行時コードの量） |
 | ソースの書き方を見る構造テスト | — | 書式に依存する検査は `.mts`。生成物は TypeScript が整形し直すため |
-| Stryker | `npm run build` を毎回実行 | `.mts` を変異させ、ビルドで生成物へ運ぶ |
+| Stryker | `npm run test:unit` がビルドする | `.mts` を変異させ、ビルドで生成物へ運ぶ |
 
 型だけを定義するモジュール（`contracts`・`runtime-contracts`・`migration-contracts`）は、生成物が空の `export {}` になる。実行時に読まれないため、knip の対象から外している。
 

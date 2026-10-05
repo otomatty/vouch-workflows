@@ -6,6 +6,7 @@ import {
   readFileSync,
   statSync,
   unlinkSync,
+  utimesSync,
   writeFileSync,
 } from "node:fs";
 import { basename, join, relative } from "node:path";
@@ -61,6 +62,10 @@ for (const source of sources) {
   if (!existsSync(target) || readFileSync(target, "utf8") !== text) {
     writeFileSync(target, text);
     written++;
+  } else {
+    // A touched but unchanged source must not be transpiled again by every later build.
+    const now = new Date();
+    utimesSync(target, now, now);
   }
 }
 // A generated file whose source was removed must not keep running.
