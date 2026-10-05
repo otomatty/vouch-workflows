@@ -55,14 +55,16 @@ function unlinked(path: string): import("node:fs").Stats | undefined {
   return stat;
 }
 
-function files(path: string): string[] {
+/** @param sources Skip TypeScript sources; their compiled .mjs siblings are distributed. */
+function files(path: string, sources = false): string[] {
   const stat = unlinked(path);
   if (!stat) return [];
   if (stat.isFile()) return [path];
   if (!stat.isDirectory()) throw new Error(`PACKAGE-TYPE: ${path}`);
   return readdirSync(path)
+    .filter((name) => !sources || !name.endsWith(".mts"))
     .sort()
-    .flatMap((name) => files(resolve(path, name)));
+    .flatMap((name) => files(resolve(path, name), sources));
 }
 
 function inside(root: string, path: string) {
@@ -92,9 +94,7 @@ for (const name of manifests) {
     const from = inside(source, mapping.from);
     const to = inside(inside(output, name), mapping.to);
     if (!existsSync(from)) throw new Error(`PACKAGE-MISSING: ${mapping.from}`);
-    for (const file of files(from)) {
-      // TypeScript sources stay here; their compiled .mjs siblings are distributed.
-      if (file.endsWith(".mts")) continue;
+    for (const file of files(from, true)) {
       let target = resolve(to, relative(from, file));
       let bytes = readFileSync(file);
       if (file.endsWith(".md")) {

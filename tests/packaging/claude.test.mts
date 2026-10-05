@@ -8,11 +8,12 @@ import { distributedTree, packageRun, tree } from "../helpers/packaging.mjs";
 import { sandbox } from "../helpers/runtime.mjs";
 
 test("Claude distribution reproduces exact source bytes and registers every product hook", async (t) => {
-  t.plan(12);
+  t.plan(11);
   const box = await sandbox(t);
   const first = packageRun(["--out", box.path("first")]);
   t.assert.equal(first.status, 0, first.stderr);
-  const second = packageRun(["--out", box.path("second")]);
+  // A second generation reproduces the first byte for byte (checked without rewriting it).
+  const second = packageRun(["--out", box.path("first"), "--check"]);
   t.assert.equal(second.status, 0, second.stderr);
   const files = tree(box.path("first/claude"));
   const expected = Object.fromEntries([
@@ -50,7 +51,6 @@ test("Claude distribution reproduces exact source bytes and registers every prod
     expected,
     "DIST-2: runtime inventory; Skill and agent inventories are checked separately",
   );
-  t.assert.deepEqual(files, tree(box.path("second/claude")));
   const settings = JSON.parse(
     await box.read("first/claude/.claude/settings.json"),
   );

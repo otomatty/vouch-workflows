@@ -12,14 +12,15 @@ export function packageRun(args: string[]) {
 
 /** Distributed files of a source directory: the compiled .mjs, never the .mts sources. */
 export const distributedTree = (root: string): Record<string, string> =>
-  Object.fromEntries(
-    Object.entries(tree(root)).filter(([path]) => !path.endsWith(".mts")),
-  );
+  tree(root, (name) => !name.endsWith(".mts"));
 
-export function tree(root: string): Record<string, string> {
+export function tree(
+  root: string,
+  include: (name: string) => boolean = () => true,
+): Record<string, string> {
   return Object.fromEntries(
     readdirSync(root, { recursive: true, withFileTypes: true })
-      .filter((entry) => entry.isFile())
+      .filter((entry) => entry.isFile() && include(entry.name))
       .map((entry) => {
         const path = resolve(entry.parentPath, entry.name);
         return [
