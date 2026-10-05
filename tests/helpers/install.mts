@@ -1,13 +1,33 @@
 import { spawnSync } from "node:child_process";
-import { resolve } from "node:path";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 import { packageRun } from "./packaging.mjs";
 
+const selected = new WeakMap<object, string>();
+let shared: string | undefined;
+
+/** One generated distribution per test process; a test that edits it packages its own. */
 export function distribution(
   t: import("node:test").TestContext,
   box: Awaited<ReturnType<typeof import("./runtime.mjs").sandbox>>,
+  options: { own?: boolean } = {},
 ) {
-  const result = packageRun(["--out", box.path("dist")]);
-  t.assert.equal(result.status, 0, result.stderr);
+  if (options.own) {
+    const result = packageRun(["--out", box.path("dist")]);
+    t.assert.equal(result.status, 0, result.stderr);
+    return;
+  }
+  if (shared === undefined) {
+    const directory = mkdtempSync(join(tmpdir(), "vouch-dist-"));
+    process.once("exit", () =>
+      rmSync(directory, { recursive: true, force: true }),
+    );
+    const result = packageRun(["--out", directory]);
+    t.assert.equal(result.status, 0, result.stderr);
+    shared = directory;
+  }
+  selected.set(box, shared);
 }
 
 export function installRun(
@@ -31,7 +51,7 @@ export function installRun(
         ? ["--project", box.path("project")]
         : []),
       "--dist",
-      box.path("dist"),
+      selected.get(box) ?? box.path("dist"),
       ...extra,
     ],
     {

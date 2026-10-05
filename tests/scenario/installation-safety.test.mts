@@ -30,7 +30,8 @@ import { sandbox } from "../helpers/runtime.mjs";
 test("setup rejects malformed settings, duplicate owned hooks, incomplete runtime and linked paths without replacing files", async (t) => {
   const box = await sandbox(t);
   await mkdir(box.path("project"));
-  distribution(t, box);
+  // This test removes a runtime file from the distribution, so it packages its own.
+  distribution(t, box, { own: true });
   await box.write("project/.cursor/hooks.json", "{malformed");
   t.assert.equal(installRun("install", box, "cursor", "project").status, 2);
   t.assert.equal(await box.read("project/.cursor/hooks.json"), "{malformed");

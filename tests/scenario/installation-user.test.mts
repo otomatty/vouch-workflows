@@ -1,3 +1,3 @@
 import { installationCycle } from "../helpers/installation-cycle.mjs";
 
-installationCycle("project");
+installationCycle("user");
