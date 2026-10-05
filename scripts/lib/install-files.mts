@@ -14,19 +14,26 @@ import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 export const digest = (text: string) =>
   createHash("sha256").update(text).digest("hex");
 
+/** Paths seen as real directories, or as not yet existing, during one locked operation.
+ * The operation creates what was missing itself; races with other writers are not prevented. */
+let verified: Set<string> | null = null;
+
 /** Every setup read/write rejects links, including existing ancestors. */
 function inspectPath(path: string) {
+  if (verified?.has(path)) return;
   const parent = dirname(path);
   if (parent !== path) inspectPath(parent);
   let stat: import("node:fs").Stats;
   try {
     stat = lstatSync(path);
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return;
-    throw error;
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    verified?.add(path);
+    return;
   }
   if (stat.isSymbolicLink() || (stat.isFile() && stat.nlink !== 1))
     throw new Error(`INSTALL-LINK: ${path}`);
+  if (stat.isDirectory()) verified?.add(path);
 }
 
 export function inside(root: string, path: string) {
@@ -124,9 +131,12 @@ export function withLock<T>(root: string, operation: () => T): T {
   } catch {
     throw new Error("INSTALL-LOCK: another installer owns this scope");
   }
+  const outer = verified === null;
+  if (outer) verified = new Set();
   try {
     return operation();
   } finally {
+    if (outer) verified = null;
     rmSync(lock, { recursive: true });
   }
 }
