@@ -1,3 +1,4 @@
+import { resolve } from "node:path";
 import { test } from "node:test";
 import {
   cursorIgnored,
@@ -197,8 +198,15 @@ test("Cursor Delete is a guarded removal and Shell working directories anchor re
       "/trusted",
     )?.cwd;
   t.assert.equal(shell({}), "/native");
-  t.assert.equal(shell({ working_directory: "/elsewhere" }), "/elsewhere");
-  t.assert.equal(shell({ working_directory: "sub/dir" }), "/native/sub/dir");
+  // Resolved as the platform does: on Windows "/elsewhere" gains the current drive.
+  t.assert.equal(
+    shell({ working_directory: "/elsewhere" }),
+    resolve("/native", "/elsewhere"),
+  );
+  t.assert.equal(
+    shell({ working_directory: "sub/dir" }),
+    resolve("/native", "sub/dir"),
+  );
   t.assert.equal(
     cursorInput(
       {
