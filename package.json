@@ -2,7 +2,7 @@
   "name": "vouch-workflows",
   "version": "0.0.0",
   "private": true,
-  "description": "Development workspace for Vouch workflows for Claude Code and Codex",
+  "description": "Development workspace for Vouch workflows for Claude Code, Codex CLI and Cursor",
   "type": "module",
   "engines": {
     "node": ">=22.19.0",
@@ -10,22 +10,23 @@
   },
   "packageManager": "npm@11.19.0",
   "scripts": {
-    "check": "node scripts/check.mjs",
-    "lint": "npm run lint:js && npm run lint:md && npm run lint:deps && npm run lint:unused",
+    "build": "node scripts/build.mts",
+    "check": "node scripts/build.mts && node scripts/check.mjs",
+    "lint": "node scripts/build.mts && npm run lint:js && npm run lint:md && npm run lint:deps && npm run lint:unused",
     "lint:js": "biome check .",
     "lint:md": "markdownlint-cli2",
     "lint:deps": "depcruise --config .dependency-cruiser.cjs core harness scripts tests",
-    "lint:unused": "knip",
+    "lint:unused": "knip --no-gitignore",
     "format": "biome check --write .",
-    "typecheck": "tsc --project tsconfig.json && tsc --project tsconfig.tests.json",
-    "test": "node scripts/test.mjs",
-    "test:unit": "node scripts/test.mjs unit",
-    "test:checks": "node scripts/test.mjs checks",
-    "test:hooks": "node scripts/test.mjs hooks",
-    "package": "node scripts/package.mjs",
-    "package:check": "node scripts/package.mjs --check",
+    "typecheck": "tsc --project tsconfig.tests.json",
+    "test": "node scripts/build.mts && node scripts/test.mjs",
+    "test:unit": "node scripts/build.mts && node scripts/test.mjs unit",
+    "test:checks": "node scripts/build.mts && node scripts/test.mjs checks",
+    "test:hooks": "node scripts/build.mts && node scripts/test.mjs hooks",
+    "package": "node scripts/build.mts && node scripts/package.mjs",
+    "package:check": "node scripts/build.mts && node scripts/package.mjs --check",
     "mutate": "stryker run",
-    "doctor": "node scripts/doctor.mjs"
+    "doctor": "node scripts/build.mts && node scripts/doctor.mjs"
   },
   "overrides": {
     "typed-rest-client": {

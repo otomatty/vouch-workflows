@@ -34,6 +34,7 @@ installation.json の overrides は、登録を上書き・無効化できる同
 | Claude | Bash | 2.1.283 Linux | `command` |
 | Codex | apply_patch | 0.153.4 Linux | `command` の `*** Add File:`・`Update File:`・`Delete File:`・`Move to:` 行と、`+` / `-` 行 |
 | Codex | Bash | 0.153.4 Linux | `command` |
+| Cursor | Write・Edit・Delete・Shell・apply_patch | なし（synthetic） | Write・Edit・Delete は `path`、Shell は `command` と `working_directory` |
 
 Claude は `"matcher": "Write|Edit|Bash"`、Codex は `"matcher": "apply_patch|Bash"` で登録します。Codex 0.153.4 で、この matcher が apply_patch と `exec_command`（tool_name は Bash）に発火し、終了2がツールを止めて理由をモデルに返すことを、固定応答の CLI で確認しました。Claude の文書は、サブエージェントのツール呼び出しにも同じフックが発火すると述べています。サブエージェントの PreToolUse は採取していません。
 
@@ -53,6 +54,10 @@ FileStore の `locate(path, from)` は、実在する最も深い祖先を realp
 
 - 宛先のない記号リンク、循環するリンク
 - リンク数が2以上の通常ファイル（ハードリンク）
+
+Cursor の Delete は削除として判定します。保護対象のファイルに加え、プロジェクトのルートとその祖先、保護対象を含むディレクトリの削除を拒否します。承認済みの成果物の削除は拒否し、下書きの削除は妨げません。Shell の `working_directory` は、相対パスを解決する基点に使います。
+
+導入方式で管理された本体（`.vouch/versions/<digest>/<harness>/`）から起動したガードは、プロジェクトの外を指す対象を、自分の本体の実体ディレクトリと realpath で比べます。その中への書き込みと、削除系の操作によるその祖先の削除を拒否します。プロジェクト内の記号リンクや junction を経由した書き込みも同じです（[設計見直し](distribution-scope-review.md) D5）。`FileStore.locate` は、この比較のために実体の絶対パス（`canonical`）を返します。
 
 ファイル編集ツールでは、プロジェクトの外のパスは保護対象ではありません。禁止リストにない書き込みは妨げません。シェルの語は、次節のとおり実体の位置に加えて綴りの形でも判定するため、root の外でも保護対象と同じ形の語を名指すコマンドは拒否します。root やその祖先を指す語は、削除・移動・上書きコピーのコマンドで拒否します。
 

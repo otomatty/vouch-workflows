@@ -13,6 +13,10 @@
       "!!graphify-out",
       "!!tests/fixtures",
       "!!tests/golden",
+      "!core/**/*.mjs",
+      "!harness/**/*.mjs",
+      "!scripts/**/*.mjs",
+      "!tests/**/*.mjs",
       "!!package-lock.json"
     ]
   },
@@ -59,11 +63,11 @@
       }
     },
     {
-      "includes": ["core/hooks/lib/io.mjs"],
+      "includes": ["core/hooks/lib/io.mts"],
       "linter": { "rules": { "suspicious": { "noConsole": "off" } } }
     },
     {
-      "includes": ["core/hooks/lib/env.mjs"],
+      "includes": ["core/hooks/lib/env.mts"],
       "linter": { "rules": { "style": { "noProcessEnv": "off" } } }
     }
   ]

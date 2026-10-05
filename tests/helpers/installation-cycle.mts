@@ -1,0 +1,91 @@
+import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import { mkdir, readFile } from "node:fs/promises";
+import { join } from "node:path";
+import { test } from "node:test";
+import { cursorInput, distribution, installRun } from "./install.mjs";
+import { sandbox } from "./runtime.mjs";
+
+/** One install, activation, recording and removal cycle per harness for a scope. */
+export function installationCycle(scope: "project" | "user") {
+  for (const harness of ["claude", "codex", "cursor"]) {
+    test(`${harness}/${scope}: installation, activation, local recording and removal`, async (t) => {
+      const box = await sandbox(t);
+      await mkdir(box.path("project"), { recursive: true });
+      await box.write("project/AGENTS.md", "# Existing project guidance\n");
+      await box.write("project/vouch/rules.md", "keep existing rules\n");
+      distribution(t, box);
+      const installed = installRun("install", box, harness, scope);
+      t.assert.equal(installed.status, 0, installed.stdout + installed.stderr);
+      const initial = JSON.parse(installed.stdout);
+      t.assert.match(initial.digest, /^[a-f0-9]{64}$/);
+      // Design D3: a user installation registers no user-level hooks or Codex settings.
+      if (scope === "user")
+        for (const file of [
+          `.${harness}/${harness === "claude" ? "settings" : "hooks"}.json`,
+          ".codex/config.toml",
+        ])
+          t.assert.equal(existsSync(box.path(`home/${file}`)), false, file);
+      const init = installRun("init", box, harness, scope, [
+        "--intent",
+        "scope-test",
+      ]);
+      t.assert.equal(init.status, 0, init.stdout + init.stderr);
+      const configuration = JSON.parse(
+        await box.read("project/vouch/config.json"),
+      );
+      t.assert.equal(configuration.harnesses[harness].scope, scope);
+      const payload =
+        harness === "cursor"
+          ? cursorInput(box.path("project"), "sessionStart")
+          : {
+              hook_event_name: "SessionStart",
+              session_id: "synthetic-session",
+              cwd: box.path("project"),
+              source: "startup",
+            };
+      const recorded = spawnSync(
+        process.execPath,
+        [
+          join(initial.runtimeRoot, "hooks/vouch-launch.mjs"),
+          "session",
+          "project",
+          box.path("project"),
+        ],
+        { input: JSON.stringify(payload), encoding: "utf8", timeout: 4000 },
+      );
+      t.assert.equal(recorded.status, 0, recorded.stderr);
+      const events = (
+        await box.read("project/vouch/intents/scope-test/audit/events.jsonl")
+      )
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line));
+      t.assert.equal(events.length, 1);
+      t.assert.equal(events[0].harness, harness);
+      const doctor = installRun("doctor", box, harness, scope);
+      t.assert.equal(doctor.status, 0, doctor.stdout + doctor.stderr);
+      t.assert.equal(
+        JSON.parse(doctor.stdout).runtimeRoot,
+        initial.runtimeRoot,
+      );
+      const removed = installRun("remove", box, harness, scope);
+      t.assert.equal(removed.status, 0, removed.stdout + removed.stderr);
+      t.assert.equal(
+        await box.read("project/vouch/rules.md"),
+        "keep existing rules\n",
+      );
+      t.assert.match(
+        await box.read("project/AGENTS.md"),
+        /^# Existing project guidance\n/,
+      );
+      t.assert.equal(
+        await readFile(
+          box.path("project/vouch/intents/scope-test/audit/events.jsonl"),
+          "utf8",
+        ),
+        `${events.map((event) => JSON.stringify(event)).join("\n")}\n`,
+      );
+    });
+  }
+}

@@ -1,6 +1,11 @@
 {
   "extends": "./tsconfig.json",
-  "include": ["tests/**/*.mjs"],
+  "include": [
+    "core/**/*.mts",
+    "harness/**/*.mts",
+    "scripts/**/*.mts",
+    "tests/**/*.mts"
+  ],
   "exclude": [
     "tests/fixtures",
     "tests/golden",

@@ -83,7 +83,7 @@ module.exports = {
   ],
   options: {
     doNotFollow: { path: "node_modules" },
-    exclude: "^(docs|dist|tests/fixtures|tests/golden|tests/eval)/",
+    exclude: "^(docs|dist|tests/fixtures|tests/golden|tests/eval)/|\\.mts$",
     enhancedResolveOptions: {
       exportsFields: ["exports"],
       conditionNames: ["import", "node", "default"],

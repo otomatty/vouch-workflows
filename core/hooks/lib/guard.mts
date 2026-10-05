@@ -1,0 +1,306 @@
+import { isAbsolute, resolve, sep } from "node:path";
+import runtime from "../../registry/runtime.json" with { type: "json" };
+import guard from "../../registry/write-guard.json" with { type: "json" };
+import {
+  approvedLines,
+  classifySegments,
+  declaresApproved,
+  normalizeSegment,
+  parsePatch,
+} from "./areas.mjs";
+import { guardScope } from "./guard-scope.mjs";
+import { parseShell, programOf, readsOnly } from "./shell.mjs";
+import { expandBraces, uncommented } from "./words.mjs";
+
+/** Reason IDs in priority order; see docs/development/write-guard.md. */
+const reasons = {
+  audit: [
+    "VOUCH-GUARD-AUDIT",
+    "audit records are appended only by Vouch hooks",
+  ],
+  lock: [
+    "VOUCH-GUARD-LOCK",
+    "a Vouch hook owns this lock and its pending file",
+  ],
+  installation: [
+    "VOUCH-GUARD-INSTALLATION",
+    "the installed hook registration and runtime change only by reinstalling the distribution",
+  ],
+  approved: [
+    "VOUCH-GUARD-APPROVED",
+    "tools neither change nor create approved artifacts",
+  ],
+  artifact: [
+    "VOUCH-GUARD-ARTIFACT",
+    "shell writes to Vouch artifacts cannot be verified; use the file edit tool",
+  ],
+  link: ["VOUCH-GUARD-LINK", "the real target of this link cannot be verified"],
+  unverified: [
+    "VOUCH-GUARD-UNVERIFIED",
+    "the current artifact could not be read to verify its status",
+  ],
+  expansion: [
+    "VOUCH-GUARD-UNVERIFIED",
+    "the brace expansion has too many results to verify",
+  ],
+};
+export type Reason = keyof typeof reasons;
+const order = Object.keys(reasons);
+const split = (path: string) => path.replaceAll("\\", "/").split("/");
+/** The same real directory or one below it. */
+const within = (path: string, root: string) =>
+  path === root || path.startsWith(root.endsWith(sep) ? root : root + sep);
+
+/** A backslash as a separator, then as the platform reads it. */
+const readings = (path: string) =>
+  path.includes("\\") ? [path.replaceAll("\\", "/"), path] : [path];
+
+export const guardWrites: import("./runtime-contracts.mjs").GuardWrites =
+  async (input, ctx, entry) => {
+    if (input.hook_event_name !== "PreToolUse") return { decision: "allow" };
+    const tools: Record<string, string> = guard.tools[ctx.harness];
+    const kind = Object.hasOwn(tools, input.tool_name)
+      ? tools[input.tool_name]
+      : undefined;
+    const tool = input.tool_input;
+    const subject =
+      kind === "patch" || kind === "shell" ? tool.command : tool.file_path;
+    if (!kind || typeof subject !== "string") return { decision: "allow" };
+    const scope = await guardScope(ctx, entry);
+    const found: [Reason, string][] = [];
+
+    async function target(
+      spelled: string,
+      approves: (current: string | null) => boolean,
+      removal = false,
+    ) {
+      for (const reading of readings(spelled))
+        await place(reading, approves, removal);
+    }
+
+    /** A removal also refuses ancestors: the root, directories above it and above protected files. */
+    async function place(
+      spelled: string,
+      approves: (current: string | null) => boolean,
+      removal: boolean,
+    ) {
+      const at = await ctx.locate(spelled, input.cwd);
+      const shown = at.inside ?? spelled;
+      if (at.kind === "unresolved" || at.links > 1) found.push(["link", shown]);
+      const match =
+        at.inside === null
+          ? removal && at.contains
+            ? { area: "audit" as const, ancestor: true }
+            : runtimeMatch(at, removal) ||
+              (scope.managed &&
+              split(spelled).some((part) => normalizeSegment(part) === ".vouch")
+                ? { area: "installation" as const, ancestor: false }
+                : null)
+          : classifySegments(split(at.inside), scope);
+      if (!match || (match.ancestor && !removal)) return;
+      if (match.area !== "artifact" || match.ancestor)
+        return void found.push([match.area, shown]);
+      let current: string | null = null;
+      try {
+        if (at.kind === "file") current = await ctx.readText(shown);
+      } catch {
+        return void found.push(["unverified", shown]);
+      }
+      if ((current !== null && declaresApproved(current)) || approves(current))
+        found.push(["approved", shown]);
+    }
+
+    /** Design D5: outside the root, the running runtime is matched by its real path. */
+    function runtimeMatch(
+      at: import("./runtime-contracts.mjs").PathLocation,
+      removal: boolean,
+    ) {
+      const root = scope.runtimeRoot;
+      if (!root) return null;
+      if (within(at.canonical, root))
+        return { area: "installation" as const, ancestor: false };
+      return removal && within(root, at.canonical)
+        ? { area: "installation" as const, ancestor: true }
+        : null;
+    }
+
+    if (kind === "write") {
+      const content = tool.content;
+      await target(
+        subject,
+        () => typeof content === "string" && declaresApproved(content),
+      );
+    } else if (kind === "edit") {
+      const [old, next] = [tool.old_string, tool.new_string];
+      await target(subject, (current) => {
+        if (typeof next !== "string") return false;
+        if (typeof old !== "string" || !old || !current?.includes(old))
+          return approvedLines(next);
+        return declaresApproved(
+          tool.replace_all === true
+            ? current.split(old).join(next)
+            : current.replace(old, () => next),
+        );
+      });
+    } else if (kind === "delete") {
+      await target(subject, () => false, true);
+    } else if (kind === "patch") {
+      for (const operation of parsePatch(subject)) {
+        const adds = approvedLines(operation.added.join("\n"));
+        // Hunks are not replayed: moved `---` lines can bring any approved line into the frontmatter.
+        await target(
+          operation.path,
+          (current) =>
+            adds ||
+            (operation.kind === "update" && approvedLines(current ?? "")),
+        );
+        if (operation.to !== null) {
+          const moved = adds || (await approvedSource(operation.path));
+          await target(operation.to, () => moved);
+        }
+      }
+    } else await inspectShell(subject);
+
+    /** A move source with an approved line anywhere, or one that cannot be read. */
+    async function approvedSource(path: string) {
+      const at = await ctx.locate(path, input.cwd);
+      if (at.kind === "missing") return false;
+      if (at.kind !== "file" || at.inside === null) return true;
+      try {
+        // A file that vanished since it was located reads as null and throws here.
+        return approvedLines((await ctx.readText(at.inside)) as string);
+      } catch {
+        return true;
+      }
+    }
+
+    async function inspectShell(text: string) {
+      const parsed = parseShell(text);
+      const seen: Map<string, import("./runtime-contracts.mjs").PathLocation> =
+        new Map();
+      const named: [Reason, string][] = [];
+      const doctor: Set<string> = new Set();
+      const doctored = (word: string) => doctor.has(word);
+      const stack: (string | null)[] = [];
+      let cwd: string | null = input.cwd;
+      let reading = !parsed.dynamic;
+      for (const command of parsed.commands) {
+        for (; stack.length < command.depth; ) stack.push(cwd);
+        for (; stack.length > command.depth; )
+          cwd = stack.pop() as string | null;
+        const [program = "", ...args] = programOf(command);
+        const remover =
+          guard.shell.removers.includes(program) ||
+          (program === "git" && !readsOnly(command, doctored)) ||
+          (program === "find" &&
+            args.some((arg) => guard.shell.refused.find.includes(arg)));
+        for (const word of command.words)
+          for (const spelled of [word, ...word.split("=").slice(1)]) {
+            for (const [area, shown, ancestor] of await hits(
+              spelled,
+              cwd,
+              seen,
+            ))
+              if (!ancestor) named.push([area, shown]);
+              else if (remover) found.push([area, shown]);
+          }
+        const [entry] = args;
+        const home = scope.installation;
+        if (program === "node" && entry !== undefined && cwd !== null) {
+          const at = await ctx.locate(entry as string, cwd);
+          const spelled = at.inside && split(at.inside).map(normalizeSegment);
+          if (
+            home &&
+            spelled &&
+            runtime.commands.some(
+              (name) =>
+                [...home, "hooks", name].join("/") === spelled.join("/"),
+            )
+          )
+            doctor.add(entry as string);
+          if (
+            scope.runtime &&
+            runtime.commands.some(
+              (name) =>
+                resolve(cwd as string, entry) ===
+                resolve(scope.runtime ?? "", name),
+            )
+          )
+            doctor.add(entry);
+        }
+        if (!readsOnly(command, doctored)) reading = false;
+        if (program === "cd" || program === "pushd" || program === "popd") {
+          const [dir] = args;
+          const fixed = dir !== undefined && !/[$~*?[`]|^-$/.test(dir);
+          cwd =
+            program !== "popd" && fixed && (cwd !== null || isAbsolute(dir))
+              ? resolve(cwd ?? "", dir)
+              : null;
+        }
+      }
+      // Raw words without quote or escape processing also count: PowerShell and Windows paths
+      // use backslashes as separators, which the POSIX reading above consumes as escapes.
+      const raw = uncommented(text).split(/[\s'"`;|&()<>]+/);
+      for (const word of new Set(raw.filter(Boolean)))
+        for (const [area, shown, ancestor] of await hits(word, input.cwd, seen))
+          if (!ancestor) named.push([area, shown]);
+      if (!reading) found.push(...named);
+    }
+
+    /** Areas a word names after brace expansion: where it lands from the tracked cwd, then its own segments anywhere. */
+    async function hits(
+      spelled: string,
+      cwd: string | null,
+      seen: Map<string, import("./runtime-contracts.mjs").PathLocation>,
+    ): Promise<[Reason, string, boolean][]> {
+      const words = expandBraces(spelled);
+      if (!words) return [["expansion", spelled, false]];
+      const result: [Reason, string, boolean][] = [];
+      for (const word of words)
+        for (const reading of readings(word))
+          result.push(...(await named(reading, cwd, seen)));
+      return result;
+    }
+
+    async function named(
+      word: string,
+      cwd: string | null,
+      seen: Map<string, import("./runtime-contracts.mjs").PathLocation>,
+    ): Promise<[Reason, string, boolean][]> {
+      const result: [Reason, string, boolean][] = [];
+      if (cwd !== null || isAbsolute(word)) {
+        const key = `${cwd}\0${word}`;
+        const at = seen.get(key) ?? (await ctx.locate(word, cwd ?? input.cwd));
+        seen.set(key, at);
+        const shown = at.inside ?? word;
+        if (at.kind === "unresolved" || at.links > 1)
+          result.push(["link", shown, false]);
+        const match =
+          at.inside === null
+            ? at.contains
+              ? { area: "audit" as const, ancestor: true }
+              : runtimeMatch(at, true)
+            : classifySegments(split(at.inside), scope);
+        if (match) result.push([match.area, shown, match.ancestor]);
+      }
+      const parts = split(word);
+      for (let i = 0; i < parts.length; i++) {
+        const match = classifySegments(parts.slice(i), scope);
+        if (match && !match.ancestor) result.push([match.area, word, false]);
+      }
+      const tail = parts.slice(-2).map(normalizeSegment).join("/");
+      if (tail === `${guard.audit}/events.jsonl`)
+        result.push(["audit", word, false]);
+      return result;
+    }
+
+    found.sort(([a], [b]) => order.indexOf(a) - order.indexOf(b));
+    const [first] = found;
+    if (!first) return { decision: "allow" };
+    const [id, why] = reasons[first[0]];
+    const shown = first[1].replace(/\p{Cc}/gu, "?").slice(0, 200);
+    return {
+      decision: "deny",
+      reason: `${id}: ${input.tool_name} ${shown}; ${why}`,
+    };
+  };

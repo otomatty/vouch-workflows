@@ -2,8 +2,22 @@
   "$schema": "./write-guard.schema.json",
   "version": 1,
   "tools": {
-    "claude": { "Write": "write", "Edit": "edit", "Bash": "shell" },
-    "codex": { "apply_patch": "patch", "Bash": "shell" }
+    "claude": {
+      "Write": "write",
+      "Edit": "edit",
+      "Bash": "shell"
+    },
+    "codex": {
+      "apply_patch": "patch",
+      "Bash": "shell"
+    },
+    "cursor": {
+      "Write": "write",
+      "Edit": "edit",
+      "Delete": "delete",
+      "Bash": "shell",
+      "apply_patch": "patch"
+    }
   },
   "intents": ["vouch", "intents"],
   "audit": "audit",
