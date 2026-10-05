@@ -1,6 +1,7 @@
 import { mkdir, rm, symlink } from "node:fs/promises";
 import { test } from "node:test";
 import { commitChanges } from "../../scripts/lib/install-files.mjs";
+import { codexConfig } from "../../scripts/lib/install-toml.mjs";
 
 test("custom user home with spaces, non-ASCII and apostrophes remains selectable without repeating the home flag to doctor", async (t) => {
   const box = await sandbox(t);
@@ -75,35 +76,71 @@ test("failed installation transaction restores prior bytes and never removes an 
     "unowned",
   );
 });
-test("Codex setup preserves model, sandbox, provider and agent depth while owning only required hook settings", async (t) => {
+test("Codex configuration is created, extended by a marked block, or left to the user, never rewritten", (t) => {
+  const block = (body: string) =>
+    `\n# vouch:codex:start\n${body}# vouch:codex:end\n`;
+  const features = "[features]\nhooks = true\n";
+  const agents = "[agents]\nmax_depth = 1\n";
+  // Design D8: absent file -> owned file; no table anywhere -> appended block.
+  t.assert.deepEqual(codexConfig(null), {
+    kind: "file",
+    content: `${features}\n${agents}`,
+  });
+  t.assert.deepEqual(
+    codexConfig('model = "mine"\n[provider.x]\nname = "x"\n'),
+    {
+      kind: "block",
+      content: block(`${features}\n${agents}`),
+    },
+  );
+  t.assert.deepEqual(codexConfig("[agents]\nmax_depth = 4\n"), {
+    kind: "block",
+    content: block(features),
+  });
+  t.assert.deepEqual(
+    codexConfig("[features] # mine\nhooks = true\n[agents]\nmax_depth = 2\n"),
+    { kind: "none" },
+  );
+  // A table the user already defined is theirs: say what to add, change nothing.
+  for (const text of [
+    "[features]\nhooks = false\n",
+    "[features]\nother = 1\n[agents]\nmax_depth = 1\n",
+    "features = { hooks = false }\n",
+    "features.hooks = false\n",
+    "[features.hooks]\nx = 1\n",
+    "[[agents]]\nname = 1\n",
+    "[features]\nhooks = true\n[agents]\nmax_depth = 0\n",
+  ])
+    t.assert.throws(() => codexConfig(text), /INSTALL-CONFIG: .*add/, text);
+});
+
+test("Codex setup appends its block to an existing configuration and removal restores the bytes", async (t) => {
   const box = await sandbox(t);
   await mkdir(box.path("project"));
   distribution(t, box);
   const original =
-    'model = "mine"\nsandbox_mode = "read-only"\n[features] # keep\nhooks = false\n[agents]\nmax_depth = 4\n[model_providers.mine]\nname = "mine"\n';
+    'model = "mine"\nsandbox_mode = "read-only"\n[model_providers.mine]\nname = "mine"\n';
   await box.write("project/.codex/config.toml", original);
-  t.assert.equal(installRun("install", box, "codex", "project").status, 0);
+  const installed = installRun("install", box, "codex", "project");
+  t.assert.equal(installed.status, 0, installed.stdout);
   const changed = await box.read("project/.codex/config.toml");
-  t.assert.match(changed, /sandbox_mode = "read-only"/);
-  t.assert.match(changed, /max_depth = 4/);
-  t.assert.match(changed, /hooks = true/);
+  t.assert.equal(changed.startsWith(original), true);
+  t.assert.match(changed, /# vouch:codex:start\n\[features\]\nhooks = true\n/);
   await box.write(
     "project/.codex/config.toml",
-    `${changed}\n# later user comment\n`,
+    `${changed}# later user comment\n`,
   );
   t.assert.equal(installRun("remove", box, "codex", "project").status, 0);
   t.assert.equal(
     await box.read("project/.codex/config.toml"),
-    `${original}\n# later user comment\n`,
+    `${original}# later user comment\n`,
   );
-  await box.write(
-    "project/.codex/config.toml",
-    "features = { hooks = false }\n",
-  );
-  const invalid = installRun("install", box, "codex", "project");
-  t.assert.match(invalid.stdout, /INSTALL-CONFIG/);
+  await box.write("project/.codex/config.toml", "[features]\nhooks = false\n");
+  const refused = installRun("install", box, "codex", "project");
+  t.assert.equal(refused.status, 2);
+  t.assert.match(refused.stdout, /INSTALL-CONFIG/);
   t.assert.equal(
     await box.read("project/.codex/config.toml"),
-    "features = { hooks = false }\n",
+    "[features]\nhooks = false\n",
   );
 });

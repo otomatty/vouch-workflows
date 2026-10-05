@@ -82,7 +82,6 @@ test("an installation record can name only the files Vouch manages for its harne
     ["codex", [{ path: ".codex/hooks.json", kind: "hooks" }]],
     ["codex", [{ path: ".agents/skills/vouch-build/SKILL.md", kind: "file" }]],
     ["codex", [{ path: ".codex/agents/vouch-reviewer.toml", kind: "file" }]],
-    ["codex", [{ path: ".codex/config.toml", kind: "toml" }]],
     ["codex", [{ path: ".codex/config.toml", kind: "block" }]],
     ["codex", [{ path: ".codex/config.toml", kind: "file" }]],
     ["cursor", [{ path: ".cursor/hooks.json", kind: "hooks" }]],
@@ -103,7 +102,7 @@ test("an installation record can name only the files Vouch manages for its harne
     ["claude", [{ path: "AGENTS.md", kind: "hooks" }]],
     ["claude", [{ path: ".claude/skills/../../x", kind: "file" }]],
     ["claude", [{ path: ".codex/config.toml", kind: "block" }]],
-    ["cursor", [{ path: ".codex/config.toml", kind: "toml" }]],
+    ["codex", [{ path: ".codex/config.toml", kind: "toml" }]],
     [
       "claude",
       [{ path: ".claude/skills/vouch/SKILL.md", kind: "file", previous: "x" }],
