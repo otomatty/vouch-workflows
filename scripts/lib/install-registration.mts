@@ -16,7 +16,7 @@ const findUp =
   "const p=require('path'),f=require('fs');const r=process.argv[1];for(let d=process.cwd();;){const c=p.join(d,r);if(f.existsSync(c)){process.argv.splice(1,1,c);import(require('url').pathToFileURL(c).href);break}const u=p.dirname(d);if(u===d){console.error('VOUCH-LAUNCH: launcher not found: '+r);process.exit(1)}d=u}";
 
 /** One command that sh, Git Bash, PowerShell and cmd all run the same way. */
-export function launchCommand(entry: string, words: string[]) {
+function launchCommand(entry: string, words: string[]) {
   const path = entry.replaceAll("\\", "/");
   const launcher = isAbsolute(entry) ? `"${path}"` : `-e "${findUp}" "${path}"`;
   return `node ${launcher} ${words.join(" ")}`;
@@ -95,7 +95,6 @@ const escaped = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 export function managedPath(harness: string, kind: string, path: string) {
   const codexConfig = harness === "codex" && path === ".codex/config.toml";
   if (kind === "hooks") return path === registrationPath(harness);
-  if (kind === "toml") return codexConfig;
   if (kind === "block")
     return (
       path === "AGENTS.md" ||

@@ -8,11 +8,11 @@ import {
   removeBlock,
   removeHooks,
 } from "./install-settings.mjs";
-import { enableCodex, removeCodex } from "./install-toml.mjs";
+import { codexConfig } from "./install-toml.mjs";
 
 export type Owned = {
   path: string;
-  kind: "file" | "block" | "hooks" | "toml";
+  kind: "file" | "block" | "hooks";
   content: string;
   previous: string | null;
 };
@@ -49,9 +49,7 @@ export function plan(root: string, prior: Installation | null) {
       restored = entry.previous;
     } else if (entry.kind === "block")
       restored = removeBlock(text, entry.content, entry.previous);
-    else if (entry.kind === "hooks")
-      restored = removeHooks(text, entry.content, entry.previous);
-    else restored = removeCodex(text, entry.content, entry.previous);
+    else restored = removeHooks(text, entry.content, entry.previous);
     put(entry.path, restored);
   }
   function claim(
@@ -87,9 +85,19 @@ export function plan(root: string, prior: Installation | null) {
         addHooks(current(path), contribution),
       );
     },
+    /** Design D8: create the file or append a marked block; never rewrite a table. */
     codex(path: string) {
-      const result = enableCodex(current(path));
-      claim(path, "toml", result.content, result.text);
+      const before = current(path);
+      const change = codexConfig(before);
+      if (change.kind === "file")
+        claim(path, "file", change.content, change.content);
+      else if (change.kind === "block")
+        claim(
+          path,
+          "block",
+          change.content,
+          `${before ?? ""}${change.content}`,
+        );
     },
     merge(path: string, value: Record<string, unknown>) {
       put(path, pretty({ ...json(current(path)), ...value }));
@@ -115,7 +123,7 @@ export function readInstallation(text: string | null): Installation | null {
       !entry ||
       typeof entry !== "object" ||
       typeof entry.path !== "string" ||
-      !["file", "block", "hooks", "toml"].includes(entry.kind) ||
+      !["file", "block", "hooks"].includes(entry.kind) ||
       typeof entry.content !== "string" ||
       (entry.previous !== null && typeof entry.previous !== "string")
     )

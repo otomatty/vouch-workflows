@@ -1,109 +1,59 @@
-import { pretty } from "./install-settings.mjs";
+// Design D8 (docs/development/distribution-scope-review.md): Vouch never parses and
+// rewrites a user's TOML. It creates the file, appends a marked block for tables that
+// are defined nowhere, or stops with the lines to add. Lines are matched one by one;
+// table-like lines inside multi-line strings are a documented limitation.
 
-export type Setting = {
-  section: string;
-  key: string;
-  line: string;
-  previous: string | null;
-};
-function sectionBounds(text: string, section: string) {
-  const lines = text.split("\n");
-  const heading = new RegExp(
-    `^\\s*\\[\\s*(?:${section}|"${section}"|'${section}')\\s*\\]\\s*(?:#.*)?$`,
-  );
-  const starts = lines.flatMap((line, index) =>
-    heading.test(line) ? [index] : [],
-  );
-  if (
-    starts.length > 1 ||
-    lines.some((line) =>
-      new RegExp(`^\\s*(?:${section}|"${section}"|'${section}')\\s*[.=]`).test(
-        line,
-      ),
-    )
-  )
-    throw new Error(
-      "INSTALL-CONFIG: ambiguous or unsupported Codex table layout",
+const required = [
+  {
+    table: "features",
+    line: "hooks = true",
+    key: /^\s*hooks\s*=\s*true\s*(?:#.*)?$/,
+  },
+  {
+    table: "agents",
+    line: "max_depth = 1",
+    key: /^\s*max_depth\s*=\s*[1-9][0-9]*\s*(?:#.*)?$/,
+  },
+];
+const quoted = (table: string) => `(?:${table}|"${table}"|'${table}')`;
+const header = /^\s*\[/;
+
+export type CodexChange =
+  | { kind: "file"; content: string }
+  | { kind: "block"; content: string }
+  | { kind: "none" };
+
+export function codexConfig(text: string | null): CodexChange {
+  const body = (tables: typeof required) =>
+    tables.map(({ table, line }) => `[${table}]\n${line}\n`).join("\n");
+  if (text === null) return { kind: "file", content: body(required) };
+  const lines = text.split(/\r?\n/);
+  const missing: typeof required = [];
+  for (const setting of required) {
+    const exact = new RegExp(
+      `^\\s*\\[\\s*${quoted(setting.table)}\\s*\\]\\s*(?:#.*)?$`,
     );
-  const start = section ? (starts[0] ?? -1) : -1;
-  if (section && start < 0) return { lines, start: -2, end: lines.length };
-  let end = start + 1;
-  for (; end < lines.length && !/^\s*\[/.test(lines[end] ?? ""); end++);
-  return { lines, start, end };
-}
-
-export function enableCodex(before: string | null) {
-  let text = before ?? 'sandbox_mode = "workspace-write"\n';
-  const settings: Setting[] = [];
-  for (const [section, key, value] of [
-    ["features", "hooks", "true"],
-    ["agents", "max_depth", "1"],
-  ]) {
-    if (!section || !key || !value) continue;
-    const { lines, start, end } = sectionBounds(text, section);
-    const keyPattern = new RegExp(`^\\s*(?:${key}|"${key}"|'${key}')\\s*=`);
-    const index =
-      start === -2
-        ? -1
-        : lines.findIndex(
-            (line, i) => i > start && i < end && keyPattern.test(line),
-          );
-    if (
+    const start = lines.findIndex((line) => exact.test(line));
+    const next = lines.findIndex((line, i) => i > start && header.test(line));
+    const satisfied =
       start >= 0 &&
-      lines.filter((line, i) => i > start && i < end && keyPattern.test(line))
-        .length > 1
-    )
-      throw new Error("INSTALL-CONFIG: duplicate Codex setting");
-    const previous = index < 0 ? null : (lines[index] as string);
-    if (
-      key === "max_depth" &&
-      previous &&
-      /^\s*(?:max_depth|"max_depth"|'max_depth')\s*=\s*[1-9]\d*\s*(?:#.*)?$/.test(
-        previous,
-      )
-    )
-      continue;
-    const line = `${key} = ${value}`;
-    if (
-      previous &&
-      new RegExp(
-        `^\\s*(?:${key}|"${key}"|'${key}')\\s*=\\s*${value}\\s*(?:#.*)?$`,
-      ).test(previous)
-    )
-      continue;
-    settings.push({ section, key, line, previous });
-    if (start === -2)
-      text = `${text.replace(/\n*$/, "")}\n\n[${section}]\n${line}\n`;
-    else {
-      if (index < 0) lines.splice(start + 1, 0, line);
-      else lines[index] = line;
-      text = lines.join("\n");
-    }
-  }
-  return { text, content: pretty(settings) };
-}
-
-export function removeCodex(
-  text: string | null,
-  content: string,
-  previous: string | null,
-) {
-  if (text === null)
-    throw new Error("INSTALL-CONFLICT: owned Codex configuration missing");
-  const original = text;
-  const settings: Setting[] = JSON.parse(content);
-  for (const setting of settings.reverse()) {
-    const { lines, start, end } = sectionBounds(text, setting.section);
-    const index = lines.findIndex(
-      (line, i) => i > start && i < end && line === setting.line,
+      lines
+        .slice(start + 1, next < 0 ? lines.length : next)
+        .some((line) => setting.key.test(line));
+    if (satisfied) continue;
+    // Any other spelling of the table (subtable, array table, dotted or inline key) is the user's.
+    const defined = new RegExp(
+      `^\\s*(?:\\[\\[?\\s*${quoted(setting.table)}\\s*[\\].]|${quoted(setting.table)}\\s*[.=])`,
     );
-    if (start === -2 || index < 0)
-      throw new Error("INSTALL-CONFLICT: owned Codex setting changed");
-    if (setting.previous === null) lines.splice(index, 1);
-    else lines[index] = setting.previous;
-    text = lines.join("\n");
+    if (lines.some((line) => defined.test(line)))
+      throw new Error(
+        `INSTALL-CONFIG: add "${setting.line}" under [${setting.table}] in .codex/config.toml; Vouch does not edit tables you define`,
+      );
+    missing.push(setting);
   }
-  // Exact prior bytes when no unrelated setting was changed.
-  if (enableCodex(previous).text === original) return previous;
-  return text;
+  if (missing.length === 0) return { kind: "none" };
+  return {
+    kind: "block",
+    content: `${text.endsWith("\n") || text === "" ? "" : "\n"}\n# vouch:codex:start\n${body(missing)}# vouch:codex:end\n`,
+  };
 }

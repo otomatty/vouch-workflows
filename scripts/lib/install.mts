@@ -16,7 +16,7 @@ import {
   skillsDirectory,
 } from "./install-registration.mjs";
 import { json, object, pretty } from "./install-settings.mjs";
-import { enableCodex } from "./install-toml.mjs";
+import { codexConfig } from "./install-toml.mjs";
 
 export type Options = {
   harness: string;
@@ -344,8 +344,8 @@ export function diagnose(options: Options) {
   plan(options.project, state); // Read-only validation of the active project's registration and documents.
   if (
     options.harness === "codex" &&
-    enableCodex(read(inside(options.project, ".codex/config.toml"))).content !==
-      "[]\n"
+    codexConfig(read(inside(options.project, ".codex/config.toml"))).kind !==
+      "none"
   )
     throw new Error(
       "INSTALL-REGISTRATION: Codex hooks and agent depth are not enabled",
