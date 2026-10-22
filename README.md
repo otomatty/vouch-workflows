@@ -6,7 +6,7 @@ Claude Code・Codex CLI・Cursor 向けの開発ワークフロー。共通本�
 
 ## 開発環境
 
-Node.js 22.19.0 以上、npm 10 以上、Git を使用します。ローカルの基準は Node.js 24.13.0 です。
+Node.js 22.19.0 以上、npm 10 以上、Git を使用します。ローカルの基準は Node.js 24.22.1 です。
 
 ```sh
 npm ci
