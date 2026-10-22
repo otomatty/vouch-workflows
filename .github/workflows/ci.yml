@@ -23,6 +23,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
+          check-latest: true
           cache: npm
       # HOOK-13: temporary files on the work volume, not the OS disk (docs/development/hook-startup.md).
       - if: runner.os == 'Windows'
